@@ -1,0 +1,92 @@
+@layer utilities {
+  .text-xs {
+    font-size: var(--font-size-body-sm);
+    line-height: 1.3;
+  }
+
+  .text-sm {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+  }
+
+  .text-base {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+
+  .text-lg {
+    font-size: 0.875rem;
+    line-height: 1.35;
+  }
+
+  .text-xl {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .text-2xl {
+    font-size: 1.125rem;
+    line-height: 1.25;
+  }
+
+  .text-3xl {
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+
+  .text-4xl {
+    font-size: 1.375rem;
+    line-height: 1.15;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@layer components {
+  /* Micro-label voices. Uppercase is reserved for table headers (ms-label-caps);
+     tile, form, and section labels use the quiet sentence-case ms-label. */
+  .ms-label {
+    font-size: var(--font-size-body-sm);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--letter-spacing-ui);
+    color: var(--muted-foreground);
+  }
+
+  .ms-label-caps {
+    font-size: 11px;
+    font-weight: var(--font-weight-medium);
+    text-transform: var(--text-transform-label);
+    letter-spacing: var(--letter-spacing-label);
+    color: var(--muted-foreground);
+  }
+
+  /* Flat registry tables: hairline dividers + row hover instead of
+     bordered capsule rows. Pair with the SDK getResourceTableCellClassName helper. */
+  .ms-flat-table tbody tr {
+    transition: background-color 120ms ease;
+  }
+
+  .ms-flat-table tbody tr:hover {
+    background: color-mix(in srgb, var(--muted) 26%, transparent);
+  }
+
+  .cell-positive {
+    color: var(--positive);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .cell-negative {
+    color: var(--negative);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .token-swatch {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+}

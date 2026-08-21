@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify Command Center SDK Change"
+  short_description: "Verify SDK exports, packaging, and compatibility"
+  default_prompt: "Use $verify-command-center-sdk-change to verify this SDK change before release."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Resource Picker"
+  short_description: "Build consistent searchable selection controls"
+  default_prompt: "Use $build-resource-picker to implement this selection interaction with the SDK picker."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evolve Command Center Contract"
+  short_description: "Change serialized SDK contracts compatibly"
+  default_prompt: "Use $evolve-command-center-contract to evolve this SDK contract with compatibility safeguards."

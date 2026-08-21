@@ -1,0 +1,95 @@
+## table
+
+### buildPurpose
+
+Renders a canonical `core.tabular_frame@v1` as a reusable Community table and republishes the
+underlying dataset plus optional row and cell interaction outputs.
+
+### whenToUse
+
+- Use for reusable row inspection, search, filtering, pagination, formatting, and selection.
+- Use manual mode for a small JSON-safe table authored directly in widget props.
+- Use selection outputs when another widget should react to the active row or cell.
+
+### whenNotToUse
+
+- Do not use it to own backend queries or shared transforms; bind an upstream source or transform.
+- Do not use display formatting to change the published dataset.
+- Do not use it for Enterprise-only formulas; use Pro Table.
+
+### authoringSteps
+
+- Bind `seedData` to a `core.tabular_frame@v1` `dataset`, or choose manual mode and provide rows.
+- Configure visible columns, labels, formats, density, search, pagination, and selection.
+- Use stable `selectionKeyFields` when downstream behavior must survive sorting or refreshes.
+
+### inboundPorts
+
+- `seedData`: canonical retained table dataset.
+- `liveUpdates`: canonical incremental table publications when the host supports streaming.
+
+### outboundPorts
+
+- `dataset`: canonical rows before display-only formatting.
+- `selectedRows`: selected rows as another canonical tabular frame.
+- `activeRow`, `activeCell`, `activeCellValue`, and `selectedCellValues`: JSON interaction values.
+
+### runtimeOwnership
+
+- Consumer. The host or an upstream widget owns querying, streaming, and shared transformation.
+
+### blockingRequirements
+
+- Bound mode requires a compatible `core.tabular_frame@v1` input.
+- Manual mode requires JSON-safe row objects.
+
+### commonPitfalls
+
+- Hidden columns, labels, prefixes, and visual rules never mutate `dataset`.
+- Index-based selection can move after sorting or refresh; declare stable selection keys.
+- Host-specific connection modes are extensions of the portable bound/manual contract.
+
+## pro-table
+
+### buildPurpose
+
+Provides the same canonical table authoring and IO contract as Table while reserving a stable
+Enterprise-backed widget identity and enabling portable column-formula authoring.
+
+### whenToUse
+
+- Use when formula columns or Enterprise grid capabilities are required.
+- Use when consumers must retain the same dataset and selection outputs as Community Table.
+
+### whenNotToUse
+
+- Do not migrate an existing Table merely for a different name.
+- Do not treat formula display columns as a replacement for shared upstream transforms.
+
+### authoringSteps
+
+- Author source, columns, controls, and selection exactly as for Table.
+- Set a schema column to `format: "formula"`, provide `formulaExpression`, and select a result
+  format.
+- Reference fields with brackets, for example `([last] - [open]) / [open] * 100`.
+
+### inboundPorts
+
+- `seedData` and `liveUpdates` use the same canonical tabular contracts as Table.
+
+### outboundPorts
+
+- Publishes the same `dataset`, `selectedRows`, and JSON interaction outputs as Table.
+
+### runtimeOwnership
+
+- Consumer. Enterprise module registration and licensing remain host-owned.
+
+### blockingRequirements
+
+- Formula expressions must use supported operators, functions, and bracketed field names.
+
+### commonPitfalls
+
+- Pro Table is a second widget identity, not a fork of row, selection, or output semantics.
+- A host may enhance rendering, but persisted props and public IO remain SDK-owned.

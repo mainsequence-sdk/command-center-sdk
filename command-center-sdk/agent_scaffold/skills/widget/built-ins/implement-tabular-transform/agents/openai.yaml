@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Tabular Transform"
+  short_description: "Implement canonical tabular transform configurations"
+  default_prompt: "Use $implement-tabular-transform to configure a Tabular Transform through the published SDK contract."

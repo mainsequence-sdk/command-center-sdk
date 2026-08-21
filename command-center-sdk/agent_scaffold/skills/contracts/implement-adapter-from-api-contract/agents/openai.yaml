@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Adapter From API"
+  short_description: "Implement Adapter From API serialized contracts"
+  default_prompt: "Use $implement-adapter-from-api-contract to implement an Adapter From API contract without changing the SDK."

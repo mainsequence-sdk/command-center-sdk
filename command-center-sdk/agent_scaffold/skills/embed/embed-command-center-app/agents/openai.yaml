@@ -1,0 +1,4 @@
+interface:
+  display_name: "Embed Command Center App"
+  short_description: "Integrate secure iframe hosts and clients"
+  default_prompt: "Use $embed-command-center-app to integrate a secure Command Center iframe host or client."

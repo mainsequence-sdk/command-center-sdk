@@ -1,0 +1,4 @@
+interface:
+  display_name: "Theme Command Center App"
+  short_description: "Enforce SDK theme tokens and styles"
+  default_prompt: "Use $theme-command-center-app to apply and audit the closed Command Center theme contract in this application."

@@ -1,0 +1,184 @@
+{
+  "name": "@dev-mainsequence/command-center-sdk",
+  "version": "0.1.10",
+  "private": false,
+  "description": "The unified framework for building Command Center-compatible resource applications, widgets, workspaces, connections, themes, and embeds.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mainsequence-sdk/command-center-sdk.git",
+    "directory": "command-center-sdk"
+  },
+  "sideEffects": [
+    "*.css",
+    "theme/*.css",
+    "widget/*.css"
+  ],
+  "files": [
+    "agent_scaffold",
+    "cli",
+    "contracts",
+    "dist",
+    "docs",
+    "styles.css",
+    "theme",
+    "widget",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "command-center-sdk": "./cli/command-center-sdk.mjs"
+  },
+  "style": "./styles.css",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./contracts": {
+      "types": "./dist/contracts/index.d.ts",
+      "import": "./dist/contracts/index.js"
+    },
+    "./contracts/manifest.json": "./contracts/manifest.json",
+    "./contracts/schemas/*": "./contracts/schemas/*",
+    "./contracts/fixtures/valid/*": "./contracts/fixtures/valid/*",
+    "./contracts/fixtures/invalid/*": "./contracts/fixtures/invalid/*",
+    "./embed": {
+      "types": "./dist/embed/index.d.ts",
+      "import": "./dist/embed/index.js"
+    },
+    "./embed/react": {
+      "types": "./dist/embed/react.d.ts",
+      "import": "./dist/embed/react.js"
+    },
+    "./navigation": {
+      "types": "./dist/navigation/index.d.ts",
+      "import": "./dist/navigation/index.js"
+    },
+    "./resource": {
+      "types": "./dist/resource/index.d.ts",
+      "import": "./dist/resource/index.js"
+    },
+    "./resource/react": {
+      "types": "./dist/resource/react/index.d.ts",
+      "import": "./dist/resource/react/index.js"
+    },
+    "./views": {
+      "types": "./dist/views/index.d.ts",
+      "import": "./dist/views/index.js"
+    },
+    "./widget": {
+      "types": "./dist/widget/index.d.ts",
+      "import": "./dist/widget/index.js"
+    },
+    "./widget/host": {
+      "types": "./dist/widget/host/index.d.ts",
+      "import": "./dist/widget/host/index.js"
+    },
+    "./widget/built-ins": {
+      "types": "./dist/widget/built-ins/index.d.ts",
+      "import": "./dist/widget/built-ins/index.js"
+    },
+    "./widget/built-ins/table": {
+      "types": "./dist/widget/built-ins/table/table/index.d.ts",
+      "import": "./dist/widget/built-ins/table/table/index.js"
+    },
+    "./widget/built-ins/pro-table": {
+      "types": "./dist/widget/built-ins/table/pro-table/index.d.ts",
+      "import": "./dist/widget/built-ins/table/pro-table/index.js"
+    },
+    "./widget/built-ins/app-component": {
+      "types": "./dist/widget/built-ins/app-component/index.d.ts",
+      "import": "./dist/widget/built-ins/app-component/index.js"
+    },
+    "./widget/built-ins/tabular-transform": {
+      "types": "./dist/widget/built-ins/tabular-transform/index.d.ts",
+      "import": "./dist/widget/built-ins/tabular-transform/index.js"
+    },
+    "./widget/testing": {
+      "types": "./dist/widget/testing/index.d.ts",
+      "import": "./dist/widget/testing/index.js"
+    },
+    "./testing": {
+      "types": "./dist/widget/testing/index.d.ts",
+      "import": "./dist/widget/testing/index.js"
+    },
+    "./widget/ui": {
+      "types": "./dist/widget/ui/index.d.ts",
+      "import": "./dist/widget/ui/index.js"
+    },
+    "./workspace": {
+      "types": "./dist/workspace/index.d.ts",
+      "import": "./dist/workspace/index.js"
+    },
+    "./workspace/react": {
+      "types": "./dist/workspace/react/index.d.ts",
+      "import": "./dist/workspace/react/index.js"
+    },
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "import": "./dist/theme/index.js"
+    },
+    "./theme/data-viz": {
+      "types": "./dist/theme/chart-palettes.d.ts",
+      "import": "./dist/theme/chart-palettes.js"
+    },
+    "./theme/presets": {
+      "types": "./dist/theme/presets/index.d.ts",
+      "import": "./dist/theme/presets/index.js"
+    },
+    "./theme/ag-grid.css": "./theme/ag-grid.css",
+    "./theme/fonts.css": "./theme/fonts.css",
+    "./theme/markdown.css": "./theme/markdown.css",
+    "./theme/react-flow.css": "./theme/react-flow.css",
+    "./theme/react-grid-layout.css": "./theme/react-grid-layout.css",
+    "./theme/styles.css": "./theme/styles.css",
+    "./theme/tailwind.css": "./theme/tailwind.css",
+    "./theme/utilities.css": "./theme/utilities.css",
+    "./widget/built-ins.css": "./widget/built-ins.css",
+    "./tailwind.css": "./theme/tailwind.css",
+    "./styles.css": "./styles.css",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "size:check": "node ../scripts/check-package-size.mjs dist/index.js 10000 && node ../scripts/check-package-size.mjs dist/views/ResourceListPage.js 50000 && node ../scripts/check-package-size.mjs dist/views/ResourceSearch.js 25000 && node ../scripts/check-package-size.mjs dist/views/ResourcePagination.js 25000",
+    "check": "npm run theme:audit && tsc -p tsconfig.json --noEmit",
+    "theme:audit": "node cli/command-center-sdk.mjs theme audit --path styles.css",
+    "test": "vitest run && node --test tests/cli/*.node.mjs",
+    "test:browser": "npm run build && playwright test --config playwright.config.ts",
+    "test:package-smoke": "node tests/cli/packed-consumer-smoke.mjs",
+    "prepack": "npm run build",
+    "postinstall": "node ./cli/postinstall.mjs"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20"
+  },
+  "dependencies": {
+    "lucide-react": "^0.500.0",
+    "react-markdown": "^10.1.0",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "ajv": "^8.20.0",
+    "jsdom": "^29.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.5"
+  }
+}

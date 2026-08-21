@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add Resource Actions"
+  short_description: "Add consistent resource action lifecycles"
+  default_prompt: "Use $add-resource-actions to add these actions through the SDK lifecycle."

@@ -1,0 +1,105 @@
+.workspace-graph-flow .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: calc(var(--radius) - 8px);
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(16px);
+}
+
+.workspace-graph-flow .react-flow__controls-button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--foreground) 76%, transparent);
+}
+
+.workspace-graph-flow .react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+
+.workspace-graph-flow .react-flow__controls-button:hover {
+  background: color-mix(in srgb, var(--muted) 72%, transparent);
+  color: var(--foreground);
+}
+
+.workspace-graph-flow .react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.workspace-graph-flow .workspace-graph-edge-live-pulse {
+  pointer-events: none;
+  stroke-dasharray: 10 18;
+  opacity: 0.34;
+  animation: workspace-graph-live-edge-flow 1.15s linear infinite;
+}
+
+@keyframes workspace-graph-live-edge-flow {
+  from {
+    stroke-dashoffset: 28;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.workspace-graph-flow .workspace-graph-port-row {
+  cursor: crosshair !important;
+}
+
+.workspace-graph-flow .workspace-graph-port-row:hover {
+  border-color: color-mix(in srgb, var(--primary) 46%, transparent);
+  background: color-mix(in srgb, var(--primary) 9%, var(--background) 24%);
+}
+
+.workspace-graph-flow .workspace-graph-port-row:hover .workspace-graph-port-row-handle::before {
+  opacity: 1;
+}
+
+.workspace-graph-flow .react-flow__handle.workspace-graph-port-row-handle {
+  top: 0 !important;
+  right: 0 !important;
+  bottom: auto !important;
+  left: 0 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  transform: none !important;
+  pointer-events: all !important;
+  cursor: crosshair !important;
+}
+
+.workspace-graph-flow .react-flow__handle.workspace-graph-port-row-handle,
+.workspace-graph-flow .react-flow__handle.workspace-graph-port-row-handle * {
+  cursor: crosshair !important;
+}
+
+.workspace-graph-flow .react-flow__handle.workspace-graph-port-handle.connectionindicator,
+.workspace-graph-flow .react-flow__handle.workspace-graph-port-row-handle:hover {
+  cursor: crosshair !important;
+}
+
+.workspace-graph-flow .react-flow__handle.workspace-graph-port-row-handle::before {
+  pointer-events: none !important;
+}
+
+.workspace-graph-flow .react-flow__handle.workspace-graph-port-row-handle::after {
+  top: 50% !important;
+  pointer-events: none !important;
+}
+
+.workspace-graph-flow .react-flow__handle-left.workspace-graph-port-row-handle::after {
+  right: auto !important;
+  left: 0 !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+.workspace-graph-flow .react-flow__handle-right.workspace-graph-port-row-handle::after {
+  right: 0 !important;
+  left: auto !important;
+  transform: translate(50%, -50%) !important;
+}

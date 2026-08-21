@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Resource Collection Contract"
+  short_description: "Implement canonical resource collections"
+  default_prompt: "Use $implement-resource-collection-contract to implement and validate an existing SDK resource collection contract."

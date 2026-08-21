@@ -1,0 +1,25 @@
+{
+  "name": "command-center-sdk-repository",
+  "private": true,
+  "version": "0.1.10",
+  "type": "module",
+  "workspaces": [
+    "command-center-sdk"
+  ],
+  "scripts": {
+    "boundaries:check": "node scripts/check-package-boundaries.mjs",
+    "boundaries:test": "node --test scripts/check-package-boundaries.node.mjs",
+    "public-packages:validate": "node scripts/validate-public-packages.mjs",
+    "examples:check": "tsc -p examples/basic-widget/tsconfig.json --noEmit && tsc -p examples/sdk-consumer-fixture/tsconfig.json --noEmit",
+    "examples:test": "vitest run examples/basic-widget/src/index.test.ts",
+    "sdk:build": "npm --workspace @dev-mainsequence/command-center-sdk run build && npm --workspace @dev-mainsequence/command-center-sdk run size:check",
+    "sdk:check": "npm --workspace @dev-mainsequence/command-center-sdk run check",
+    "sdk:test": "npm --workspace @dev-mainsequence/command-center-sdk run test",
+    "check": "npm run boundaries:check && npm run boundaries:test && npm run public-packages:validate && npm run sdk:check && npm run examples:check",
+    "build": "npm run sdk:build && npm run check",
+    "test": "npm run sdk:test && npm run examples:test",
+    "docs:dev": "npm --prefix docs-site run dev",
+    "docs:build": "npm --prefix docs-site run build",
+    "docs:serve": "npm --prefix docs-site run serve"
+  }
+}

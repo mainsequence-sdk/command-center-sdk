@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Command Center Workspace"
+  short_description: "Model and render persistent SDK workspaces"
+  default_prompt: "Use $build-command-center-workspace to model and render a Command Center workspace safely."

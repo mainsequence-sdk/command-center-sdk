@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Command Center Application"
+  short_description: "Design navigation and Command Center applications"
+  default_prompt: "Use $build-command-center-application to design this application navigation and route each surface to the correct Command Center SDK workflow."

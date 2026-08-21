@@ -1,0 +1,69 @@
+.ag-root-wrapper,
+.ag-root-wrapper-body,
+.ag-root,
+.ag-body-viewport,
+.ag-center-cols-clipper,
+.ag-center-cols-viewport,
+.ag-center-cols-container {
+  background: transparent !important;
+}
+
+.ag-theme-params-1,
+.ag-root-wrapper {
+  border: none !important;
+}
+
+.ag-row-hover .ag-cell {
+  background-color: color-mix(in srgb, var(--muted) 55%, transparent) !important;
+}
+
+.ag-header,
+.ag-header-row,
+.ag-row {
+  border-color: var(--border) !important;
+}
+
+html[data-theme="grandpa"] .ag-header,
+html[data-theme="grandpa"] .ag-header-row,
+[data-command-center-theme-root][data-theme="grandpa"] .ag-header,
+[data-command-center-theme-root][data-theme="grandpa"] .ag-header-row {
+  background: rgba(28, 30, 34, 0.96) !important;
+}
+
+html[data-theme="grandpa"] .ag-header-cell-label,
+[data-command-center-theme-root][data-theme="grandpa"] .ag-header-cell-label {
+  color: #d3d7de;
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: var(--text-transform-label);
+}
+
+html[data-theme="grandpa"] .ag-cell,
+html[data-theme="grandpa"] .ag-header-cell,
+[data-command-center-theme-root][data-theme="grandpa"] .ag-cell,
+[data-command-center-theme-root][data-theme="grandpa"] .ag-header-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="grandpa"] .ag-row-hover .ag-cell,
+[data-command-center-theme-root][data-theme="grandpa"] .ag-row-hover .ag-cell {
+  background-color: rgba(39, 46, 58, 0.55) !important;
+}
+
+html[data-theme="cyberpunk"] .ag-header,
+html[data-theme="cyberpunk"] .ag-header-row,
+[data-command-center-theme-root][data-theme="cyberpunk"] .ag-header,
+[data-command-center-theme-root][data-theme="cyberpunk"] .ag-header-row {
+  background: rgba(12, 10, 22, 0.92) !important;
+}
+
+html[data-theme="cyberpunk"] .ag-header-cell-label,
+[data-command-center-theme-root][data-theme="cyberpunk"] .ag-header-cell-label {
+  color: #e8dcff;
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: var(--text-transform-label);
+}
+
+html[data-theme="cyberpunk"] .ag-row-hover .ag-cell,
+[data-command-center-theme-root][data-theme="cyberpunk"] .ag-row-hover .ag-cell {
+  background-color: rgba(92, 59, 145, 0.18) !important;
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Host Command Center Widgets"
+  short_description: "Compose widget registries and runtime boundaries"
+  default_prompt: "Use $host-command-center-widgets to compose and validate this SDK widget host."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Table Widget"
+  short_description: "Implement the canonical Table and Pro Table contracts"
+  default_prompt: "Use $implement-table-widget to configure a Table or Pro Table through the published SDK contracts."

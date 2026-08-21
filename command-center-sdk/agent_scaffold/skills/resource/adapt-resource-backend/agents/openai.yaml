@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adapt Resource Backend"
+  short_description: "Normalize backend APIs for SDK resource views"
+  default_prompt: "Use $adapt-resource-backend to map this backend contract into the SDK resource adapter."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement AppComponent"
+  short_description: "Implement AppComponent and Mock JSON contracts"
+  default_prompt: "Use $implement-app-component to configure AppComponent through its published authoring and runtime contracts."

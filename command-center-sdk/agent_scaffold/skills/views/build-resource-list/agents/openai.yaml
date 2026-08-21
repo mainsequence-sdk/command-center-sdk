@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Resource List"
+  short_description: "Build authoritative collection experiences"
+  default_prompt: "Use $build-resource-list to implement this collection with the SDK list framework."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Resource Detail"
+  short_description: "Build authoritative single-resource experiences"
+  default_prompt: "Use $build-resource-detail to implement this entity detail experience with the SDK."

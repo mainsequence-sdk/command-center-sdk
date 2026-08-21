@@ -1,0 +1,4 @@
+interface:
+  display_name: "Extend Command Center SDK"
+  short_description: "Add reusable backend-neutral SDK capabilities"
+  default_prompt: "Use $extend-command-center-sdk to evaluate and implement this reusable SDK capability."

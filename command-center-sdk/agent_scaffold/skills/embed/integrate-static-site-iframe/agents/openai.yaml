@@ -1,0 +1,4 @@
+interface:
+  display_name: "Integrate Static-Site Iframe"
+  short_description: "Connect static sites to Command Center context"
+  default_prompt: "Use $integrate-static-site-iframe to connect a static-site application to Command Center theme, public user context, and delegated FastAPI release access."

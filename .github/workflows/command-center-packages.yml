@@ -1,0 +1,107 @@
+name: Command Center SDK Release
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "command-center-sdk/**"
+      - "examples/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/command-center-packages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: command-center-sdk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.packages.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - uses: actions/setup-node@v5.0.0
+        with:
+          node-version: 24
+      - id: packages
+        run: echo "matrix=$(node scripts/list-public-packages.mjs --matrix)" >> "$GITHUB_OUTPUT"
+
+  package:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.prepare.outputs.matrix).include }}
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - uses: actions/setup-node@v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run public-packages:validate
+      - name: Check and build
+        run: npm run sdk:build && npm --workspace "${{ matrix.package.name }}" run check && npm --workspace "${{ matrix.package.name }}" run test
+      - name: Pack
+        run: npm pack --workspace "${{ matrix.package.name }}"
+      - uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ${{ matrix.package.directory }}-${{ matrix.package.version }}-package
+          path: "*.tgz"
+
+  packed-consumer:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - uses: actions/setup-node@v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: node scripts/verify-packed-consumer.mjs
+
+  browser:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - uses: actions/setup-node@v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm --workspace @dev-mainsequence/command-center-sdk run test:browser
+
+  publish:
+    needs: [package, packed-consumer, browser]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - uses: actions/setup-node@v5.0.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Publish new versions in dependency order
+        run: node scripts/publish-public-packages.mjs

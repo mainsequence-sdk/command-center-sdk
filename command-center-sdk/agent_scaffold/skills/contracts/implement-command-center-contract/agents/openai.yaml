@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement SDK Contract"
+  short_description: "Implement an existing language-neutral SDK contract"
+  default_prompt: "Use $implement-command-center-contract to implement and validate an existing Command Center SDK contract."

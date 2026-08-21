@@ -1,0 +1,4 @@
+interface:
+  display_name: "Command Center SDK Maintenance"
+  short_description: "Keep SDK contracts, docs, and exports aligned"
+  default_prompt: "Use $maintenance to audit this Command Center SDK change and synchronize its public extension APIs, backend contracts, documentation, package exports, and verification."

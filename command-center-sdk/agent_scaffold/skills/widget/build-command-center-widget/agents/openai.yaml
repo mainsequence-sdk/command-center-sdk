@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Command Center Widget"
+  short_description: "Author and validate reusable SDK widgets"
+  default_prompt: "Use $build-command-center-widget to create a reusable Command Center widget package."
