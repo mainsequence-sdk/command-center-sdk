@@ -1,38 +1,41 @@
-# Contributing to Main Sequence Command Center
+# Contributing to the Command Center SDK
 
 Thanks for contributing.
 
-This repository is a frontend platform, not a single app. Changes should preserve extension boundaries, documentation quality, and the ability to run the shell in both local mock mode and live integration mode.
+This repository owns one public package: `@dev-mainsequence/command-center-sdk`. Changes should
+preserve its public entrypoints, consumer compatibility, documentation, and package boundary.
 
 ## Before You Start
 
-- Read the top-level [README.md](./README.md) for setup and project structure.
-- Check the local docs in [`docs/`](./docs/) if you are changing architecture, widgets, dashboards, auth, or configuration behavior.
-- Look for the nearest local `README.md` when working inside
-  `apps/command-center/extensions/`, `apps/command-center/src/widgets/`, or another feature
-  directory. Those files are part of the maintenance contract for the repo.
+- Read the top-level [README.md](./README.md) and [SDK README](./command-center-sdk/README.md).
+- Read the nearest module `README.md` and the matching guide under `command-center-sdk/docs/`.
+- Use only public package exports; do not add application aliases, host routes, authentication,
+  deployment configuration, or product-specific persistence.
+- Review `command-center-sdk/contracts/manifest.json` before changing serialized data.
 
 ## Local Setup
 
-Install the main app dependencies:
+Install repository dependencies:
 
 ```bash
 npm install
 ```
 
-Install the docs-site dependencies if your change touches `docs/` or `docs-site/`:
+Install documentation dependencies when changing the docs site:
 
 ```bash
 npm --prefix docs-site ci
 ```
 
-Start the app locally:
+Run the SDK checks and build:
 
 ```bash
-npm run dev
+npm run check
+npm run test
+npm run build
 ```
 
-Start the docs locally:
+Start the SDK documentation site when needed:
 
 ```bash
 npm run docs:dev
@@ -40,32 +43,35 @@ npm run docs:dev
 
 ## Development Expectations
 
-### Keep modules documented
+### Keep public modules synchronized
 
-- Every extension, widget, and major feature module should have a local `README.md`.
-- If you add a new feature directory under `apps/command-center/extensions/`,
-  `apps/command-center/src/widgets/`, or a similar area, add its `README.md` in the same change.
-- If you change ownership, behavior, or architecture, update the nearest local README.
+- Keep source exports, declarations, package metadata, tests, docs, and examples aligned.
+- Every major SDK module must keep its nearest `README.md` current.
+- Public workflows must use published package paths, never repository source or `dist` imports.
 
-### Preserve extension boundaries
+### Preserve the SDK boundary
 
-- Keep reusable platform code in shared areas.
-- Keep product-specific behavior inside the owning extension.
-- Do not move code into `apps/command-center/src/` if it belongs to an extension-owned domain
-  module under `apps/command-center/extensions/`.
+- Keep reusable contracts, views, widgets, workspaces, themes, embeds, and navigation in the SDK.
+- Keep product routes, authentication, backend transports, permissions, and deployment outside.
+- Treat schema IDs, protocol IDs, widget IDs, and persisted fields as compatibility boundaries.
 
-### Avoid hidden behavior changes
+### Document compatibility impact
 
-- If a change affects configuration, routes, storage shape, permissions, or backend contracts, document it in the relevant doc page or README.
-- Keep persistence formats backward-compatible where practical, or document migrations clearly.
+- Serialized changes require matching TypeScript, runtime validation, schemas, fixtures, and
+  migration guidance.
+- Internal-only changes must record why public APIs and backend contracts are unaffected.
+- Package or CLI changes require packed-consumer coverage and a changelog entry.
 
 ## Validation
 
-Run the core checks before opening a pull request:
+Run the complete SDK lane before opening a pull request:
 
 ```bash
+git diff --check
 npm run check
+npm run test
 npm run build
+npm --workspace @dev-mainsequence/command-center-sdk run test:package-smoke
 ```
 
 If your change affects docs, also run:
@@ -83,7 +89,7 @@ Include:
 - what changed
 - why it changed
 - any configuration or migration impact
-- screenshots or short clips for user-facing UI changes when useful
+- screenshots or short clips for public React or CSS changes when useful
 
 If your PR changes APIs or data contracts, note the affected endpoints or payload shape directly in the PR description.
 
@@ -93,9 +99,9 @@ There is no strict commit-message convention enforced here, but keep messages co
 
 Good:
 
-- `Add simple-table UML graph tab`
-- `Refactor data node table settings layout`
-- `Deploy docs to GitHub Pages`
+- `feat(sdk): add controlled navigation composition`
+- `fix(cli): isolate source-repository postinstall`
+- `docs: clarify backend contract ownership`
 
 Bad:
 
@@ -110,13 +116,13 @@ When filing a bug, include:
 - actual behavior
 - steps to reproduce
 - screenshots if visual
-- console/API errors if relevant
+- compiler, test, package, or runtime errors if relevant
 
 For environment-sensitive issues, include:
 
-- browser
-- whether mock mode or live mode was used
-- any relevant config or env overrides
+- operating system and Node version
+- browser when React or iframe behavior is involved
+- the package version and public import path
 
 ## Questions
 

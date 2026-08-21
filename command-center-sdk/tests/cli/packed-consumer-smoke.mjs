@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, mkdir, readFile, readdir, realpath, rm, stat } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -17,7 +17,11 @@ try {
   await mkdir(extractRoot, { recursive: true });
   await mkdir(consumerRoot, { recursive: true });
 
-  execFileSync("npm", ["pack", "--ignore-scripts", "--pack-destination", packRoot], {
+  const staleBuildArtifact = join(packageRoot, "dist", "removed-source.js");
+  await mkdir(dirname(staleBuildArtifact), { recursive: true });
+  await writeFile(staleBuildArtifact, "throw new Error('stale build artifact');\n", "utf8");
+
+  execFileSync("npm", ["pack", "--pack-destination", packRoot], {
     cwd: packageRoot,
     encoding: "utf8",
     env: { ...process.env, npm_config_cache: join(fixtureRoot, "npm-cache") },
@@ -28,6 +32,11 @@ try {
   execFileSync("tar", ["-xzf", join(packRoot, tarballs[0]), "-C", extractRoot]);
 
   const extractedPackage = join(extractRoot, "package");
+  await assert.rejects(
+    readFile(join(extractedPackage, "dist", "removed-source.js"), "utf8"),
+    { code: "ENOENT" },
+    "prepack should remove output from deleted source files before compiling",
+  );
   const packageJson = JSON.parse(await readFile(join(extractedPackage, "package.json"), "utf8"));
   assert.equal(packageJson.bin["command-center-sdk"], "./cli/command-center-sdk.mjs");
   assert.equal(packageJson.scripts.postinstall, "node ./cli/postinstall.mjs");

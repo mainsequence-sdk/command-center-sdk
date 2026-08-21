@@ -1,24 +1,19 @@
 # Package Architecture and Dependency Rules
 
-## Target topology
+## Current public topology
 
 ```text
 @dev-mainsequence/command-center-sdk
-  /contracts
-  /contracts/manifest.json
-  /contracts/schemas/*
-  /contracts/fixtures/*
-  /application
-  /resource
-  /resource/react
-  /ui
+  /
+  /contracts and language-neutral schema paths
+  /embed and /embed/react
+  /navigation
+  /resource and /resource/react
   /views
-  /widget
-  /workspace
-  /connection
-  /theme
-  /embed
-  /testing
+  /widget, /widget/host, /widget/built-ins, /widget/testing, and /widget/ui
+  /workspace and /workspace/react
+  /theme, /theme/data-viz, and /theme/presets
+  public CSS subpaths
 
 Foundry + AI + Workspaces + Connections + Admin + Teams + external applications
   -> SDK public subpath exports

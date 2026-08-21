@@ -15,8 +15,11 @@ layout.
 
 Automatic installation resolves the consumer from npm's `INIT_CWD`. It deliberately refuses to
 fall back to the lifecycle package directory because that could mutate `node_modules`. Global npm
-installs skip automatic copying and retain the explicit command. Source and destination overlap,
-symbolic links, invalid skill roots, and unresolved package versions block writes.
+installs skip automatic copying and retain the explicit command. When dependencies are installed
+inside the SDK source repository, postinstall detects the private repository manifest and skips
+consumer skill installation so it cannot create managed consumer files in the SDK checkout. Source
+and destination overlap, symbolic links, invalid skill roots, and unresolved package versions block
+writes.
 
 ## Platform MCP Skills
 

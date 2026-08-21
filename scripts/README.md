@@ -24,6 +24,7 @@ npm run boundaries:test
 - `list-public-packages.mjs --matrix` supplies the release workflow matrix.
 - `publish-public-packages.mjs` builds, skips existing versions, and publishes with provenance.
 - `verify-packed-consumer.mjs` compiles an isolated consumer against the packed tarball.
+- `clean-sdk-dist.mjs` removes only the SDK build output before compilation so deleted source files cannot survive into a package.
 - `check-package-size.mjs` enforces entry-bundle budgets after build.
 
 `@dev-mainsequence/command-center-sdk` is the only public package in this repository.

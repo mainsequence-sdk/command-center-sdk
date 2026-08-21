@@ -1,6 +1,6 @@
 {
   "name": "@dev-mainsequence/command-center-sdk",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "private": false,
   "description": "The unified framework for building Command Center-compatible resource applications, widgets, workspaces, connections, themes, and embeds.",
   "type": "module",
@@ -149,7 +149,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node ../scripts/clean-sdk-dist.mjs && tsc -p tsconfig.json",
     "size:check": "node ../scripts/check-package-size.mjs dist/index.js 10000 && node ../scripts/check-package-size.mjs dist/views/ResourceListPage.js 50000 && node ../scripts/check-package-size.mjs dist/views/ResourceSearch.js 25000 && node ../scripts/check-package-size.mjs dist/views/ResourcePagination.js 25000",
     "check": "npm run theme:audit && tsc -p tsconfig.json --noEmit",
     "theme:audit": "node cli/command-center-sdk.mjs theme audit --path styles.css",
