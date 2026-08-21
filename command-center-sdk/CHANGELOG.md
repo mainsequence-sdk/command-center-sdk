@@ -6,7 +6,7 @@
 
 - Publish the SDK from its dedicated SDK-only repository boundary, with one public workspace and no private Command Center application code or release assumptions.
 - Skip consumer agent-skill installation when npm lifecycle hooks run inside the SDK source repository.
-- Clean SDK build output before compilation and packing so files generated from removed source cannot enter release tarballs.
+- Clean SDK build output before compilation and packing so files generated from removed source cannot enter release tarballs, and build SDK declarations before checking public consumer fixtures in clean environments.
 - Align contributor guidance, public export topology, and documentation-site metadata with the SDK-only repository.
 
 ## 0.1.10
