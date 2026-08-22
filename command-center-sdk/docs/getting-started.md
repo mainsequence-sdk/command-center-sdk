@@ -72,6 +72,13 @@ dependency installation, SSH-key creation, Git staging, commit, tag, or push. Re
 through the platform workflow; never search a nested directory, fall back to `main`, or invent a
 local deployment tag.
 
+For a newly generated repository key, the command posts its public key to the owning Project's
+`add-deploy-key` action. For an existing key, it first reuses the key when Git access already works
+and registers it only when access fails. In both cases, `git push --dry-run --follow-tags` must pass
+with the exact forced SSH identity before versioning begins. A registration or access failure may
+leave the generated local key or registered backend deploy key in place, but it does not bump the
+version, request a deployment tag, create a commit, or create a local Git tag.
+
 After preflight, the command:
 
 1. bumps the npm patch version without asking npm to create a tag;

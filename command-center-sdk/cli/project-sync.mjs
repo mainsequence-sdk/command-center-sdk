@@ -8,6 +8,9 @@ import {
 } from "./project-sync-local-ops.mjs";
 
 export const PROJECT_SYNC_COMMANDS = Object.freeze([
+  "ensure or create the repository SSH key",
+  "register a new or inaccessible SSH key through the owning Project",
+  "git push --dry-run --follow-tags",
   "npm version patch --no-git-tag-version",
   "request backend default redeployment tag for the resolved ProjectBranch",
   "npm install --package-lock-only",
@@ -122,10 +125,31 @@ export async function syncProject({
     if (onPlan) await onPlan(plan);
     if (dryRun) return { ...plan, version: null, tagName: null, completed: [...state.completed] };
 
-    const keyPath = await complete("ensure-repository-ssh-key", () =>
+    const repositoryKey = await complete("ensure-repository-ssh-key", () =>
       localOps.ensureRepositoryKey(state.origin, { quiet }),
     );
-    const gitEnv = localOps.gitEnvironment(keyPath);
+    const gitEnv = localOps.gitEnvironment(repositoryKey.keyPath);
+    const registerDeployKey = () =>
+      projectApi.addProjectDeployKey(state.projectUid, {
+        keyTitle: repositoryKey.keyTitle,
+        publicKey: repositoryKey.publicKey,
+      });
+    const verifyGitPush = () =>
+      localOps.verifyGitPush(state.projectDir, gitEnv, { quiet });
+
+    if (repositoryKey.created) {
+      await complete("register-project-deploy-key", registerDeployKey);
+      await complete("verify-git-push-access", verifyGitPush);
+    } else {
+      stage = "verify-git-push-access";
+      try {
+        await verifyGitPush();
+        state.completed.push(stage);
+      } catch {
+        await complete("register-project-deploy-key", registerDeployKey);
+        await complete("verify-git-push-access", verifyGitPush);
+      }
+    }
 
     await complete("bump-version", () =>
       localOps.runCommand("npm", ["version", "patch", "--no-git-tag-version"], {

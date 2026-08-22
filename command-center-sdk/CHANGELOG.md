@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Register newly generated or inaccessible project-sync SSH keys through the owning Project and
+  verify the forced identity with a dry-run push before versioning, backend tagging, or Git mutation.
+
 ## 0.1.12
 
 - Require registered Main Sequence Vite applications to use the Git repository root for npm,

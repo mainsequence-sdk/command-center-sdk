@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { constants } from "node:fs";
 import { access, mkdir, readFile, realpath, stat } from "node:fs/promises";
-import { homedir } from "node:os";
+import { homedir, hostname } from "node:os";
 import { join, resolve } from "node:path";
 
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
@@ -77,6 +77,7 @@ export function createProjectSyncLocalOps({
   spawnSyncImpl = spawnSync,
   processEnv = process.env,
   homeDirectory = homedir(),
+  hostName = hostname(),
 } = {}) {
   function capture(command, args, cwd, env = processEnv) {
     return String(
@@ -184,7 +185,19 @@ export function createProjectSyncLocalOps({
       const keyPath = join(sshDirectory, repositoryName);
       const publicKeyPath = `${keyPath}.pub`;
       await mkdir(sshDirectory, { recursive: true, mode: 0o700 });
-      if (!(await pathExists(keyPath))) {
+      const [privateKeyExists, publicKeyExists] = await Promise.all([
+        pathExists(keyPath),
+        pathExists(publicKeyPath),
+      ]);
+      if (privateKeyExists !== publicKeyExists) {
+        throw new ProjectSyncLocalError(
+          privateKeyExists
+            ? `Repository SSH public key is missing: ${publicKeyPath}`
+            : `Repository SSH private key is missing: ${keyPath}`,
+        );
+      }
+      const created = !privateKeyExists;
+      if (created) {
         runSpawn(
           spawnSyncImpl,
           "ssh-keygen",
@@ -198,7 +211,25 @@ export function createProjectSyncLocalOps({
       if (!(await pathExists(publicKeyPath))) {
         throw new ProjectSyncLocalError(`Repository SSH public key is missing: ${publicKeyPath}`);
       }
-      return keyPath;
+      let publicKey;
+      try {
+        publicKey = (await readFile(publicKeyPath, "utf8")).trim();
+      } catch (error) {
+        throw new ProjectSyncLocalError(
+          `Could not read repository SSH public key ${publicKeyPath}: ${error.message}`,
+          { cause: error },
+        );
+      }
+      if (!publicKey || /[\r\n]/u.test(publicKey)) {
+        throw new ProjectSyncLocalError(
+          `Repository SSH public key must contain one non-empty line: ${publicKeyPath}`,
+        );
+      }
+      const keyTitle = String(hostName || "").trim();
+      if (!keyTitle || /[\r\n]/u.test(keyTitle)) {
+        throw new ProjectSyncLocalError("Local hostname must contain one non-empty line.");
+      }
+      return { created, keyPath, keyTitle, publicKey };
     },
 
     gitEnvironment(keyPath) {
@@ -207,6 +238,15 @@ export function createProjectSyncLocalOps({
         ...processEnv,
         GIT_SSH_COMMAND: `ssh -i "${escapedKeyPath}" -o IdentitiesOnly=yes`,
       };
+    },
+
+    verifyGitPush(projectDir, env, { quiet = true } = {}) {
+      runSpawn(
+        spawnSyncImpl,
+        "git",
+        ["push", "--dry-run", "--follow-tags"],
+        { cwd: projectDir, env, quiet },
+      );
     },
 
     validateGitTag(projectDir, tagName, env) {

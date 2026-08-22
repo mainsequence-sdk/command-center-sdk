@@ -81,7 +81,7 @@ export function createProjectSyncApi({
     throw new ProjectSyncApiError("Backend timeout must be a positive integer.");
   }
 
-  async function requestJson(method, path, body) {
+  async function request(method, path, body, { expectJson = true } = {}) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let response;
@@ -105,7 +105,8 @@ export function createProjectSyncApi({
 
     let payload = null;
     const contentType = response.headers?.get?.("content-type") || "";
-    if (contentType.toLowerCase().startsWith("application/json")) {
+    const hasJson = contentType.toLowerCase().startsWith("application/json");
+    if (hasJson && (expectJson || !response.ok)) {
       try {
         payload = await response.json();
       } catch (error) {
@@ -125,17 +126,17 @@ export function createProjectSyncApi({
         `Backend ${method} ${path} failed (${response.status})${suffix ? `: ${suffix}` : "."}`,
       );
     }
-    if (!contentType.toLowerCase().startsWith("application/json")) {
+    if (expectJson && !hasJson) {
       throw new ProjectSyncApiError(`Backend ${method} ${path} did not return JSON.`);
     }
-    return requireObject(payload, `Backend ${method} ${path} response`);
+    return expectJson ? requireObject(payload, `Backend ${method} ${path} response`) : payload;
   }
 
   return {
     async resolveProjectBranch(projectUid, repositoryBranch) {
       const normalizedProjectUid = requireSingleLine(projectUid, "Project UID");
       const normalizedBranch = requireSingleLine(repositoryBranch, "Git branch");
-      const project = await requestJson(
+      const project = await request(
         "GET",
         `/api/v1/projects/${encodeURIComponent(normalizedProjectUid)}/`,
       );
@@ -155,7 +156,7 @@ export function createProjectSyncApi({
         );
       }
       const listedUid = requireSingleLine(matches[0].uid, "Resolved ProjectBranch UID");
-      const projectBranch = await requestJson(
+      const projectBranch = await request(
         "GET",
         `/api/v1/project-branches/${encodeURIComponent(listedUid)}/`,
       );
@@ -172,10 +173,22 @@ export function createProjectSyncApi({
       return { gitBranch: normalizedBranch, projectBranchUid };
     },
 
+    async addProjectDeployKey(projectUid, { keyTitle, publicKey } = {}) {
+      const normalizedProjectUid = requireSingleLine(projectUid, "Project UID");
+      const normalizedKeyTitle = requireSingleLine(keyTitle, "Deploy key title");
+      const normalizedPublicKey = requireSingleLine(publicKey, "Deploy public key");
+      await request(
+        "POST",
+        `/api/v1/projects/${encodeURIComponent(normalizedProjectUid)}/add-deploy-key/`,
+        { key_title: normalizedKeyTitle, public_key: normalizedPublicKey },
+        { expectJson: false },
+      );
+    },
+
     async renderDefaultRedeploymentTag(projectBranchUid, version) {
       const normalizedUid = requireSingleLine(projectBranchUid, "ProjectBranch UID");
       const normalizedVersion = requireSingleLine(version, "Project version");
-      const payload = await requestJson(
+      const payload = await request(
         "POST",
         `/api/v1/project-branches/${encodeURIComponent(normalizedUid)}/default-redeployment-tag/`,
         { version: normalizedVersion },

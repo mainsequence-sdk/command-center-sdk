@@ -189,9 +189,11 @@ npx command-center-sdk project sync -m "Describe the change" --path .
 The Git repository root must provide `MAIN_SEQUENCE_PROJECT_UID` in `.env` and contain
 `package.json` plus `package-lock.json`. Before changing local state, the command verifies that the
 supplied path is that root and resolves the named Git branch to its registered backend
-`ProjectBranch`. A nested application directory, detached checkout, or unregistered branch is a
-hard failure: the CLI does not search another directory, fall back to another branch, create
-backend state, or invent a tag.
+`ProjectBranch`. It then registers a newly created repository SSH public key through the owning
+Project and verifies the forced identity with a dry-run push. Existing keys that already pass this
+preflight are not registered again. A nested application directory, detached checkout,
+unregistered branch, deploy-key registration failure, or inaccessible Git remote is a hard
+failure before the version, backend tag, commit, or local Git tag changes.
 
 The command bumps the npm patch version, asks that exact ProjectBranch for its default redeployment
 tag, refreshes and installs the lockfile, runs `git add -A`, commits, creates the returned annotated

@@ -70,12 +70,16 @@ npx command-center-sdk project sync -m "Describe the change" --path .
 The command performs this ordered sequence:
 
 1. Resolve the current Git branch to its registered backend `ProjectBranch` before local mutation.
-2. Bump the npm patch version without letting npm create a Git tag.
-3. Request that ProjectBranch's canonical default redeployment tag from the backend.
-4. Refresh `package-lock.json` and synchronize installed dependencies from it.
-5. Stage the complete working tree and create the requested commit.
-6. Create an annotated Git tag using the backend response unchanged.
-7. Push the branch and annotated tag with `git push --follow-tags`.
+2. Ensure the repository-specific SSH key exists and read its public key.
+3. Register a newly created key through the owning Project's `add-deploy-key` action. For an
+   existing key, first reuse it when Git access works; otherwise register it and retry.
+4. Require `git push --dry-run --follow-tags` to pass with that exact forced SSH identity.
+5. Bump the npm patch version without letting npm create a Git tag.
+6. Request that ProjectBranch's canonical default redeployment tag from the backend.
+7. Refresh `package-lock.json` and synchronize installed dependencies from it.
+8. Stage the complete working tree and create the requested commit.
+9. Create an annotated Git tag using the backend response unchanged.
+10. Push the branch and annotated tag with `git push --follow-tags`.
 
 Use `--json` when another tool needs structured evidence. Structured output must never contain the
 access token.
@@ -93,8 +97,11 @@ git tag --points-at HEAD
 ```
 
 If failure happened before branch resolution, no version, key, dependency, commit, tag, or push
-operation should have occurred. If it happened later, report the produced version and tag and
-repair the existing state deliberately; do not rerun blindly and create another patch version.
+operation should have occurred. A deploy-key registration or Git preflight failure can leave the
+generated local key or registered backend deploy key in place, but must leave the version,
+dependency state, commit, and local tag unchanged. If failure happened after versioning, report the
+produced version and tag and repair the existing state deliberately; do not rerun blindly and
+create another patch version.
 
 ## Verify The Outcome
 

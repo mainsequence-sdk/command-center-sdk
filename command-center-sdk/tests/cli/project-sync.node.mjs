@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -30,13 +31,25 @@ function jsonResponse(payload, status = 200) {
   };
 }
 
+function emptyResponse(status = 204) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: () => null },
+  };
+}
+
 function projectHarness({
   gitBranch = "main",
   renderedTag = "v1.2.4",
   branchError,
+  keyCreated = true,
+  registrationError,
+  verificationErrors = [],
 } = {}) {
   const events = [];
   const projectDir = "/project";
+  let verificationAttempt = 0;
   const localOps = {
     async resolveProjectDir(value) {
       events.push(["resolve-project-directory", value]);
@@ -56,11 +69,22 @@ function projectHarness({
     },
     async ensureRepositoryKey(origin) {
       events.push(["ensure-key", origin]);
-      return "/keys/project";
+      return {
+        created: keyCreated,
+        keyPath: "/keys/project",
+        keyTitle: "developer-workstation",
+        publicKey: "ssh-ed25519 AAAATEST command-center",
+      };
     },
     gitEnvironment(keyPath) {
       events.push(["git-environment", keyPath]);
       return { GIT_SSH_COMMAND: `ssh -i ${keyPath}` };
+    },
+    verifyGitPush(value, env) {
+      events.push(["verify-git-push", value, env.GIT_SSH_COMMAND]);
+      const error = verificationErrors[verificationAttempt];
+      verificationAttempt += 1;
+      if (error) throw error;
     },
     async readPackageVersion(value) {
       events.push(["read-version", value]);
@@ -78,6 +102,10 @@ function projectHarness({
       events.push(["resolve-project-branch", projectUid, branch]);
       if (branchError) throw new ProjectSyncApiError(branchError);
       return { gitBranch: branch, projectBranchUid: "project-branch-uid-123" };
+    },
+    async addProjectDeployKey(projectUid, key) {
+      events.push(["add-project-deploy-key", projectUid, key]);
+      if (registrationError) throw registrationError;
     },
     async renderDefaultRedeploymentTag(projectBranchUid, version) {
       events.push(["render-tag", projectBranchUid, version]);
@@ -149,6 +177,101 @@ for (const [gitBranch, renderedTag] of [
   });
 }
 
+test("registers a new repository key and verifies push access before mutation", async () => {
+  const harness = projectHarness();
+  await syncProject({
+    message: "Update application",
+    projectDir: harness.projectDir,
+    localOps: harness.localOps,
+    api: harness.api,
+    quiet: true,
+  });
+
+  assert.deepEqual(
+    harness.events.find(([type]) => type === "add-project-deploy-key"),
+    [
+      "add-project-deploy-key",
+      "project-uid-123",
+      {
+        keyTitle: "developer-workstation",
+        publicKey: "ssh-ed25519 AAAATEST command-center",
+      },
+    ],
+  );
+  const eventTypes = harness.events.map(([type]) => type);
+  assert.ok(eventTypes.indexOf("add-project-deploy-key") < eventTypes.indexOf("verify-git-push"));
+  assert.ok(eventTypes.indexOf("verify-git-push") < eventTypes.indexOf("command"));
+});
+
+test("does not re-register a reusable repository key that passes Git preflight", async () => {
+  const harness = projectHarness({ keyCreated: false });
+  await syncProject({
+    message: "Update application",
+    projectDir: harness.projectDir,
+    localOps: harness.localOps,
+    api: harness.api,
+    quiet: true,
+  });
+
+  assert.equal(harness.events.filter(([type]) => type === "verify-git-push").length, 1);
+  assert.equal(harness.events.some(([type]) => type === "add-project-deploy-key"), false);
+});
+
+test("registers and retries an existing repository key that fails Git preflight", async () => {
+  const harness = projectHarness({
+    keyCreated: false,
+    verificationErrors: [new Error("Permission denied"), null],
+  });
+  await syncProject({
+    message: "Update application",
+    projectDir: harness.projectDir,
+    localOps: harness.localOps,
+    api: harness.api,
+    quiet: true,
+  });
+
+  assert.equal(harness.events.filter(([type]) => type === "verify-git-push").length, 2);
+  assert.equal(harness.events.filter(([type]) => type === "add-project-deploy-key").length, 1);
+});
+
+test("deploy-key registration failure stops before project mutation", async () => {
+  const harness = projectHarness({ registrationError: new Error("Deploy key rejected") });
+  await assert.rejects(
+    syncProject({
+      message: "Update application",
+      projectDir: harness.projectDir,
+      localOps: harness.localOps,
+      api: harness.api,
+      quiet: true,
+    }),
+    (caught) => {
+      assert.equal(caught.stage, "register-project-deploy-key");
+      assert.match(caught.message, /Deploy key rejected/u);
+      return true;
+    },
+  );
+  assert.equal(harness.events.some(([type]) => type === "command"), false);
+});
+
+test("Git push preflight failure stops before project mutation", async () => {
+  const harness = projectHarness({ verificationErrors: [new Error("Permission denied")] });
+  await assert.rejects(
+    syncProject({
+      message: "Update application",
+      projectDir: harness.projectDir,
+      localOps: harness.localOps,
+      api: harness.api,
+      quiet: true,
+    }),
+    (caught) => {
+      assert.equal(caught.stage, "verify-git-push-access");
+      assert.match(caught.message, /Permission denied/u);
+      return true;
+    },
+  );
+  assert.equal(harness.events.some(([type]) => type === "command"), false);
+});
+
 test("dry-run resolves the backend ProjectBranch but performs no local mutation", async () => {
   const harness = projectHarness({ gitBranch: "dev", renderedTag: "v1.2.4-dev.1" });
   const result = await syncProject({
@@ -164,7 +287,7 @@ test("dry-run resolves the backend ProjectBranch but performs no local mutation"
   assert.equal(result.version, null);
   assert.equal(result.tagName, null);
   assert.equal(harness.events.some(([type]) => type === "resolve-project-branch"), true);
-  for (const mutation of ["ensure-key", "git-environment", "read-version", "render-tag", "validate-tag", "command"]) {
+  for (const mutation of ["ensure-key", "git-environment", "add-project-deploy-key", "verify-git-push", "read-version", "render-tag", "validate-tag", "command"]) {
     assert.equal(harness.events.some(([type]) => type === mutation), false, mutation);
   }
 });
@@ -188,7 +311,7 @@ test("an unregistered Git branch stops before every local mutation", async () =>
     },
   );
 
-  for (const mutation of ["ensure-key", "git-environment", "read-version", "render-tag", "validate-tag", "command"]) {
+  for (const mutation of ["ensure-key", "git-environment", "add-project-deploy-key", "verify-git-push", "read-version", "render-tag", "validate-tag", "command"]) {
     assert.equal(harness.events.some(([type]) => type === mutation), false, mutation);
   }
 });
@@ -223,6 +346,7 @@ test("backend API resolves the exact ProjectBranch and requests its deployment t
       ],
     }),
     jsonResponse({ uid: "dev-uid", repository_branch: "dev" }),
+    emptyResponse(),
     jsonResponse({ version: "1.2.4", tag_name: "v1.2.4-dev.1" }),
   ];
   const api = createProjectSyncApi({
@@ -235,6 +359,10 @@ test("backend API resolves the exact ProjectBranch and requests its deployment t
   });
 
   const branch = await api.resolveProjectBranch("project-uid-123", "dev");
+  await api.addProjectDeployKey("project-uid-123", {
+    keyTitle: "developer-workstation",
+    publicKey: "ssh-ed25519 AAAATEST command-center",
+  });
   const tag = await api.renderDefaultRedeploymentTag(branch.projectBranchUid, "1.2.4");
 
   assert.deepEqual(branch, { gitBranch: "dev", projectBranchUid: "dev-uid" });
@@ -242,9 +370,17 @@ test("backend API resolves the exact ProjectBranch and requests its deployment t
   assert.deepEqual(calls.map(({ url, options }) => [options.method, url]), [
     ["GET", "https://platform.example/api/v1/projects/project-uid-123/"],
     ["GET", "https://platform.example/api/v1/project-branches/dev-uid/"],
+    ["POST", "https://platform.example/api/v1/projects/project-uid-123/add-deploy-key/"],
     ["POST", "https://platform.example/api/v1/project-branches/dev-uid/default-redeployment-tag/"],
   ]);
-  assert.equal(calls[2].options.body, JSON.stringify({ version: "1.2.4" }));
+  assert.equal(
+    calls[2].options.body,
+    JSON.stringify({
+      key_title: "developer-workstation",
+      public_key: "ssh-ed25519 AAAATEST command-center",
+    }),
+  );
+  assert.equal(calls[3].options.body, JSON.stringify({ version: "1.2.4" }));
   assert.equal(calls.every(({ options }) => options.headers.Authorization === "Bearer secret-access-token"), true);
 });
 
@@ -395,4 +531,56 @@ test("repository-key preflight never overwrites an existing private key", async 
   } finally {
     await rm(homeDirectory, { recursive: true, force: true });
   }
+});
+
+test("repository-key preflight returns registration metadata for a newly generated key", async () => {
+  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-project-sync-key-"));
+  try {
+    const localOps = createProjectSyncLocalOps({
+      homeDirectory,
+      hostName: "developer-workstation",
+      spawnSyncImpl(command, args) {
+        assert.equal(command, "ssh-keygen");
+        const keyPath = args[args.indexOf("-f") + 1];
+        writeFileSync(keyPath, "generated private key", "utf8");
+        writeFileSync(`${keyPath}.pub`, "ssh-ed25519 AAAATEST generated\n", "utf8");
+        return { status: 0, stdout: "", stderr: "" };
+      },
+    });
+    assert.deepEqual(
+      await localOps.ensureRepositoryKey("git@github.com:organization/project.git"),
+      {
+        created: true,
+        keyPath: join(homeDirectory, ".ssh", "project"),
+        keyTitle: "developer-workstation",
+        publicKey: "ssh-ed25519 AAAATEST generated",
+      },
+    );
+  } finally {
+    await rm(homeDirectory, { recursive: true, force: true });
+  }
+});
+
+test("Git push preflight uses the forced identity without mutating the remote", () => {
+  const calls = [];
+  const localOps = createProjectSyncLocalOps({
+    spawnSyncImpl(command, args, options) {
+      calls.push({ command, args, options });
+      return { status: 0, stdout: "", stderr: "" };
+    },
+  });
+  const env = { GIT_SSH_COMMAND: 'ssh -i "/keys/project" -o IdentitiesOnly=yes' };
+  localOps.verifyGitPush("/project", env);
+  assert.deepEqual(calls, [
+    {
+      command: "git",
+      args: ["push", "--dry-run", "--follow-tags"],
+      options: {
+        cwd: "/project",
+        env,
+        encoding: "utf8",
+        stdio: "pipe",
+      },
+    },
+  ]);
 });

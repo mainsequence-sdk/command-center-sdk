@@ -63,9 +63,13 @@ and bin-only.
 
 Before local mutation, the command requires a named Git branch and resolves it to the exact backend
 `ProjectBranch` of `MAIN_SEQUENCE_PROJECT_UID`. Missing, duplicated, or detached branch identity is
-a hard failure. Tag syntax remains backend-owned: after the npm patch bump, the CLI posts the new
-version to that ProjectBranch's `default-redeployment-tag` action and creates the returned
-annotated tag unchanged. Do not add local main/dev/feature naming rules.
+a hard failure. It then ensures the repository-specific SSH key is registered through the owning
+Project's `add-deploy-key` action and verifies the forced identity with
+`git push --dry-run --follow-tags`. A reusable key that already passes the Git preflight is not
+registered again. Deploy-key registration or Git access failures therefore stop before the version,
+backend tag, commit, or local Git tag changes. Tag syntax remains backend-owned: after the npm patch
+bump, the CLI posts the new version to that ProjectBranch's `default-redeployment-tag` action and
+creates the returned annotated tag unchanged. Do not add local main/dev/feature naming rules.
 
 Execution runs npm version, lockfile refresh and `npm ci`, `git add -A`, commit, annotated tag, and
 `git push --follow-tags` in that order. Dry-run performs branch-resolution preflight but does not
