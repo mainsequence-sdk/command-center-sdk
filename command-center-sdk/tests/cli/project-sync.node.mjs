@@ -13,6 +13,8 @@ import {
 } from "../../cli/project-sync-api.mjs";
 import {
   createProjectSyncLocalOps,
+  repositorySshKeyIdentity,
+  repositorySshKeyName,
   sanitizeCommitMessage,
 } from "../../cli/project-sync-local-ops.mjs";
 import { ProjectSyncError, syncProject } from "../../cli/project-sync.mjs";
@@ -80,8 +82,8 @@ function projectHarness({
       events.push(["git-environment", keyPath]);
       return { GIT_SSH_COMMAND: `ssh -i ${keyPath}` };
     },
-    verifyGitPush(value, env) {
-      events.push(["verify-git-push", value, env.GIT_SSH_COMMAND]);
+    verifyGitPush(value, branch, env) {
+      events.push(["verify-git-push", value, branch, env.GIT_SSH_COMMAND]);
       const error = verificationErrors[verificationAttempt];
       verificationAttempt += 1;
       if (error) throw error;
@@ -118,6 +120,45 @@ function projectHarness({
 test("normalizes commit messages like the Python project sync command", () => {
   assert.equal(sanitizeCommitMessage('  Deploy\n"dashboard"  '), "Deploy 'dashboard'");
   assert.throws(() => sanitizeCommitMessage("\n\r"), /Commit message is required/u);
+});
+
+test("derives the cross-CLI Repository SSH Key Identity v1 vectors", () => {
+  for (const [origin, identity, usesSsh, keyName] of [
+    [
+      "git@github.com:org-a/app.git",
+      "github.com/org-a/app",
+      true,
+      "mainsequence-app-30cab1d6d9237dda",
+    ],
+    [
+      "ssh://git@github.com/org-a/app.git",
+      "github.com/org-a/app",
+      true,
+      "mainsequence-app-30cab1d6d9237dda",
+    ],
+    [
+      "https://github.com/org-a/app.git?token=ignored#fragment",
+      "github.com/org-a/app",
+      false,
+      "mainsequence-app-30cab1d6d9237dda",
+    ],
+    [
+      "git@github.com:org-b/app.git",
+      "github.com/org-b/app",
+      true,
+      "mainsequence-app-8a36e97017a59942",
+    ],
+  ]) {
+    assert.deepEqual(repositorySshKeyIdentity(origin), { identity, usesSsh });
+    assert.equal(repositorySshKeyName(origin), keyName);
+  }
+});
+
+test("repository SSH key identity preserves path case and non-default ports", () => {
+  assert.deepEqual(repositorySshKeyIdentity("ssh://git@Example.COM:2222/Org/App.git"), {
+    identity: "example.com:2222/Org/App",
+    usesSsh: true,
+  });
 });
 
 test("reads MAIN_SEQUENCE_PROJECT_UID from a project .env", async () => {
@@ -161,7 +202,16 @@ for (const [gitBranch, renderedTag] of [
         ["git", ["add", "-A"]],
         ["git", ["commit", "-m", "Update application"]],
         ["git", ["tag", "-a", renderedTag, "-m", renderedTag]],
-        ["git", ["push", "--follow-tags"]],
+        [
+          "git",
+          [
+            "push",
+            "--follow-tags",
+            "origin",
+            `HEAD:refs/heads/${gitBranch}`,
+            `refs/tags/${renderedTag}:refs/tags/${renderedTag}`,
+          ],
+        ],
       ],
     );
     assert.deepEqual(
@@ -514,9 +564,10 @@ test("local preflight rejects a Vite application below the Git repository root",
 test("repository-key preflight never overwrites an existing private key", async () => {
   const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-project-sync-key-"));
   const sshDirectory = join(homeDirectory, ".ssh");
+  const keyName = "mainsequence-project-0b359d1a1ee13a62";
   try {
     await mkdir(sshDirectory, { recursive: true });
-    await writeFile(join(sshDirectory, "project"), "existing private key", "utf8");
+    await writeFile(join(sshDirectory, keyName), "existing private key", "utf8");
     const localOps = createProjectSyncLocalOps({
       homeDirectory,
       spawnSyncImpl() {
@@ -527,7 +578,7 @@ test("repository-key preflight never overwrites an existing private key", async 
       localOps.ensureRepositoryKey("git@github.com:organization/project.git"),
       /SSH public key is missing/u,
     );
-    assert.equal(await readFile(join(sshDirectory, "project"), "utf8"), "existing private key");
+    assert.equal(await readFile(join(sshDirectory, keyName), "utf8"), "existing private key");
   } finally {
     await rm(homeDirectory, { recursive: true, force: true });
   }
@@ -551,7 +602,11 @@ test("repository-key preflight returns registration metadata for a newly generat
       await localOps.ensureRepositoryKey("git@github.com:organization/project.git"),
       {
         created: true,
-        keyPath: join(homeDirectory, ".ssh", "project"),
+        keyPath: join(
+          homeDirectory,
+          ".ssh",
+          "mainsequence-project-0b359d1a1ee13a62",
+        ),
         keyTitle: "developer-workstation",
         publicKey: "ssh-ed25519 AAAATEST generated",
       },
@@ -559,6 +614,46 @@ test("repository-key preflight returns registration metadata for a newly generat
   } finally {
     await rm(homeDirectory, { recursive: true, force: true });
   }
+});
+
+test("same-basename repositories generate distinct keys without touching the legacy basename", async () => {
+  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-project-sync-key-"));
+  const generatedPaths = [];
+  const sshDirectory = join(homeDirectory, ".ssh");
+  try {
+    await mkdir(sshDirectory, { recursive: true });
+    await writeFile(join(sshDirectory, "app"), "unrelated legacy key", "utf8");
+    const localOps = createProjectSyncLocalOps({
+      homeDirectory,
+      spawnSyncImpl(command, args) {
+        assert.equal(command, "ssh-keygen");
+        const keyPath = args[args.indexOf("-f") + 1];
+        generatedPaths.push(keyPath);
+        writeFileSync(keyPath, "generated private key", "utf8");
+        writeFileSync(`${keyPath}.pub`, "ssh-ed25519 AAAATEST generated\n", "utf8");
+        return { status: 0, stdout: "", stderr: "" };
+      },
+    });
+
+    const first = await localOps.ensureRepositoryKey("git@github.com:org-a/app.git");
+    const second = await localOps.ensureRepositoryKey("git@github.com:org-b/app.git");
+
+    assert.equal(first.keyPath, join(sshDirectory, "mainsequence-app-30cab1d6d9237dda"));
+    assert.equal(second.keyPath, join(sshDirectory, "mainsequence-app-8a36e97017a59942"));
+    assert.notEqual(first.keyPath, second.keyPath);
+    assert.deepEqual(generatedPaths, [first.keyPath, second.keyPath]);
+    assert.equal(await readFile(join(sshDirectory, "app"), "utf8"), "unrelated legacy key");
+  } finally {
+    await rm(homeDirectory, { recursive: true, force: true });
+  }
+});
+
+test("repository-key preflight rejects non-SSH origins", async () => {
+  const localOps = createProjectSyncLocalOps();
+  await assert.rejects(
+    localOps.ensureRepositoryKey("https://github.com/organization/project.git"),
+    /must use SSH/u,
+  );
 });
 
 test("Git push preflight uses the forced identity without mutating the remote", () => {
@@ -570,11 +665,17 @@ test("Git push preflight uses the forced identity without mutating the remote", 
     },
   });
   const env = { GIT_SSH_COMMAND: 'ssh -i "/keys/project" -o IdentitiesOnly=yes' };
-  localOps.verifyGitPush("/project", env);
+  localOps.verifyGitPush("/project", "feature/dashboard", env);
   assert.deepEqual(calls, [
     {
       command: "git",
-      args: ["push", "--dry-run", "--follow-tags"],
+      args: [
+        "push",
+        "--dry-run",
+        "--follow-tags",
+        "origin",
+        "HEAD:refs/heads/feature/dashboard",
+      ],
       options: {
         cwd: "/project",
         env,

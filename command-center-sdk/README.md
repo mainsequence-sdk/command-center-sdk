@@ -174,6 +174,26 @@ folders proven MCP-owned by the Python SDK sentinel, and preserves every unrelat
 `COMMAND_CENTER_SDK_MCP_POSTINSTALL=0` to disable only the best-effort postinstall network attempt;
 the packaged `command-center` skill installation still runs.
 
+## Inspect and update the project SDK
+
+Use the project CLI from a consuming application's Git repository root to compare its declared,
+locked, and installed SDK versions with npm's compatible `wanted` version and the registry's
+`latest` version:
+
+```bash
+npx command-center-sdk project sdk-status --path .
+npx command-center-sdk project sdk-status --path . --json
+npx command-center-sdk project update-sdk --path . --dry-run
+npx command-center-sdk project update-sdk --path .
+```
+
+`update-sdk` runs a package-scoped npm update only when the existing dependency declaration allows
+it. It does not widen an exact or otherwise blocked dependency range, update unrelated packages,
+call the backend, change the application version, commit, tag, or push. Linked, workspace, file,
+Git, URL, alias, and peer dependency declarations are reported but not rewritten. After an actual
+upgrade, run `command-center-sdk skills sync --path .` when both packaged and backend-owned agent
+guidance must be refreshed and verified.
+
 ## Project sync and automatic deployment
 
 Use the SDK CLI when a registered Command Center npm project is ready to be versioned, committed,
@@ -194,6 +214,12 @@ Project and verifies the forced identity with a dry-run push. Existing keys that
 preflight are not registered again. A nested application directory, detached checkout,
 unregistered branch, deploy-key registration failure, or inaccessible Git remote is a hard
 failure before the version, backend tag, commit, or local Git tag changes.
+
+Repository keys use the cross-CLI filename
+`~/.ssh/mainsequence-<repository-slug>-<first-16-sha256>` derived from the normalized
+`host[:non-default-port]/repository/path`, so `org-a/app` and `org-b/app` never collide. Equivalent
+SCP and `ssh://` origins select the same key. Old basename-only files are left untouched and are
+not used as a fallback; the repository-specific key is registered and verified instead.
 
 The command bumps the npm patch version, asks that exact ProjectBranch for its default redeployment
 tag, refreshes and installs the lockfile, runs `git add -A`, commits, creates the returned annotated

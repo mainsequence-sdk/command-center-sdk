@@ -52,6 +52,38 @@ entrypoint map. Exercise changes through the Node tests and a packed-package smo
 existing backend MCP manifest version 2 is authoritative; do not create a second Command Center
 contract for the same catalog.
 
+## Project SDK Status And Update
+
+`command-center-sdk project sdk-status --path .` inspects a consuming project at the Git repository
+root. It reads the SDK declaration from `package.json`, the resolved version from
+`package-lock.json`, and the installed version from `node_modules`, then uses npm registry commands
+to resolve the compatible `wanted` version and registry `latest` version. `--json` returns these
+facts together with `dependencyType`, `status`, `updateAvailable`, `updateSupported`, and a
+user-facing `hint`.
+
+Status values are deliberately explicit:
+
+| Status | Meaning |
+| --- | --- |
+| `current` | Declaration, lockfile, and installation are aligned and no compatible update exists. |
+| `update_available` | npm reports a newer version allowed by the existing declaration. |
+| `constraint_blocked` | Registry `latest` is newer but outside the declaration's policy. |
+| `lock_missing` | The dependency is declared but absent from `package-lock.json`. |
+| `install_required` | The locked package is absent from `node_modules`. |
+| `installed_drift` | The installed and locked versions differ. |
+| `not_declared` | The project does not declare the SDK. |
+| `unsupported_dependency_type` | The SDK is declared only as a peer dependency. |
+| `unsupported_source` | The declaration uses a linked, workspace, file, Git, URL, or alias source. |
+
+`command-center-sdk project update-sdk --path .` runs
+`npm update @dev-mainsequence/command-center-sdk --save` only for a supported declaration that
+needs repair or has a compatible update. `--dry-run` reports that exact command without mutation.
+The command disables only the authenticated MCP postinstall attempt so npm output cannot trigger a
+network-dependent guidance refresh, then re-inspects the project and fails if the package remains
+inconsistent. It never updates unrelated packages, widens a blocked dependency range, calls the
+backend, changes the application version, commits, tags, or pushes. Run `skills sync` explicitly
+afterward when strict backend-owned guidance refresh is required.
+
 ## Project Sync
 
 `command-center-sdk project sync` mirrors Python's `mainsequence project sync` for consuming npm
@@ -65,17 +97,26 @@ Before local mutation, the command requires a named Git branch and resolves it t
 `ProjectBranch` of `MAIN_SEQUENCE_PROJECT_UID`. Missing, duplicated, or detached branch identity is
 a hard failure. It then ensures the repository-specific SSH key is registered through the owning
 Project's `add-deploy-key` action and verifies the forced identity with
-`git push --dry-run --follow-tags`. A reusable key that already passes the Git preflight is not
-registered again. Deploy-key registration or Git access failures therefore stop before the version,
-backend tag, commit, or local Git tag changes. Tag syntax remains backend-owned: after the npm patch
-bump, the CLI posts the new version to that ProjectBranch's `default-redeployment-tag` action and
-creates the returned annotated tag unchanged. Do not add local main/dev/feature naming rules.
+`git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>`. A reusable key that already
+passes the Git preflight is not registered again. Deploy-key registration or Git access failures
+therefore stop before the version, backend tag, commit, or local Git tag changes. Tag syntax remains
+backend-owned: after the npm patch bump, the CLI posts the new version to that ProjectBranch's
+`default-redeployment-tag` action and creates the returned annotated tag unchanged. Do not add
+local main/dev/feature naming rules.
+
+The repository key filename is `mainsequence-<repository-slug>-<first-16-sha256>` from the
+normalized `host[:non-default-port]/repository/path`. Equivalent SCP and `ssh://` origins share an
+identity while same-basename repositories do not. Basename-only key files remain untouched and
+are never used as a compatibility fallback.
 
 Execution runs npm version, lockfile refresh and `npm ci`, `git add -A`, commit, annotated tag, and
-`git push --follow-tags` in that order. Dry-run performs branch-resolution preflight but does not
-bump versions, render a future tag, create SSH keys, install dependencies, or mutate Git. Failures
-stop the workflow and report accumulated state; automatic rollback is deliberately excluded
-because the working tree and npm lifecycle effects are consumer-owned.
+an explicit `git push --follow-tags origin` for the resolved branch and backend tag in that order.
+Both push paths retain `--follow-tags` to match the canonical platform workflow; `origin` and the
+intended refs are explicit so local upstream or push-default configuration cannot redirect them.
+Dry-run performs branch-resolution preflight but does not bump versions, render a future tag,
+create SSH keys, install dependencies, or mutate Git. Failures stop the workflow and report
+accumulated state; automatic rollback is deliberately excluded because the working tree and npm
+lifecycle effects are consumer-owned.
 
 ## Theme Audit
 

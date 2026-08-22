@@ -1,16 +1,103 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { access, mkdir, readFile, realpath, stat } from "node:fs/promises";
 import { homedir, hostname } from "node:os";
 import { join, resolve } from "node:path";
 
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
+const SUPPORTED_GIT_ORIGIN_SCHEMES = new Set(["git", "git+ssh", "http", "https", "ssh"]);
+const SSH_GIT_ORIGIN_SCHEMES = new Set(["git+ssh", "ssh"]);
+const DEFAULT_GIT_ORIGIN_PORTS = new Map([
+  ["http", "80"],
+  ["https", "443"],
+  ["ssh", "22"],
+  ["git+ssh", "22"],
+]);
+const SCP_GIT_ORIGIN_PATTERN = /^(?:[^@/\s]+@)?(?<host>[^:/\s]+):(?<path>.+)$/u;
 
 export class ProjectSyncLocalError extends Error {
   constructor(message, options) {
     super(message, options);
     this.name = "ProjectSyncLocalError";
   }
+}
+
+function cleanGitRepositoryPath(value) {
+  if (value.includes("\\")) {
+    throw new ProjectSyncLocalError("Git origin repository paths must use forward slashes.");
+  }
+  let path = value.replace(/\/{2,}/gu, "/").replace(/^\/+|\/+$/gu, "");
+  if (path.toLowerCase().endsWith(".git")) path = path.slice(0, -4);
+  path = path.replace(/\/+$/gu, "");
+  if (!path) throw new ProjectSyncLocalError("Git origin must include a repository path.");
+  return path;
+}
+
+export function repositorySshKeyIdentity(origin) {
+  const candidate = String(origin || "").trim().replace(/[?#].*$/u, "");
+  if (!candidate) throw new ProjectSyncLocalError("Git origin must be non-empty.");
+  if (/[\r\n]/u.test(candidate)) {
+    throw new ProjectSyncLocalError("Git origin must contain one non-empty line.");
+  }
+
+  const schemeMatch = candidate.match(/^(?<scheme>[A-Za-z][A-Za-z0-9+.-]*):\/\//u);
+  if (schemeMatch) {
+    const scheme = schemeMatch.groups.scheme.toLowerCase();
+    if (!SUPPORTED_GIT_ORIGIN_SCHEMES.has(scheme)) {
+      throw new ProjectSyncLocalError(`Unsupported Git origin scheme: ${scheme}.`);
+    }
+    let parsed;
+    try {
+      parsed = new URL(candidate);
+    } catch (error) {
+      throw new ProjectSyncLocalError(`Invalid Git origin: ${origin}.`, { cause: error });
+    }
+    const host = parsed.hostname.toLowerCase().replace(/\.$/u, "");
+    if (!host) throw new ProjectSyncLocalError("Git origin must include a hostname.");
+    const path = cleanGitRepositoryPath(parsed.pathname);
+    const port = parsed.port;
+    const defaultPort = DEFAULT_GIT_ORIGIN_PORTS.get(scheme);
+    const hostIdentity = !port || port === defaultPort ? host : `${host}:${port}`;
+    return {
+      identity: `${hostIdentity}/${path}`,
+      usesSsh: SSH_GIT_ORIGIN_SCHEMES.has(scheme),
+    };
+  }
+
+  const scpMatch = candidate.match(SCP_GIT_ORIGIN_PATTERN);
+  if (!scpMatch) {
+    throw new ProjectSyncLocalError(
+      "Git origin must be an SSH, Git, HTTP, or HTTPS repository URL.",
+    );
+  }
+  const host = scpMatch.groups.host.toLowerCase().replace(/\.$/u, "");
+  const path = cleanGitRepositoryPath(scpMatch.groups.path);
+  return { identity: `${host}/${path}`, usesSsh: true };
+}
+
+export function repositorySshKeyName(origin) {
+  const { identity } = repositorySshKeyIdentity(origin);
+  const repositoryName = identity.split("/").at(-1);
+  const slug =
+    repositoryName
+      .replace(/[^A-Za-z0-9._-]+/gu, "-")
+      .replace(/^[._-]+|[._-]+$/gu, "")
+      .toLowerCase()
+      .slice(0, 48)
+      .replace(/[._-]+$/gu, "") || "repository";
+  const digest = createHash("sha256").update(identity, "utf8").digest("hex").slice(0, 16);
+  return `mainsequence-${slug}-${digest}`;
+}
+
+export function requireSshGitOrigin(origin) {
+  const result = repositorySshKeyIdentity(origin);
+  if (!result.usesSsh) {
+    throw new ProjectSyncLocalError(
+      "Git origin must use SSH before a repository deploy key can be selected.",
+    );
+  }
+  return result.identity;
 }
 
 function commandText(command, args) {
@@ -175,12 +262,8 @@ export function createProjectSyncLocalOps({
     },
 
     async ensureRepositoryKey(origin, { quiet = true } = {}) {
-      const repositoryName = origin
-        .replace(/[?#].*$/u, "")
-        .split("/")
-        .at(-1)
-        .replace(/\.git$/iu, "")
-        .replace(/[^A-Za-z0-9._-]+/gu, "-") || "project";
+      requireSshGitOrigin(origin);
+      const repositoryName = repositorySshKeyName(origin);
       const sshDirectory = join(homeDirectory, ".ssh");
       const keyPath = join(sshDirectory, repositoryName);
       const publicKeyPath = `${keyPath}.pub`;
@@ -240,11 +323,17 @@ export function createProjectSyncLocalOps({
       };
     },
 
-    verifyGitPush(projectDir, env, { quiet = true } = {}) {
+    verifyGitPush(projectDir, gitBranch, env, { quiet = true } = {}) {
       runSpawn(
         spawnSyncImpl,
         "git",
-        ["push", "--dry-run", "--follow-tags"],
+        [
+          "push",
+          "--dry-run",
+          "--follow-tags",
+          "origin",
+          `HEAD:refs/heads/${gitBranch}`,
+        ],
         { cwd: projectDir, env, quiet },
       );
     },

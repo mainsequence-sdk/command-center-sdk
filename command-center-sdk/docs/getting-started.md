@@ -51,6 +51,34 @@ skills live under `command-center`; backend-owned skills retain their manifest-d
 under `mainsequence`. The installer overwrites or removes only MCP folders recorded in
 `MCP_PINNED_FROM.txt` or proven MCP-owned by the Python SDK sentinel.
 
+## Inspect or update the installed SDK
+
+Run the status command at the Git repository root before changing a consuming project's SDK:
+
+```bash
+npx command-center-sdk project sdk-status --path .
+npx command-center-sdk project sdk-status --path . --json
+```
+
+The result keeps five different facts separate: the dependency spec declared in `package.json`,
+the version locked in `package-lock.json`, the package installed in `node_modules`, npm's `wanted`
+version allowed by the current declaration, and the registry's `latest` version. This makes a
+missing install or lockfile drift distinguishable from an available compatible update.
+
+Preview and apply the compatible package-scoped update with:
+
+```bash
+npx command-center-sdk project update-sdk --path . --dry-run
+npx command-center-sdk project update-sdk --path .
+```
+
+The update respects the existing npm declaration and refuses linked, workspace, file, Git, URL,
+alias, and peer dependency sources. A newer `latest` release outside the declared range is
+`constraint_blocked`; the command leaves `package.json` unchanged so crossing that compatibility
+boundary remains an explicit project decision. It never calls the backend or performs a Git
+commit, tag, or push. After an applied update, run `command-center-sdk skills sync --path .` when
+the backend-owned guidance must also be refreshed strictly.
+
 ## Sync a project for automatic deployment
 
 `command-center-sdk project sync` is the npm-project equivalent of Python's
@@ -75,9 +103,15 @@ local deployment tag.
 For a newly generated repository key, the command posts its public key to the owning Project's
 `add-deploy-key` action. For an existing key, it first reuses the key when Git access already works
 and registers it only when access fails. In both cases, `git push --dry-run --follow-tags` must pass
-with the exact forced SSH identity before versioning begins. A registration or access failure may
-leave the generated local key or registered backend deploy key in place, but it does not bump the
-version, request a deployment tag, create a commit, or create a local Git tag.
+against `origin` and `HEAD:refs/heads/<branch>` with the exact forced SSH identity before versioning
+begins. A registration or access failure may leave the generated local key or registered backend
+deploy key in place, but it does not bump the version, request a deployment tag, create a commit,
+or create a local Git tag.
+
+The filename is `~/.ssh/mainsequence-<repository-slug>-<first-16-sha256>`, where the SHA-256 input
+is the normalized `host[:non-default-port]/repository/path`. The same repository expressed as an
+SCP or `ssh://` origin gets the same key; repositories that merely share a basename do not. The CLI
+does not read, rename, or delete old basename-only key files.
 
 After preflight, the command:
 
@@ -86,7 +120,11 @@ After preflight, the command:
 3. refreshes `package-lock.json` and runs `npm ci`;
 4. stages the complete working tree with `git add -A` and commits it;
 5. creates the backend-returned annotated tag unchanged; and
-6. pushes the branch and tag with `git push --follow-tags`.
+6. pushes with `--follow-tags` while explicitly targeting `origin`, the resolved branch, and the
+   backend-generated tag.
+
+Keep `--follow-tags`: it is part of the canonical platform sync behavior. The explicit remote and
+refspecs prevent local upstream or push-default configuration from redirecting the operation.
 
 The backend can return `v1.2.4` for `main`, `v1.2.4-dev.1` for `dev`, or a branch-qualified feature
 tag. That branch-specific tag is the automatic-deployment identity. The CLI does not duplicate the

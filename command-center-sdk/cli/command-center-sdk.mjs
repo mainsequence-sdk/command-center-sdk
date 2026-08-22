@@ -2,6 +2,10 @@
 
 import { auditThemeCss } from "./audit-theme-css.mjs";
 import { installAgentSkills, readSdkPackageMetadata } from "./install-agent-skills.mjs";
+import {
+  inspectProjectSdk,
+  updateProjectSdk,
+} from "./project-sdk-maintenance.mjs";
 import { syncProject } from "./project-sync.mjs";
 import { syncAgentSkills } from "./sync-agent-skills.mjs";
 
@@ -10,6 +14,8 @@ const usage = `Command Center SDK
 Usage:
   command-center-sdk skills install [--path <repository-root>] [--dry-run] [--json]
   command-center-sdk skills sync [--path <repository-root>] [--mcp-url <url>] [--dry-run] [--json]
+  command-center-sdk project sdk-status [--path <repository-root>] [--json]
+  command-center-sdk project update-sdk [--path <repository-root>] [--dry-run] [--json]
   command-center-sdk project sync [message] [projectUid] [--path <repository-root>] [-m <message>] [--dry-run] [--json]
   command-center-sdk theme audit [--path <css-file-or-directory>] [--json]
   command-center-sdk --version
@@ -25,6 +31,10 @@ The sync command refreshes packaged skills and authenticated MCP skills in:
 The project sync command requires the Vite application at the Git repository root, bumps the npm
 patch version, requests the current ProjectBranch's backend-owned deployment tag, refreshes
 package-lock.json, commits all changes, tags, and pushes.
+
+The SDK status and update commands compare and refresh only the project's declared Command Center
+SDK dependency. Updates respect its existing npm semver policy and do not commit, tag, push, or
+call the backend.
 
 The theme audit rejects unknown variables, literal fallbacks, and hardcoded semantic visual values.
 `;
@@ -172,6 +182,42 @@ export function parseProjectSyncArguments(args) {
   };
 }
 
+function parseProjectSdkArguments(args, { allowDryRun = false } = {}) {
+  let projectDir = process.cwd();
+  let dryRun = false;
+  let json = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === "--json") {
+      json = true;
+      continue;
+    }
+    if (argument === "--dry-run") {
+      if (!allowDryRun) throw new Error("--dry-run is available only for project update-sdk.");
+      dryRun = true;
+      continue;
+    }
+    if (argument === "--help" || argument === "-h") {
+      return { help: true, projectDir, dryRun, json };
+    }
+    if (argument === "--path" || argument === "-p") {
+      index += 1;
+      if (!args[index]) throw new Error(argument + " requires a project directory.");
+      projectDir = args[index];
+      continue;
+    }
+    if (argument.startsWith("--path=")) {
+      projectDir = argument.slice("--path=".length);
+      if (!projectDir) throw new Error("--path requires a project directory.");
+      continue;
+    }
+    throw new Error("Unknown argument: " + argument);
+  }
+
+  return { help: false, projectDir, dryRun, json };
+}
+
 function printHumanSyncResult(result) {
   const action = result.dryRun ? "Would synchronize" : "Synchronized";
   console.log(
@@ -229,6 +275,52 @@ function printHumanProjectSyncResult(result) {
   console.log(`Branch tag: ${result.tagName}`);
 }
 
+function printHumanProjectSdkStatus(result) {
+  console.log("SDK Status");
+  console.log("Project: " + result.projectRoot);
+  console.log("Package: " + result.package);
+  console.log("Dependency type: " + (result.dependencyType || "not declared"));
+  console.log("Declared: " + (result.declared || "not declared"));
+  console.log("Locked: " + (result.locked || "not found"));
+  console.log("Installed: " + (result.installed || "not found"));
+  console.log("Wanted: " + (result.wanted || "unavailable"));
+  console.log("Latest: " + result.latest);
+  console.log("Status: " + result.status);
+  console.log("Hint: " + result.hint);
+}
+
+function printHumanProjectSdkUpdatePlan(plan) {
+  console.log("SDK Update Plan");
+  console.log("Project: " + plan.projectRoot);
+  console.log("Current status: " + plan.before.status);
+  if (plan.commands.length === 0) {
+    console.log("Action: none (" + plan.before.hint + ")");
+    return;
+  }
+  plan.commands.forEach((command, index) => console.log("  " + (index + 1) + ". " + command));
+}
+
+function printHumanProjectSdkUpdateResult(result) {
+  if (result.dryRun) {
+    console.log("Dry run: package.json, package-lock.json, node_modules, and skills were unchanged.");
+    return;
+  }
+  if (!result.updated) {
+    console.log("No SDK update applied: " + result.after.hint);
+    return;
+  }
+  console.log(
+    "Updated " +
+      result.package +
+      ": " +
+      (result.before.locked || "not locked") +
+      " -> " +
+      result.after.locked +
+      ".",
+  );
+  console.log("Next: command-center-sdk skills sync --path .");
+}
+
 async function main() {
   const args = process.argv.slice(2);
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
@@ -250,6 +342,33 @@ async function main() {
     if (options.json) console.log(JSON.stringify(result, null, 2));
     else printHumanThemeAudit(result);
     if (!result.ok) process.exitCode = 1;
+    return;
+  }
+  if (args[0] === "project" && args[1] === "sdk-status") {
+    const options = parseProjectSdkArguments(args.slice(2));
+    if (options.help) {
+      console.log(usage);
+      return;
+    }
+    const result = await inspectProjectSdk({ projectDir: options.projectDir });
+    if (options.json) console.log(JSON.stringify(result, null, 2));
+    else printHumanProjectSdkStatus(result);
+    return;
+  }
+  if (args[0] === "project" && args[1] === "update-sdk") {
+    const options = parseProjectSdkArguments(args.slice(2), { allowDryRun: true });
+    if (options.help) {
+      console.log(usage);
+      return;
+    }
+    const result = await updateProjectSdk({
+      projectDir: options.projectDir,
+      dryRun: options.dryRun,
+      quiet: options.json,
+      onPlan: options.json ? undefined : printHumanProjectSdkUpdatePlan,
+    });
+    if (options.json) console.log(JSON.stringify(result, null, 2));
+    else printHumanProjectSdkUpdateResult(result);
     return;
   }
   if (args[0] === "project" && args[1] === "sync") {

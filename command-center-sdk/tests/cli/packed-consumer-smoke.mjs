@@ -76,6 +76,7 @@ try {
     "project-sync-api.mjs",
     "project-sync-local-ops.mjs",
     "project-sync.mjs",
+    "project-sdk-maintenance.mjs",
     "sync-agent-skills.mjs",
   ].map((name) => readFile(join(extractedPackage, "cli", name), "utf8")));
   const cliHelp = execFileSync(
@@ -84,6 +85,8 @@ try {
     { encoding: "utf8" },
   );
   assert.match(cliHelp, /skills sync/u);
+  assert.match(cliHelp, /project sdk-status/u);
+  assert.match(cliHelp, /project update-sdk/u);
   assert.match(cliHelp, /project sync/u);
   assert.match(cliHelp, /repository-root/u);
   const embedModule = await import(
@@ -210,6 +213,13 @@ try {
       "utf8",
     ),
     /backend-owned tag|backend-returned annotated tag/iu,
+  );
+  assert.match(
+    await readFile(
+      join(managedRoot, "general", "use-command-center-sdk", "SKILL.md"),
+      "utf8",
+    ),
+    /project sdk-status/u,
   );
   await readFile(
     join(managedRoot, "contracts", "implement-command-center-contract", "agents", "openai.yaml"),

@@ -34,7 +34,18 @@ current backend `ProjectBranch`.
 4. Confirm the current Git checkout has a named branch and an `origin` remote.
 5. Ensure `MAINSEQUENCE_ENDPOINT` and a current `MAINSEQUENCE_ACCESS_TOKEN` are available only in
    the process environment. Never place the token in an argument, file, log, or report.
-6. Run the read-only preview from that root:
+6. Inspect the installed SDK and resolve any authorized compatible update separately:
+
+```bash
+npx command-center-sdk project sdk-status --path . --json
+npx command-center-sdk project update-sdk --path . --dry-run
+```
+
+`update-sdk` is dependency maintenance only. Run it only when the user authorizes the update, then
+refresh guidance and rerun the project checks. It does not change the application version, contact
+the deployment backend, commit, tag, or push, and it never replaces the release sync below.
+
+7. Run the read-only deployment preview from that root:
 
 ```bash
 npx command-center-sdk project sync -m "Describe the change" --path . --dry-run
@@ -71,15 +82,24 @@ The command performs this ordered sequence:
 
 1. Resolve the current Git branch to its registered backend `ProjectBranch` before local mutation.
 2. Ensure the repository-specific SSH key exists and read its public key.
+   Its filename is `mainsequence-<repository-slug>-<first-16-sha256>` from the normalized
+   `host[:non-default-port]/repository/path`; never select a key by repository basename alone and
+   never fall back to a legacy basename-only key.
 3. Register a newly created key through the owning Project's `add-deploy-key` action. For an
    existing key, first reuse it when Git access works; otherwise register it and retry.
-4. Require `git push --dry-run --follow-tags` to pass with that exact forced SSH identity.
+4. Require `git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>` to pass with that
+   exact forced SSH identity.
 5. Bump the npm patch version without letting npm create a Git tag.
 6. Request that ProjectBranch's canonical default redeployment tag from the backend.
 7. Refresh `package-lock.json` and synchronize installed dependencies from it.
 8. Stage the complete working tree and create the requested commit.
 9. Create an annotated Git tag using the backend response unchanged.
-10. Push the branch and annotated tag with `git push --follow-tags`.
+10. Push with `--follow-tags` while explicitly targeting `origin`,
+    `HEAD:refs/heads/<branch>`, and the backend-generated `refs/tags/<tag>` ref.
+
+Keep `--follow-tags` to match the canonical Python platform workflow. Never replace it with a
+tag-only push. Keep the remote and refspecs explicit so local upstream, push-remote, or push-default
+configuration cannot redirect the deployment sync.
 
 Use `--json` when another tool needs structured evidence. Structured output must never contain the
 access token.

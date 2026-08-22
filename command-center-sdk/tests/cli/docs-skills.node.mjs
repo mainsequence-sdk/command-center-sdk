@@ -42,6 +42,26 @@ test("consumer scaffold excludes SDK-maintainer workflows", async () => {
   }
 });
 
+test("consumer guidance documents SDK status and update as a separate project lifecycle", async () => {
+  const useSdkSkill = await readFile(
+    join(skillsRoot, "general", "use-command-center-sdk", "SKILL.md"),
+    "utf8",
+  );
+  const maintainProjectSkill = await readFile(
+    join(skillsRoot, "general", "maintain-command-center-project", "SKILL.md"),
+    "utf8",
+  );
+  const gettingStarted = await readFile(join(docsRoot, "getting-started.md"), "utf8");
+
+  for (const value of [useSdkSkill, maintainProjectSkill, gettingStarted]) {
+    assert.match(value, /project sdk-status/u);
+    assert.match(value, /project update-sdk/u);
+    assert.match(value, /dry-run/u);
+  }
+  assert.match(useSdkSkill, /declared.*locked.*installed.*wanted.*latest/isu);
+  assert.match(maintainProjectSkill, /does not change the application version/iu);
+});
+
 test("contract skills point to the canonical manifest without bundling contract copies", async () => {
   const contractSkills = (await listSkillPaths()).filter((skillPath) =>
     skillPath.startsWith("contracts/"),

@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Make project-sync SSH key filenames repository-specific by hashing the canonical origin identity,
+  so repositories with the same basename cannot share or overwrite a key. Legacy basename keys are
+  left untouched and are not reused as a compatibility fallback.
+- Preserve the platform-standard `--follow-tags` project sync while explicitly pushing the
+  resolved branch and backend-generated tag to `origin`, independent of local push configuration.
+- Add npm-native `project sdk-status` and `project update-sdk` commands with Git-root preflight,
+  separate declared/locked/installed/wanted/latest state, compatible package-scoped updates,
+  dry-run output, and post-update verification. Dependency maintenance remains separate from
+  application versioning, Git release actions, and backend deployment.
+- Keep consumer documentation and packaged agent guidance aligned with the new SDK lifecycle
+  commands while leaving authenticated MCP guidance refresh explicit.
+
 ## 0.1.13
 
 - Register newly generated or inaccessible project-sync SSH keys through the owning Project and

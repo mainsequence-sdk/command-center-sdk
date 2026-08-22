@@ -10,7 +10,7 @@ import {
 export const PROJECT_SYNC_COMMANDS = Object.freeze([
   "ensure or create the repository SSH key",
   "register a new or inaccessible SSH key through the owning Project",
-  "git push --dry-run --follow-tags",
+  "git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>",
   "npm version patch --no-git-tag-version",
   "request backend default redeployment tag for the resolved ProjectBranch",
   "npm install --package-lock-only",
@@ -18,7 +18,7 @@ export const PROJECT_SYNC_COMMANDS = Object.freeze([
   "git add -A",
   "git commit -m <message>",
   "git tag -a <backend tag> -m <backend tag>",
-  "git push --follow-tags",
+  "git push --follow-tags origin HEAD:refs/heads/<branch> refs/tags/<backend tag>:refs/tags/<backend tag>",
 ]);
 
 export class ProjectSyncError extends Error {
@@ -135,7 +135,7 @@ export async function syncProject({
         publicKey: repositoryKey.publicKey,
       });
     const verifyGitPush = () =>
-      localOps.verifyGitPush(state.projectDir, gitEnv, { quiet });
+      localOps.verifyGitPush(state.projectDir, state.gitBranch, gitEnv, { quiet });
 
     if (repositoryKey.created) {
       await complete("register-project-deploy-key", registerDeployKey);
@@ -203,11 +203,21 @@ export async function syncProject({
       }),
     );
     await complete("push", () =>
-      localOps.runCommand("git", ["push", "--follow-tags"], {
-        cwd: state.projectDir,
-        env: gitEnv,
-        quiet,
-      }),
+      localOps.runCommand(
+        "git",
+        [
+          "push",
+          "--follow-tags",
+          "origin",
+          `HEAD:refs/heads/${state.gitBranch}`,
+          `refs/tags/${state.tagName}:refs/tags/${state.tagName}`,
+        ],
+        {
+          cwd: state.projectDir,
+          env: gitEnv,
+          quiet,
+        },
+      ),
     );
 
     return {
