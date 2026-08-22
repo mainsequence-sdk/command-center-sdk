@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.12
+
 - Require registered Main Sequence Vite applications to use the Git repository root for npm,
   project identity, agent guidance, and `project sync`; nested project directories now fail
   preflight instead of being treated as deployable project roots.
