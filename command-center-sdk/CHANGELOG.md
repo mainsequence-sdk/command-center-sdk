@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Preflight the exact backend-owned deployment tag before project mutation: preview the npm patch
+  version, reject local and remote tag collisions, verify the applied bump matches the preview, and
+  atomically push the explicit branch and tag refs.
 - Make project-sync SSH key filenames repository-specific by hashing the canonical origin identity,
   so repositories with the same basename cannot share or overwrite a key. Legacy basename keys are
   left untouched and are not reused as a compatibility fallback.

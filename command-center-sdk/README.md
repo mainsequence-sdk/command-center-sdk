@@ -209,11 +209,13 @@ npx command-center-sdk project sync -m "Describe the change" --path .
 The Git repository root must provide `MAIN_SEQUENCE_PROJECT_UID` in `.env` and contain
 `package.json` plus `package-lock.json`. Before changing local state, the command verifies that the
 supplied path is that root and resolves the named Git branch to its registered backend
-`ProjectBranch`. It then registers a newly created repository SSH public key through the owning
-Project and verifies the forced identity with a dry-run push. Existing keys that already pass this
-preflight are not registered again. A nested application directory, detached checkout,
-unregistered branch, deploy-key registration failure, or inaccessible Git remote is a hard
-failure before the version, backend tag, commit, or local Git tag changes.
+`ProjectBranch`. It previews the npm patch version, requests that version's backend-owned tag, and
+rejects an invalid or existing local tag before creating an SSH key. It then registers a newly
+created repository SSH public key through the owning Project, verifies the forced identity with a
+dry-run push, and checks the exact remote tag ref. Existing keys that already pass this preflight
+are not registered again. A nested application directory, detached checkout, unregistered branch,
+tag collision, deploy-key registration failure, or inaccessible Git remote is a hard failure
+before the version, dependency, commit, or local Git tag changes.
 
 Repository keys use the cross-CLI filename
 `~/.ssh/mainsequence-<repository-slug>-<first-16-sha256>` derived from the normalized
@@ -221,12 +223,12 @@ Repository keys use the cross-CLI filename
 SCP and `ssh://` origins select the same key. Old basename-only files are left untouched and are
 not used as a fallback; the repository-specific key is registered and verified instead.
 
-The command bumps the npm patch version, asks that exact ProjectBranch for its default redeployment
-tag, refreshes and installs the lockfile, runs `git add -A`, commits, creates the returned annotated
-tag unchanged, and pushes with `--follow-tags`. Consequently, `main`, `dev`, and feature branches
-may receive different backend-owned tag formats. Review the complete working tree before running
-the command because every modification, deletion, and untracked file is staged. See the installed
-`general/maintain-command-center-project` skill and the
+The command verifies that the applied npm bump matches its preview, refreshes and installs the
+lockfile, runs `git add -A`, commits, creates the returned annotated tag unchanged, and atomically
+pushes the explicit branch and tag refs with `--follow-tags`. Consequently, `main`, `dev`, and
+feature branches may receive different backend-owned tag formats. Review the complete working tree
+before running the command because every modification, deletion, and untracked file is staged. See
+the installed `general/maintain-command-center-project` skill and the
 [project-sync guide](./docs/getting-started.md#sync-a-project-for-automatic-deployment) for failure
 and recovery semantics.
 

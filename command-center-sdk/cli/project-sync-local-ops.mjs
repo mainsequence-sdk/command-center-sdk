@@ -6,6 +6,8 @@ import { homedir, hostname } from "node:os";
 import { join, resolve } from "node:path";
 
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
+const NPM_PATCH_VERSION_PATTERN =
+  /^(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)(?<prerelease>-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
 const SUPPORTED_GIT_ORIGIN_SCHEMES = new Set(["git", "git+ssh", "http", "https", "ssh"]);
 const SSH_GIT_ORIGIN_SCHEMES = new Set(["git+ssh", "ssh"]);
 const DEFAULT_GIT_ORIGIN_PORTS = new Map([
@@ -158,6 +160,17 @@ export function sanitizeCommitMessage(message) {
     .trim();
   if (!normalized) throw new ProjectSyncLocalError("Commit message is required.");
   return normalized;
+}
+
+export function nextNpmPatchVersion(version) {
+  const match = String(version || "").match(NPM_PATCH_VERSION_PATTERN);
+  if (!match) {
+    throw new ProjectSyncLocalError(`Cannot calculate npm patch version from: ${version}`);
+  }
+  const { major, minor, patch, prerelease } = match.groups;
+  return prerelease
+    ? `${major}.${minor}.${patch}`
+    : `${major}.${minor}.${BigInt(patch) + 1n}`;
 }
 
 export function createProjectSyncLocalOps({
@@ -338,7 +351,7 @@ export function createProjectSyncLocalOps({
       );
     },
 
-    validateGitTag(projectDir, tagName, env) {
+    validateGitTag(projectDir, tagName, env = processEnv) {
       runSpawn(
         spawnSyncImpl,
         "git",
@@ -356,6 +369,25 @@ export function createProjectSyncLocalOps({
       }
       if (existing.status !== 1) {
         throw new ProjectSyncLocalError(`Could not check whether Git tag already exists: ${tagName}`);
+      }
+    },
+
+    validateRemoteGitTag(projectDir, tagName, env) {
+      const remoteRef = `refs/tags/${tagName}`;
+      const existing = runSpawn(
+        spawnSyncImpl,
+        "git",
+        ["ls-remote", "--exit-code", "--refs", "--tags", "origin", remoteRef],
+        { cwd: projectDir, env, quiet: true, allowFailure: true },
+      );
+      if (existing.status === 0) {
+        throw new ProjectSyncLocalError(`Git tag already exists remotely: ${tagName}`);
+      }
+      if (existing.status !== 2) {
+        const detail = resultText(existing);
+        throw new ProjectSyncLocalError(
+          `Could not check whether Git tag exists remotely: ${tagName}${detail ? `: ${detail}` : "."}`,
+        );
       }
     },
 

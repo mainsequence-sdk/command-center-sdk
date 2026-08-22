@@ -60,6 +60,11 @@ test("consumer guidance documents SDK status and update as a separate project li
   }
   assert.match(useSdkSkill, /declared.*locked.*installed.*wanted.*latest/isu);
   assert.match(maintainProjectSkill, /does not change the application version/iu);
+  for (const value of [maintainProjectSkill, gettingStarted]) {
+    assert.match(value, /(?:next|preview\w*)[^.]*npm[^.]*patch[^.]*version/iu);
+    assert.match(value, /exact.*tag.*origin|exact `refs\/tags/isu);
+    assert.match(value, /--atomic --follow-tags/iu);
+  }
 });
 
 test("contract skills point to the canonical manifest without bundling contract copies", async () => {

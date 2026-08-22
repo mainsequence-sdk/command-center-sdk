@@ -3,22 +3,27 @@ import {
   resolveProjectSyncConfiguration,
 } from "./project-sync-api.mjs";
 import {
+  nextNpmPatchVersion,
   projectSyncLocalOps,
   sanitizeCommitMessage,
 } from "./project-sync-local-ops.mjs";
 
 export const PROJECT_SYNC_COMMANDS = Object.freeze([
+  "calculate the next npm patch version",
+  "request backend default redeployment tag for the resolved ProjectBranch",
+  "verify the backend tag does not exist locally",
   "ensure or create the repository SSH key",
   "register a new or inaccessible SSH key through the owning Project",
   "git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>",
+  "verify the exact backend tag does not exist remotely",
   "npm version patch --no-git-tag-version",
-  "request backend default redeployment tag for the resolved ProjectBranch",
+  "verify the bumped version matches the preflight version",
   "npm install --package-lock-only",
   "npm ci",
   "git add -A",
   "git commit -m <message>",
   "git tag -a <backend tag> -m <backend tag>",
-  "git push --follow-tags origin HEAD:refs/heads/<branch> refs/tags/<backend tag>:refs/tags/<backend tag>",
+  "git push --atomic --follow-tags origin HEAD:refs/heads/<branch> refs/tags/<backend tag>:refs/tags/<backend tag>",
 ]);
 
 export class ProjectSyncError extends Error {
@@ -37,6 +42,7 @@ export class ProjectSyncError extends Error {
       projectUid: this.state.projectUid || null,
       gitBranch: this.state.gitBranch || null,
       projectBranchUid: this.state.projectBranchUid || null,
+      nextVersion: this.state.nextVersion || null,
       version: this.state.version || null,
       tagName: this.state.tagName || null,
       completed: [...(this.state.completed || [])],
@@ -112,6 +118,16 @@ export async function syncProject({
       throw new Error("Backend ProjectBranch resolution returned another Git branch.");
     }
 
+    state.nextVersion = await complete("calculate-next-version", () =>
+      nextNpmPatchVersion(state.currentVersion),
+    );
+    state.tagName = await complete("render-branch-tag", () =>
+      projectApi.renderDefaultRedeploymentTag(state.projectBranchUid, state.nextVersion),
+    );
+    await complete("validate-local-branch-tag", () =>
+      localOps.validateGitTag(state.projectDir, state.tagName),
+    );
+
     const plan = {
       command: "command-center-sdk project sync",
       dryRun: Boolean(dryRun),
@@ -120,10 +136,12 @@ export async function syncProject({
       gitBranch: state.gitBranch,
       projectBranchUid: state.projectBranchUid,
       currentVersion: state.currentVersion,
+      nextVersion: state.nextVersion,
+      tagName: state.tagName,
       commands: [...PROJECT_SYNC_COMMANDS],
     };
     if (onPlan) await onPlan(plan);
-    if (dryRun) return { ...plan, version: null, tagName: null, completed: [...state.completed] };
+    if (dryRun) return { ...plan, version: state.nextVersion, completed: [...state.completed] };
 
     const repositoryKey = await complete("ensure-repository-ssh-key", () =>
       localOps.ensureRepositoryKey(state.origin, { quiet }),
@@ -151,6 +169,10 @@ export async function syncProject({
       }
     }
 
+    await complete("validate-remote-branch-tag", () =>
+      localOps.validateRemoteGitTag(state.projectDir, state.tagName, gitEnv),
+    );
+
     await complete("bump-version", () =>
       localOps.runCommand("npm", ["version", "patch", "--no-git-tag-version"], {
         cwd: state.projectDir,
@@ -161,12 +183,13 @@ export async function syncProject({
     state.version = await complete("read-version", () =>
       localOps.readPackageVersion(state.projectDir),
     );
-    state.tagName = await complete("render-branch-tag", () =>
-      projectApi.renderDefaultRedeploymentTag(state.projectBranchUid, state.version),
-    );
-    await complete("validate-branch-tag", () =>
-      localOps.validateGitTag(state.projectDir, state.tagName, gitEnv),
-    );
+    await complete("verify-version-bump", () => {
+      if (state.version !== state.nextVersion) {
+        throw new Error(
+          `npm produced version ${state.version}; preflight expected ${state.nextVersion}.`,
+        );
+      }
+    });
     await complete("update-lockfile", () =>
       localOps.runCommand("npm", ["install", "--package-lock-only"], {
         cwd: state.projectDir,
@@ -207,6 +230,7 @@ export async function syncProject({
         "git",
         [
           "push",
+          "--atomic",
           "--follow-tags",
           "origin",
           `HEAD:refs/heads/${state.gitBranch}`,

@@ -207,13 +207,13 @@ try {
     join(managedRoot, "general", "use-command-center-sdk", "agents", "openai.yaml"),
     "utf8",
   );
-  assert.match(
-    await readFile(
-      join(managedRoot, "general", "maintain-command-center-project", "SKILL.md"),
-      "utf8",
-    ),
-    /backend-owned tag|backend-returned annotated tag/iu,
+  const maintainProjectSkill = await readFile(
+    join(managedRoot, "general", "maintain-command-center-project", "SKILL.md"),
+    "utf8",
   );
+  assert.match(maintainProjectSkill, /backend-owned tag|backend-returned annotated tag/iu);
+  assert.match(maintainProjectSkill, /exact backend tag ref|exact tag ref/iu);
+  assert.match(maintainProjectSkill, /--atomic --follow-tags/iu);
   assert.match(
     await readFile(
       join(managedRoot, "general", "use-command-center-sdk", "SKILL.md"),

@@ -55,7 +55,8 @@ The preview must reject any supplied path below the Git root and resolve the cur
 exactly one backend `ProjectBranch`. If the branch is detached, absent from the Project, or
 ambiguous, stop. Do not search another application directory, fall back to `main`, create a
 ProjectBranch implicitly, or invent a tag. Register the branch through the platform workflow and
-rerun preflight.
+rerun preflight. It must also report the next npm patch version and exact backend-owned branch tag,
+then reject an invalid or existing local tag without creating SSH credentials or changing files.
 
 ## Understand The Complete-Tree Commit
 
@@ -81,25 +82,29 @@ npx command-center-sdk project sync -m "Describe the change" --path .
 The command performs this ordered sequence:
 
 1. Resolve the current Git branch to its registered backend `ProjectBranch` before local mutation.
-2. Ensure the repository-specific SSH key exists and read its public key.
+2. Preview npm's patch result, request the backend-owned tag for that future version, and reject an
+   invalid or existing local tag.
+3. Ensure the repository-specific SSH key exists and read its public key.
    Its filename is `mainsequence-<repository-slug>-<first-16-sha256>` from the normalized
    `host[:non-default-port]/repository/path`; never select a key by repository basename alone and
    never fall back to a legacy basename-only key.
-3. Register a newly created key through the owning Project's `add-deploy-key` action. For an
+4. Register a newly created key through the owning Project's `add-deploy-key` action. For an
    existing key, first reuse it when Git access works; otherwise register it and retry.
-4. Require `git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>` to pass with that
+5. Require `git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>` to pass with that
    exact forced SSH identity.
-5. Bump the npm patch version without letting npm create a Git tag.
-6. Request that ProjectBranch's canonical default redeployment tag from the backend.
-7. Refresh `package-lock.json` and synchronize installed dependencies from it.
-8. Stage the complete working tree and create the requested commit.
-9. Create an annotated Git tag using the backend response unchanged.
-10. Push with `--follow-tags` while explicitly targeting `origin`,
+6. Query the exact backend tag ref on `origin`; treat both a collision and an indeterminate remote
+   check as a hard pre-mutation failure.
+7. Bump the npm patch version without letting npm create a Git tag, then verify the result matches
+   the preview.
+8. Refresh `package-lock.json` and synchronize installed dependencies from it.
+9. Stage the complete working tree and create the requested commit.
+10. Create an annotated Git tag using the backend response unchanged.
+11. Push atomically with `--follow-tags` while explicitly targeting `origin`,
     `HEAD:refs/heads/<branch>`, and the backend-generated `refs/tags/<tag>` ref.
 
-Keep `--follow-tags` to match the canonical Python platform workflow. Never replace it with a
-tag-only push. Keep the remote and refspecs explicit so local upstream, push-remote, or push-default
-configuration cannot redirect the deployment sync.
+Keep `--atomic --follow-tags` to match the canonical Python platform workflow. Never replace it
+with a tag-only push. Keep the remote and refspecs explicit so local upstream, push-remote, or
+push-default configuration cannot redirect the deployment sync or leave a partial remote update.
 
 Use `--json` when another tool needs structured evidence. Structured output must never contain the
 access token.

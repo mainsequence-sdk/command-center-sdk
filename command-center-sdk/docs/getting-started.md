@@ -98,15 +98,17 @@ reads the current named Git branch, and resolves it to the matching backend `Pro
 checkout is detached or the branch is not registered, the command stops before versioning,
 dependency installation, SSH-key creation, Git staging, commit, tag, or push. Register the branch
 through the platform workflow; never search a nested directory, fall back to `main`, or invent a
-local deployment tag.
+local deployment tag. The dry run previews the npm patch version, requests the backend-owned tag,
+and rejects an invalid or existing local tag without creating SSH credentials or changing files.
 
 For a newly generated repository key, the command posts its public key to the owning Project's
 `add-deploy-key` action. For an existing key, it first reuses the key when Git access already works
 and registers it only when access fails. In both cases, `git push --dry-run --follow-tags` must pass
 against `origin` and `HEAD:refs/heads/<branch>` with the exact forced SSH identity before versioning
-begins. A registration or access failure may leave the generated local key or registered backend
-deploy key in place, but it does not bump the version, request a deployment tag, create a commit,
-or create a local Git tag.
+begins. The command then queries the exact `refs/tags/<backend tag>` on `origin`; a collision or an
+indeterminate remote check stops before the npm version change. A registration or access failure
+may leave the generated local key or registered backend deploy key in place, but it does not bump
+the version, create a commit, or create a local Git tag.
 
 The filename is `~/.ssh/mainsequence-<repository-slug>-<first-16-sha256>`, where the SHA-256 input
 is the normalized `host[:non-default-port]/repository/path`. The same repository expressed as an
@@ -115,16 +117,16 @@ does not read, rename, or delete old basename-only key files.
 
 After preflight, the command:
 
-1. bumps the npm patch version without asking npm to create a tag;
-2. requests the canonical default redeployment tag for the resolved ProjectBranch;
-3. refreshes `package-lock.json` and runs `npm ci`;
-4. stages the complete working tree with `git add -A` and commits it;
-5. creates the backend-returned annotated tag unchanged; and
-6. pushes with `--follow-tags` while explicitly targeting `origin`, the resolved branch, and the
-   backend-generated tag.
+1. bumps the npm patch version without asking npm to create a tag and verifies it matches preview;
+2. refreshes `package-lock.json` and runs `npm ci`;
+3. stages the complete working tree with `git add -A` and commits it;
+4. creates the backend-returned annotated tag unchanged; and
+5. atomically pushes with `--follow-tags` while explicitly targeting `origin`, the resolved branch,
+   and the backend-generated tag.
 
-Keep `--follow-tags`: it is part of the canonical platform sync behavior. The explicit remote and
-refspecs prevent local upstream or push-default configuration from redirecting the operation.
+Keep `--atomic --follow-tags`: the explicit remote and refspecs prevent local upstream or
+push-default configuration from redirecting the operation, and atomic push prevents a partial
+remote branch/tag update if either ref is rejected.
 
 The backend can return `v1.2.4` for `main`, `v1.2.4-dev.1` for `dev`, or a branch-qualified feature
 tag. That branch-specific tag is the automatic-deployment identity. The CLI does not duplicate the

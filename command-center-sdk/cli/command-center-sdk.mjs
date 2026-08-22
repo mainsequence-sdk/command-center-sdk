@@ -261,6 +261,8 @@ function printHumanProjectSyncPlan(plan) {
   console.log(`Git branch: ${plan.gitBranch}`);
   console.log(`ProjectBranch: ${plan.projectBranchUid}`);
   console.log(`Current version: ${plan.currentVersion}`);
+  console.log(`Next version: ${plan.nextVersion}`);
+  console.log(`Branch tag: ${plan.tagName}`);
   console.log("Sync plan:");
   plan.commands.forEach((command, index) => console.log(`  ${index + 1}. ${command}`));
 }

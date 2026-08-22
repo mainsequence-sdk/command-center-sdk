@@ -95,28 +95,27 @@ and bin-only.
 
 Before local mutation, the command requires a named Git branch and resolves it to the exact backend
 `ProjectBranch` of `MAIN_SEQUENCE_PROJECT_UID`. Missing, duplicated, or detached branch identity is
-a hard failure. It then ensures the repository-specific SSH key is registered through the owning
-Project's `add-deploy-key` action and verifies the forced identity with
+a hard failure. It previews the npm patch version, requests the backend-owned tag, and rejects an
+invalid or existing local tag. It then ensures the repository-specific SSH key is registered
+through the owning Project's `add-deploy-key` action and verifies the forced identity with
 `git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>`. A reusable key that already
 passes the Git preflight is not registered again. Deploy-key registration or Git access failures
-therefore stop before the version, backend tag, commit, or local Git tag changes. Tag syntax remains
-backend-owned: after the npm patch bump, the CLI posts the new version to that ProjectBranch's
-`default-redeployment-tag` action and creates the returned annotated tag unchanged. Do not add
-local main/dev/feature naming rules.
+therefore stop before the version, commit, or local Git tag changes. The exact backend tag is then
+queried on `origin`; a collision or indeterminate result also stops before mutation. Tag syntax
+remains backend-owned. Do not add local main/dev/feature naming rules.
 
 The repository key filename is `mainsequence-<repository-slug>-<first-16-sha256>` from the
 normalized `host[:non-default-port]/repository/path`. Equivalent SCP and `ssh://` origins share an
 identity while same-basename repositories do not. Basename-only key files remain untouched and
 are never used as a compatibility fallback.
 
-Execution runs npm version, lockfile refresh and `npm ci`, `git add -A`, commit, annotated tag, and
-an explicit `git push --follow-tags origin` for the resolved branch and backend tag in that order.
-Both push paths retain `--follow-tags` to match the canonical platform workflow; `origin` and the
-intended refs are explicit so local upstream or push-default configuration cannot redirect them.
-Dry-run performs branch-resolution preflight but does not bump versions, render a future tag,
-create SSH keys, install dependencies, or mutate Git. Failures stop the workflow and report
-accumulated state; automatic rollback is deliberately excluded because the working tree and npm
-lifecycle effects are consumer-owned.
+Execution runs npm version, verifies the result matches the preview, refreshes the lockfile and runs
+`npm ci`, stages, commits, creates the annotated tag, and atomically pushes the explicit resolved
+branch and backend tag refs with `--follow-tags`. Dry-run performs branch resolution, future-version
+and tag rendering, and local tag validation, but does not create SSH keys, query private remote
+refs, install dependencies, or mutate Git. Failures stop the workflow and report accumulated state;
+automatic rollback is deliberately excluded because the working tree and npm lifecycle effects are
+consumer-owned.
 
 ## Theme Audit
 

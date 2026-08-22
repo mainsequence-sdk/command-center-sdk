@@ -13,6 +13,7 @@ import {
 } from "../../cli/project-sync-api.mjs";
 import {
   createProjectSyncLocalOps,
+  nextNpmPatchVersion,
   repositorySshKeyIdentity,
   repositorySshKeyName,
   sanitizeCommitMessage,
@@ -47,6 +48,8 @@ function projectHarness({
   branchError,
   keyCreated = true,
   registrationError,
+  remoteTagError,
+  actualVersion = "1.2.4",
   verificationErrors = [],
 } = {}) {
   const events = [];
@@ -90,10 +93,14 @@ function projectHarness({
     },
     async readPackageVersion(value) {
       events.push(["read-version", value]);
-      return "1.2.4";
+      return actualVersion;
     },
     validateGitTag(value, tagName) {
       events.push(["validate-tag", value, tagName]);
+    },
+    validateRemoteGitTag(value, tagName, env) {
+      events.push(["validate-remote-tag", value, tagName, env.GIT_SSH_COMMAND]);
+      if (remoteTagError) throw remoteTagError;
     },
     runCommand(command, args, options) {
       events.push(["command", command, args, options.cwd]);
@@ -120,6 +127,14 @@ function projectHarness({
 test("normalizes commit messages like the Python project sync command", () => {
   assert.equal(sanitizeCommitMessage('  Deploy\n"dashboard"  '), "Deploy 'dashboard'");
   assert.throws(() => sanitizeCommitMessage("\n\r"), /Commit message is required/u);
+});
+
+test("calculates npm patch versions without mutating the project", () => {
+  assert.equal(nextNpmPatchVersion("1.2.3"), "1.2.4");
+  assert.equal(nextNpmPatchVersion("1.2.3-rc.2"), "1.2.3");
+  assert.equal(nextNpmPatchVersion("1.2.3+build.7"), "1.2.4");
+  assert.equal(nextNpmPatchVersion("1.2.3-rc.2+build.7"), "1.2.3");
+  assert.throws(() => nextNpmPatchVersion("1.2"), /Cannot calculate npm patch version/u);
 });
 
 test("derives the cross-CLI Repository SSH Key Identity v1 vectors", () => {
@@ -206,6 +221,7 @@ for (const [gitBranch, renderedTag] of [
           "git",
           [
             "push",
+            "--atomic",
             "--follow-tags",
             "origin",
             `HEAD:refs/heads/${gitBranch}`,
@@ -218,6 +234,9 @@ for (const [gitBranch, renderedTag] of [
       harness.events.find(([type]) => type === "render-tag"),
       ["render-tag", "project-branch-uid-123", "1.2.4"],
     );
+    const eventTypes = harness.events.map(([type]) => type);
+    assert.ok(eventTypes.indexOf("validate-tag") < eventTypes.indexOf("ensure-key"));
+    assert.ok(eventTypes.indexOf("validate-remote-tag") < eventTypes.indexOf("command"));
     assert.equal(
       harness.events
         .filter(([type]) => type === "command")
@@ -322,6 +341,47 @@ test("Git push preflight failure stops before project mutation", async () => {
   assert.equal(harness.events.some(([type]) => type === "command"), false);
 });
 
+test("remote tag collision stops before version or repository mutation", async () => {
+  const harness = projectHarness({ remoteTagError: new Error("Git tag already exists remotely: v1.2.4") });
+  await assert.rejects(
+    syncProject({
+      message: "Update application",
+      projectDir: harness.projectDir,
+      localOps: harness.localOps,
+      api: harness.api,
+      quiet: true,
+    }),
+    (caught) => {
+      assert.equal(caught.stage, "validate-remote-branch-tag");
+      assert.match(caught.message, /already exists remotely/u);
+      return true;
+    },
+  );
+  assert.equal(harness.events.some(([type]) => type === "command"), false);
+});
+
+test("unexpected npm version stops before lockfile or Git mutation", async () => {
+  const harness = projectHarness({ actualVersion: "1.2.5" });
+  await assert.rejects(
+    syncProject({
+      message: "Update application",
+      projectDir: harness.projectDir,
+      localOps: harness.localOps,
+      api: harness.api,
+      quiet: true,
+    }),
+    (caught) => {
+      assert.equal(caught.stage, "verify-version-bump");
+      assert.match(caught.message, /preflight expected 1\.2\.4/u);
+      return true;
+    },
+  );
+  assert.deepEqual(
+    harness.events.filter(([type]) => type === "command").map(([, command, args]) => [command, args]),
+    [["npm", ["version", "patch", "--no-git-tag-version"]]],
+  );
+});
+
 test("dry-run resolves the backend ProjectBranch but performs no local mutation", async () => {
   const harness = projectHarness({ gitBranch: "dev", renderedTag: "v1.2.4-dev.1" });
   const result = await syncProject({
@@ -334,10 +394,13 @@ test("dry-run resolves the backend ProjectBranch but performs no local mutation"
 
   assert.equal(result.dryRun, true);
   assert.equal(result.gitBranch, "dev");
-  assert.equal(result.version, null);
-  assert.equal(result.tagName, null);
+  assert.equal(result.nextVersion, "1.2.4");
+  assert.equal(result.version, "1.2.4");
+  assert.equal(result.tagName, "v1.2.4-dev.1");
   assert.equal(harness.events.some(([type]) => type === "resolve-project-branch"), true);
-  for (const mutation of ["ensure-key", "git-environment", "add-project-deploy-key", "verify-git-push", "read-version", "render-tag", "validate-tag", "command"]) {
+  assert.equal(harness.events.some(([type]) => type === "render-tag"), true);
+  assert.equal(harness.events.some(([type]) => type === "validate-tag"), true);
+  for (const mutation of ["ensure-key", "git-environment", "add-project-deploy-key", "verify-git-push", "validate-remote-tag", "read-version", "command"]) {
     assert.equal(harness.events.some(([type]) => type === mutation), false, mutation);
   }
 });
@@ -684,4 +747,54 @@ test("Git push preflight uses the forced identity without mutating the remote", 
       },
     },
   ]);
+});
+
+test("remote tag preflight queries the exact tag ref with the forced identity", () => {
+  const calls = [];
+  const env = { GIT_SSH_COMMAND: 'ssh -i "/keys/project" -o IdentitiesOnly=yes' };
+  const localOps = createProjectSyncLocalOps({
+    spawnSyncImpl(command, args, options) {
+      calls.push({ command, args, options });
+      return { status: 2, stdout: "", stderr: "" };
+    },
+  });
+
+  localOps.validateRemoteGitTag("/project", "v1.2.4-feature.1", env);
+
+  assert.deepEqual(calls, [
+    {
+      command: "git",
+      args: [
+        "ls-remote",
+        "--exit-code",
+        "--refs",
+        "--tags",
+        "origin",
+        "refs/tags/v1.2.4-feature.1",
+      ],
+      options: {
+        cwd: "/project",
+        env,
+        encoding: "utf8",
+        stdio: "pipe",
+      },
+    },
+  ]);
+});
+
+test("remote tag preflight distinguishes a collision from a transport failure", () => {
+  for (const [status, stderr, expected] of [
+    [0, "", /already exists remotely/u],
+    [1, "Permission denied", /Permission denied/u],
+  ]) {
+    const localOps = createProjectSyncLocalOps({
+      spawnSyncImpl() {
+        return { status, stdout: "", stderr };
+      },
+    });
+    assert.throws(
+      () => localOps.validateRemoteGitTag("/project", "v1.2.4", {}),
+      expected,
+    );
+  }
 });
