@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.13
+
 - Register newly generated or inaccessible project-sync SSH keys through the owning Project and
   verify the forced identity with a dry-run push before versioning, backend tagging, or Git mutation.
 
