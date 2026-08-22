@@ -55,8 +55,11 @@ contract for the same catalog.
 ## Project Sync
 
 `command-center-sdk project sync` mirrors Python's `mainsequence project sync` for consuming npm
-projects. The orchestration, backend client, and local npm/Git/SSH operations live in the focused
-`project-sync*.mjs` modules and remain dependency-free and bin-only.
+projects whose Vite application is at the Git repository root. The supplied path must be that root
+and contain `.env`, `package.json`, and `package-lock.json`; nested application directories fail
+preflight rather than being discovered or translated. The orchestration, backend client, and local
+npm/Git/SSH operations live in the focused `project-sync*.mjs` modules and remain dependency-free
+and bin-only.
 
 Before local mutation, the command requires a named Git branch and resolves it to the exact backend
 `ProjectBranch` of `MAIN_SEQUENCE_PROJECT_UID`. Missing, duplicated, or detached branch identity is

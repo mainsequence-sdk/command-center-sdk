@@ -27,20 +27,23 @@ current backend `ProjectBranch`.
 
 ## Preflight The Project
 
-1. Confirm the intended project directory contains `package.json`, `package-lock.json`, and `.env`.
-2. Confirm `.env` contains the public `MAIN_SEQUENCE_PROJECT_UID`.
-3. Confirm the current Git checkout has a named branch and an `origin` remote.
-4. Ensure `MAINSEQUENCE_ENDPOINT` and a current `MAINSEQUENCE_ACCESS_TOKEN` are available only in
+1. Confirm the Vite application is at the Git repository root. Nested `frontend/` applications are
+   not supported.
+2. Confirm that root contains `package.json`, `package-lock.json`, and `.env`.
+3. Confirm `.env` contains the public `MAIN_SEQUENCE_PROJECT_UID`.
+4. Confirm the current Git checkout has a named branch and an `origin` remote.
+5. Ensure `MAINSEQUENCE_ENDPOINT` and a current `MAINSEQUENCE_ACCESS_TOKEN` are available only in
    the process environment. Never place the token in an argument, file, log, or report.
-5. Run the read-only preview:
+6. Run the read-only preview from that root:
 
 ```bash
 npx command-center-sdk project sync -m "Describe the change" --path . --dry-run
 ```
 
-The preview must resolve the current Git branch to exactly one backend `ProjectBranch`. If the
-branch is detached, absent from the Project, or ambiguous, stop. Do not fall back to `main`, create
-a ProjectBranch implicitly, or invent a tag. Register the branch through the platform workflow and
+The preview must reject any supplied path below the Git root and resolve the current Git branch to
+exactly one backend `ProjectBranch`. If the branch is detached, absent from the Project, or
+ambiguous, stop. Do not search another application directory, fall back to `main`, create a
+ProjectBranch implicitly, or invent a tag. Register the branch through the platform workflow and
 rerun preflight.
 
 ## Understand The Complete-Tree Commit

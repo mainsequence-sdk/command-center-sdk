@@ -85,6 +85,7 @@ try {
   );
   assert.match(cliHelp, /skills sync/u);
   assert.match(cliHelp, /project sync/u);
+  assert.match(cliHelp, /repository-root/u);
   const embedModule = await import(
     pathToFileURL(join(extractedPackage, "dist", "embed", "index.js")).href
   );

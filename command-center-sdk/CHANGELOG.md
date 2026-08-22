@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Require registered Main Sequence Vite applications to use the Git repository root for npm,
+  project identity, agent guidance, and `project sync`; nested project directories now fail
+  preflight instead of being treated as deployable project roots.
+
 ## 0.1.11
 
 - Publish the SDK from its dedicated SDK-only repository boundary, with one public workspace and no private Command Center application code or release assumptions.

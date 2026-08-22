@@ -9,6 +9,11 @@ clients, routing, persistence, permissions, notifications, and product-specific 
 
 ## Install
 
+Main Sequence Vite projects place the application at the Git repository root. Run package
+installation there so `package.json`, `package-lock.json`, `.env`, `.agents/`, `src/`, and the Git
+root share one project boundary. Nested application directories are not a supported Main Sequence
+project layout.
+
 ```bash
 npm install @dev-mainsequence/command-center-sdk react react-dom
 ```
@@ -181,10 +186,12 @@ npx command-center-sdk project sync -m "Describe the change" --path . --dry-run
 npx command-center-sdk project sync -m "Describe the change" --path .
 ```
 
-The project must provide `MAIN_SEQUENCE_PROJECT_UID` in `.env` and contain `package.json` plus
-`package-lock.json`. Before changing local state, the command resolves the named Git branch to its
-registered backend `ProjectBranch`. A detached or unregistered branch is a hard failure: the CLI
-does not fall back to another branch, create backend state, or invent a tag.
+The Git repository root must provide `MAIN_SEQUENCE_PROJECT_UID` in `.env` and contain
+`package.json` plus `package-lock.json`. Before changing local state, the command verifies that the
+supplied path is that root and resolves the named Git branch to its registered backend
+`ProjectBranch`. A nested application directory, detached checkout, or unregistered branch is a
+hard failure: the CLI does not search another directory, fall back to another branch, create
+backend state, or invent a tag.
 
 The command bumps the npm patch version, asks that exact ProjectBranch for its default redeployment
 tag, refreshes and installs the lockfile, runs `git add -A`, commits, creates the returned annotated

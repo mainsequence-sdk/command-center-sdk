@@ -10,6 +10,10 @@ This guide matches the `use-command-center-sdk`, `maintain-command-center-projec
 
 ## Install the package
 
+For a Main Sequence Vite project, the application lives at the Git repository root. Keep
+`package.json`, `package-lock.json`, `.env`, `.agents/`, `src/`, and `vite.config.*` at that root;
+the production build normally writes `dist/`. Do not create a nested `frontend/` application.
+
 ```bash
 npm install @dev-mainsequence/command-center-sdk react react-dom
 ```
@@ -60,12 +64,13 @@ npx command-center-sdk project sync -m "Update the project" --path . --dry-run
 npx command-center-sdk project sync -m "Update the project" --path .
 ```
 
-The project directory must contain `package.json`, `package-lock.json`, and `.env` with
-`MAIN_SEQUENCE_PROJECT_UID`. Preflight reads the current named Git branch and resolves it to the
-matching backend `ProjectBranch`. If the checkout is detached or the branch is not registered, the
-command stops before versioning, dependency installation, SSH-key creation, Git staging, commit,
-tag, or push. Register the branch through the platform workflow; never fall back to `main` or
-invent a local deployment tag.
+The supplied path must be the Git repository root and contain `package.json`, `package-lock.json`,
+and `.env` with `MAIN_SEQUENCE_PROJECT_UID`. Preflight rejects a nested application directory,
+reads the current named Git branch, and resolves it to the matching backend `ProjectBranch`. If the
+checkout is detached or the branch is not registered, the command stops before versioning,
+dependency installation, SSH-key creation, Git staging, commit, tag, or push. Register the branch
+through the platform workflow; never search a nested directory, fall back to `main`, or invent a
+local deployment tag.
 
 After preflight, the command:
 

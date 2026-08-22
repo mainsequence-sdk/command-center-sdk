@@ -8,22 +8,23 @@ import { syncAgentSkills } from "./sync-agent-skills.mjs";
 const usage = `Command Center SDK
 
 Usage:
-  command-center-sdk skills install [--path <project>] [--dry-run] [--json]
-  command-center-sdk skills sync [--path <project>] [--mcp-url <url>] [--dry-run] [--json]
-  command-center-sdk project sync [message] [projectUid] [--path <project>] [-m <message>] [--dry-run] [--json]
+  command-center-sdk skills install [--path <repository-root>] [--dry-run] [--json]
+  command-center-sdk skills sync [--path <repository-root>] [--mcp-url <url>] [--dry-run] [--json]
+  command-center-sdk project sync [message] [projectUid] [--path <repository-root>] [-m <message>] [--dry-run] [--json]
   command-center-sdk theme audit [--path <css-file-or-directory>] [--json]
   command-center-sdk --version
   command-center-sdk --help
 
 The install command copies packaged skills into:
-  <project>/.agents/skills/command-center/
+  <repository-root>/.agents/skills/command-center/
 
 The sync command refreshes packaged skills and authenticated MCP skills in:
-  <project>/.agents/skills/command-center/
-  <project>/.agents/skills/mainsequence/
+  <repository-root>/.agents/skills/command-center/
+  <repository-root>/.agents/skills/mainsequence/
 
-The project sync command bumps the npm patch version, requests the current ProjectBranch's
-backend-owned deployment tag, refreshes package-lock.json, commits all changes, tags, and pushes.
+The project sync command requires the Vite application at the Git repository root, bumps the npm
+patch version, requests the current ProjectBranch's backend-owned deployment tag, refreshes
+package-lock.json, commits all changes, tags, and pushes.
 
 The theme audit rejects unknown variables, literal fallbacks, and hardcoded semantic visual values.
 `;

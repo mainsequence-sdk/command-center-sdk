@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { constants } from "node:fs";
-import { access, mkdir, readFile, stat } from "node:fs/promises";
+import { access, mkdir, readFile, realpath, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -137,6 +137,18 @@ export function createProjectSyncLocalOps({
         throw new ProjectSyncLocalError(`Project sync requires ${lockPath}.`);
       }
       capture("npm", ["--version"], projectDir);
+      const repositoryRoot = resolve(
+        capture("git", ["rev-parse", "--show-toplevel"], projectDir),
+      );
+      const [canonicalProjectDir, canonicalRepositoryRoot] = await Promise.all([
+        realpath(projectDir),
+        realpath(repositoryRoot),
+      ]);
+      if (canonicalRepositoryRoot !== canonicalProjectDir) {
+        throw new ProjectSyncLocalError(
+          `Command Center project sync requires the Vite application at the Git repository root (${repositoryRoot}); received nested project directory ${projectDir}.`,
+        );
+      }
       const gitBranch = capture("git", ["branch", "--show-current"], projectDir);
       if (!gitBranch) {
         throw new ProjectSyncLocalError("Current Git checkout is detached or has no named branch.");

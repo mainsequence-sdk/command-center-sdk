@@ -5,6 +5,13 @@ description: Set up, inspect, upgrade, or troubleshoot a TypeScript or React pro
 
 # Use Command Center SDK
 
+## Use The Repository-Root Project Layout
+
+For a registered Main Sequence Vite project, treat the Git repository root as the application
+root. Keep `package.json`, `package-lock.json`, `.env`, `.agents/`, `src/`, and `vite.config.*`
+there, and expect the production build under `dist/`. Do not create or discover a nested
+`frontend/` application.
+
 ## Resolve The Installed SDK
 
 1. Locate the package whose name is `@dev-mainsequence/command-center-sdk`.
@@ -23,8 +30,8 @@ makes a nonblocking MCP refresh when `MAINSEQUENCE_ACCESS_TOKEN` plus an MCP URL
 the npm process. Do not assume that the best-effort platform lane succeeded merely because package
 installation completed.
 
-When current backend-owned platform guidance is required, run the strict workflow from the target
-project:
+When current backend-owned platform guidance is required, run the strict workflow from the Git
+repository root:
 
 ```bash
 npx command-center-sdk skills sync --path .

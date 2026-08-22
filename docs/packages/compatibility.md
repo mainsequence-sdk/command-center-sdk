@@ -35,3 +35,11 @@ not silently change the others.
   unavailable until the matching package is installed again or an explicit migration is applied.
 - Private repository-only migration aliases may remain temporarily, but they must have an explicit
   removal phase, must never be published, and must not create alternate persisted identities.
+
+## Main Sequence Project Layout
+
+A registered Main Sequence Vite project uses one root for Git, npm, project identity, and agent
+guidance. `package.json`, `package-lock.json`, `.env`, and `.agents/` live at the Git repository
+root, and Vite normally produces `dist/` there. The SDK does not provide a compatibility workflow
+for a nested `frontend/` project; `command-center-sdk project sync` rejects a supplied directory
+below the Git root.

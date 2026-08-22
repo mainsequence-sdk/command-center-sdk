@@ -327,6 +327,54 @@ test("local preflight rejects missing package-lock.json", async () => {
   }
 });
 
+test("local preflight accepts a repository-root Vite application", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "command-center-project-sync-root-"));
+  try {
+    await writeFile(join(projectDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
+    await writeFile(join(projectDir, "package-lock.json"), "{}\n", "utf8");
+    const initialized = spawnSync("git", ["init", "-b", "main"], {
+      cwd: projectDir,
+      encoding: "utf8",
+    });
+    assert.equal(initialized.status, 0, initialized.stderr);
+    const remote = spawnSync(
+      "git",
+      ["remote", "add", "origin", "git@github.com:organization/project.git"],
+      { cwd: projectDir, encoding: "utf8" },
+    );
+    assert.equal(remote.status, 0, remote.stderr);
+
+    const localOps = createProjectSyncLocalOps();
+    assert.deepEqual(await localOps.inspectProject(projectDir), {
+      currentVersion: "1.2.3",
+      gitBranch: "main",
+      origin: "git@github.com:organization/project.git",
+    });
+  } finally {
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test("local preflight rejects a Vite application below the Git repository root", async () => {
+  const repositoryRoot = await mkdtemp(join(tmpdir(), "command-center-project-sync-root-"));
+  const projectDir = join(repositoryRoot, "frontend");
+  try {
+    await mkdir(projectDir, { recursive: true });
+    await writeFile(join(projectDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
+    await writeFile(join(projectDir, "package-lock.json"), "{}\n", "utf8");
+    const initialized = spawnSync("git", ["init"], { cwd: repositoryRoot, encoding: "utf8" });
+    assert.equal(initialized.status, 0, initialized.stderr);
+
+    const localOps = createProjectSyncLocalOps();
+    await assert.rejects(
+      localOps.inspectProject(projectDir),
+      /requires the Vite application at the Git repository root/u,
+    );
+  } finally {
+    await rm(repositoryRoot, { recursive: true, force: true });
+  }
+});
+
 test("repository-key preflight never overwrites an existing private key", async () => {
   const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-project-sync-key-"));
   const sshDirectory = join(homeDirectory, ".ssh");
