@@ -223,7 +223,7 @@ test("explicit CLI installs the packaged skills and emits JSON", async () => {
     assert.equal(result.status, 0, result.stderr);
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.namespace, AGENT_SKILL_NAMESPACE);
-    assert.equal(payload.copied.length, 21);
+    assert.equal(payload.copied.length, 22);
     assert.equal(
       await readFile(
         join(payload.destinationRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
@@ -266,7 +266,7 @@ test("postinstall resolves and installs into INIT_CWD", async () => {
       },
     });
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /Installed 21 agent skill/u);
+    assert.match(result.stdout, /Installed 22 agent skill/u);
     const sentinel = await readFile(
       join(projectRoot, ".agents", "skills", AGENT_SKILL_NAMESPACE, "PINNED_FROM.txt"),
       "utf8",

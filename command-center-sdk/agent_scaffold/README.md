@@ -2,10 +2,10 @@
 
 This directory is the versioned agent skill bundle shipped with
 `@dev-mainsequence/command-center-sdk`. Its `skills/` children teach agents to select, use, extend,
-evolve, and verify only the SDK package and its published resource, widget, workspace, theme, and
-embed contracts, including the language-neutral schema manifest and fixtures. They do not describe
-or own surrounding product applications, routes, backend implementations, or repository-specific
-application modules.
+evolve, and verify only the SDK package and its published layout, resource, widget, workspace,
+theme, and embed contracts, including the language-neutral schema manifest and fixtures. They do
+not describe or own surrounding product applications, routes, backend implementations, or
+repository-specific application modules.
 
 The npm postinstall hook and the explicit `command-center-sdk skills install` command copy each
 immediate skill directory into `<project>/.agents/skills/command-center`. Matching folders are
@@ -24,9 +24,10 @@ on published npm entrypoints for consumer tasks, and resolve the SDK source pack
 for SDK maintenance tasks. Validate every skill with the skill validator before packaging and run
 the packed-consumer smoke test after changing the bundle or installer.
 
-The bundle is organized into four SDK-only lanes:
+The bundle is organized into SDK-only lanes:
 
 - surface selection and installed-package usage;
+- application page/card composition and real-browser layout verification;
 - resource lists, details, pickers, actions, and backend adapter normalization;
 - widget, widget-host, workspace, theme, and embed authoring; and
 - SDK extension, serialized-contract evolution, and package verification.

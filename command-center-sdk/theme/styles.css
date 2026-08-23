@@ -33,6 +33,17 @@
   --ring: #4f8cff;
   --chart-grid: #ffffff;
   --radius: 12px;
+  --application-page-gutter-inline: clamp(0.875rem, 2vw, 1.25rem);
+  --application-page-gutter-block: clamp(0.875rem, 2vw, 1.25rem);
+  --application-page-content-max-width: 64rem;
+  --application-page-wide-max-width: 90rem;
+  --application-section-gap: clamp(1rem, 2vw, 1.25rem);
+  --application-card-grid-gap: 0.875rem;
+  --application-card-min-width: 18rem;
+  --application-card-padding-inline: clamp(0.875rem, 2vw, 1.125rem);
+  --application-card-padding-block: clamp(0.875rem, 2vw, 1.125rem);
+  --application-card-header-gap: 0.5rem;
+  --application-card-content-gap: 0.625rem;
   --table-row-gap-y: 0.125rem;
   --table-font-size: 0.75rem;
   --table-meta-font-size: 0.625rem;

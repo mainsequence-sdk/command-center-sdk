@@ -1,0 +1,4 @@
+interface:
+  display_name: "Compose Command Center Page"
+  short_description: "Compose responsive SDK application layouts"
+  default_prompt: "Use $compose-command-center-page to build and verify a responsive Command Center application page."

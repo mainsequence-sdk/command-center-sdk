@@ -29,9 +29,12 @@ Make these cross-cutting decisions first:
 2. Apply SDK tokens, presets, typography, density, surface hierarchy, data visualization, and
    packaged styles through `$theme-command-center-app`. Treat its closed-token audit as a required
    build gate whenever the base theme stylesheet is imported.
-3. Keep authentication, API clients, routing, permissions, notifications, persistence, and domain
+3. Compose complete route gutters, headers, top-level section rhythm, cards, and responsive card
+   grids through `$compose-command-center-page`. Keep its browser geometry verifier separate from
+   the semantic theme audit.
+4. Keep authentication, API clients, routing, permissions, notifications, persistence, and domain
    rules in the application or its backend. Inject them through published SDK extension points.
-4. Inspect the installed package version, exports, and declarations through
+5. Inspect the installed package version, exports, and declarations through
    `$use-command-center-sdk` before selecting an implementation.
 
 Do not confuse the complete-application protocol with the generic external-widget iframe
@@ -46,6 +49,7 @@ Choose the highest-level composition that owns the required lifecycle:
 | Requirement | SDK surface | Focused skill |
 | --- | --- | --- |
 | Application rail with grouped sub-applications | `/navigation` controlled primitives | This skill |
+| Complete route gutters, header, section rhythm, cards, and card grids | `/layout` primitives | `$compose-command-center-page` |
 | Domain-object collection | `ResourceListPage` | `$build-resource-list` |
 | One domain object with summary, actions, and sections | `ResourceDetailShell` | `$build-resource-detail` |
 | Searchable single or multiple choice | `ResourcePicker` | `$build-resource-picker` |
@@ -198,6 +202,8 @@ contracts or rebuild their owned behavior in this general skill.
 - Do not add an `Open` action column when identity-cell activation exists.
 - Do not convert current-page selection into all-matching selection automatically.
 - Do not reproduce the main Command Center's global navigation or settings UI.
+- Do not recreate published page/card spacing with application-owned panels and sibling margins.
+- Do not double-wrap `ResourceListPage` or `ResourceDetailShell` in layout cards.
 - Do not duplicate canonical contracts or modify an installed SDK.
 - Do not invent theme variables, literal fallbacks, or application-owned replacements for
   published semantic visual tokens.

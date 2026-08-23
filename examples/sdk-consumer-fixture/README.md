@@ -6,9 +6,9 @@ to a freshly produced tarball, installs it in a temporary directory, and compile
 `src/consumer.tsx`.
 
 `src/consumer.tsx` defines a resource application, renders an SDK-owned view, and resolves every
-foundational SDK module absorbed from the removed packages: navigation, contracts, embeds,
-widgets, widget host/built-ins/testing/UI, workspaces, workspace React, themes, presets, palettes, and packaged
-styles. It also compiles the narrow AppComponent, Tabular Transform, Community Table, and Pro Table
+foundational SDK module absorbed from the removed packages: navigation, layout and layout testing,
+contracts, embeds, widgets, widget host/built-ins/testing/UI, workspaces, workspace React, themes,
+presets, palettes, and packaged styles. It also compiles the narrow AppComponent, Tabular Transform, Community Table, and Pro Table
 entrypoints plus the public Table, AppComponent/Mock JSON, and Tabular Transform authoring contracts
 and the workspace-document contract constants.
 It also compiles a `StaticSiteIframe` host with the public
@@ -16,6 +16,8 @@ It also compiles a `StaticSiteIframe` host with the public
 trusted resolver without importing product auth, endpoint, or iframe-protocol internals. It also
 renders a controlled application rail and grouped sub-application panel through the public
 `/navigation` export.
+It renders the public page/header/stack/card/grid composition and imports the browser-verifier
+surface through the package export map.
 
 This fixture must not import `@/`, `src/`, `extensions/`, or unpublished private host APIs.
 

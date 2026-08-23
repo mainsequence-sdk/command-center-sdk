@@ -14,6 +14,7 @@ repositories.
 
 - [SDK ADR 001: Static-Site Delegated FastAPI Credential Bridge](./adr-sdk-001-static-site-delegated-fastapi-credential-bridge.md) — Accepted
 - [SDK ADR 002: Controlled Application Navigation](./adr-sdk-002-controlled-application-navigation.md) — Accepted
+- [SDK ADR 003: Public Application Layout System](./adr-sdk-003-public-application-layout-system.md) — Accepted
 
 ## Rules
 

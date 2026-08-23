@@ -71,6 +71,10 @@ the recorded paths in each namespace and preserves unrelated project guidance.
 
 ## Choose Public Entrypoints
 
+- Use `/navigation` for controlled application navigation definitions and chrome.
+- Use `/layout` for complete page, header, stack, card, and card-grid composition. Use
+  `/layout/testing` for real-browser geometry verification, and route the workflow to
+  `$compose-command-center-page`.
 - Use `/resource` for framework-neutral resource definitions and adapters.
 - Use `/resource/react` for resource selection state.
 - Use `/views` for React resource lists, details, pickers, and supporting compositions.
@@ -92,9 +96,10 @@ the recorded paths in each namespace and preserves unrelated project guidance.
   work to `$integrate-static-site-iframe`; never translate between the two protocols.
 
 Keep framework-neutral modules free of React imports. Import browser CSS through documented package
-CSS exports and load each required bundle once. When importing the base theme stylesheet, route all
-semantic visual styling through `$theme-command-center-app` and make `command-center-sdk theme
-audit` part of the consumer's check/CI command.
+CSS exports and load each required bundle once. Complete application layout requires both
+`/theme/styles.css` and `/styles.css`. When importing the base theme stylesheet, route all semantic
+visual styling through `$theme-command-center-app` and make `command-center-sdk theme audit` part
+of the consumer's check/CI command.
 
 Use `$build-command-center-application` to make the application-level architecture decision and
 route each internal surface to its focused implementation skill.

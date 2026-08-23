@@ -6,9 +6,9 @@ title: Command Center SDK
 # Build with the Command Center SDK
 
 `@dev-mainsequence/command-center-sdk` gives you the reusable parts of a Command Center
-application: navigation, resource lists and details, pickers and actions, widgets, workspaces,
-themes, and secure iframe bridges. Your application keeps control of authentication, API clients, routes,
-persistence, permissions, and product-specific behavior.
+application: navigation, responsive page layout, resource lists and details, pickers and actions,
+widgets, workspaces, themes, and secure iframe bridges. Your application keeps control of
+authentication, API clients, routes, persistence, permissions, and product-specific behavior.
 
 If you are new to the SDK, start with [Getting started](./getting-started.md). It installs the
 package and renders a real resource list in a few minutes.
@@ -20,6 +20,7 @@ package and renders a real resource list in a few minutes.
 | Install the SDK | [Getting started](./getting-started.md) | `general/use-command-center-sdk` |
 | Version, commit, and trigger automatic project deployment | [Getting started](./getting-started.md#sync-a-project-for-automatic-deployment) | `general/maintain-command-center-project` |
 | Design, route, and add application navigation | [Application navigation](./navigation.md) | `general/build-command-center-application` |
+| Compose and verify a complete responsive page | [Application layout](./application-layout.md) | `layout/compose-command-center-page` |
 | Build a paginated list | [Resources](./resources.md#build-a-resource-list) | `views/build-resource-list` |
 | Build a detail page | [Resources](./resources.md#build-a-resource-detail) | `views/build-resource-detail` |
 | Add a searchable selector | [Resources](./resources.md#build-a-resource-picker) | `views/build-resource-picker` |
@@ -55,6 +56,7 @@ npm install @dev-mainsequence/command-center-sdk react react-dom
 Import the browser styles once near your application entrypoint:
 
 ```ts
+import "@dev-mainsequence/command-center-sdk/theme/styles.css";
 import "@dev-mainsequence/command-center-sdk/styles.css";
 ```
 
@@ -74,6 +76,7 @@ The SDK owns reusable UI and lifecycle. Your application owns product policy.
 | Theme presets, variables, and CSS | Persisting the user's theme preference |
 | Iframe message validation and lifecycle | Origin allowlists, CSP, launch tokens, and backend authorization |
 | Navigation hierarchy, composition, and controlled React chrome | Routes, permission filtering, favorites, branding, and product actions |
+| Page gutters, section rhythm, cards, grids, and layout verification | Domain-specific layouts, section ordering, and product state |
 
 Do not import from `dist`, repository source paths, or another application's private modules. If a
 public surface is missing, keep one-off behavior in the consumer or follow
@@ -83,6 +86,8 @@ public surface is missing, keep one-off behavior in the consumer or follow
 
 - `/navigation`: controlled application rail, grouped sub-application panel, composed shell,
   definitions, validation, and contribution composition.
+- `/layout` and `/layout/testing`: complete-application page, header, stack, card, and grid
+  primitives plus real-browser geometry verification.
 - `/resource` and `/resource/react`: framework-neutral resource definitions/adapters and React
   selection state.
 - `/views`: `ResourceListPage`, `ResourceDetailShell`, `ResourcePicker`, summaries, tables, cards,

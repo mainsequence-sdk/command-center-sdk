@@ -37,8 +37,9 @@ Once the base theme stylesheet is imported, treat its variables as a closed cont
   or unapplied token and makes theme switching appear only partially functional.
 - Permit consumer aliases only when every semantic value is derived from published variables, for
   example `--app-panel: var(--card)` or a `color-mix` based on `--primary` and `transparent`.
-- Keep only structural layout decisions application-owned: grid placement, breakpoints, widths,
-  positioning, and intrinsic geometry. If the SDK publishes a metric for a property, use it.
+- Route complete page gutters, headers, top-level section rhythm, standard cards, and responsive
+  card grids to `$compose-command-center-page`. Keep only specialized grid placement, split panes,
+  editors, canvases, positioning, and intrinsic domain geometry application-owned.
 - Use `/theme/data-viz` helpers for chart series. Do not reuse one brand color for every series.
 
 Run the deterministic audit against authored CSS and make it part of the consumer check/CI command:
@@ -65,3 +66,7 @@ resolution, and every optional library skin changed by the task. In a real brows
 computed component values with root tokens across at least one dark and one light preset; merely
 observing the theme ID or root-variable update is not sufficient. Check typography, focus,
 statuses, charts, contrast, and nested-surface hierarchy.
+
+Do not treat the theme audit as proof of page spacing or responsive geometry. When the application
+uses `/layout`, run its public browser verifier through `$compose-command-center-page` as a separate
+required check.

@@ -59,6 +59,14 @@
       "types": "./dist/navigation/index.d.ts",
       "import": "./dist/navigation/index.js"
     },
+    "./layout": {
+      "types": "./dist/layout/index.d.ts",
+      "import": "./dist/layout/index.js"
+    },
+    "./layout/testing": {
+      "types": "./dist/layout/testing/index.d.ts",
+      "import": "./dist/layout/testing/index.js"
+    },
     "./resource": {
       "types": "./dist/resource/index.d.ts",
       "import": "./dist/resource/index.js"
@@ -150,8 +158,8 @@
   },
   "scripts": {
     "build": "node ../scripts/clean-sdk-dist.mjs && tsc -p tsconfig.json",
-    "size:check": "node ../scripts/check-package-size.mjs dist/index.js 10000 && node ../scripts/check-package-size.mjs dist/views/ResourceListPage.js 50000 && node ../scripts/check-package-size.mjs dist/views/ResourceSearch.js 25000 && node ../scripts/check-package-size.mjs dist/views/ResourcePagination.js 25000",
-    "check": "npm run theme:audit && tsc -p tsconfig.json --noEmit",
+    "size:check": "node ../scripts/check-package-size.mjs dist/index.js 10000 && node ../scripts/check-package-size.mjs dist/layout/components.js 20000 && node ../scripts/check-package-size.mjs dist/layout/testing/index.js 30000 && node ../scripts/check-package-size.mjs dist/views/ResourceListPage.js 50000 && node ../scripts/check-package-size.mjs dist/views/ResourceSearch.js 25000 && node ../scripts/check-package-size.mjs dist/views/ResourcePagination.js 25000",
+    "check": "npm run theme:audit && tsc -p tsconfig.json --noEmit && tsc -p tests/types/tsconfig.json",
     "theme:audit": "node cli/command-center-sdk.mjs theme audit --path styles.css",
     "test": "vitest run && node --test tests/cli/*.node.mjs",
     "test:browser": "npm run build && playwright test --config playwright.config.ts",

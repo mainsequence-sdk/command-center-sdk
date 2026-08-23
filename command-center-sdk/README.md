@@ -1,8 +1,8 @@
 # Command Center SDK
 
 `@dev-mainsequence/command-center-sdk` is the public TypeScript/React package for building
-Command Center-compatible navigation, resource applications, widgets, workspaces, themes, and
-iframe integrations.
+Command Center-compatible navigation, responsive application layouts, resource applications,
+widgets, workspaces, themes, and iframe integrations.
 
 The SDK owns reusable contracts, UI, and lifecycle. Your application keeps authentication, API
 clients, routing, persistence, permissions, notifications, and product-specific behavior.
@@ -21,6 +21,7 @@ npm install @dev-mainsequence/command-center-sdk react react-dom
 Load the browser styles once:
 
 ```ts
+import "@dev-mainsequence/command-center-sdk/theme/styles.css";
 import "@dev-mainsequence/command-center-sdk/styles.css";
 ```
 
@@ -31,6 +32,8 @@ require Vite.
 
 - [Getting started](./docs/getting-started.md): install, choose a surface, and build a first list.
 - [Application navigation](./docs/navigation.md): build a controlled app rail with sub-applications.
+- [Application layout](./docs/application-layout.md): compose and verify responsive pages and
+  standard card surfaces.
 - [Resources](./docs/resources.md): lists, details, pickers, actions, and backend adapters.
 - [Widgets and workspaces](./docs/widgets-and-workspaces.md): author widgets, compose a host, and
   render workspace documents.
@@ -95,6 +98,8 @@ error normalization stay outside the resource definition.
 
 - `/navigation`: controlled application rail, grouped sub-application panel, composed shell,
   runtime definitions, validation, and contribution composition.
+- `/layout` and `/layout/testing`: responsive page, header, stack, card, and card-grid primitives
+  plus real-browser geometry verification.
 - `/resource`: framework-neutral resource definitions, adapters, HTTP normalization, pagination,
   activation, and discovered bulk actions.
 - `/resource/react`: loaded-page and explicit/all-matching selection state.
@@ -134,6 +139,7 @@ The npm package installs version-matched skills into:
 ```text
 .agents/skills/command-center/
   general/
+  layout/
   resource/
   views/
   widget/

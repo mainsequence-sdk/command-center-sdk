@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add public `/layout` and `/layout/testing` entrypoints with responsive application page, header,
+  stack, card, and card-grid primitives; theme-tightness layout metrics; stable browser-verifier
+  hooks; and real Chromium geometry checks across phone, tablet, desktop, dark, and light states.
+- Ship aligned page-composition documentation and the `compose-command-center-page` agent skill,
+  keeping semantic theme auditing separate from computed layout conformance.
 - Preflight the exact backend-owned deployment tag before project mutation: preview the npm patch
   version, reject local and remote tag collisions, verify the applied bump matches the preview, and
   atomically push the explicit branch and tag refs.

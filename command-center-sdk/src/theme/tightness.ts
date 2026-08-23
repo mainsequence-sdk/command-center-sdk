@@ -1,6 +1,16 @@
 import type { ThemeTightness } from "./types.js";
 
 export interface ThemeTightnessMetrics {
+  layout: {
+    cardContentGap: string;
+    cardGridGap: string;
+    cardHeaderGap: string;
+    cardPaddingBlock: string;
+    cardPaddingInline: string;
+    pageGutterBlock: string;
+    pageGutterInline: string;
+    sectionGap: string;
+  };
   table: {
     agGridHeaderHeight: number;
     agGridRowHeight: number;
@@ -44,6 +54,16 @@ export interface ThemeTightnessMetrics {
 
 const tightnessMetrics: Record<ThemeTightness, ThemeTightnessMetrics> = {
   relaxed: {
+    layout: {
+      cardContentGap: "0.875rem",
+      cardGridGap: "1.25rem",
+      cardHeaderGap: "0.75rem",
+      cardPaddingBlock: "clamp(1.25rem, 2.5vw, 1.5rem)",
+      cardPaddingInline: "clamp(1.25rem, 2.5vw, 1.5rem)",
+      pageGutterBlock: "clamp(1.25rem, 3vw, 2rem)",
+      pageGutterInline: "clamp(1.25rem, 3vw, 2rem)",
+      sectionGap: "clamp(1.5rem, 3vw, 2rem)",
+    },
     table: {
       agGridHeaderHeight: 38,
       agGridRowHeight: 38,
@@ -85,6 +105,16 @@ const tightnessMetrics: Record<ThemeTightness, ThemeTightnessMetrics> = {
     },
   },
   default: {
+    layout: {
+      cardContentGap: "0.75rem",
+      cardGridGap: "1rem",
+      cardHeaderGap: "0.5rem",
+      cardPaddingBlock: "clamp(1rem, 2vw, 1.25rem)",
+      cardPaddingInline: "clamp(1rem, 2vw, 1.25rem)",
+      pageGutterBlock: "clamp(1rem, 2.5vw, 1.5rem)",
+      pageGutterInline: "clamp(1rem, 2.5vw, 1.5rem)",
+      sectionGap: "clamp(1.25rem, 2.5vw, 1.5rem)",
+    },
     table: {
       agGridHeaderHeight: 34,
       agGridRowHeight: 34,
@@ -126,6 +156,16 @@ const tightnessMetrics: Record<ThemeTightness, ThemeTightnessMetrics> = {
     },
   },
   tight: {
+    layout: {
+      cardContentGap: "0.625rem",
+      cardGridGap: "0.875rem",
+      cardHeaderGap: "0.5rem",
+      cardPaddingBlock: "clamp(0.875rem, 2vw, 1.125rem)",
+      cardPaddingInline: "clamp(0.875rem, 2vw, 1.125rem)",
+      pageGutterBlock: "clamp(0.875rem, 2vw, 1.25rem)",
+      pageGutterInline: "clamp(0.875rem, 2vw, 1.25rem)",
+      sectionGap: "clamp(1rem, 2vw, 1.25rem)",
+    },
     table: {
       agGridHeaderHeight: 30,
       agGridRowHeight: 30,

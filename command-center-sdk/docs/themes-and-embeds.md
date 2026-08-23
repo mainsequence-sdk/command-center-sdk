@@ -71,9 +71,10 @@ interfaces. Consumer aliases are acceptable only when derived entirely from publ
 }
 ```
 
-Structural layout—grid placement, breakpoints, widths, positioning, and intrinsic geometry—remains
-application-owned unless the SDK publishes a metric for it. Audit authored CSS in local checks and
-CI:
+Repeated complete-application chrome—page gutters, page headers, top-level section rhythm,
+ordinary card padding, and responsive sibling-card grids—is owned by the public `/layout`
+primitives. Specialized grid placement, split panes, editors, canvases, positioning, and intrinsic
+domain geometry remain application-owned. Audit authored CSS in local checks and CI:
 
 ```bash
 npx command-center-sdk theme audit --path src
@@ -81,6 +82,11 @@ npx command-center-sdk theme audit --path src
 
 The audit fails on unknown variables, theme-variable fallbacks, literal colors, and hardcoded
 semantic typography, radii, shadows, or other theme-owned values.
+
+The theme audit does not prove layout conformance. Use
+`@dev-mainsequence/command-center-sdk/layout/testing` in a real browser to verify computed sibling
+gaps, standard card insets, responsive grid collapse, header-action wrapping, overflow, and
+interactive geometry. See [Application layout](./application-layout.md).
 
 ## Choose the correct iframe protocol
 

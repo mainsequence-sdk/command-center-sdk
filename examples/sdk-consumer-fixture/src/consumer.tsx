@@ -23,6 +23,17 @@ import {
   defineNavigationApplication,
 } from "@dev-mainsequence/command-center-sdk/navigation";
 import {
+  ApplicationCard,
+  ApplicationCardGrid,
+  ApplicationPage,
+  ApplicationPageHeader,
+  ApplicationPageStack,
+} from "@dev-mainsequence/command-center-sdk/layout";
+import {
+  COMMAND_CENTER_LAYOUT_VIEWPORTS,
+  verifyCommandCenterPageLayout,
+} from "@dev-mainsequence/command-center-sdk/layout/testing";
+import {
   createHttpResourceAdapter,
   defineResourceApplication,
 } from "@dev-mainsequence/command-center-sdk/resource";
@@ -141,6 +152,22 @@ export const packedNavigationHtml = renderToStaticMarkup(
   </ApplicationNavigationShell>,
 );
 
+export const packedLayoutHtml = renderToStaticMarkup(
+  <ApplicationPage maxWidth="content">
+    <ApplicationPageHeader
+      actions={<button type="button">Create project</button>}
+      description="Manage projects through the public SDK layout."
+      title="Projects"
+    />
+    <ApplicationPageStack>
+      <ApplicationCardGrid>
+        <ApplicationCard header={<h2>Active</h2>}>12 projects</ApplicationCard>
+        <ApplicationCard header={<h2>Queued</h2>}>3 projects</ApplicationCard>
+      </ApplicationCardGrid>
+    </ApplicationPageStack>
+  </ApplicationPage>,
+);
+
 export const packedConsumerHtml = renderToStaticMarkup(
   <ResourcePagination
     count={42}
@@ -179,7 +206,12 @@ export const packedStaticSiteHostHtml = renderToStaticMarkup(
 );
 
 export const packedSdkSurfaceSmoke = {
+  ApplicationCard,
+  ApplicationCardGrid,
   ApplicationNavigationShell,
+  ApplicationPage,
+  ApplicationPageHeader,
+  ApplicationPageStack,
   APP_COMPONENT_AUTHORING_CONTRACT,
   COMMAND_CENTER_WIDGET_API_VERSION,
   IFRAME_BRIDGE_PROTOCOL_VERSION,
@@ -189,6 +221,7 @@ export const packedSdkSurfaceSmoke = {
   WORKSPACE_DOCUMENT_CONTRACT,
   WORKSPACE_DOCUMENT_SCHEMA_ID,
   WORKSPACE_SCHEMA_VERSION,
+  COMMAND_CENTER_LAYOUT_VIEWPORTS,
   WorkspaceRenderer,
   coreWidgetsExtension,
   appComponentWidgetModule,
@@ -203,6 +236,7 @@ export const packedSdkSurfaceSmoke = {
   graphiteTheme,
   mainSequenceTheme,
   validateWidgetManifest,
+  verifyCommandCenterPageLayout,
   widgetThemeTokens,
 } satisfies Record<string, unknown>;
 

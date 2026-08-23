@@ -7,8 +7,8 @@ CSS subpaths.
 ## Purpose
 
 This package is the source of truth for reusable Command Center theme contracts, presets,
-data-visualization palettes, density metrics, surface hierarchy metrics, bundled CSS, font stacks,
-and DOM CSS-variable application helpers.
+data-visualization palettes, density and application-layout metrics, surface hierarchy metrics,
+bundled CSS, font stacks, and DOM CSS-variable application helpers.
 
 External iframe applications install the SDK and resolve the active `themeId` sent by the host.
 
@@ -17,7 +17,8 @@ External iframe applications install the SDK and resolve the active `themeId` se
 - `src/types.ts`: stable `ThemePreset`, token, density, and data-viz palette contracts.
 - `src/presets/`: built-in theme presets exported by id-stable objects.
 - `src/chart-palettes.ts`: data-viz palette resolution and palette helper functions.
-- `src/tightness.ts`: density metrics used by tables and compact UI surfaces.
+- `src/tightness.ts`: density metrics used by complete application layouts, tables, and compact UI
+  surfaces.
 - `src/surface-hierarchy.ts`: nested-surface chrome metrics.
 - `src/css-vars.ts`: helpers for building CSS-variable maps or style blocks.
 - `src/apply-theme.ts`: DOM helper for applying a resolved theme to an element.

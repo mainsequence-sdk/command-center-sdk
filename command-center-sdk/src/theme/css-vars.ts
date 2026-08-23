@@ -52,6 +52,14 @@ export function buildThemeCssVariableMap({
 
   return {
     ...variables,
+    "--application-page-gutter-inline": tightnessMetrics.layout.pageGutterInline,
+    "--application-page-gutter-block": tightnessMetrics.layout.pageGutterBlock,
+    "--application-section-gap": tightnessMetrics.layout.sectionGap,
+    "--application-card-grid-gap": tightnessMetrics.layout.cardGridGap,
+    "--application-card-padding-inline": tightnessMetrics.layout.cardPaddingInline,
+    "--application-card-padding-block": tightnessMetrics.layout.cardPaddingBlock,
+    "--application-card-header-gap": tightnessMetrics.layout.cardHeaderGap,
+    "--application-card-content-gap": tightnessMetrics.layout.cardContentGap,
     "--table-standard-cell-padding-y": tightnessMetrics.table.standardCellPaddingY,
     "--table-standard-header-padding-y": tightnessMetrics.table.standardHeaderPaddingY,
     "--table-row-gap-y": tightnessMetrics.table.rowGapY,

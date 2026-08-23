@@ -28,7 +28,7 @@ test("human documentation maps every packaged agent skill", async () => {
   for (const skillPath of skillPaths) {
     assert.equal(docsIndex.includes(`\`${skillPath}\``), true, `${skillPath} is not documented`);
   }
-  assert.equal(skillPaths.length, 21);
+  assert.equal(skillPaths.length, 22);
 });
 
 test("consumer scaffold excludes SDK-maintainer workflows", async () => {
@@ -111,6 +111,35 @@ test("theme guidance makes closed-token consumption and audit mandatory", async 
   }
   assert.match(themeSkill, /Do not invent an SDK-looking namespace/iu);
   assert.match(themeSkill, /Do not add literal fallback values/iu);
+});
+
+test("layout guidance uses public primitives and real-browser geometry verification", async () => {
+  const layoutSkill = await readFile(
+    join(skillsRoot, "layout", "compose-command-center-page", "SKILL.md"),
+    "utf8",
+  );
+  const applicationSkill = await readFile(
+    join(skillsRoot, "general", "build-command-center-application", "SKILL.md"),
+    "utf8",
+  );
+  const themeSkill = await readFile(
+    join(skillsRoot, "theme", "theme-command-center-app", "SKILL.md"),
+    "utf8",
+  );
+  const layoutGuide = await readFile(join(docsRoot, "application-layout.md"), "utf8");
+
+  for (const value of [layoutSkill, layoutGuide]) {
+    assert.match(value, /@dev-mainsequence\/command-center-sdk\/layout/u);
+    assert.match(value, /ApplicationPageStack/u);
+    assert.match(value, /contentPadding="none"/u);
+    assert.match(value, /layout\/testing/u);
+    assert.match(value, /375×812/u);
+    assert.match(value, /dark and one\s+light/iu);
+    assert.match(value, /Do not wrap|Do not double-wrap/iu);
+  }
+  assert.match(applicationSkill, /\$compose-command-center-page/u);
+  assert.match(themeSkill, /\$compose-command-center-page/u);
+  assert.match(themeSkill, /theme audit as proof/iu);
 });
 
 test("static-site guidance keeps delegated FastAPI credentials behind the SDK lifecycle", async () => {

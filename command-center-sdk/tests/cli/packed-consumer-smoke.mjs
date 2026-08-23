@@ -48,6 +48,14 @@ try {
     types: "./dist/navigation/index.d.ts",
     import: "./dist/navigation/index.js",
   });
+  assert.deepEqual(packageJson.exports["./layout"], {
+    types: "./dist/layout/index.d.ts",
+    import: "./dist/layout/index.js",
+  });
+  assert.deepEqual(packageJson.exports["./layout/testing"], {
+    types: "./dist/layout/testing/index.d.ts",
+    import: "./dist/layout/testing/index.js",
+  });
   assert.deepEqual(packageJson.exports["./widget/built-ins/table"], {
     types: "./dist/widget/built-ins/table/table/index.d.ts",
     import: "./dist/widget/built-ins/table/table/index.js",
@@ -113,10 +121,21 @@ try {
     "ApplicationNavigationShell.js",
     "definition.js",
   ].map((name) => readFile(join(extractedPackage, "dist", "navigation", name), "utf8")));
+  await Promise.all([
+    "index.js",
+    "index.d.ts",
+    "components.js",
+    "components.d.ts",
+  ].map((name) => readFile(join(extractedPackage, "dist", "layout", name), "utf8")));
+  await Promise.all([
+    "index.js",
+    "index.d.ts",
+  ].map((name) => readFile(join(extractedPackage, "dist", "layout", "testing", name), "utf8")));
   const docsIndex = await readFile(join(extractedPackage, "docs", "README.md"), "utf8");
   assert.match(docsIndex, /build-command-center-application/u);
   await Promise.all([
     "backend-contracts.md",
+    "application-layout.md",
     "getting-started.md",
     "navigation.md",
     "resources.md",
@@ -201,7 +220,17 @@ try {
     (await readdir(managedRoot, { withFileTypes: true })).filter(
       (entry) => entry.isDirectory() && !entry.name.startsWith("."),
     ).length,
-    8,
+    9,
+  );
+  const layoutSkill = await readFile(
+    join(managedRoot, "layout", "compose-command-center-page", "SKILL.md"),
+    "utf8",
+  );
+  assert.match(layoutSkill, /@dev-mainsequence\/command-center-sdk\/layout/u);
+  assert.match(layoutSkill, /assertCommandCenterPageLayout/u);
+  await readFile(
+    join(managedRoot, "layout", "compose-command-center-page", "agents", "openai.yaml"),
+    "utf8",
   );
   await readFile(
     join(managedRoot, "general", "use-command-center-sdk", "agents", "openai.yaml"),
