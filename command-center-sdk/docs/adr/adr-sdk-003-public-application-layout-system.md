@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-23
-- Implementation: Unreleased
+- Implementation: `@dev-mainsequence/command-center-sdk@0.1.14`
 - Owners: Command Center SDK Layout
 - Package: `@dev-mainsequence/command-center-sdk`
 - Related: [Themes and embeds](../themes-and-embeds.md), [Resources](../resources.md)
