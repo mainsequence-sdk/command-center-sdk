@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.16
+
 - Add the official `command-center-sdk project docs init` scaffold for human and technical
   application documentation, with one npm/Node toolchain, exact Docusaurus dependencies,
   canonical navigation generation, safe idempotent writes, source validation, and a `/docs/`
