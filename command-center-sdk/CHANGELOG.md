@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add the official `command-center-sdk project docs init` scaffold for human and technical
+  application documentation, with one npm/Node toolchain, exact Docusaurus dependencies,
+  canonical navigation generation, safe idempotent writes, source validation, and a `/docs/`
+  build inside the application's `dist/` artifact.
+- Ship matching human guidance and the `document-command-center-application` agent skill with
+  production-artifact browser verification and explicit frontend/platform ownership boundaries.
+
 ## 0.1.15
 
 - Resolve project sync identity authoritatively from canonical Git origin, attached branch, and

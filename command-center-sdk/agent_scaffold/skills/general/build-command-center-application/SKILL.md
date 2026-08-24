@@ -32,9 +32,12 @@ Make these cross-cutting decisions first:
 3. Compose complete route gutters, headers, top-level section rhythm, cards, and responsive card
    grids through `$compose-command-center-page`. Keep its browser geometry verifier separate from
    the semantic theme audit.
-4. Keep authentication, API clients, routing, permissions, notifications, persistence, and domain
+4. Create and maintain human and technical application documentation through
+   `$document-command-center-application`. Ship it at `/docs/` inside the same static artifact and
+   verify its deep links in the application's real-browser suite.
+5. Keep authentication, API clients, routing, permissions, notifications, persistence, and domain
    rules in the application or its backend. Inject them through published SDK extension points.
-5. Inspect the installed package version, exports, and declarations through
+6. Inspect the installed package version, exports, and declarations through
    `$use-command-center-sdk` before selecting an implementation.
 
 Do not confuse the complete-application protocol with the generic external-widget iframe
@@ -178,6 +181,7 @@ Before implementation, write a compact decision using this structure:
 Application purpose:
 Main Command Center embedding:
 Theme integration:
+Application documentation:
 Application-owned routes:
 Resource collections:
 Resource details:
@@ -198,6 +202,7 @@ contracts or rebuild their owned behavior in this general skill.
 - Do not use Table or Pro Table for domain-resource management.
 - Do not author a custom widget before checking built-ins.
 - Do not turn the complete application into a widget.
+- Do not ship an undocumented application or a separately versioned documentation artifact.
 - Do not treat complete-application iframe integration as optional.
 - Do not add an `Open` action column when identity-cell activation exists.
 - Do not convert current-page selection into all-matching selection automatically.

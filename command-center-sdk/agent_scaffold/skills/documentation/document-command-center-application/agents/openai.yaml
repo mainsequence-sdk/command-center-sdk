@@ -1,0 +1,4 @@
+interface:
+  display_name: "Document Command Center Application"
+  short_description: "Build and verify same-artifact application docs"
+  default_prompt: "Use $document-command-center-application to create or review this frontend's versioned /docs/ site, toolchain, navigation, validation, and browser checks."

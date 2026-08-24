@@ -5,8 +5,8 @@ title: Getting started
 
 # Getting started
 
-This guide matches the `use-command-center-sdk`, `maintain-command-center-project`, and
-`build-command-center-application` skills.
+This guide matches the `use-command-center-sdk`, `maintain-command-center-project`,
+`build-command-center-application`, and `document-command-center-application` skills.
 
 ## Install the package
 
@@ -50,6 +50,22 @@ MCP URL can be passed through `--mcp-url`, but the bearer token must remain in t
 skills live under `command-center`; backend-owned skills retain their manifest-declared hierarchy
 under `mainsequence`. The installer overwrites or removes only MCP folders recorded in
 `MCP_PINNED_FROM.txt` or proven MCP-owned by the Python SDK sentinel.
+
+## Initialize application documentation
+
+Add the official same-artifact Docusaurus system from the frontend's Git and npm root:
+
+```bash
+npx command-center-sdk project docs init --path . --dry-run
+npx command-center-sdk project docs init --path .
+```
+
+The initializer keeps one root npm lockfile and Node runtime, creates human and technical
+documentation sections, generates Docusaurus and `SUMMARY.md` navigation from one manifest, and
+changes the root build so documentation is emitted at `dist/docs` after the application build.
+It refuses to overwrite different existing files. See
+[Application documentation](./application-documentation.md) for authoring, toolchain, build, and
+browser-verification requirements.
 
 ## Inspect or update the installed SDK
 

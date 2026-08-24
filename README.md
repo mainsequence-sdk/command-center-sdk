@@ -27,6 +27,7 @@ Use only exports declared by the package. Do not import repository source paths 
 
 - [SDK overview](./command-center-sdk/README.md)
 - [Getting started](./command-center-sdk/docs/getting-started.md)
+- [Application documentation](./command-center-sdk/docs/application-documentation.md)
 - [Application navigation](./command-center-sdk/docs/navigation.md)
 - [Resources](./command-center-sdk/docs/resources.md)
 - [Widgets and workspaces](./command-center-sdk/docs/widgets-and-workspaces.md)

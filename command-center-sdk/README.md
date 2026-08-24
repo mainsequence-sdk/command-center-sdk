@@ -34,6 +34,8 @@ require Vite.
 - [Application navigation](./docs/navigation.md): build a controlled app rail with sub-applications.
 - [Application layout](./docs/application-layout.md): compose and verify responsive pages and
   standard card surfaces.
+- [Application documentation](./docs/application-documentation.md): scaffold, validate, and ship
+  human and technical documentation at `/docs/` in the application artifact.
 - [Resources](./docs/resources.md): lists, details, pickers, actions, and backend adapters.
 - [Widgets and workspaces](./docs/widgets-and-workspaces.md): author widgets, compose a host, and
   render workspace documents.
@@ -139,6 +141,7 @@ The npm package installs version-matched skills into:
 ```text
 .agents/skills/command-center/
   general/
+  documentation/
   layout/
   resource/
   views/
@@ -179,6 +182,23 @@ token in command arguments. The MCP installer writes
 folders proven MCP-owned by the Python SDK sentinel, and preserves every unrelated skill. Set
 `COMMAND_CENTER_SDK_MCP_POSTINSTALL=0` to disable only the best-effort postinstall network attempt;
 the packaged `command-center` skill installation still runs.
+
+## Initialize application documentation
+
+From a consuming frontend's Git and npm root, preview and add the official documentation system:
+
+```bash
+npx command-center-sdk project docs init --path . --dry-run
+npx command-center-sdk project docs init --path .
+```
+
+The initializer preserves the application build as `build:app`, adds the `/docs/` Docusaurus
+build to the same `dist/` artifact, installs exact dependencies through the root npm lockfile, and
+generates `SUMMARY.md` plus the Docusaurus sidebar from one canonical navigation manifest. It is
+idempotent and refuses to overwrite conflicting files or manifest entries. Use `--skip-install`
+only when npm installation will be performed separately. See the
+[application-documentation guide](./docs/application-documentation.md) for the complete authoring
+and browser-verification contract.
 
 ## Inspect and update the project SDK
 

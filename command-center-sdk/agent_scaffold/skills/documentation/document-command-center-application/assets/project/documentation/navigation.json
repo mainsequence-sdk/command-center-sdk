@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "sidebarId": "documentationSidebar",
+  "sections": [
+    {
+      "label": "Application surfaces",
+      "doc": "surfaces/index",
+      "items": []
+    },
+    {
+      "label": "Technical documentation",
+      "doc": "technical/index",
+      "items": []
+    }
+  ]
+}

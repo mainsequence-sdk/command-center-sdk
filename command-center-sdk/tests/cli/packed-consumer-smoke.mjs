@@ -13,9 +13,11 @@ try {
   const packRoot = join(fixtureRoot, "pack");
   const extractRoot = join(fixtureRoot, "extract");
   const consumerRoot = join(fixtureRoot, "consumer");
+  const documentationConsumerRoot = join(fixtureRoot, "documentation-consumer");
   await mkdir(packRoot, { recursive: true });
   await mkdir(extractRoot, { recursive: true });
   await mkdir(consumerRoot, { recursive: true });
+  await mkdir(documentationConsumerRoot, { recursive: true });
 
   const staleBuildArtifact = join(packageRoot, "dist", "removed-source.js");
   await mkdir(dirname(staleBuildArtifact), { recursive: true });
@@ -85,6 +87,7 @@ try {
     "project-sync-local-ops.mjs",
     "project-sync.mjs",
     "project-sdk-maintenance.mjs",
+    "project-docs.mjs",
     "sync-agent-skills.mjs",
   ].map((name) => readFile(join(extractedPackage, "cli", name), "utf8")));
   const cliHelp = execFileSync(
@@ -95,6 +98,7 @@ try {
   assert.match(cliHelp, /skills sync/u);
   assert.match(cliHelp, /project sdk-status/u);
   assert.match(cliHelp, /project update-sdk/u);
+  assert.match(cliHelp, /project docs init/u);
   assert.match(cliHelp, /project sync/u);
   assert.match(cliHelp, /repository-root/u);
   const embedModule = await import(
@@ -136,6 +140,7 @@ try {
   await Promise.all([
     "backend-contracts.md",
     "application-layout.md",
+    "application-documentation.md",
     "getting-started.md",
     "navigation.md",
     "resources.md",
@@ -144,6 +149,61 @@ try {
     "themes-and-embeds.md",
     "extending-and-releasing.md",
   ].map((name) => readFile(join(extractedPackage, "docs", name), "utf8")));
+
+  const runningNodeMajor = Number(process.versions.node.split(".")[0]);
+  await writeFile(
+    join(documentationConsumerRoot, "package.json"),
+    `${JSON.stringify({
+      name: "packed-documentation-consumer",
+      version: "1.0.0",
+      private: true,
+      engines: { node: `${runningNodeMajor}.x` },
+      scripts: { build: "vite build" },
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  await writeFile(
+    join(documentationConsumerRoot, "package-lock.json"),
+    `${JSON.stringify({
+      name: "packed-documentation-consumer",
+      version: "1.0.0",
+      lockfileVersion: 3,
+      requires: true,
+      packages: {},
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  await writeFile(join(documentationConsumerRoot, ".node-version"), `${runningNodeMajor}\n`, "utf8");
+  const docsInit = execFileSync(
+    process.execPath,
+    [
+      join(extractedPackage, "cli", "command-center-sdk.mjs"),
+      "project",
+      "docs",
+      "init",
+      "--path",
+      documentationConsumerRoot,
+      "--skip-install",
+      "--json",
+    ],
+    { encoding: "utf8" },
+  );
+  const docsInitPayload = JSON.parse(docsInit);
+  assert.equal(docsInitPayload.docsBaseUrl, "/docs/");
+  assert.match(
+    await readFile(join(documentationConsumerRoot, "documentation", "docusaurus.config.mjs"), "utf8"),
+    /baseUrl: "\/docs\/"/u,
+  );
+  execFileSync(
+    process.execPath,
+    [join(documentationConsumerRoot, "scripts", "sync-docs-navigation.mjs"), "--check"],
+    { cwd: documentationConsumerRoot, encoding: "utf8" },
+  );
+  execFileSync(
+    process.execPath,
+    [join(documentationConsumerRoot, "scripts", "validate-docs.mjs")],
+    { cwd: documentationConsumerRoot, encoding: "utf8" },
+  );
 
   const contractManifest = JSON.parse(
     await readFile(join(extractedPackage, "contracts", "manifest.json"), "utf8"),
@@ -220,7 +280,25 @@ try {
     (await readdir(managedRoot, { withFileTypes: true })).filter(
       (entry) => entry.isDirectory() && !entry.name.startsWith("."),
     ).length,
-    9,
+    10,
+  );
+  const documentationSkillRoot = join(
+    managedRoot,
+    "documentation",
+    "document-command-center-application",
+  );
+  assert.match(
+    await readFile(join(documentationSkillRoot, "SKILL.md"), "utf8"),
+    /command-center-sdk project docs init/u,
+  );
+  await readFile(join(documentationSkillRoot, "agents", "openai.yaml"), "utf8");
+  await readFile(
+    join(documentationSkillRoot, "assets", "project", "scripts", "validate-docs.mjs"),
+    "utf8",
+  );
+  await readFile(
+    join(documentationSkillRoot, "assets", "project", "documentation", "docusaurus.config.mjs"),
+    "utf8",
   );
   const layoutSkill = await readFile(
     join(managedRoot, "layout", "compose-command-center-page", "SKILL.md"),

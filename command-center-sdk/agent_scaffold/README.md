@@ -27,6 +27,7 @@ the packed-consumer smoke test after changing the bundle or installer.
 The bundle is organized into SDK-only lanes:
 
 - surface selection and installed-package usage;
+- application documentation authoring, validation, same-artifact builds, and browser verification;
 - application page/card composition and real-browser layout verification;
 - resource lists, details, pickers, actions, and backend adapter normalization;
 - widget, widget-host, workspace, theme, and embed authoring; and

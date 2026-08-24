@@ -49,7 +49,21 @@ npx command-center-sdk project update-sdk --path . --dry-run
 refresh guidance and rerun the project checks. It does not change the application version, contact
 the deployment backend, commit, tag, or push, and it never replaces the release sync below.
 
-7. Run the read-only deployment preview from that root:
+7. If the project has `docs:check` or `build:docs`, verify the documentation source and combined
+   artifact from the same root:
+
+```bash
+npm run docs:check
+npm run build
+npm run test:e2e
+```
+
+The root build must contain the application and `dist/docs`; a standalone documentation build is
+not release proof. Follow `$document-command-center-application` for the canonical navigation,
+toolchain, and browser checks. If the project uses another browser-script name, run its equivalent
+production-artifact suite and record the exact command.
+
+8. Run the read-only deployment preview from that root:
 
 ```bash
 npx command-center-sdk project sync -m "Describe the change" --path . --dry-run

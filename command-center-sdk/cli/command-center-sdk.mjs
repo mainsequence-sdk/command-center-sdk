@@ -6,6 +6,7 @@ import {
   inspectProjectSdk,
   updateProjectSdk,
 } from "./project-sdk-maintenance.mjs";
+import { initializeProjectDocumentation } from "./project-docs.mjs";
 import { syncProject } from "./project-sync.mjs";
 import { syncAgentSkills } from "./sync-agent-skills.mjs";
 
@@ -14,6 +15,7 @@ const usage = `Command Center SDK
 Usage:
   command-center-sdk skills install [--path <repository-root>] [--dry-run] [--json]
   command-center-sdk skills sync [--path <repository-root>] [--mcp-url <url>] [--dry-run] [--json]
+  command-center-sdk project docs init [--path <repository-root>] [--dry-run] [--skip-install] [--json]
   command-center-sdk project sdk-status [--path <repository-root>] [--json]
   command-center-sdk project update-sdk [--path <repository-root>] [--dry-run] [--json]
   command-center-sdk project sync [message] [expectedProjectUid] [--path <repository-root>] [-m <message>] [--dry-run] [--json]
@@ -37,6 +39,10 @@ only a consistency assertion.
 The SDK status and update commands compare and refresh only the project's declared Command Center
 SDK dependency. Updates respect its existing npm semver policy and do not commit, tag, push, or
 call the backend.
+
+The project docs init command safely adds the official same-artifact Docusaurus scaffold. It keeps
+one root npm lockfile, generates SUMMARY and sidebar navigation from one manifest, and emits the
+documentation site at /docs/ inside dist/docs.
 
 The theme audit rejects unknown variables, literal fallbacks, and hardcoded semantic visual values.
 `;
@@ -220,6 +226,46 @@ function parseProjectSdkArguments(args, { allowDryRun = false } = {}) {
   return { help: false, projectDir, dryRun, json };
 }
 
+export function parseProjectDocsArguments(args) {
+  let projectDir = process.cwd();
+  let dryRun = false;
+  let json = false;
+  let install = true;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === "--dry-run") {
+      dryRun = true;
+      continue;
+    }
+    if (argument === "--json") {
+      json = true;
+      continue;
+    }
+    if (argument === "--skip-install") {
+      install = false;
+      continue;
+    }
+    if (argument === "--help" || argument === "-h") {
+      return { help: true, projectDir, dryRun, json, install };
+    }
+    if (argument === "--path" || argument === "-p") {
+      index += 1;
+      if (!args[index]) throw new Error(`${argument} requires a project directory.`);
+      projectDir = args[index];
+      continue;
+    }
+    if (argument.startsWith("--path=")) {
+      projectDir = argument.slice("--path=".length);
+      if (!projectDir) throw new Error("--path requires a project directory.");
+      continue;
+    }
+    throw new Error(`Unknown argument: ${argument}`);
+  }
+
+  return { help: false, projectDir, dryRun, json, install };
+}
+
 function printHumanSyncResult(result) {
   const action = result.dryRun ? "Would synchronize" : "Synchronized";
   console.log(
@@ -328,6 +374,20 @@ function printHumanProjectSdkUpdateResult(result) {
   console.log("Next: command-center-sdk skills sync --path .");
 }
 
+function printHumanProjectDocsResult(result) {
+  const mode = result.dryRun ? "Documentation initialization preview" : "Documentation initialized";
+  console.log(`${mode}: ${result.projectRoot}`);
+  console.log(`Node.js major: ${result.nodeMajor}`);
+  console.log(`Documentation route: ${result.docsBaseUrl}`);
+  if (result.created.length > 0) console.log(`Created: ${result.created.join(", ")}`);
+  if (result.updated.length > 0) console.log(`Updated: ${result.updated.join(", ")}`);
+  if (result.unchanged.length > 0) console.log(`Unchanged: ${result.unchanged.length} file(s)`);
+  if (result.dryRun && result.commands.length > 0) {
+    console.log(`Would run: ${result.commands.join("; ")}`);
+  }
+  console.log(`Next: ${result.next.join("; ")}`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
@@ -360,6 +420,22 @@ async function main() {
     const result = await inspectProjectSdk({ projectDir: options.projectDir });
     if (options.json) console.log(JSON.stringify(result, null, 2));
     else printHumanProjectSdkStatus(result);
+    return;
+  }
+  if (args[0] === "project" && args[1] === "docs" && args[2] === "init") {
+    const options = parseProjectDocsArguments(args.slice(3));
+    if (options.help) {
+      console.log(usage);
+      return;
+    }
+    const result = await initializeProjectDocumentation({
+      projectDir: options.projectDir,
+      dryRun: options.dryRun,
+      install: options.install,
+      quiet: options.json,
+    });
+    if (options.json) console.log(JSON.stringify(result, null, 2));
+    else printHumanProjectDocsResult(result);
     return;
   }
   if (args[0] === "project" && args[1] === "update-sdk") {

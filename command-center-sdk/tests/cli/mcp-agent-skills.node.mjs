@@ -367,7 +367,7 @@ test("strict synchronization refreshes both SDK and MCP namespaces", async () =>
     });
 
     const result = await syncAgentSkills(options);
-    assert.equal(result.sdk.copied.length, 22);
+    assert.equal(result.sdk.copied.length, 23);
     assert.equal(result.platform.installed.length, 1);
     await readFile(
       join(projectRoot, ".agents", "skills", "command-center", "general", "use-command-center-sdk", "SKILL.md"),

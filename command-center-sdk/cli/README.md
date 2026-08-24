@@ -52,6 +52,29 @@ entrypoint map. Exercise changes through the Node tests and a packed-package smo
 existing backend MCP manifest version 2 is authoritative; do not create a second Command Center
 contract for the same catalog.
 
+## Project Documentation Initialization
+
+`command-center-sdk project docs init --path .` safely installs the official application
+documentation system into a consuming npm frontend. The project root must contain `package.json`
+and `package-lock.json`, use the active Node major declared by `engines.node` and `.node-version`
+or `.nvmrc`, and contain no competing package-manager lockfile. `--dry-run` reports changes,
+`--json` returns structured evidence, and `--skip-install` writes the scaffold without running
+`npm install`.
+
+The command preserves the original application build as `build:app`, makes root `build` run the
+application and Docusaurus builds in sequence, and emits documentation under `dist/docs` for the
+public `/docs/` route. It copies the versioned template from the packaged
+`document-command-center-application` skill, installs exact Docusaurus development dependencies,
+and never overwrites different existing files or manifest values. Re-running an unchanged
+initialization is idempotent.
+
+The scaffold keeps `documentation/navigation.json` as the canonical ordered source for generated
+`docs/SUMMARY.md` and `documentation/sidebars.mjs`. Its checks enforce the one-root npm/Node
+toolchain, audience-classified documentation, navigation coverage, local links, and generated-file
+freshness. The consuming frontend remains responsible for its authored content, Vite development
+proxy when desired, and browser tests against the combined production artifact. Deployment
+configuration remains platform-owned.
+
 ## Project SDK Status And Update
 
 `command-center-sdk project sdk-status --path .` inspects a consuming project at the Git repository

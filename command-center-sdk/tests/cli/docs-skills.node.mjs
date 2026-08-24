@@ -28,7 +28,35 @@ test("human documentation maps every packaged agent skill", async () => {
   for (const skillPath of skillPaths) {
     assert.equal(docsIndex.includes(`\`${skillPath}\``), true, `${skillPath} is not documented`);
   }
-  assert.equal(skillPaths.length, 22);
+  assert.equal(skillPaths.length, 23);
+});
+
+test("application documentation guidance stays aligned with the official scaffold", async () => {
+  const documentationSkill = await readFile(
+    join(
+      skillsRoot,
+      "documentation",
+      "document-command-center-application",
+      "SKILL.md",
+    ),
+    "utf8",
+  );
+  const documentationGuide = await readFile(
+    join(docsRoot, "application-documentation.md"),
+    "utf8",
+  );
+
+  for (const value of [documentationSkill, documentationGuide]) {
+    assert.match(value, /project docs init/u);
+    assert.match(value, /documentation\/navigation\.json/u);
+    assert.match(value, /dist\/docs/u);
+    assert.match(value, /package-lock\.json/u);
+    assert.match(value, /Node(?:\.js)? major|Node runtime/iu);
+    assert.match(value, /deep link/iu);
+    assert.match(value, /same (?:static )?artifact|same-artifact|combined production artifact/iu);
+  }
+  assert.match(documentationSkill, /postman-code-generators/u);
+  assert.match(documentationGuide, /platform owns|deployment platform owns/iu);
 });
 
 test("consumer scaffold excludes SDK-maintainer workflows", async () => {
