@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.15
+
+- Resolve project sync identity authoritatively from canonical Git origin, attached branch, and
+  exact `HEAD` commit through the platform Git-context endpoint. Stop requiring the retired
+  `MAIN_SEQUENCE_PROJECT_UID` `.env` marker; a supplied Project UID is assertion-only.
+
 ## 0.1.14
 
 - Add public `/layout` and `/layout/testing` entrypoints with responsive application page, header,
