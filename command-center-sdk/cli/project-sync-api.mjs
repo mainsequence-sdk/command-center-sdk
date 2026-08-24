@@ -1,4 +1,5 @@
 const DEFAULT_TIMEOUT_MS = 15_000;
+const CANONICAL_COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/u;
 
 export class ProjectSyncApiError extends Error {
   constructor(message, options) {
@@ -19,6 +20,14 @@ function requireSingleLine(value, label) {
     throw new ProjectSyncApiError(`${label} must be non-empty single-line text.`);
   }
   return value.trim();
+}
+
+function requireCanonicalCommitSha(value, label) {
+  const commitSha = requireSingleLine(value, label).toLowerCase();
+  if (!CANONICAL_COMMIT_SHA_PATTERN.test(commitSha)) {
+    throw new ProjectSyncApiError(`${label} must be a canonical full Git commit SHA.`);
+  }
+  return commitSha;
 }
 
 function normalizeBackendUrl(value) {
@@ -133,44 +142,65 @@ export function createProjectSyncApi({
   }
 
   return {
-    async resolveProjectBranch(projectUid, repositoryBranch) {
-      const normalizedProjectUid = requireSingleLine(projectUid, "Project UID");
+    async resolveGitContext({ repositoryIdentity, repositoryBranch, commitSha } = {}) {
+      const normalizedRepositoryIdentity = requireSingleLine(
+        repositoryIdentity,
+        "Git repository identity",
+      );
       const normalizedBranch = requireSingleLine(repositoryBranch, "Git branch");
-      const project = await request(
-        "GET",
-        `/api/v1/projects/${encodeURIComponent(normalizedProjectUid)}/`,
+      const normalizedCommitSha = requireCanonicalCommitSha(commitSha, "Git HEAD commit");
+      const payload = await request(
+        "POST",
+        "/api/v1/project-branches/resolve-git-context/",
+        {
+          repository_identity: normalizedRepositoryIdentity,
+          repository_branch: normalizedBranch,
+          commit_sha: normalizedCommitSha,
+        },
       );
-      if (!Array.isArray(project.branches) || project.branches.length === 0) {
-        throw new ProjectSyncApiError("This Project has no ProjectBranches.");
-      }
-      const matches = project.branches.filter(
-        (branch) =>
-          branch &&
-          typeof branch === "object" &&
-          !Array.isArray(branch) &&
-          branch.repository_branch === normalizedBranch,
+      const canonicalRepositoryIdentity = requireSingleLine(
+        payload.canonical_repository_identity,
+        "Resolved canonical repository identity",
       );
-      if (matches.length !== 1) {
+      if (canonicalRepositoryIdentity !== normalizedRepositoryIdentity) {
         throw new ProjectSyncApiError(
-          `Git branch ${JSON.stringify(normalizedBranch)} is not registered as a ProjectBranch for this Project.`,
+          "Git-context resolution returned another canonical repository identity.",
         );
       }
-      const listedUid = requireSingleLine(matches[0].uid, "Resolved ProjectBranch UID");
-      const projectBranch = await request(
-        "GET",
-        `/api/v1/project-branches/${encodeURIComponent(listedUid)}/`,
+      const resolvedBranch = requireSingleLine(payload.repository_branch, "Resolved Git branch");
+      if (resolvedBranch !== normalizedBranch) {
+        throw new ProjectSyncApiError("Git-context resolution returned another Git branch.");
+      }
+      const repositoryRef = requireSingleLine(payload.repository_ref, "Resolved Git ref");
+      if (repositoryRef !== `refs/heads/${normalizedBranch}`) {
+        throw new ProjectSyncApiError("Git-context resolution returned another attached Git ref.");
+      }
+      const resolvedCommitSha = requireCanonicalCommitSha(
+        payload.commit_sha,
+        "Resolved Git commit",
       );
+      if (resolvedCommitSha !== normalizedCommitSha) {
+        throw new ProjectSyncApiError(
+          "Git-context resolution returned another Git commit.",
+        );
+      }
+      const projectBranch = requireObject(payload.project_branch, "Resolved ProjectBranch");
       const projectBranchUid = requireSingleLine(projectBranch.uid, "ProjectBranch UID");
-      if (projectBranchUid !== listedUid) {
-        throw new ProjectSyncApiError("ProjectBranch detail returned another UID.");
-      }
+      const projectUid = requireSingleLine(projectBranch.project_uid, "Project UID");
       if (
-        projectBranch.repository_branch !== undefined &&
-        projectBranch.repository_branch !== normalizedBranch
+        requireSingleLine(projectBranch.repository_branch, "ProjectBranch Git branch") !==
+        normalizedBranch
       ) {
-        throw new ProjectSyncApiError("ProjectBranch detail returned another repository branch.");
+        throw new ProjectSyncApiError("Resolved ProjectBranch belongs to another Git branch.");
       }
-      return { gitBranch: normalizedBranch, projectBranchUid };
+      return {
+        canonicalRepositoryIdentity,
+        gitBranch: resolvedBranch,
+        repositoryRef,
+        commitSha: resolvedCommitSha,
+        projectUid,
+        projectBranchUid,
+      };
     },
 
     async addProjectDeployKey(projectUid, { keyTitle, publicKey } = {}) {

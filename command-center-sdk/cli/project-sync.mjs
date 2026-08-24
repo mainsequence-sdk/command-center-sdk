@@ -9,6 +9,7 @@ import {
 } from "./project-sync-local-ops.mjs";
 
 export const PROJECT_SYNC_COMMANDS = Object.freeze([
+  "resolve the exact ProjectBranch from canonical Git origin, attached branch, and HEAD commit",
   "calculate the next npm patch version",
   "request backend default redeployment tag for the resolved ProjectBranch",
   "verify the backend tag does not exist locally",
@@ -39,8 +40,11 @@ export class ProjectSyncError extends Error {
       error: this.message,
       stage: this.stage,
       projectDir: this.state.projectDir || null,
+      canonicalRepositoryIdentity: this.state.canonicalRepositoryIdentity || null,
       projectUid: this.state.projectUid || null,
       gitBranch: this.state.gitBranch || null,
+      repositoryRef: this.state.repositoryRef || null,
+      commitSha: this.state.commitSha || null,
       projectBranchUid: this.state.projectBranchUid || null,
       nextVersion: this.state.nextVersion || null,
       version: this.state.version || null,
@@ -79,17 +83,6 @@ export async function syncProject({
     state.projectDir = await complete("resolve-project-directory", () =>
       localOps.resolveProjectDir(projectDir),
     );
-    stage = "resolve-project-uid";
-    state.projectUid = String(
-      projectUid || (await localOps.readProjectUid(state.projectDir)) || "",
-    ).trim();
-    if (!state.projectUid) {
-      throw new Error(
-        `MAIN_SEQUENCE_PROJECT_UID is not configured in ${state.projectDir}/.env.`,
-      );
-    }
-    state.completed.push(stage);
-
     const inspection = await complete("inspect-project", () =>
       localOps.inspectProject(state.projectDir),
     );
@@ -110,12 +103,32 @@ export async function syncProject({
       state.completed.push(stage);
     }
 
-    const branchContext = await complete("resolve-project-branch", () =>
-      projectApi.resolveProjectBranch(state.projectUid, state.gitBranch),
+    const branchContext = await complete("resolve-git-context", () =>
+      projectApi.resolveGitContext({
+        repositoryIdentity: state.canonicalRepositoryIdentity,
+        repositoryBranch: state.gitBranch,
+        commitSha: state.commitSha,
+      }),
     );
+    state.projectUid = branchContext.projectUid;
     state.projectBranchUid = branchContext.projectBranchUid;
-    if (branchContext.gitBranch !== state.gitBranch) {
-      throw new Error("Backend ProjectBranch resolution returned another Git branch.");
+    if (
+      branchContext.canonicalRepositoryIdentity !== state.canonicalRepositoryIdentity ||
+      branchContext.gitBranch !== state.gitBranch ||
+      branchContext.repositoryRef !== state.repositoryRef ||
+      branchContext.commitSha !== state.commitSha
+    ) {
+      throw new Error("Backend Git-context resolution does not match the inspected Git checkout.");
+    }
+    const expectedProjectUid = String(projectUid || "").trim();
+    if (expectedProjectUid) {
+      await complete("assert-project-uid", () => {
+        if (expectedProjectUid !== state.projectUid) {
+          throw new Error(
+            `Expected Project UID ${JSON.stringify(expectedProjectUid)} does not match Git-resolved Project ${JSON.stringify(state.projectUid)}.`,
+          );
+        }
+      });
     }
 
     state.nextVersion = await complete("calculate-next-version", () =>
@@ -132,8 +145,11 @@ export async function syncProject({
       command: "command-center-sdk project sync",
       dryRun: Boolean(dryRun),
       projectDir: state.projectDir,
+      canonicalRepositoryIdentity: state.canonicalRepositoryIdentity,
       projectUid: state.projectUid,
       gitBranch: state.gitBranch,
+      repositoryRef: state.repositoryRef,
+      commitSha: state.commitSha,
       projectBranchUid: state.projectBranchUid,
       currentVersion: state.currentVersion,
       nextVersion: state.nextVersion,

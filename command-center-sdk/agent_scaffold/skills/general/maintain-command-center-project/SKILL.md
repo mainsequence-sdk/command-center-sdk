@@ -29,9 +29,13 @@ current backend `ProjectBranch`.
 
 1. Confirm the Vite application is at the Git repository root. Nested `frontend/` applications are
    not supported.
-2. Confirm that root contains `package.json`, `package-lock.json`, and `.env`.
-3. Confirm `.env` contains the public `MAIN_SEQUENCE_PROJECT_UID`.
-4. Confirm the current Git checkout has a named branch and an `origin` remote.
+2. Confirm that root contains `package.json` and `package-lock.json`.
+3. Confirm the current Git checkout has an `origin` remote, an attached named branch, and a valid
+   `HEAD` commit. The backend resolves this source context to the Project and ProjectBranch.
+4. Do not add or restore `MAIN_SEQUENCE_PROJECT_UID`, `MAIN_SEQUENCE_PROJECT_BRANCH_UID`,
+   `MAINSEQUENCE_REPOSITORY_BRANCH`, or `MAIN_SEQUENCE_ORGANIZATION_PROJECT_ENVIRONMENT_UID` in
+   `.env`. They are retired project-identity inputs; an optional positional Project UID is only a
+   consistency assertion against the Git-resolved Project.
 5. Ensure `MAINSEQUENCE_ENDPOINT` and a current `MAINSEQUENCE_ACCESS_TOKEN` are available only in
    the process environment. Never place the token in an argument, file, log, or report.
 6. Inspect the installed SDK and resolve any authorized compatible update separately:
@@ -51,12 +55,15 @@ the deployment backend, commit, tag, or push, and it never replaces the release 
 npx command-center-sdk project sync -m "Describe the change" --path . --dry-run
 ```
 
-The preview must reject any supplied path below the Git root and resolve the current Git branch to
-exactly one backend `ProjectBranch`. If the branch is detached, absent from the Project, or
-ambiguous, stop. Do not search another application directory, fall back to `main`, create a
-ProjectBranch implicitly, or invent a tag. Register the branch through the platform workflow and
-rerun preflight. It must also report the next npm patch version and exact backend-owned branch tag,
-then reject an invalid or existing local tag without creating SSH credentials or changing files.
+The preview must reject any supplied path below the Git root and resolve the canonical `origin`,
+attached branch, and exact `HEAD` commit to exactly one backend `ProjectBranch`. Validate the
+backend-returned repository identity, branch, ref, and commit before using its Project and
+ProjectBranch UIDs. If the branch is detached, its Git context is absent or ambiguous, or any
+returned identity differs, stop. Do not search another application directory, fall back to `main`,
+create a ProjectBranch implicitly, restore `.env` identity, or invent a tag. Register the branch
+through the platform workflow and rerun preflight. It must also report the next npm patch version
+and exact backend-owned branch tag, then reject an invalid or existing local tag without creating
+SSH credentials or changing files.
 
 ## Understand The Complete-Tree Commit
 
@@ -81,7 +88,8 @@ npx command-center-sdk project sync -m "Describe the change" --path .
 
 The command performs this ordered sequence:
 
-1. Resolve the current Git branch to its registered backend `ProjectBranch` before local mutation.
+1. Resolve the canonical Git origin, attached branch, and exact `HEAD` commit to the registered
+   backend Project and `ProjectBranch` before local mutation.
 2. Preview npm's patch result, request the backend-owned tag for that future version, and reject an
    invalid or existing local tag.
 3. Ensure the repository-specific SSH key exists and read its public key.
@@ -121,9 +129,9 @@ git log -1 --decorate --oneline
 git tag --points-at HEAD
 ```
 
-If failure happened before branch resolution, no version, key, dependency, commit, tag, or push
-operation should have occurred. A deploy-key registration or Git preflight failure can leave the
-generated local key or registered backend deploy key in place, but must leave the version,
+If failure happened before Git-context resolution, no version, key, dependency, commit, tag, or
+push operation should have occurred. A deploy-key registration or Git preflight failure can leave
+the generated local key or registered backend deploy key in place, but must leave the version,
 dependency state, commit, and local tag unchanged. If failure happened after versioning, report the
 produced version and tag and repair the existing state deliberately; do not rerun blindly and
 create another patch version.
@@ -131,5 +139,6 @@ create another patch version.
 ## Verify The Outcome
 
 Confirm the final commit and backend-owned branch tag are present remotely. Treat that pushed tag,
-not merely the commit, as the automatic-deployment trigger. Report the project UID, Git branch,
-ProjectBranch UID, version, exact backend tag, and push result without reporting credentials.
+not merely the commit, as the automatic-deployment trigger. Report the canonical repository
+identity, attached ref, exact pre-sync `HEAD`, project UID, Git branch, ProjectBranch UID, version,
+exact backend tag, and push result without reporting credentials.

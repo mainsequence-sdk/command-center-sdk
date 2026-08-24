@@ -92,14 +92,18 @@ npx command-center-sdk project sync -m "Update the project" --path . --dry-run
 npx command-center-sdk project sync -m "Update the project" --path .
 ```
 
-The supplied path must be the Git repository root and contain `package.json`, `package-lock.json`,
-and `.env` with `MAIN_SEQUENCE_PROJECT_UID`. Preflight rejects a nested application directory,
-reads the current named Git branch, and resolves it to the matching backend `ProjectBranch`. If the
-checkout is detached or the branch is not registered, the command stops before versioning,
-dependency installation, SSH-key creation, Git staging, commit, tag, or push. Register the branch
-through the platform workflow; never search a nested directory, fall back to `main`, or invent a
-local deployment tag. The dry run previews the npm patch version, requests the backend-owned tag,
-and rejects an invalid or existing local tag without creating SSH credentials or changing files.
+The supplied path must be the Git repository root and contain `package.json` and
+`package-lock.json`. Preflight rejects a nested application directory, then sends the canonical
+`origin`, attached branch, and exact `HEAD` commit to the backend Git-context resolver. That
+authoritative response supplies the matching `ProjectBranch` and parent Project UID. Do not add or
+restore `MAIN_SEQUENCE_PROJECT_UID` in `.env`; project identity is derived from Git, and an optional
+positional Project UID is only a consistency assertion. If the checkout is detached, its Git
+context is unregistered or ambiguous, or the backend echoes another repository, branch, ref, or
+commit, the command stops before versioning, dependency installation, SSH-key creation, Git staging,
+commit, tag, or push. Register the branch through the platform workflow; never search a nested
+directory, fall back to `main`, or invent a local deployment tag. The dry run previews the npm patch
+version, requests the backend-owned tag, and rejects an invalid or existing local tag without
+creating SSH credentials or changing files.
 
 For a newly generated repository key, the command posts its public key to the owning Project's
 `add-deploy-key` action. For an existing key, it first reuses the key when Git access already works

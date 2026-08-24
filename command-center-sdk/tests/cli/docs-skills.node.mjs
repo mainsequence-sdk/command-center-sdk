@@ -67,6 +67,24 @@ test("consumer guidance documents SDK status and update as a separate project li
   }
 });
 
+test("project sync guidance uses Git-native identity without a local Project UID marker", async () => {
+  const maintainProjectSkill = await readFile(
+    join(skillsRoot, "general", "maintain-command-center-project", "SKILL.md"),
+    "utf8",
+  );
+  const gettingStarted = await readFile(join(docsRoot, "getting-started.md"), "utf8");
+  const packageReadme = await readFile(resolve(packageRoot, "README.md"), "utf8");
+  const cliReadme = await readFile(resolve(packageRoot, "cli", "README.md"), "utf8");
+
+  for (const value of [maintainProjectSkill, gettingStarted, packageReadme, cliReadme]) {
+    assert.match(value, /canonical[^.]*origin[^.]*branch[^.]*HEAD/isu);
+    assert.match(value, /assertion/iu);
+    assert.doesNotMatch(value, /(?:requires?|confirm)[^.]*MAIN_SEQUENCE_PROJECT_UID/iu);
+  }
+  assert.match(cliReadme, /resolve-git-context/u);
+  assert.match(maintainProjectSkill, /Do not add or restore `MAIN_SEQUENCE_PROJECT_UID`/u);
+});
+
 test("contract skills point to the canonical manifest without bundling contract copies", async () => {
   const contractSkills = (await listSkillPaths()).filter((skillPath) =>
     skillPath.startsWith("contracts/"),

@@ -88,21 +88,27 @@ afterward when strict backend-owned guidance refresh is required.
 
 `command-center-sdk project sync` mirrors Python's `mainsequence project sync` for consuming npm
 projects whose Vite application is at the Git repository root. The supplied path must be that root
-and contain `.env`, `package.json`, and `package-lock.json`; nested application directories fail
-preflight rather than being discovered or translated. The orchestration, backend client, and local
-npm/Git/SSH operations live in the focused `project-sync*.mjs` modules and remain dependency-free
-and bin-only.
+and contain `package.json` and `package-lock.json`; nested application directories fail preflight
+rather than being discovered or translated. The orchestration, backend client, and local npm/Git/SSH
+operations live in the focused `project-sync*.mjs` modules and remain dependency-free and bin-only.
 
-Before local mutation, the command requires a named Git branch and resolves it to the exact backend
-`ProjectBranch` of `MAIN_SEQUENCE_PROJECT_UID`. Missing, duplicated, or detached branch identity is
-a hard failure. It previews the npm patch version, requests the backend-owned tag, and rejects an
-invalid or existing local tag. It then ensures the repository-specific SSH key is registered
-through the owning Project's `add-deploy-key` action and verifies the forced identity with
+Before local mutation, the command resolves the canonical `origin`, attached branch, and exact
+`HEAD` commit through `POST /api/v1/project-branches/resolve-git-context/`, implementing the
+Git-native source-identity contract from platform ADR-0037. The response supplies the exact
+`ProjectBranch` and its parent Project UID. `MAIN_SEQUENCE_PROJECT_UID` is neither read nor written;
+if a caller supplies the legacy positional Project UID, it is only an assertion and cannot select
+another Project. Missing, ambiguous, mismatched, or detached Git identity is a hard failure. The
+command previews the npm patch version, requests the backend-owned tag, and rejects an invalid or
+existing local tag. It then ensures the repository-specific SSH key is registered through the
+resolved owning Project's `add-deploy-key` action and verifies the forced identity with
 `git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>`. A reusable key that already
 passes the Git preflight is not registered again. Deploy-key registration or Git access failures
 therefore stop before the version, commit, or local Git tag changes. The exact backend tag is then
 queried on `origin`; a collision or indeterminate result also stops before mutation. Tag syntax
 remains backend-owned. Do not add local main/dev/feature naming rules.
+
+The governing decision is
+[platform ADR-0037](https://github.com/Main-Sequence-Server-Side/tdag-django/blob/development/docs/platform/adr/adr-0037-git-native-project-source-context.md).
 
 The repository key filename is `mainsequence-<repository-slug>-<first-16-sha256>` from the
 normalized `host[:non-default-port]/repository/path`. Equivalent SCP and `ssh://` origins share an

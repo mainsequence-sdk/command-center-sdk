@@ -212,16 +212,19 @@ npx command-center-sdk project sync -m "Describe the change" --path . --dry-run
 npx command-center-sdk project sync -m "Describe the change" --path .
 ```
 
-The Git repository root must provide `MAIN_SEQUENCE_PROJECT_UID` in `.env` and contain
-`package.json` plus `package-lock.json`. Before changing local state, the command verifies that the
-supplied path is that root and resolves the named Git branch to its registered backend
-`ProjectBranch`. It previews the npm patch version, requests that version's backend-owned tag, and
-rejects an invalid or existing local tag before creating an SSH key. It then registers a newly
-created repository SSH public key through the owning Project, verifies the forced identity with a
-dry-run push, and checks the exact remote tag ref. Existing keys that already pass this preflight
-are not registered again. A nested application directory, detached checkout, unregistered branch,
-tag collision, deploy-key registration failure, or inaccessible Git remote is a hard failure
-before the version, dependency, commit, or local Git tag changes.
+The Git repository root must contain `package.json` plus `package-lock.json`. Before changing local
+state, the command verifies that the supplied path is that root and resolves its canonical `origin`,
+attached branch, and exact `HEAD` commit through the backend Git-context endpoint. The response
+authoritatively supplies both the registered `ProjectBranch` and its parent Project. The command
+does not read or restore `MAIN_SEQUENCE_PROJECT_UID` in `.env`; an optional positional Project UID
+is only a consistency assertion against the Git-resolved result. It previews the npm patch version,
+requests that version's backend-owned tag, and rejects an invalid or existing local tag before
+creating an SSH key. It then registers a newly created repository SSH public key through the owning
+Project, verifies the forced identity with a dry-run push, and checks the exact remote tag ref.
+Existing keys that already pass this preflight are not registered again. A nested application
+directory, detached checkout, unresolved Git context, tag collision, deploy-key registration
+failure, or inaccessible Git remote is a hard failure before the version, dependency, commit, or
+local Git tag changes.
 
 Repository keys use the cross-CLI filename
 `~/.ssh/mainsequence-<repository-slug>-<first-16-sha256>` derived from the normalized

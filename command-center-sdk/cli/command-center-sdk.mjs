@@ -16,7 +16,7 @@ Usage:
   command-center-sdk skills sync [--path <repository-root>] [--mcp-url <url>] [--dry-run] [--json]
   command-center-sdk project sdk-status [--path <repository-root>] [--json]
   command-center-sdk project update-sdk [--path <repository-root>] [--dry-run] [--json]
-  command-center-sdk project sync [message] [projectUid] [--path <repository-root>] [-m <message>] [--dry-run] [--json]
+  command-center-sdk project sync [message] [expectedProjectUid] [--path <repository-root>] [-m <message>] [--dry-run] [--json]
   command-center-sdk theme audit [--path <css-file-or-directory>] [--json]
   command-center-sdk --version
   command-center-sdk --help
@@ -30,7 +30,9 @@ The sync command refreshes packaged skills and authenticated MCP skills in:
 
 The project sync command requires the Vite application at the Git repository root, bumps the npm
 patch version, requests the current ProjectBranch's backend-owned deployment tag, refreshes
-package-lock.json, commits all changes, tags, and pushes.
+package-lock.json, commits all changes, tags, and pushes. It resolves Project identity from the
+canonical Git origin, attached branch, and exact HEAD commit; an optional expected Project UID is
+only a consistency assertion.
 
 The SDK status and update commands compare and refresh only the project's declared Command Center
 SDK dependency. Updates respect its existing npm semver policy and do not commit, tag, push, or
@@ -257,8 +259,11 @@ function printHumanThemeAudit(result) {
 }
 
 function printHumanProjectSyncPlan(plan) {
+  console.log(`Repository: ${plan.canonicalRepositoryIdentity}`);
   console.log(`Project: ${plan.projectUid}`);
   console.log(`Git branch: ${plan.gitBranch}`);
+  console.log(`Git ref: ${plan.repositoryRef}`);
+  console.log(`Git HEAD: ${plan.commitSha}`);
   console.log(`ProjectBranch: ${plan.projectBranchUid}`);
   console.log(`Current version: ${plan.currentVersion}`);
   console.log(`Next version: ${plan.nextVersion}`);

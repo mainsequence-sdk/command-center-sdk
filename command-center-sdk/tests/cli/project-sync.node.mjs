@@ -22,6 +22,8 @@ import { ProjectSyncError, syncProject } from "../../cli/project-sync.mjs";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const cliPath = join(packageRoot, "cli", "command-center-sdk.mjs");
+const TEST_COMMIT_SHA = "a".repeat(40);
+const TEST_REPOSITORY_IDENTITY = "github.com/organization/project";
 
 function jsonResponse(payload, status = 200) {
   return {
@@ -60,15 +62,14 @@ function projectHarness({
       events.push(["resolve-project-directory", value]);
       return projectDir;
     },
-    async readProjectUid(value) {
-      events.push(["read-project-uid", value]);
-      return "project-uid-123";
-    },
     async inspectProject(value) {
       events.push(["inspect-project", value]);
       return {
         currentVersion: "1.2.3",
+        canonicalRepositoryIdentity: TEST_REPOSITORY_IDENTITY,
         gitBranch,
+        repositoryRef: `refs/heads/${gitBranch}`,
+        commitSha: TEST_COMMIT_SHA,
         origin: "git@github.com:organization/project.git",
       };
     },
@@ -107,10 +108,17 @@ function projectHarness({
     },
   };
   const api = {
-    async resolveProjectBranch(projectUid, branch) {
-      events.push(["resolve-project-branch", projectUid, branch]);
+    async resolveGitContext(context) {
+      events.push(["resolve-git-context", context]);
       if (branchError) throw new ProjectSyncApiError(branchError);
-      return { gitBranch: branch, projectBranchUid: "project-branch-uid-123" };
+      return {
+        canonicalRepositoryIdentity: context.repositoryIdentity,
+        gitBranch: context.repositoryBranch,
+        repositoryRef: `refs/heads/${context.repositoryBranch}`,
+        commitSha: context.commitSha,
+        projectUid: "project-uid-123",
+        projectBranchUid: "project-branch-uid-123",
+      };
     },
     async addProjectDeployKey(projectUid, key) {
       events.push(["add-project-deploy-key", projectUid, key]);
@@ -176,19 +184,66 @@ test("repository SSH key identity preserves path case and non-default ports", ()
   });
 });
 
-test("reads MAIN_SEQUENCE_PROJECT_UID from a project .env", async () => {
-  const projectDir = await mkdtemp(join(tmpdir(), "command-center-project-sync-env-"));
-  try {
-    await writeFile(
-      join(projectDir, ".env"),
-      "IGNORED=value\nexport MAIN_SEQUENCE_PROJECT_UID='project-uid-123'\n",
-      "utf8",
-    );
-    const localOps = createProjectSyncLocalOps();
-    assert.equal(await localOps.readProjectUid(projectDir), "project-uid-123");
-  } finally {
-    await rm(projectDir, { recursive: true, force: true });
-  }
+test("resolves project identity from Git without reading a project .env", async () => {
+  const harness = projectHarness();
+  harness.localOps.readProjectUid = () =>
+    assert.fail("project sync must not read project UID from .env");
+  const result = await syncProject({
+    message: "Preview application",
+    projectDir: harness.projectDir,
+    localOps: harness.localOps,
+    api: harness.api,
+    dryRun: true,
+  });
+
+  assert.equal(result.projectUid, "project-uid-123");
+  assert.equal(result.canonicalRepositoryIdentity, TEST_REPOSITORY_IDENTITY);
+  assert.equal(result.repositoryRef, "refs/heads/main");
+  assert.equal(result.commitSha, TEST_COMMIT_SHA);
+  assert.deepEqual(
+    harness.events.find(([type]) => type === "resolve-git-context"),
+    [
+      "resolve-git-context",
+      {
+        repositoryIdentity: TEST_REPOSITORY_IDENTITY,
+        repositoryBranch: "main",
+        commitSha: TEST_COMMIT_SHA,
+      },
+    ],
+  );
+});
+
+test("treats a supplied Project UID only as an assertion", async () => {
+  const matching = projectHarness();
+  const result = await syncProject({
+    message: "Preview application",
+    projectUid: "project-uid-123",
+    projectDir: matching.projectDir,
+    localOps: matching.localOps,
+    api: matching.api,
+    dryRun: true,
+  });
+  assert.equal(result.projectUid, "project-uid-123");
+
+  const mismatched = projectHarness();
+  await assert.rejects(
+    syncProject({
+      message: "Preview another project",
+      projectUid: "another-project-uid",
+      projectDir: mismatched.projectDir,
+      localOps: mismatched.localOps,
+      api: mismatched.api,
+      dryRun: true,
+    }),
+    (caught) => {
+      assert.equal(caught.stage, "assert-project-uid");
+      assert.match(caught.message, /does not match Git-resolved Project/u);
+      assert.equal(caught.state.projectUid, "project-uid-123");
+      return true;
+    },
+  );
+  assert.equal(mismatched.events.some(([type]) => type === "render-tag"), false);
+  assert.equal(mismatched.events.some(([type]) => type === "ensure-key"), false);
 });
 
 for (const [gitBranch, renderedTag] of [
@@ -397,7 +452,7 @@ test("dry-run resolves the backend ProjectBranch but performs no local mutation"
   assert.equal(result.nextVersion, "1.2.4");
   assert.equal(result.version, "1.2.4");
   assert.equal(result.tagName, "v1.2.4-dev.1");
-  assert.equal(harness.events.some(([type]) => type === "resolve-project-branch"), true);
+  assert.equal(harness.events.some(([type]) => type === "resolve-git-context"), true);
   assert.equal(harness.events.some(([type]) => type === "render-tag"), true);
   assert.equal(harness.events.some(([type]) => type === "validate-tag"), true);
   for (const mutation of ["ensure-key", "git-environment", "add-project-deploy-key", "verify-git-push", "validate-remote-tag", "read-version", "command"]) {
@@ -406,7 +461,7 @@ test("dry-run resolves the backend ProjectBranch but performs no local mutation"
 });
 
 test("an unregistered Git branch stops before every local mutation", async () => {
-  const error = 'Git branch "feature/missing" is not registered as a ProjectBranch for this Project.';
+  const error = "No visible ProjectBranch matches the Git source context.";
   const harness = projectHarness({ gitBranch: "feature/missing", branchError: error });
 
   await assert.rejects(
@@ -418,8 +473,8 @@ test("an unregistered Git branch stops before every local mutation", async () =>
     }),
     (caught) => {
       assert.equal(caught instanceof ProjectSyncError, true);
-      assert.equal(caught.stage, "resolve-project-branch");
-      assert.match(caught.message, /is not registered as a ProjectBranch/u);
+      assert.equal(caught.stage, "resolve-git-context");
+      assert.match(caught.message, /No visible ProjectBranch/u);
       return true;
     },
   );
@@ -444,7 +499,7 @@ test("a detached Git checkout stops before the backend or local mutation", async
     }),
     /detached or has no named branch/u,
   );
-  assert.equal(harness.events.some(([type]) => type === "resolve-project-branch"), false);
+  assert.equal(harness.events.some(([type]) => type === "resolve-git-context"), false);
   assert.equal(harness.events.some(([type]) => type === "command"), false);
 });
 
@@ -452,13 +507,16 @@ test("backend API resolves the exact ProjectBranch and requests its deployment t
   const calls = [];
   const responses = [
     jsonResponse({
-      uid: "project-uid-123",
-      branches: [
-        { uid: "main-uid", repository_branch: "main" },
-        { uid: "dev-uid", repository_branch: "dev" },
-      ],
+      canonical_repository_identity: TEST_REPOSITORY_IDENTITY,
+      repository_branch: "dev",
+      repository_ref: "refs/heads/dev",
+      commit_sha: TEST_COMMIT_SHA,
+      project_branch: {
+        uid: "dev-uid",
+        project_uid: "project-uid-123",
+        repository_branch: "dev",
+      },
     }),
-    jsonResponse({ uid: "dev-uid", repository_branch: "dev" }),
     emptyResponse(),
     jsonResponse({ version: "1.2.4", tag_name: "v1.2.4-dev.1" }),
   ];
@@ -471,29 +529,47 @@ test("backend API resolves the exact ProjectBranch and requests its deployment t
     },
   });
 
-  const branch = await api.resolveProjectBranch("project-uid-123", "dev");
+  const branch = await api.resolveGitContext({
+    repositoryIdentity: TEST_REPOSITORY_IDENTITY,
+    repositoryBranch: "dev",
+    commitSha: TEST_COMMIT_SHA,
+  });
   await api.addProjectDeployKey("project-uid-123", {
     keyTitle: "developer-workstation",
     publicKey: "ssh-ed25519 AAAATEST command-center",
   });
   const tag = await api.renderDefaultRedeploymentTag(branch.projectBranchUid, "1.2.4");
 
-  assert.deepEqual(branch, { gitBranch: "dev", projectBranchUid: "dev-uid" });
+  assert.deepEqual(branch, {
+    canonicalRepositoryIdentity: TEST_REPOSITORY_IDENTITY,
+    gitBranch: "dev",
+    repositoryRef: "refs/heads/dev",
+    commitSha: TEST_COMMIT_SHA,
+    projectUid: "project-uid-123",
+    projectBranchUid: "dev-uid",
+  });
   assert.equal(tag, "v1.2.4-dev.1");
   assert.deepEqual(calls.map(({ url, options }) => [options.method, url]), [
-    ["GET", "https://platform.example/api/v1/projects/project-uid-123/"],
-    ["GET", "https://platform.example/api/v1/project-branches/dev-uid/"],
+    ["POST", "https://platform.example/api/v1/project-branches/resolve-git-context/"],
     ["POST", "https://platform.example/api/v1/projects/project-uid-123/add-deploy-key/"],
     ["POST", "https://platform.example/api/v1/project-branches/dev-uid/default-redeployment-tag/"],
   ]);
   assert.equal(
-    calls[2].options.body,
+    calls[0].options.body,
+    JSON.stringify({
+      repository_identity: TEST_REPOSITORY_IDENTITY,
+      repository_branch: "dev",
+      commit_sha: TEST_COMMIT_SHA,
+    }),
+  );
+  assert.equal(
+    calls[1].options.body,
     JSON.stringify({
       key_title: "developer-workstation",
       public_key: "ssh-ed25519 AAAATEST command-center",
     }),
   );
-  assert.equal(calls[3].options.body, JSON.stringify({ version: "1.2.4" }));
+  assert.equal(calls[2].options.body, JSON.stringify({ version: "1.2.4" }));
   assert.equal(calls.every(({ options }) => options.headers.Authorization === "Bearer secret-access-token"), true);
 });
 
@@ -504,30 +580,72 @@ test("backend API rejects an unregistered branch before requesting a tag", async
     accessToken: "secret-access-token",
     fetchImpl: async (url, options) => {
       calls.push({ url, options });
-      return jsonResponse({
-        uid: "project-uid-123",
-        branches: [{ uid: "main-uid", repository_branch: "main" }],
-      });
+      return jsonResponse(
+        { detail: "No visible ProjectBranch matches the Git source context." },
+        404,
+      );
     },
   });
 
   await assert.rejects(
-    api.resolveProjectBranch("project-uid-123", "feature/missing"),
-    /is not registered as a ProjectBranch/u,
+    api.resolveGitContext({
+      repositoryIdentity: TEST_REPOSITORY_IDENTITY,
+      repositoryBranch: "feature/missing",
+      commitSha: TEST_COMMIT_SHA,
+    }),
+    /failed \(404\).*No visible ProjectBranch/u,
   );
   assert.equal(calls.length, 1);
 });
 
-test("backend API rejects a Project with no ProjectBranches", async () => {
+test("backend API rejects a malformed Git-context response", async () => {
   const api = createProjectSyncApi({
     backendUrl: "https://platform.example",
     accessToken: "secret-access-token",
-    fetchImpl: async () => jsonResponse({ uid: "project-uid-123", branches: [] }),
+    fetchImpl: async () =>
+      jsonResponse({
+        canonical_repository_identity: TEST_REPOSITORY_IDENTITY,
+        repository_branch: "main",
+        repository_ref: "refs/heads/main",
+        commit_sha: TEST_COMMIT_SHA,
+      }),
   });
 
   await assert.rejects(
-    api.resolveProjectBranch("project-uid-123", "main"),
-    /Project has no ProjectBranches/u,
+    api.resolveGitContext({
+      repositoryIdentity: TEST_REPOSITORY_IDENTITY,
+      repositoryBranch: "main",
+      commitSha: TEST_COMMIT_SHA,
+    }),
+    /Resolved ProjectBranch must be an object/u,
+  );
+});
+
+test("backend API rejects a Git-context response for another commit", async () => {
+  const api = createProjectSyncApi({
+    backendUrl: "https://platform.example",
+    accessToken: "secret-access-token",
+    fetchImpl: async () =>
+      jsonResponse({
+        canonical_repository_identity: TEST_REPOSITORY_IDENTITY,
+        repository_branch: "main",
+        repository_ref: "refs/heads/main",
+        commit_sha: "b".repeat(40),
+        project_branch: {
+          uid: "main-uid",
+          project_uid: "project-uid-123",
+          repository_branch: "main",
+        },
+      }),
+  });
+
+  await assert.rejects(
+    api.resolveGitContext({
+      repositoryIdentity: TEST_REPOSITORY_IDENTITY,
+      repositoryBranch: "main",
+      commitSha: TEST_COMMIT_SHA,
+    }),
+    /returned another Git commit/u,
   );
 });
 
@@ -592,11 +710,38 @@ test("local preflight accepts a repository-root Vite application", async () => {
       { cwd: projectDir, encoding: "utf8" },
     );
     assert.equal(remote.status, 0, remote.stderr);
+    const staged = spawnSync("git", ["add", "package.json", "package-lock.json"], {
+      cwd: projectDir,
+      encoding: "utf8",
+    });
+    assert.equal(staged.status, 0, staged.stderr);
+    const committed = spawnSync(
+      "git",
+      [
+        "-c",
+        "user.name=Command Center SDK Test",
+        "-c",
+        "user.email=command-center-sdk@example.invalid",
+        "commit",
+        "-m",
+        "Initial project",
+      ],
+      { cwd: projectDir, encoding: "utf8" },
+    );
+    assert.equal(committed.status, 0, committed.stderr);
+    const head = spawnSync("git", ["rev-parse", "--verify", "HEAD^{commit}"], {
+      cwd: projectDir,
+      encoding: "utf8",
+    });
+    assert.equal(head.status, 0, head.stderr);
 
     const localOps = createProjectSyncLocalOps();
     assert.deepEqual(await localOps.inspectProject(projectDir), {
       currentVersion: "1.2.3",
+      canonicalRepositoryIdentity: TEST_REPOSITORY_IDENTITY,
       gitBranch: "main",
+      repositoryRef: "refs/heads/main",
+      commitSha: head.stdout.trim(),
       origin: "git@github.com:organization/project.git",
     });
   } finally {

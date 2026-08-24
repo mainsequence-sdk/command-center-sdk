@@ -6,6 +6,7 @@ import { homedir, hostname } from "node:os";
 import { join, resolve } from "node:path";
 
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
+const CANONICAL_COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/u;
 const NPM_PATCH_VERSION_PATTERN =
   /^(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)(?<prerelease>-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
 const SUPPORTED_GIT_ORIGIN_SCHEMES = new Set(["git", "git+ssh", "http", "https", "ssh"]);
@@ -141,18 +142,6 @@ async function pathExists(path) {
   }
 }
 
-function parseEnvValue(rawValue) {
-  const value = rawValue.trim();
-  if (
-    value.length >= 2 &&
-    ((value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'")))
-  ) {
-    return value.slice(1, -1).trim();
-  }
-  return value;
-}
-
 export function sanitizeCommitMessage(message) {
   const normalized = String(message || "")
     .replace(/[\r\n]/gu, " ")
@@ -202,24 +191,6 @@ export function createProjectSyncLocalOps({
       return projectDir;
     },
 
-    async readProjectUid(projectDir) {
-      const envPath = join(projectDir, ".env");
-      let source;
-      try {
-        source = await readFile(envPath, "utf8");
-      } catch (error) {
-        if (error?.code === "ENOENT") return null;
-        throw new ProjectSyncLocalError(`Could not read ${envPath}: ${error.message}`, {
-          cause: error,
-        });
-      }
-      for (const line of source.split(/\r?\n/u)) {
-        const match = line.match(/^\s*(?:export\s+)?MAIN_SEQUENCE_PROJECT_UID\s*=\s*(.*?)\s*$/u);
-        if (match) return parseEnvValue(match[1]) || null;
-      }
-      return null;
-    },
-
     async inspectProject(projectDir) {
       const manifestPath = join(projectDir, "package.json");
       const lockPath = join(projectDir, "package-lock.json");
@@ -254,9 +225,28 @@ export function createProjectSyncLocalOps({
       if (!gitBranch) {
         throw new ProjectSyncLocalError("Current Git checkout is detached or has no named branch.");
       }
+      const repositoryRef = capture("git", ["symbolic-ref", "--quiet", "HEAD"], projectDir);
+      if (repositoryRef !== `refs/heads/${gitBranch}`) {
+        throw new ProjectSyncLocalError(
+          `Git branch ${JSON.stringify(gitBranch)} does not match attached ref ${JSON.stringify(repositoryRef)}.`,
+        );
+      }
+      const commitSha = capture("git", ["rev-parse", "--verify", "HEAD^{commit}"], projectDir)
+        .toLowerCase();
+      if (!CANONICAL_COMMIT_SHA_PATTERN.test(commitSha)) {
+        throw new ProjectSyncLocalError("Git HEAD is not a canonical full commit SHA.");
+      }
       const origin = capture("git", ["remote", "get-url", "origin"], projectDir);
       if (!origin) throw new ProjectSyncLocalError('Could not find Git remote "origin".');
-      return { currentVersion: manifest.version, gitBranch, origin };
+      const canonicalRepositoryIdentity = repositorySshKeyIdentity(origin).identity;
+      return {
+        currentVersion: manifest.version,
+        canonicalRepositoryIdentity,
+        gitBranch,
+        repositoryRef,
+        commitSha,
+        origin,
+      };
     },
 
     async readPackageVersion(projectDir) {
