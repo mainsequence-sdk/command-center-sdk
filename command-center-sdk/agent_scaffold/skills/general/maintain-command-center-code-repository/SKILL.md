@@ -1,19 +1,19 @@
 ---
-name: maintain-command-center-project
-description: Safely finish, version, and deploy a Main Sequence Command Center project with command-center-sdk project sync. Use when a project change is ready to commit and must produce the backend-recognized branch tag that triggers automatic deployment.
+name: maintain-command-center-code-repository
+description: Safely finish, version, and deploy a Main Sequence Command Center project with command-center-sdk code-repository sync. Use when a project change is ready to commit and must produce the backend-recognized branch tag that triggers automatic deployment.
 ---
 
-# Maintain And Deploy A Command Center Project
+# Maintain And Deploy A Command Center CodeRepository
 
-Use this workflow only in a consuming npm project that is registered as a Main Sequence Project.
+Use this workflow only in a consuming npm project that is registered as a Main Sequence CodeRepository.
 It is not the source-maintenance workflow for changing the SDK package itself.
 
-## Why Project Sync Is Required
+## Why CodeRepository Sync Is Required
 
-Automatic deployment is keyed by a backend-owned tag for one registered `ProjectBranch`. A plain
+Automatic deployment is keyed by a backend-owned tag for one registered `CodeRepositoryBranch`. A plain
 commit, a locally invented `v<version>` tag, or a tag copied from another branch does not establish
-that deployment identity. `command-center-sdk project sync` keeps the npm version, lockfile, Git
-commit, backend ProjectBranch, annotated tag, and pushed remote state in one ordered workflow.
+that deployment identity. `command-center-sdk code-repository sync` keeps the npm version, lockfile, Git
+commit, backend CodeRepositoryBranch, annotated tag, and pushed remote state in one ordered workflow.
 
 The backend decides the tag. Typical results include:
 
@@ -23,26 +23,26 @@ The backend decides the tag. Typical results include:
   `v1.2.4-feature-foo-12345678.1`
 
 Never reproduce these rules in project code. Always use the exact `tag_name` returned for the
-current backend `ProjectBranch`.
+current backend `CodeRepositoryBranch`.
 
-## Preflight The Project
+## Preflight The CodeRepository
 
 1. Confirm the Vite application is at the Git repository root. Nested `frontend/` applications are
    not supported.
 2. Confirm that root contains `package.json` and `package-lock.json`.
 3. Confirm the current Git checkout has an `origin` remote, an attached named branch, and a valid
-   `HEAD` commit. The backend resolves this source context to the Project and ProjectBranch.
+   `HEAD` commit. The backend resolves this source context to the CodeRepository and CodeRepositoryBranch.
 4. Do not add or restore `MAIN_SEQUENCE_PROJECT_UID`, `MAIN_SEQUENCE_PROJECT_BRANCH_UID`,
    `MAINSEQUENCE_REPOSITORY_BRANCH`, or `MAIN_SEQUENCE_ORGANIZATION_PROJECT_ENVIRONMENT_UID` in
-   `.env`. They are retired project-identity inputs; an optional positional Project UID is only a
-   consistency assertion against the Git-resolved Project.
+   `.env`. They are retired project-identity inputs; an optional positional CodeRepository UID is only a
+   consistency assertion against the Git-resolved CodeRepository.
 5. Ensure `MAINSEQUENCE_ENDPOINT` and a current `MAINSEQUENCE_ACCESS_TOKEN` are available only in
    the process environment. Never place the token in an argument, file, log, or report.
 6. Inspect the installed SDK and resolve any authorized compatible update separately:
 
 ```bash
-npx command-center-sdk project sdk-status --path . --json
-npx command-center-sdk project update-sdk --path . --dry-run
+npx command-center-sdk application sdk-status --path . --json
+npx command-center-sdk application update-sdk --path . --dry-run
 ```
 
 `update-sdk` is dependency maintenance only. Run it only when the user authorizes the update, then
@@ -66,22 +66,22 @@ production-artifact suite and record the exact command.
 8. Run the read-only deployment preview from that root:
 
 ```bash
-npx command-center-sdk project sync -m "Describe the change" --path . --dry-run
+npx command-center-sdk code-repository sync -m "Describe the change" --path . --dry-run
 ```
 
 The preview must reject any supplied path below the Git root and resolve the canonical `origin`,
-attached branch, and exact `HEAD` commit to exactly one backend `ProjectBranch`. Validate the
-backend-returned repository identity, branch, ref, and commit before using its Project and
-ProjectBranch UIDs. If the branch is detached, its Git context is absent or ambiguous, or any
+attached branch, and exact `HEAD` commit to exactly one backend `CodeRepositoryBranch`. Validate the
+backend-returned repository identity, branch, ref, and commit before using its CodeRepository and
+CodeRepositoryBranch UIDs. If the branch is detached, its Git context is absent or ambiguous, or any
 returned identity differs, stop. Do not search another application directory, fall back to `main`,
-create a ProjectBranch implicitly, restore `.env` identity, or invent a tag. Register the branch
+create a CodeRepositoryBranch implicitly, restore `.env` identity, or invent a tag. Register the branch
 through the platform workflow and rerun preflight. It must also report the next npm patch version
 and exact backend-owned branch tag, then reject an invalid or existing local tag without creating
 SSH credentials or changing files.
 
 ## Understand The Complete-Tree Commit
 
-The command intentionally runs `git add -A`, matching the Python `mainsequence project sync`
+The command intentionally runs `git add -A`, matching the Python `mainsequence code-repository sync`
 workflow. Before executing it, inspect all tracked, untracked, modified, and deleted paths:
 
 ```bash
@@ -89,7 +89,7 @@ git status --short
 git diff --check
 ```
 
-Do not use project sync when the working tree contains unrelated or sensitive material that should
+Do not use code-repository sync when the working tree contains unrelated or sensitive material that should
 not be committed. Preserve user-owned changes and resolve the intended commit boundary first.
 
 ## Execute The Deployment Sync
@@ -97,20 +97,20 @@ not be committed. Preserve user-owned changes and resolve the intended commit bo
 Run:
 
 ```bash
-npx command-center-sdk project sync -m "Describe the change" --path .
+npx command-center-sdk code-repository sync -m "Describe the change" --path .
 ```
 
 The command performs this ordered sequence:
 
 1. Resolve the canonical Git origin, attached branch, and exact `HEAD` commit to the registered
-   backend Project and `ProjectBranch` before local mutation.
+   backend CodeRepository and `CodeRepositoryBranch` before local mutation.
 2. Preview npm's patch result, request the backend-owned tag for that future version, and reject an
    invalid or existing local tag.
 3. Ensure the repository-specific SSH key exists and read its public key.
    Its filename is `mainsequence-<repository-slug>-<first-16-sha256>` from the normalized
    `host[:non-default-port]/repository/path`; never select a key by repository basename alone and
    never fall back to a legacy basename-only key.
-4. Register a newly created key through the owning Project's `add-deploy-key` action. For an
+4. Register a newly created key through the owning CodeRepository's `add-deploy-key` action. For an
    existing key, first reuse it when Git access works; otherwise register it and retry.
 5. Require `git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>` to pass with that
    exact forced SSH identity.
@@ -154,5 +154,5 @@ create another patch version.
 
 Confirm the final commit and backend-owned branch tag are present remotely. Treat that pushed tag,
 not merely the commit, as the automatic-deployment trigger. Report the canonical repository
-identity, attached ref, exact pre-sync `HEAD`, project UID, Git branch, ProjectBranch UID, version,
+identity, attached ref, exact pre-sync `HEAD`, code repository UID, Git branch, CodeRepositoryBranch UID, version,
 exact backend tag, and push result without reporting credentials.

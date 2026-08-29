@@ -7,7 +7,7 @@ import {
   updateProjectSdk,
 } from "./project-sdk-maintenance.mjs";
 import { initializeProjectDocumentation } from "./project-docs.mjs";
-import { syncProject } from "./project-sync.mjs";
+import { syncCodeRepository } from "./code-repository-sync.mjs";
 import { syncAgentSkills } from "./sync-agent-skills.mjs";
 
 const usage = `Command Center SDK
@@ -15,10 +15,10 @@ const usage = `Command Center SDK
 Usage:
   command-center-sdk skills install [--path <repository-root>] [--dry-run] [--json]
   command-center-sdk skills sync [--path <repository-root>] [--mcp-url <url>] [--dry-run] [--json]
-  command-center-sdk project docs init [--path <repository-root>] [--dry-run] [--skip-install] [--json]
-  command-center-sdk project sdk-status [--path <repository-root>] [--json]
-  command-center-sdk project update-sdk [--path <repository-root>] [--dry-run] [--json]
-  command-center-sdk project sync [message] [expectedProjectUid] [--path <repository-root>] [-m <message>] [--dry-run] [--json]
+  command-center-sdk application docs init [--path <repository-root>] [--dry-run] [--skip-install] [--json]
+  command-center-sdk application sdk-status [--path <repository-root>] [--json]
+  command-center-sdk application update-sdk [--path <repository-root>] [--dry-run] [--json]
+  command-center-sdk code-repository sync [message] [expectedCodeRepositoryUid] [--path <repository-root>] [-m <message>] [--dry-run] [--json]
   command-center-sdk theme audit [--path <css-file-or-directory>] [--json]
   command-center-sdk --version
   command-center-sdk --help
@@ -30,17 +30,17 @@ The sync command refreshes packaged skills and authenticated MCP skills in:
   <repository-root>/.agents/skills/command-center/
   <repository-root>/.agents/skills/mainsequence/
 
-The project sync command requires the Vite application at the Git repository root, bumps the npm
-patch version, requests the current ProjectBranch's backend-owned deployment tag, refreshes
-package-lock.json, commits all changes, tags, and pushes. It resolves Project identity from the
-canonical Git origin, attached branch, and exact HEAD commit; an optional expected Project UID is
+The CodeRepository sync command requires the Vite application at the Git repository root, bumps the npm
+patch version, requests the current CodeRepositoryBranch's backend-owned deployment tag, refreshes
+package-lock.json, commits all changes, tags, and pushes. It resolves CodeRepository identity from the
+canonical Git origin, attached branch, and exact HEAD commit; an optional expected CodeRepository UID is
 only a consistency assertion.
 
 The SDK status and update commands compare and refresh only the project's declared Command Center
 SDK dependency. Updates respect its existing npm semver policy and do not commit, tag, push, or
 call the backend.
 
-The project docs init command safely adds the official same-artifact Docusaurus scaffold. It keeps
+The application docs init command safely adds the official same-artifact Docusaurus scaffold. It keeps
 one root npm lockfile, generates SUMMARY and sidebar navigation from one manifest, and emits the
 documentation site at /docs/ inside dist/docs.
 
@@ -128,8 +128,8 @@ function parseSkillArguments(args, { allowMcpUrl = false } = {}) {
   return { help: false, projectDir, dryRun, json, mcpUrl };
 }
 
-export function parseProjectSyncArguments(args) {
-  let projectDir = process.cwd();
+export function parseCodeRepositorySyncArguments(args) {
+  let codeRepositoryDir = process.cwd();
   let messageOption;
   let dryRun = false;
   let json = false;
@@ -146,17 +146,17 @@ export function parseProjectSyncArguments(args) {
       continue;
     }
     if (argument === "--help" || argument === "-h") {
-      return { help: true, projectDir, message: null, projectUid: null, dryRun, json };
+      return { help: true, codeRepositoryDir, message: null, codeRepositoryUid: null, dryRun, json };
     }
     if (argument === "--path" || argument === "-p") {
       index += 1;
-      if (!args[index]) throw new Error(`${argument} requires a project directory.`);
-      projectDir = args[index];
+      if (!args[index]) throw new Error(`${argument} requires a code repository directory.`);
+      codeRepositoryDir = args[index];
       continue;
     }
     if (argument.startsWith("--path=")) {
-      projectDir = argument.slice("--path=".length);
-      if (!projectDir) throw new Error("--path requires a project directory.");
+      codeRepositoryDir = argument.slice("--path=".length);
+      if (!codeRepositoryDir) throw new Error("--path requires a code repository directory.");
       continue;
     }
     if (argument === "--message" || argument === "-m") {
@@ -175,16 +175,16 @@ export function parseProjectSyncArguments(args) {
   }
 
   if (positional.length > 2) {
-    throw new Error("project sync accepts at most two positional arguments.");
+    throw new Error("code-repository sync accepts at most two positional arguments.");
   }
   if (positional[0] !== undefined && messageOption !== undefined) {
     throw new Error("Pass the commit message either positionally or with --message, not both.");
   }
   return {
     help: false,
-    projectDir,
+    codeRepositoryDir,
     message: positional[0] ?? messageOption,
-    projectUid: positional[1] ?? null,
+    codeRepositoryUid: positional[1] ?? null,
     dryRun,
     json,
   };
@@ -202,7 +202,7 @@ function parseProjectSdkArguments(args, { allowDryRun = false } = {}) {
       continue;
     }
     if (argument === "--dry-run") {
-      if (!allowDryRun) throw new Error("--dry-run is available only for project update-sdk.");
+      if (!allowDryRun) throw new Error("--dry-run is available only for application update-sdk.");
       dryRun = true;
       continue;
     }
@@ -304,13 +304,13 @@ function printHumanThemeAudit(result) {
   console.error(`Theme audit failed with ${result.diagnostics.length} violation(s).`);
 }
 
-function printHumanProjectSyncPlan(plan) {
+function printHumanCodeRepositorySyncPlan(plan) {
   console.log(`Repository: ${plan.canonicalRepositoryIdentity}`);
-  console.log(`Project: ${plan.projectUid}`);
+  console.log(`CodeRepository: ${plan.codeRepositoryUid}`);
   console.log(`Git branch: ${plan.gitBranch}`);
   console.log(`Git ref: ${plan.repositoryRef}`);
   console.log(`Git HEAD: ${plan.commitSha}`);
-  console.log(`ProjectBranch: ${plan.projectBranchUid}`);
+  console.log(`CodeRepositoryBranch: ${plan.codeRepositoryBranchUid}`);
   console.log(`Current version: ${plan.currentVersion}`);
   console.log(`Next version: ${plan.nextVersion}`);
   console.log(`Branch tag: ${plan.tagName}`);
@@ -318,12 +318,12 @@ function printHumanProjectSyncPlan(plan) {
   plan.commands.forEach((command, index) => console.log(`  ${index + 1}. ${command}`));
 }
 
-function printHumanProjectSyncResult(result) {
+function printHumanCodeRepositorySyncResult(result) {
   if (result.dryRun) {
     console.log("Dry run: no files, commits, tags, keys, or remote state were changed.");
     return;
   }
-  console.log(`Synced ${result.projectDir}.`);
+  console.log(`Synced ${result.codeRepositoryDir}.`);
   console.log(`Version: ${result.version}`);
   console.log(`Branch tag: ${result.tagName}`);
 }
@@ -411,7 +411,7 @@ async function main() {
     if (!result.ok) process.exitCode = 1;
     return;
   }
-  if (args[0] === "project" && args[1] === "sdk-status") {
+  if (args[0] === "application" && args[1] === "sdk-status") {
     const options = parseProjectSdkArguments(args.slice(2));
     if (options.help) {
       console.log(usage);
@@ -422,7 +422,7 @@ async function main() {
     else printHumanProjectSdkStatus(result);
     return;
   }
-  if (args[0] === "project" && args[1] === "docs" && args[2] === "init") {
+  if (args[0] === "application" && args[1] === "docs" && args[2] === "init") {
     const options = parseProjectDocsArguments(args.slice(3));
     if (options.help) {
       console.log(usage);
@@ -438,7 +438,7 @@ async function main() {
     else printHumanProjectDocsResult(result);
     return;
   }
-  if (args[0] === "project" && args[1] === "update-sdk") {
+  if (args[0] === "application" && args[1] === "update-sdk") {
     const options = parseProjectSdkArguments(args.slice(2), { allowDryRun: true });
     if (options.help) {
       console.log(usage);
@@ -454,22 +454,22 @@ async function main() {
     else printHumanProjectSdkUpdateResult(result);
     return;
   }
-  if (args[0] === "project" && args[1] === "sync") {
-    const options = parseProjectSyncArguments(args.slice(2));
+  if (args[0] === "code-repository" && args[1] === "sync") {
+    const options = parseCodeRepositorySyncArguments(args.slice(2));
     if (options.help) {
       console.log(usage);
       return;
     }
-    const result = await syncProject({
+    const result = await syncCodeRepository({
       message: options.message,
-      projectUid: options.projectUid,
-      projectDir: options.projectDir,
+      codeRepositoryUid: options.codeRepositoryUid,
+      projectDir: options.codeRepositoryDir,
       dryRun: options.dryRun,
       quiet: options.json,
-      onPlan: options.json ? undefined : printHumanProjectSyncPlan,
+      onPlan: options.json ? undefined : printHumanCodeRepositorySyncPlan,
     });
     if (options.json) console.log(JSON.stringify(result, null, 2));
-    else printHumanProjectSyncResult(result);
+    else printHumanCodeRepositorySyncResult(result);
     return;
   }
   if (args[0] !== "skills" || !new Set(["install", "sync"]).has(args[1])) {

@@ -19,45 +19,45 @@ const DEFAULT_GIT_ORIGIN_PORTS = new Map([
 ]);
 const SCP_GIT_ORIGIN_PATTERN = /^(?:[^@/\s]+@)?(?<host>[^:/\s]+):(?<path>.+)$/u;
 
-export class ProjectSyncLocalError extends Error {
+export class CodeRepositorySyncLocalError extends Error {
   constructor(message, options) {
     super(message, options);
-    this.name = "ProjectSyncLocalError";
+    this.name = "CodeRepositorySyncLocalError";
   }
 }
 
 function cleanGitRepositoryPath(value) {
   if (value.includes("\\")) {
-    throw new ProjectSyncLocalError("Git origin repository paths must use forward slashes.");
+    throw new CodeRepositorySyncLocalError("Git origin repository paths must use forward slashes.");
   }
   let path = value.replace(/\/{2,}/gu, "/").replace(/^\/+|\/+$/gu, "");
   if (path.toLowerCase().endsWith(".git")) path = path.slice(0, -4);
   path = path.replace(/\/+$/gu, "");
-  if (!path) throw new ProjectSyncLocalError("Git origin must include a repository path.");
+  if (!path) throw new CodeRepositorySyncLocalError("Git origin must include a repository path.");
   return path;
 }
 
 export function repositorySshKeyIdentity(origin) {
   const candidate = String(origin || "").trim().replace(/[?#].*$/u, "");
-  if (!candidate) throw new ProjectSyncLocalError("Git origin must be non-empty.");
+  if (!candidate) throw new CodeRepositorySyncLocalError("Git origin must be non-empty.");
   if (/[\r\n]/u.test(candidate)) {
-    throw new ProjectSyncLocalError("Git origin must contain one non-empty line.");
+    throw new CodeRepositorySyncLocalError("Git origin must contain one non-empty line.");
   }
 
   const schemeMatch = candidate.match(/^(?<scheme>[A-Za-z][A-Za-z0-9+.-]*):\/\//u);
   if (schemeMatch) {
     const scheme = schemeMatch.groups.scheme.toLowerCase();
     if (!SUPPORTED_GIT_ORIGIN_SCHEMES.has(scheme)) {
-      throw new ProjectSyncLocalError(`Unsupported Git origin scheme: ${scheme}.`);
+      throw new CodeRepositorySyncLocalError(`Unsupported Git origin scheme: ${scheme}.`);
     }
     let parsed;
     try {
       parsed = new URL(candidate);
     } catch (error) {
-      throw new ProjectSyncLocalError(`Invalid Git origin: ${origin}.`, { cause: error });
+      throw new CodeRepositorySyncLocalError(`Invalid Git origin: ${origin}.`, { cause: error });
     }
     const host = parsed.hostname.toLowerCase().replace(/\.$/u, "");
-    if (!host) throw new ProjectSyncLocalError("Git origin must include a hostname.");
+    if (!host) throw new CodeRepositorySyncLocalError("Git origin must include a hostname.");
     const path = cleanGitRepositoryPath(parsed.pathname);
     const port = parsed.port;
     const defaultPort = DEFAULT_GIT_ORIGIN_PORTS.get(scheme);
@@ -70,7 +70,7 @@ export function repositorySshKeyIdentity(origin) {
 
   const scpMatch = candidate.match(SCP_GIT_ORIGIN_PATTERN);
   if (!scpMatch) {
-    throw new ProjectSyncLocalError(
+    throw new CodeRepositorySyncLocalError(
       "Git origin must be an SSH, Git, HTTP, or HTTPS repository URL.",
     );
   }
@@ -96,7 +96,7 @@ export function repositorySshKeyName(origin) {
 export function requireSshGitOrigin(origin) {
   const result = repositorySshKeyIdentity(origin);
   if (!result.usesSsh) {
-    throw new ProjectSyncLocalError(
+    throw new CodeRepositorySyncLocalError(
       "Git origin must use SSH before a repository deploy key can be selected.",
     );
   }
@@ -119,14 +119,14 @@ function runSpawn(spawnSyncImpl, command, args, { cwd, env, quiet = true, allowF
     stdio: quiet ? "pipe" : "inherit",
   });
   if (result.error) {
-    throw new ProjectSyncLocalError(
+    throw new CodeRepositorySyncLocalError(
       `Could not run ${commandText(command, args)}: ${result.error.message}`,
       { cause: result.error },
     );
   }
   if (!allowFailure && result.status !== 0) {
     const detail = resultText(result);
-    throw new ProjectSyncLocalError(
+    throw new CodeRepositorySyncLocalError(
       `${commandText(command, args)} failed with status ${result.status ?? "unknown"}${detail ? `: ${detail}` : "."}`,
     );
   }
@@ -147,14 +147,14 @@ export function sanitizeCommitMessage(message) {
     .replace(/[\r\n]/gu, " ")
     .replaceAll('"', "'")
     .trim();
-  if (!normalized) throw new ProjectSyncLocalError("Commit message is required.");
+  if (!normalized) throw new CodeRepositorySyncLocalError("Commit message is required.");
   return normalized;
 }
 
 export function nextNpmPatchVersion(version) {
   const match = String(version || "").match(NPM_PATCH_VERSION_PATTERN);
   if (!match) {
-    throw new ProjectSyncLocalError(`Cannot calculate npm patch version from: ${version}`);
+    throw new CodeRepositorySyncLocalError(`Cannot calculate npm patch version from: ${version}`);
   }
   const { major, minor, patch, prerelease } = match.groups;
   return prerelease
@@ -162,7 +162,7 @@ export function nextNpmPatchVersion(version) {
     : `${major}.${minor}.${BigInt(patch) + 1n}`;
 }
 
-export function createProjectSyncLocalOps({
+export function createCodeRepositorySyncLocalOps({
   spawnSyncImpl = spawnSync,
   processEnv = process.env,
   homeDirectory = homedir(),
@@ -175,69 +175,69 @@ export function createProjectSyncLocalOps({
   }
 
   return {
-    async resolveProjectDir(path) {
-      const projectDir = resolve(path || process.cwd());
-      let projectStat;
+    async resolveCodeRepositoryDir(path) {
+      const codeRepositoryDir = resolve(path || process.cwd());
+      let codeRepositoryStat;
       try {
-        projectStat = await stat(projectDir);
+        codeRepositoryStat = await stat(codeRepositoryDir);
       } catch (error) {
-        throw new ProjectSyncLocalError(`Project directory does not exist: ${projectDir}`, {
+        throw new CodeRepositorySyncLocalError(`Code repository directory does not exist: ${codeRepositoryDir}`, {
           cause: error,
         });
       }
-      if (!projectStat.isDirectory()) {
-        throw new ProjectSyncLocalError(`Project path is not a directory: ${projectDir}`);
+      if (!codeRepositoryStat.isDirectory()) {
+        throw new CodeRepositorySyncLocalError(`Code repository path is not a directory: ${codeRepositoryDir}`);
       }
-      return projectDir;
+      return codeRepositoryDir;
     },
 
-    async inspectProject(projectDir) {
-      const manifestPath = join(projectDir, "package.json");
-      const lockPath = join(projectDir, "package-lock.json");
+    async inspectCodeRepository(codeRepositoryDir) {
+      const manifestPath = join(codeRepositoryDir, "package.json");
+      const lockPath = join(codeRepositoryDir, "package-lock.json");
       let manifest;
       try {
         manifest = JSON.parse(await readFile(manifestPath, "utf8"));
       } catch (error) {
-        throw new ProjectSyncLocalError(`Could not read a valid ${manifestPath}: ${error.message}`, {
+        throw new CodeRepositorySyncLocalError(`Could not read a valid ${manifestPath}: ${error.message}`, {
           cause: error,
         });
       }
       if (typeof manifest.version !== "string" || !SEMVER_PATTERN.test(manifest.version)) {
-        throw new ProjectSyncLocalError(`${manifestPath} must declare a semantic version.`);
+        throw new CodeRepositorySyncLocalError(`${manifestPath} must declare a semantic version.`);
       }
       if (!(await pathExists(lockPath))) {
-        throw new ProjectSyncLocalError(`Project sync requires ${lockPath}.`);
+        throw new CodeRepositorySyncLocalError(`CodeRepository sync requires ${lockPath}.`);
       }
-      capture("npm", ["--version"], projectDir);
+      capture("npm", ["--version"], codeRepositoryDir);
       const repositoryRoot = resolve(
-        capture("git", ["rev-parse", "--show-toplevel"], projectDir),
+        capture("git", ["rev-parse", "--show-toplevel"], codeRepositoryDir),
       );
-      const [canonicalProjectDir, canonicalRepositoryRoot] = await Promise.all([
-        realpath(projectDir),
+      const [canonicalCodeRepositoryDir, canonicalRepositoryRoot] = await Promise.all([
+        realpath(codeRepositoryDir),
         realpath(repositoryRoot),
       ]);
-      if (canonicalRepositoryRoot !== canonicalProjectDir) {
-        throw new ProjectSyncLocalError(
-          `Command Center project sync requires the Vite application at the Git repository root (${repositoryRoot}); received nested project directory ${projectDir}.`,
+      if (canonicalRepositoryRoot !== canonicalCodeRepositoryDir) {
+        throw new CodeRepositorySyncLocalError(
+          `Command Center code-repository sync requires the Vite application at the Git repository root (${repositoryRoot}); received nested code repository directory ${codeRepositoryDir}.`,
         );
       }
-      const gitBranch = capture("git", ["branch", "--show-current"], projectDir);
+      const gitBranch = capture("git", ["branch", "--show-current"], codeRepositoryDir);
       if (!gitBranch) {
-        throw new ProjectSyncLocalError("Current Git checkout is detached or has no named branch.");
+        throw new CodeRepositorySyncLocalError("Current Git checkout is detached or has no named branch.");
       }
-      const repositoryRef = capture("git", ["symbolic-ref", "--quiet", "HEAD"], projectDir);
+      const repositoryRef = capture("git", ["symbolic-ref", "--quiet", "HEAD"], codeRepositoryDir);
       if (repositoryRef !== `refs/heads/${gitBranch}`) {
-        throw new ProjectSyncLocalError(
+        throw new CodeRepositorySyncLocalError(
           `Git branch ${JSON.stringify(gitBranch)} does not match attached ref ${JSON.stringify(repositoryRef)}.`,
         );
       }
-      const commitSha = capture("git", ["rev-parse", "--verify", "HEAD^{commit}"], projectDir)
+      const commitSha = capture("git", ["rev-parse", "--verify", "HEAD^{commit}"], codeRepositoryDir)
         .toLowerCase();
       if (!CANONICAL_COMMIT_SHA_PATTERN.test(commitSha)) {
-        throw new ProjectSyncLocalError("Git HEAD is not a canonical full commit SHA.");
+        throw new CodeRepositorySyncLocalError("Git HEAD is not a canonical full commit SHA.");
       }
-      const origin = capture("git", ["remote", "get-url", "origin"], projectDir);
-      if (!origin) throw new ProjectSyncLocalError('Could not find Git remote "origin".');
+      const origin = capture("git", ["remote", "get-url", "origin"], codeRepositoryDir);
+      if (!origin) throw new CodeRepositorySyncLocalError('Could not find Git remote "origin".');
       const canonicalRepositoryIdentity = repositorySshKeyIdentity(origin).identity;
       return {
         currentVersion: manifest.version,
@@ -249,17 +249,17 @@ export function createProjectSyncLocalOps({
       };
     },
 
-    async readPackageVersion(projectDir) {
+    async readPackageVersion(codeRepositoryDir) {
       let manifest;
       try {
-        manifest = JSON.parse(await readFile(join(projectDir, "package.json"), "utf8"));
+        manifest = JSON.parse(await readFile(join(codeRepositoryDir, "package.json"), "utf8"));
       } catch (error) {
-        throw new ProjectSyncLocalError(`Could not read the updated package.json: ${error.message}`, {
+        throw new CodeRepositorySyncLocalError(`Could not read the updated package.json: ${error.message}`, {
           cause: error,
         });
       }
       if (typeof manifest.version !== "string" || !SEMVER_PATTERN.test(manifest.version)) {
-        throw new ProjectSyncLocalError("npm version did not produce a semantic project version.");
+        throw new CodeRepositorySyncLocalError("npm version did not produce a semantic code repository version.");
       }
       return manifest.version;
     },
@@ -276,7 +276,7 @@ export function createProjectSyncLocalOps({
         pathExists(publicKeyPath),
       ]);
       if (privateKeyExists !== publicKeyExists) {
-        throw new ProjectSyncLocalError(
+        throw new CodeRepositorySyncLocalError(
           privateKeyExists
             ? `Repository SSH public key is missing: ${publicKeyPath}`
             : `Repository SSH private key is missing: ${keyPath}`,
@@ -292,28 +292,28 @@ export function createProjectSyncLocalOps({
         );
       }
       if (!(await pathExists(keyPath))) {
-        throw new ProjectSyncLocalError(`Repository SSH key was not created: ${keyPath}`);
+        throw new CodeRepositorySyncLocalError(`Repository SSH key was not created: ${keyPath}`);
       }
       if (!(await pathExists(publicKeyPath))) {
-        throw new ProjectSyncLocalError(`Repository SSH public key is missing: ${publicKeyPath}`);
+        throw new CodeRepositorySyncLocalError(`Repository SSH public key is missing: ${publicKeyPath}`);
       }
       let publicKey;
       try {
         publicKey = (await readFile(publicKeyPath, "utf8")).trim();
       } catch (error) {
-        throw new ProjectSyncLocalError(
+        throw new CodeRepositorySyncLocalError(
           `Could not read repository SSH public key ${publicKeyPath}: ${error.message}`,
           { cause: error },
         );
       }
       if (!publicKey || /[\r\n]/u.test(publicKey)) {
-        throw new ProjectSyncLocalError(
+        throw new CodeRepositorySyncLocalError(
           `Repository SSH public key must contain one non-empty line: ${publicKeyPath}`,
         );
       }
       const keyTitle = String(hostName || "").trim();
       if (!keyTitle || /[\r\n]/u.test(keyTitle)) {
-        throw new ProjectSyncLocalError("Local hostname must contain one non-empty line.");
+        throw new CodeRepositorySyncLocalError("Local hostname must contain one non-empty line.");
       }
       return { created, keyPath, keyTitle, publicKey };
     },
@@ -326,7 +326,7 @@ export function createProjectSyncLocalOps({
       };
     },
 
-    verifyGitPush(projectDir, gitBranch, env, { quiet = true } = {}) {
+    verifyGitPush(codeRepositoryDir, gitBranch, env, { quiet = true } = {}) {
       runSpawn(
         spawnSyncImpl,
         "git",
@@ -337,45 +337,45 @@ export function createProjectSyncLocalOps({
           "origin",
           `HEAD:refs/heads/${gitBranch}`,
         ],
-        { cwd: projectDir, env, quiet },
+        { cwd: codeRepositoryDir, env, quiet },
       );
     },
 
-    validateGitTag(projectDir, tagName, env = processEnv) {
+    validateGitTag(codeRepositoryDir, tagName, env = processEnv) {
       runSpawn(
         spawnSyncImpl,
         "git",
         ["check-ref-format", `refs/tags/${tagName}`],
-        { cwd: projectDir, env, quiet: true },
+        { cwd: codeRepositoryDir, env, quiet: true },
       );
       const existing = runSpawn(
         spawnSyncImpl,
         "git",
         ["show-ref", "--verify", "--quiet", `refs/tags/${tagName}`],
-        { cwd: projectDir, env, quiet: true, allowFailure: true },
+        { cwd: codeRepositoryDir, env, quiet: true, allowFailure: true },
       );
       if (existing.status === 0) {
-        throw new ProjectSyncLocalError(`Git tag already exists locally: ${tagName}`);
+        throw new CodeRepositorySyncLocalError(`Git tag already exists locally: ${tagName}`);
       }
       if (existing.status !== 1) {
-        throw new ProjectSyncLocalError(`Could not check whether Git tag already exists: ${tagName}`);
+        throw new CodeRepositorySyncLocalError(`Could not check whether Git tag already exists: ${tagName}`);
       }
     },
 
-    validateRemoteGitTag(projectDir, tagName, env) {
+    validateRemoteGitTag(codeRepositoryDir, tagName, env) {
       const remoteRef = `refs/tags/${tagName}`;
       const existing = runSpawn(
         spawnSyncImpl,
         "git",
         ["ls-remote", "--exit-code", "--refs", "--tags", "origin", remoteRef],
-        { cwd: projectDir, env, quiet: true, allowFailure: true },
+        { cwd: codeRepositoryDir, env, quiet: true, allowFailure: true },
       );
       if (existing.status === 0) {
-        throw new ProjectSyncLocalError(`Git tag already exists remotely: ${tagName}`);
+        throw new CodeRepositorySyncLocalError(`Git tag already exists remotely: ${tagName}`);
       }
       if (existing.status !== 2) {
         const detail = resultText(existing);
-        throw new ProjectSyncLocalError(
+        throw new CodeRepositorySyncLocalError(
           `Could not check whether Git tag exists remotely: ${tagName}${detail ? `: ${detail}` : "."}`,
         );
       }
@@ -387,4 +387,4 @@ export function createProjectSyncLocalOps({
   };
 }
 
-export const projectSyncLocalOps = createProjectSyncLocalOps();
+export const codeRepositorySyncLocalOps = createCodeRepositorySyncLocalOps();

@@ -326,17 +326,17 @@ test("npm update disables authenticated MCP postinstall and preserves JSON outpu
 test("CLI routes SDK maintenance commands and rejects unsupported options as JSON", () => {
   const statusResult = spawnSync(
     process.execPath,
-    [cliPath, "project", "sdk-status", "--dry-run", "--json"],
+    [cliPath, "application", "sdk-status", "--dry-run", "--json"],
     { encoding: "utf8" },
   );
   assert.equal(statusResult.status, 1);
   assert.deepEqual(JSON.parse(statusResult.stderr), {
-    error: "--dry-run is available only for project update-sdk.",
+    error: "--dry-run is available only for application update-sdk.",
   });
 
   const updateResult = spawnSync(
     process.execPath,
-    [cliPath, "project", "update-sdk", "unexpected", "--json"],
+    [cliPath, "application", "update-sdk", "unexpected", "--json"],
     { encoding: "utf8" },
   );
   assert.equal(updateResult.status, 1);

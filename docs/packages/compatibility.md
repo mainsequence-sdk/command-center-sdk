@@ -41,11 +41,11 @@ not silently change the others.
 A registered Main Sequence Vite project uses one root for Git, npm, project identity, and agent
 guidance. `package.json`, `package-lock.json`, `.env`, and `.agents/` live at the Git repository
 root, and Vite normally produces `dist/` there. The SDK does not provide a compatibility workflow
-for a nested `frontend/` project; `command-center-sdk project sdk-status`, `project update-sdk`, and
-`project sync` reject a supplied directory below the Git root.
+for a nested `frontend/` project; `command-center-sdk application sdk-status`, `application update-sdk`, and
+`code-repository sync` reject a supplied directory below the Git root.
 
 The SDK maintenance commands report declared, locked, installed, npm-wanted, and registry-latest
-versions independently. `project update-sdk` respects the consuming project's existing npm
+versions independently. `application update-sdk` respects the consuming project's existing npm
 dependency policy. It does not widen a constraint to cross a compatibility boundary, replace a
 non-registry source, change the application's own version, or combine dependency maintenance with
 backend deployment or Git release operations.

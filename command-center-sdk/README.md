@@ -188,8 +188,8 @@ the packaged `command-center` skill installation still runs.
 From a consuming frontend's Git and npm root, preview and add the official documentation system:
 
 ```bash
-npx command-center-sdk project docs init --path . --dry-run
-npx command-center-sdk project docs init --path .
+npx command-center-sdk application docs init --path . --dry-run
+npx command-center-sdk application docs init --path .
 ```
 
 The initializer preserves the application build as `build:app`, adds the `/docs/` Docusaurus
@@ -207,10 +207,10 @@ locked, and installed SDK versions with npm's compatible `wanted` version and th
 `latest` version:
 
 ```bash
-npx command-center-sdk project sdk-status --path .
-npx command-center-sdk project sdk-status --path . --json
-npx command-center-sdk project update-sdk --path . --dry-run
-npx command-center-sdk project update-sdk --path .
+npx command-center-sdk application sdk-status --path .
+npx command-center-sdk application sdk-status --path . --json
+npx command-center-sdk application update-sdk --path . --dry-run
+npx command-center-sdk application update-sdk --path .
 ```
 
 `update-sdk` runs a package-scoped npm update only when the existing dependency declaration allows
@@ -220,23 +220,23 @@ Git, URL, alias, and peer dependency declarations are reported but not rewritten
 upgrade, run `command-center-sdk skills sync --path .` when both packaged and backend-owned agent
 guidance must be refreshed and verified.
 
-## Project sync and automatic deployment
+## CodeRepository sync and automatic deployment
 
-Use the SDK CLI when a registered Command Center npm project is ready to be versioned, committed,
+Use the SDK CLI when a registered Command Center code repository is ready to be versioned, committed,
 tagged, and pushed for automatic deployment:
 
 ```bash
 export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
 export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
-npx command-center-sdk project sync -m "Describe the change" --path . --dry-run
-npx command-center-sdk project sync -m "Describe the change" --path .
+npx command-center-sdk code-repository sync -m "Describe the change" --path . --dry-run
+npx command-center-sdk code-repository sync -m "Describe the change" --path .
 ```
 
 The Git repository root must contain `package.json` plus `package-lock.json`. Before changing local
 state, the command verifies that the supplied path is that root and resolves its canonical `origin`,
 attached branch, and exact `HEAD` commit through the backend Git-context endpoint. The response
-authoritatively supplies both the registered `ProjectBranch` and its parent Project. The command
-does not read or restore `MAIN_SEQUENCE_PROJECT_UID` in `.env`; an optional positional Project UID
+authoritatively supplies both the registered `CodeRepositoryBranch` and its parent CodeRepository. The command
+does not read or restore `MAIN_SEQUENCE_PROJECT_UID` in `.env`; an optional positional CodeRepository UID
 is only a consistency assertion against the Git-resolved result. It previews the npm patch version,
 requests that version's backend-owned tag, and rejects an invalid or existing local tag before
 creating an SSH key. It then registers a newly created repository SSH public key through the owning
@@ -257,8 +257,8 @@ lockfile, runs `git add -A`, commits, creates the returned annotated tag unchang
 pushes the explicit branch and tag refs with `--follow-tags`. Consequently, `main`, `dev`, and
 feature branches may receive different backend-owned tag formats. Review the complete working tree
 before running the command because every modification, deletion, and untracked file is staged. See
-the installed `general/maintain-command-center-project` skill and the
-[project-sync guide](./docs/getting-started.md#sync-a-project-for-automatic-deployment) for failure
+the installed `general/maintain-command-center-code-repository` skill and the
+[code-repository-sync guide](./docs/getting-started.md#sync-a-code-repository-for-automatic-deployment) for failure
 and recovery semantics.
 
 ## Maintenance constraints

@@ -18,7 +18,7 @@ package and renders a real resource list in a few minutes.
 | I want to… | Human guide | Installed skill path |
 | --- | --- | --- |
 | Install the SDK | [Getting started](./getting-started.md) | `general/use-command-center-sdk` |
-| Version, commit, and trigger automatic project deployment | [Getting started](./getting-started.md#sync-a-project-for-automatic-deployment) | `general/maintain-command-center-project` |
+| Version, commit, and trigger automatic code repository deployment | [Getting started](./getting-started.md#sync-a-code-repository-for-automatic-deployment) | `general/maintain-command-center-code-repository` |
 | Design, route, and add application navigation | [Application navigation](./navigation.md) | `general/build-command-center-application` |
 | Create, validate, and ship application documentation at `/docs/` | [Application documentation](./application-documentation.md) | `documentation/document-command-center-application` |
 | Compose and verify a complete responsive page | [Application layout](./application-layout.md) | `layout/compose-command-center-page` |

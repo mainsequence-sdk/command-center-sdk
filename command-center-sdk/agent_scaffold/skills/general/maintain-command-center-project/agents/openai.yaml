@@ -1,4 +1,0 @@
-interface:
-  display_name: "Maintain Command Center Project"
-  short_description: "Version, tag, and deploy a registered project"
-  default_prompt: "Use $maintain-command-center-project to safely sync this project and trigger its branch-specific automatic deployment."

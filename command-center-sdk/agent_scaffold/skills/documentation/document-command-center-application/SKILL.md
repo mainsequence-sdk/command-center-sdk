@@ -1,6 +1,6 @@
 ---
 name: document-command-center-application
-description: Create, migrate, validate, build, and review documentation shipped with a Command Center frontend. Use when a Vite application needs human application and technical documentation, an official Docusaurus site at /docs/, one npm toolchain and lockfile, generated SUMMARY and sidebar navigation, browser verification, or the command-center-sdk project docs init scaffold.
+description: Create, migrate, validate, build, and review documentation shipped with a Command Center frontend. Use when a Vite application needs human application and technical documentation, an official Docusaurus site at /docs/, one npm toolchain and lockfile, generated SUMMARY and sidebar navigation, browser verification, or the command-center-sdk application docs init scaffold.
 ---
 
 # Document A Command Center Application
@@ -22,8 +22,8 @@ while documenting an application.
 Run this command at the consuming frontend's Git and npm root:
 
 ```bash
-npx command-center-sdk project docs init --path . --dry-run
-npx command-center-sdk project docs init --path .
+npx command-center-sdk application docs init --path . --dry-run
+npx command-center-sdk application docs init --path .
 ```
 
 The initializer requires `package.json` and `package-lock.json`, rejects competing package-manager

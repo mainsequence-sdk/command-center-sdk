@@ -5,7 +5,7 @@ title: Getting started
 
 # Getting started
 
-This guide matches the `use-command-center-sdk`, `maintain-command-center-project`,
+This guide matches the `use-command-center-sdk`, `maintain-command-center-code-repository`,
 `build-command-center-application`, and `document-command-center-application` skills.
 
 ## Install the package
@@ -56,8 +56,8 @@ under `mainsequence`. The installer overwrites or removes only MCP folders recor
 Add the official same-artifact Docusaurus system from the frontend's Git and npm root:
 
 ```bash
-npx command-center-sdk project docs init --path . --dry-run
-npx command-center-sdk project docs init --path .
+npx command-center-sdk application docs init --path . --dry-run
+npx command-center-sdk application docs init --path .
 ```
 
 The initializer keeps one root npm lockfile and Node runtime, creates human and technical
@@ -72,8 +72,8 @@ browser-verification requirements.
 Run the status command at the Git repository root before changing a consuming project's SDK:
 
 ```bash
-npx command-center-sdk project sdk-status --path .
-npx command-center-sdk project sdk-status --path . --json
+npx command-center-sdk application sdk-status --path .
+npx command-center-sdk application sdk-status --path . --json
 ```
 
 The result keeps five different facts separate: the dependency spec declared in `package.json`,
@@ -84,8 +84,8 @@ missing install or lockfile drift distinguishable from an available compatible u
 Preview and apply the compatible package-scoped update with:
 
 ```bash
-npx command-center-sdk project update-sdk --path . --dry-run
-npx command-center-sdk project update-sdk --path .
+npx command-center-sdk application update-sdk --path . --dry-run
+npx command-center-sdk application update-sdk --path .
 ```
 
 The update respects the existing npm declaration and refuses linked, workspace, file, Git, URL,
@@ -95,25 +95,25 @@ boundary remains an explicit project decision. It never calls the backend or per
 commit, tag, or push. After an applied update, run `command-center-sdk skills sync --path .` when
 the backend-owned guidance must also be refreshed strictly.
 
-## Sync a project for automatic deployment
+## Sync a code repository for automatic deployment
 
-`command-center-sdk project sync` is the npm-project equivalent of Python's
-`mainsequence project sync`. Use it after a consuming project change is ready to become one commit
+`command-center-sdk code-repository sync` is the npm-project equivalent of Python's
+`mainsequence code-repository sync`. Use it after a consuming project change is ready to become one commit
 and one backend-recognized automatic deployment:
 
 ```bash
 export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
 export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
-npx command-center-sdk project sync -m "Update the project" --path . --dry-run
-npx command-center-sdk project sync -m "Update the project" --path .
+npx command-center-sdk code-repository sync -m "Update the project" --path . --dry-run
+npx command-center-sdk code-repository sync -m "Update the project" --path .
 ```
 
 The supplied path must be the Git repository root and contain `package.json` and
 `package-lock.json`. Preflight rejects a nested application directory, then sends the canonical
 `origin`, attached branch, and exact `HEAD` commit to the backend Git-context resolver. That
-authoritative response supplies the matching `ProjectBranch` and parent Project UID. Do not add or
+authoritative response supplies the matching `CodeRepositoryBranch` and parent CodeRepository UID. Do not add or
 restore `MAIN_SEQUENCE_PROJECT_UID` in `.env`; project identity is derived from Git, and an optional
-positional Project UID is only a consistency assertion. If the checkout is detached, its Git
+positional CodeRepository UID is only a consistency assertion. If the checkout is detached, its Git
 context is unregistered or ambiguous, or the backend echoes another repository, branch, ref, or
 commit, the command stops before versioning, dependency installation, SSH-key creation, Git staging,
 commit, tag, or push. Register the branch through the platform workflow; never search a nested
@@ -121,7 +121,7 @@ directory, fall back to `main`, or invent a local deployment tag. The dry run pr
 version, requests the backend-owned tag, and rejects an invalid or existing local tag without
 creating SSH credentials or changing files.
 
-For a newly generated repository key, the command posts its public key to the owning Project's
+For a newly generated repository key, the command posts its public key to the owning CodeRepository's
 `add-deploy-key` action. For an existing key, it first reuses the key when Git access already works
 and registers it only when access fails. In both cases, `git push --dry-run --follow-tags` must pass
 against `origin` and `HEAD:refs/heads/<branch>` with the exact forced SSH identity before versioning
@@ -155,7 +155,7 @@ backend naming algorithm.
 Inspect `git status --short` before execution because all modifications, deletions, and untracked
 files are included. The command stops on the first failure and does not automatically roll back a
 version bump, npm lifecycle effect, commit, or local tag. Use `--json` for structured evidence and
-the installed `general/maintain-command-center-project` skill for the complete recovery checklist.
+the installed `general/maintain-command-center-code-repository` skill for the complete recovery checklist.
 
 ## Pick the highest-level surface that fits
 

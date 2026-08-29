@@ -83,9 +83,9 @@ try {
     "install-agent-skills.mjs",
     "install-mcp-skills.mjs",
     "mcp-platform-skills.mjs",
-    "project-sync-api.mjs",
-    "project-sync-local-ops.mjs",
-    "project-sync.mjs",
+    "code-repository-sync-api.mjs",
+    "code-repository-sync-local-ops.mjs",
+    "code-repository-sync.mjs",
     "project-sdk-maintenance.mjs",
     "project-docs.mjs",
     "sync-agent-skills.mjs",
@@ -96,10 +96,10 @@ try {
     { encoding: "utf8" },
   );
   assert.match(cliHelp, /skills sync/u);
-  assert.match(cliHelp, /project sdk-status/u);
-  assert.match(cliHelp, /project update-sdk/u);
-  assert.match(cliHelp, /project docs init/u);
-  assert.match(cliHelp, /project sync/u);
+  assert.match(cliHelp, /application sdk-status/u);
+  assert.match(cliHelp, /application update-sdk/u);
+  assert.match(cliHelp, /application docs init/u);
+  assert.match(cliHelp, /code-repository sync/u);
   assert.match(cliHelp, /repository-root/u);
   const embedModule = await import(
     pathToFileURL(join(extractedPackage, "dist", "embed", "index.js")).href
@@ -178,7 +178,7 @@ try {
     process.execPath,
     [
       join(extractedPackage, "cli", "command-center-sdk.mjs"),
-      "project",
+      "application",
       "docs",
       "init",
       "--path",
@@ -289,7 +289,7 @@ try {
   );
   assert.match(
     await readFile(join(documentationSkillRoot, "SKILL.md"), "utf8"),
-    /command-center-sdk project docs init/u,
+    /command-center-sdk application docs init/u,
   );
   await readFile(join(documentationSkillRoot, "agents", "openai.yaml"), "utf8");
   await readFile(
@@ -315,7 +315,7 @@ try {
     "utf8",
   );
   const maintainProjectSkill = await readFile(
-    join(managedRoot, "general", "maintain-command-center-project", "SKILL.md"),
+    join(managedRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
     "utf8",
   );
   assert.match(maintainProjectSkill, /backend-owned tag|backend-returned annotated tag/iu);
@@ -328,7 +328,7 @@ try {
       join(managedRoot, "general", "use-command-center-sdk", "SKILL.md"),
       "utf8",
     ),
-    /project sdk-status/u,
+    /application sdk-status/u,
   );
   await readFile(
     join(managedRoot, "contracts", "implement-command-center-contract", "agents", "openai.yaml"),

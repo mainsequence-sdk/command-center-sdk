@@ -1,23 +1,23 @@
 const DEFAULT_TIMEOUT_MS = 15_000;
 const CANONICAL_COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/u;
 
-export class ProjectSyncApiError extends Error {
+export class CodeRepositorySyncApiError extends Error {
   constructor(message, options) {
     super(message, options);
-    this.name = "ProjectSyncApiError";
+    this.name = "CodeRepositorySyncApiError";
   }
 }
 
 function requireObject(value, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new ProjectSyncApiError(`${label} must be an object.`);
+    throw new CodeRepositorySyncApiError(`${label} must be an object.`);
   }
   return value;
 }
 
 function requireSingleLine(value, label) {
   if (typeof value !== "string" || !value.trim() || /[\r\n]/u.test(value)) {
-    throw new ProjectSyncApiError(`${label} must be non-empty single-line text.`);
+    throw new CodeRepositorySyncApiError(`${label} must be non-empty single-line text.`);
   }
   return value.trim();
 }
@@ -25,7 +25,7 @@ function requireSingleLine(value, label) {
 function requireCanonicalCommitSha(value, label) {
   const commitSha = requireSingleLine(value, label).toLowerCase();
   if (!CANONICAL_COMMIT_SHA_PATTERN.test(commitSha)) {
-    throw new ProjectSyncApiError(`${label} must be a canonical full Git commit SHA.`);
+    throw new CodeRepositorySyncApiError(`${label} must be a canonical full Git commit SHA.`);
   }
   return commitSha;
 }
@@ -36,13 +36,13 @@ function normalizeBackendUrl(value) {
   try {
     url = new URL(candidate);
   } catch (error) {
-    throw new ProjectSyncApiError(
+    throw new CodeRepositorySyncApiError(
       "MAINSEQUENCE_ENDPOINT must be an absolute HTTP(S) URL.",
       { cause: error },
     );
   }
   if (!new Set(["http:", "https:"]).has(url.protocol) || url.username || url.password) {
-    throw new ProjectSyncApiError(
+    throw new CodeRepositorySyncApiError(
       "MAINSEQUENCE_ENDPOINT must be an absolute HTTP(S) URL without embedded credentials.",
     );
   }
@@ -51,7 +51,7 @@ function normalizeBackendUrl(value) {
   return url.toString().replace(/\/+$/u, "");
 }
 
-export function resolveProjectSyncConfiguration({
+export function resolveCodeRepositorySyncConfiguration({
   backendUrl,
   accessToken,
   env = process.env,
@@ -75,7 +75,7 @@ function responseDetail(payload) {
   return typeof detail === "string" && detail.trim() ? detail.trim() : null;
 }
 
-export function createProjectSyncApi({
+export function createCodeRepositorySyncApi({
   backendUrl,
   accessToken,
   fetchImpl = globalThis.fetch,
@@ -84,10 +84,10 @@ export function createProjectSyncApi({
   const normalizedBackendUrl = normalizeBackendUrl(backendUrl);
   const token = requireSingleLine(accessToken, "Main Sequence access token");
   if (typeof fetchImpl !== "function") {
-    throw new ProjectSyncApiError("A Fetch-compatible backend transport is required.");
+    throw new CodeRepositorySyncApiError("A Fetch-compatible backend transport is required.");
   }
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1) {
-    throw new ProjectSyncApiError("Backend timeout must be a positive integer.");
+    throw new CodeRepositorySyncApiError("Backend timeout must be a positive integer.");
   }
 
   async function request(method, path, body, { expectJson = true } = {}) {
@@ -107,7 +107,7 @@ export function createProjectSyncApi({
       });
     } catch (error) {
       const detail = error?.name === "AbortError" ? `timed out after ${timeoutMs}ms` : "failed";
-      throw new ProjectSyncApiError(`Backend ${method} ${path} ${detail}.`, { cause: error });
+      throw new CodeRepositorySyncApiError(`Backend ${method} ${path} ${detail}.`, { cause: error });
     } finally {
       clearTimeout(timer);
     }
@@ -119,24 +119,24 @@ export function createProjectSyncApi({
       try {
         payload = await response.json();
       } catch (error) {
-        throw new ProjectSyncApiError(`Backend ${method} ${path} returned invalid JSON.`, {
+        throw new CodeRepositorySyncApiError(`Backend ${method} ${path} returned invalid JSON.`, {
           cause: error,
         });
       }
     }
     if (response.status === 401) {
-      throw new ProjectSyncApiError(
+      throw new CodeRepositorySyncApiError(
         "Backend authentication failed (401). Refresh MAINSEQUENCE_ACCESS_TOKEN.",
       );
     }
     if (!response.ok) {
       const suffix = responseDetail(payload);
-      throw new ProjectSyncApiError(
+      throw new CodeRepositorySyncApiError(
         `Backend ${method} ${path} failed (${response.status})${suffix ? `: ${suffix}` : "."}`,
       );
     }
     if (expectJson && !hasJson) {
-      throw new ProjectSyncApiError(`Backend ${method} ${path} did not return JSON.`);
+      throw new CodeRepositorySyncApiError(`Backend ${method} ${path} did not return JSON.`);
     }
     return expectJson ? requireObject(payload, `Backend ${method} ${path} response`) : payload;
   }
@@ -151,7 +151,7 @@ export function createProjectSyncApi({
       const normalizedCommitSha = requireCanonicalCommitSha(commitSha, "Git HEAD commit");
       const payload = await request(
         "POST",
-        "/api/v1/project-branches/resolve-git-context/",
+        "/api/v1/code-repository-branches/resolve-git-context/",
         {
           repository_identity: normalizedRepositoryIdentity,
           repository_branch: normalizedBranch,
@@ -163,68 +163,68 @@ export function createProjectSyncApi({
         "Resolved canonical repository identity",
       );
       if (canonicalRepositoryIdentity !== normalizedRepositoryIdentity) {
-        throw new ProjectSyncApiError(
+        throw new CodeRepositorySyncApiError(
           "Git-context resolution returned another canonical repository identity.",
         );
       }
       const resolvedBranch = requireSingleLine(payload.repository_branch, "Resolved Git branch");
       if (resolvedBranch !== normalizedBranch) {
-        throw new ProjectSyncApiError("Git-context resolution returned another Git branch.");
+        throw new CodeRepositorySyncApiError("Git-context resolution returned another Git branch.");
       }
       const repositoryRef = requireSingleLine(payload.repository_ref, "Resolved Git ref");
       if (repositoryRef !== `refs/heads/${normalizedBranch}`) {
-        throw new ProjectSyncApiError("Git-context resolution returned another attached Git ref.");
+        throw new CodeRepositorySyncApiError("Git-context resolution returned another attached Git ref.");
       }
       const resolvedCommitSha = requireCanonicalCommitSha(
         payload.commit_sha,
         "Resolved Git commit",
       );
       if (resolvedCommitSha !== normalizedCommitSha) {
-        throw new ProjectSyncApiError(
+        throw new CodeRepositorySyncApiError(
           "Git-context resolution returned another Git commit.",
         );
       }
-      const projectBranch = requireObject(payload.project_branch, "Resolved ProjectBranch");
-      const projectBranchUid = requireSingleLine(projectBranch.uid, "ProjectBranch UID");
-      const projectUid = requireSingleLine(projectBranch.project_uid, "Project UID");
+      const codeRepositoryBranch = requireObject(payload.code_repository_branch, "Resolved CodeRepositoryBranch");
+      const codeRepositoryBranchUid = requireSingleLine(codeRepositoryBranch.uid, "CodeRepositoryBranch UID");
+      const codeRepositoryUid = requireSingleLine(codeRepositoryBranch.code_repository_uid, "CodeRepository UID");
       if (
-        requireSingleLine(projectBranch.repository_branch, "ProjectBranch Git branch") !==
+        requireSingleLine(codeRepositoryBranch.repository_branch, "CodeRepositoryBranch Git branch") !==
         normalizedBranch
       ) {
-        throw new ProjectSyncApiError("Resolved ProjectBranch belongs to another Git branch.");
+        throw new CodeRepositorySyncApiError("Resolved CodeRepositoryBranch belongs to another Git branch.");
       }
       return {
         canonicalRepositoryIdentity,
         gitBranch: resolvedBranch,
         repositoryRef,
         commitSha: resolvedCommitSha,
-        projectUid,
-        projectBranchUid,
+        codeRepositoryUid,
+        codeRepositoryBranchUid,
       };
     },
 
-    async addProjectDeployKey(projectUid, { keyTitle, publicKey } = {}) {
-      const normalizedProjectUid = requireSingleLine(projectUid, "Project UID");
+    async addCodeRepositoryDeployKey(codeRepositoryUid, { keyTitle, publicKey } = {}) {
+      const normalizedCodeRepositoryUid = requireSingleLine(codeRepositoryUid, "CodeRepository UID");
       const normalizedKeyTitle = requireSingleLine(keyTitle, "Deploy key title");
       const normalizedPublicKey = requireSingleLine(publicKey, "Deploy public key");
       await request(
         "POST",
-        `/api/v1/projects/${encodeURIComponent(normalizedProjectUid)}/add-deploy-key/`,
+        `/api/v1/code-repositories/${encodeURIComponent(normalizedCodeRepositoryUid)}/add-deploy-key/`,
         { key_title: normalizedKeyTitle, public_key: normalizedPublicKey },
         { expectJson: false },
       );
     },
 
-    async renderDefaultRedeploymentTag(projectBranchUid, version) {
-      const normalizedUid = requireSingleLine(projectBranchUid, "ProjectBranch UID");
-      const normalizedVersion = requireSingleLine(version, "Project version");
+    async renderDefaultRedeploymentTag(codeRepositoryBranchUid, version) {
+      const normalizedUid = requireSingleLine(codeRepositoryBranchUid, "CodeRepositoryBranch UID");
+      const normalizedVersion = requireSingleLine(version, "CodeRepository version");
       const payload = await request(
         "POST",
-        `/api/v1/project-branches/${encodeURIComponent(normalizedUid)}/default-redeployment-tag/`,
+        `/api/v1/code-repository-branches/${encodeURIComponent(normalizedUid)}/default-redeployment-tag/`,
         { version: normalizedVersion },
       );
       if (requireSingleLine(payload.version, "Rendered tag version") !== normalizedVersion) {
-        throw new ProjectSyncApiError("Default redeployment tag response returned another version.");
+        throw new CodeRepositorySyncApiError("Default redeployment tag response returned another version.");
       }
       return requireSingleLine(payload.tag_name, "Default redeployment tag name");
     },

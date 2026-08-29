@@ -54,7 +54,7 @@ contract for the same catalog.
 
 ## Project Documentation Initialization
 
-`command-center-sdk project docs init --path .` safely installs the official application
+`command-center-sdk application docs init --path .` safely installs the official application
 documentation system into a consuming npm frontend. The project root must contain `package.json`
 and `package-lock.json`, use the active Node major declared by `engines.node` and `.node-version`
 or `.nvmrc`, and contain no competing package-manager lockfile. `--dry-run` reports changes,
@@ -77,7 +77,7 @@ configuration remains platform-owned.
 
 ## Project SDK Status And Update
 
-`command-center-sdk project sdk-status --path .` inspects a consuming project at the Git repository
+`command-center-sdk application sdk-status --path .` inspects a consuming project at the Git repository
 root. It reads the SDK declaration from `package.json`, the resolved version from
 `package-lock.json`, and the installed version from `node_modules`, then uses npm registry commands
 to resolve the compatible `wanted` version and registry `latest` version. `--json` returns these
@@ -98,7 +98,7 @@ Status values are deliberately explicit:
 | `unsupported_dependency_type` | The SDK is declared only as a peer dependency. |
 | `unsupported_source` | The declaration uses a linked, workspace, file, Git, URL, or alias source. |
 
-`command-center-sdk project update-sdk --path .` runs
+`command-center-sdk application update-sdk --path .` runs
 `npm update @dev-mainsequence/command-center-sdk --save` only for a supported declaration that
 needs repair or has a compatible update. `--dry-run` reports that exact command without mutation.
 The command disables only the authenticated MCP postinstall attempt so npm output cannot trigger a
@@ -107,23 +107,23 @@ inconsistent. It never updates unrelated packages, widens a blocked dependency r
 backend, changes the application version, commits, tags, or pushes. Run `skills sync` explicitly
 afterward when strict backend-owned guidance refresh is required.
 
-## Project Sync
+## CodeRepository Sync
 
-`command-center-sdk project sync` mirrors Python's `mainsequence project sync` for consuming npm
+`command-center-sdk code-repository sync` mirrors Python's `mainsequence code-repository sync` for consuming npm
 projects whose Vite application is at the Git repository root. The supplied path must be that root
 and contain `package.json` and `package-lock.json`; nested application directories fail preflight
 rather than being discovered or translated. The orchestration, backend client, and local npm/Git/SSH
-operations live in the focused `project-sync*.mjs` modules and remain dependency-free and bin-only.
+operations live in the focused `code-repository-sync*.mjs` modules and remain dependency-free and bin-only.
 
 Before local mutation, the command resolves the canonical `origin`, attached branch, and exact
-`HEAD` commit through `POST /api/v1/project-branches/resolve-git-context/`, implementing the
+`HEAD` commit through `POST /api/v1/code-repository-branches/resolve-git-context/`, implementing the
 Git-native source-identity contract from platform ADR-0037. The response supplies the exact
-`ProjectBranch` and its parent Project UID. `MAIN_SEQUENCE_PROJECT_UID` is neither read nor written;
-if a caller supplies the legacy positional Project UID, it is only an assertion and cannot select
+`CodeRepositoryBranch` and its parent CodeRepository UID. `MAIN_SEQUENCE_PROJECT_UID` is neither read nor written;
+if a caller supplies the legacy positional CodeRepository UID, it is only an assertion and cannot select
 another Project. Missing, ambiguous, mismatched, or detached Git identity is a hard failure. The
 command previews the npm patch version, requests the backend-owned tag, and rejects an invalid or
 existing local tag. It then ensures the repository-specific SSH key is registered through the
-resolved owning Project's `add-deploy-key` action and verifies the forced identity with
+resolved owning CodeRepository's `add-deploy-key` action and verifies the forced identity with
 `git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>`. A reusable key that already
 passes the Git preflight is not registered again. Deploy-key registration or Git access failures
 therefore stop before the version, commit, or local Git tag changes. The exact backend tag is then

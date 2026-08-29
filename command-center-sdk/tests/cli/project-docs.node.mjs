@@ -246,7 +246,7 @@ test("CLI initializes documentation with JSON evidence", async () => {
   try {
     const result = spawnSync(
       process.execPath,
-      [cliPath, "project", "docs", "init", "--path", projectRoot, "--skip-install", "--json"],
+      [cliPath, "application", "docs", "init", "--path", projectRoot, "--skip-install", "--json"],
       { encoding: "utf8" },
     );
     assert.equal(result.status, 0, result.stderr);

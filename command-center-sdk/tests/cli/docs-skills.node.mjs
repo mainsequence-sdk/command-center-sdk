@@ -47,7 +47,7 @@ test("application documentation guidance stays aligned with the official scaffol
   );
 
   for (const value of [documentationSkill, documentationGuide]) {
-    assert.match(value, /project docs init/u);
+    assert.match(value, /application docs init/u);
     assert.match(value, /documentation\/navigation\.json/u);
     assert.match(value, /dist\/docs/u);
     assert.match(value, /package-lock\.json/u);
@@ -76,14 +76,14 @@ test("consumer guidance documents SDK status and update as a separate project li
     "utf8",
   );
   const maintainProjectSkill = await readFile(
-    join(skillsRoot, "general", "maintain-command-center-project", "SKILL.md"),
+    join(skillsRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
     "utf8",
   );
   const gettingStarted = await readFile(join(docsRoot, "getting-started.md"), "utf8");
 
   for (const value of [useSdkSkill, maintainProjectSkill, gettingStarted]) {
-    assert.match(value, /project sdk-status/u);
-    assert.match(value, /project update-sdk/u);
+    assert.match(value, /application sdk-status/u);
+    assert.match(value, /application update-sdk/u);
     assert.match(value, /dry-run/u);
   }
   assert.match(useSdkSkill, /declared.*locked.*installed.*wanted.*latest/isu);
@@ -95,9 +95,9 @@ test("consumer guidance documents SDK status and update as a separate project li
   }
 });
 
-test("project sync guidance uses Git-native identity without a local Project UID marker", async () => {
+test("CodeRepository sync guidance uses Git-native identity without a local CodeRepository UID marker", async () => {
   const maintainProjectSkill = await readFile(
-    join(skillsRoot, "general", "maintain-command-center-project", "SKILL.md"),
+    join(skillsRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
     "utf8",
   );
   const gettingStarted = await readFile(join(docsRoot, "getting-started.md"), "utf8");

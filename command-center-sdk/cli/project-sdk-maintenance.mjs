@@ -174,7 +174,7 @@ function statusHint(status, declared) {
     case "current":
       return "The project SDK dependency, lockfile, and installed package are aligned.";
     case "update_available":
-      return "Run command-center-sdk project update-sdk --path .";
+      return "Run command-center-sdk application update-sdk --path .";
     case "constraint_blocked":
       return `The declared dependency ${declared} does not allow the registry latest version; review package.json before crossing that compatibility boundary.`;
     case "lock_missing":
@@ -376,7 +376,7 @@ export async function inspectProjectSdk({
     latest: registry.latest,
   });
   return {
-    command: "command-center-sdk project sdk-status",
+    command: "command-center-sdk application sdk-status",
     projectRoot,
     package: COMMAND_CENTER_SDK_PACKAGE,
     dependencyType: local.declaration?.section || null,
@@ -419,7 +419,7 @@ export async function updateProjectSdk({
 
   const shouldRun = !new Set(["current", "constraint_blocked"]).has(before.status);
   const plan = {
-    command: "command-center-sdk project update-sdk",
+    command: "command-center-sdk application update-sdk",
     dryRun: Boolean(dryRun),
     projectRoot: before.projectRoot,
     package: COMMAND_CENTER_SDK_PACKAGE,

@@ -10,7 +10,7 @@ can safely change it. Keep that documentation beside the application, validate i
 project, and ship it in the same static artifact at `/docs/`.
 
 This guide matches the `documentation/document-command-center-application` skill and the official
-`command-center-sdk project docs init` scaffold.
+`command-center-sdk application docs init` scaffold.
 
 ## Initialize the documentation system
 
@@ -18,8 +18,8 @@ Start at the frontend's Git and npm root. The root must contain `package.json` a
 `package-lock.json`, and the application must already have a `build` script.
 
 ```bash
-npx command-center-sdk project docs init --path . --dry-run
-npx command-center-sdk project docs init --path .
+npx command-center-sdk application docs init --path . --dry-run
+npx command-center-sdk application docs init --path .
 ```
 
 The dry run reports every file and manifest field that would change. Initialization:

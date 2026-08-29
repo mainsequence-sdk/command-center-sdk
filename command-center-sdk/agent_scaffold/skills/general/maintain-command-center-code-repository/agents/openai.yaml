@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintain Command Center CodeRepository"
+  short_description: "Version, tag, and deploy a registered code repository"
+  default_prompt: "Use $maintain-command-center-code-repository to safely sync this code repository and trigger its branch-specific automatic deployment."

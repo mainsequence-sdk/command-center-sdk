@@ -28,7 +28,7 @@ ADR, older checkout, or another application exists in the installed SDK.
 From the Git repository root, inspect the dependency without changing it:
 
 ```bash
-npx command-center-sdk project sdk-status --path . --json
+npx command-center-sdk application sdk-status --path . --json
 ```
 
 Keep `declared`, `locked`, `installed`, `wanted`, and `latest` separate when reporting the result.
@@ -38,8 +38,8 @@ policy. Do not infer that every difference should mutate `package.json`.
 When the user authorizes an SDK update, preview and then run the package-scoped workflow:
 
 ```bash
-npx command-center-sdk project update-sdk --path . --dry-run
-npx command-center-sdk project update-sdk --path .
+npx command-center-sdk application update-sdk --path . --dry-run
+npx command-center-sdk application update-sdk --path .
 ```
 
 The workflow refuses peer-only, linked, workspace, file, Git, URL, and alias declarations. It does

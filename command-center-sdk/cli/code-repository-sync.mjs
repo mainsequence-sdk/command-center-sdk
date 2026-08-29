@@ -1,20 +1,20 @@
 import {
-  createProjectSyncApi,
-  resolveProjectSyncConfiguration,
-} from "./project-sync-api.mjs";
+  createCodeRepositorySyncApi,
+  resolveCodeRepositorySyncConfiguration,
+} from "./code-repository-sync-api.mjs";
 import {
   nextNpmPatchVersion,
-  projectSyncLocalOps,
+  codeRepositorySyncLocalOps,
   sanitizeCommitMessage,
-} from "./project-sync-local-ops.mjs";
+} from "./code-repository-sync-local-ops.mjs";
 
-export const PROJECT_SYNC_COMMANDS = Object.freeze([
-  "resolve the exact ProjectBranch from canonical Git origin, attached branch, and HEAD commit",
+export const CODE_REPOSITORY_SYNC_COMMANDS = Object.freeze([
+  "resolve the exact CodeRepositoryBranch from canonical Git origin, attached branch, and HEAD commit",
   "calculate the next npm patch version",
-  "request backend default redeployment tag for the resolved ProjectBranch",
+  "request backend default redeployment tag for the resolved CodeRepositoryBranch",
   "verify the backend tag does not exist locally",
   "ensure or create the repository SSH key",
-  "register a new or inaccessible SSH key through the owning Project",
+  "register a new or inaccessible SSH key through the owning CodeRepository",
   "git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>",
   "verify the exact backend tag does not exist remotely",
   "npm version patch --no-git-tag-version",
@@ -27,10 +27,10 @@ export const PROJECT_SYNC_COMMANDS = Object.freeze([
   "git push --atomic --follow-tags origin HEAD:refs/heads/<branch> refs/tags/<backend tag>:refs/tags/<backend tag>",
 ]);
 
-export class ProjectSyncError extends Error {
+export class CodeRepositorySyncError extends Error {
   constructor(message, { stage, state, cause } = {}) {
     super(message, { cause });
-    this.name = "ProjectSyncError";
+    this.name = "CodeRepositorySyncError";
     this.stage = stage || "unknown";
     this.state = state || {};
   }
@@ -39,13 +39,13 @@ export class ProjectSyncError extends Error {
     return {
       error: this.message,
       stage: this.stage,
-      projectDir: this.state.projectDir || null,
+      codeRepositoryDir: this.state.codeRepositoryDir || null,
       canonicalRepositoryIdentity: this.state.canonicalRepositoryIdentity || null,
-      projectUid: this.state.projectUid || null,
+      codeRepositoryUid: this.state.codeRepositoryUid || null,
       gitBranch: this.state.gitBranch || null,
       repositoryRef: this.state.repositoryRef || null,
       commitSha: this.state.commitSha || null,
-      projectBranchUid: this.state.projectBranchUid || null,
+      codeRepositoryBranchUid: this.state.codeRepositoryBranchUid || null,
       nextVersion: this.state.nextVersion || null,
       version: this.state.version || null,
       tagName: this.state.tagName || null,
@@ -54,17 +54,17 @@ export class ProjectSyncError extends Error {
   }
 }
 
-export async function syncProject({
+export async function syncCodeRepository({
   message,
-  projectUid,
-  projectDir,
+  codeRepositoryUid,
+  codeRepositoryDir,
   dryRun = false,
   quiet = false,
   env = process.env,
   backendUrl,
   accessToken,
   fetchImpl,
-  localOps = projectSyncLocalOps,
+  localOps = codeRepositorySyncLocalOps,
   api,
   onPlan,
 } = {}) {
@@ -80,22 +80,22 @@ export async function syncProject({
 
   try {
     state.message = sanitizeCommitMessage(message);
-    state.projectDir = await complete("resolve-project-directory", () =>
-      localOps.resolveProjectDir(projectDir),
+    state.codeRepositoryDir = await complete("resolve-code-repository-directory", () =>
+      localOps.resolveCodeRepositoryDir(codeRepositoryDir),
     );
-    const inspection = await complete("inspect-project", () =>
-      localOps.inspectProject(state.projectDir),
+    const inspection = await complete("inspect-code-repository", () =>
+      localOps.inspectCodeRepository(state.codeRepositoryDir),
     );
     Object.assign(state, inspection);
 
-    let projectApi = api;
-    if (!projectApi) {
+    let codeRepositoryApi = api;
+    if (!codeRepositoryApi) {
       stage = "resolve-backend-configuration";
-      const configuration = resolveProjectSyncConfiguration({ backendUrl, accessToken, env });
+      const configuration = resolveCodeRepositorySyncConfiguration({ backendUrl, accessToken, env });
       if (!configuration.available) {
-        throw new Error(`Project sync requires ${configuration.missing.join(" and ")}.`);
+        throw new Error(`CodeRepository sync requires ${configuration.missing.join(" and ")}.`);
       }
-      projectApi = createProjectSyncApi({
+      codeRepositoryApi = createCodeRepositorySyncApi({
         backendUrl: configuration.backendUrl,
         accessToken: configuration.accessToken,
         fetchImpl,
@@ -104,14 +104,14 @@ export async function syncProject({
     }
 
     const branchContext = await complete("resolve-git-context", () =>
-      projectApi.resolveGitContext({
+      codeRepositoryApi.resolveGitContext({
         repositoryIdentity: state.canonicalRepositoryIdentity,
         repositoryBranch: state.gitBranch,
         commitSha: state.commitSha,
       }),
     );
-    state.projectUid = branchContext.projectUid;
-    state.projectBranchUid = branchContext.projectBranchUid;
+    state.codeRepositoryUid = branchContext.codeRepositoryUid;
+    state.codeRepositoryBranchUid = branchContext.codeRepositoryBranchUid;
     if (
       branchContext.canonicalRepositoryIdentity !== state.canonicalRepositoryIdentity ||
       branchContext.gitBranch !== state.gitBranch ||
@@ -120,12 +120,12 @@ export async function syncProject({
     ) {
       throw new Error("Backend Git-context resolution does not match the inspected Git checkout.");
     }
-    const expectedProjectUid = String(projectUid || "").trim();
-    if (expectedProjectUid) {
-      await complete("assert-project-uid", () => {
-        if (expectedProjectUid !== state.projectUid) {
+    const expectedCodeRepositoryUid = String(codeRepositoryUid || "").trim();
+    if (expectedCodeRepositoryUid) {
+      await complete("assert-code-repository-uid", () => {
+        if (expectedCodeRepositoryUid !== state.codeRepositoryUid) {
           throw new Error(
-            `Expected Project UID ${JSON.stringify(expectedProjectUid)} does not match Git-resolved Project ${JSON.stringify(state.projectUid)}.`,
+            `Expected CodeRepository UID ${JSON.stringify(expectedCodeRepositoryUid)} does not match Git-resolved CodeRepository ${JSON.stringify(state.codeRepositoryUid)}.`,
           );
         }
       });
@@ -135,26 +135,26 @@ export async function syncProject({
       nextNpmPatchVersion(state.currentVersion),
     );
     state.tagName = await complete("render-branch-tag", () =>
-      projectApi.renderDefaultRedeploymentTag(state.projectBranchUid, state.nextVersion),
+      codeRepositoryApi.renderDefaultRedeploymentTag(state.codeRepositoryBranchUid, state.nextVersion),
     );
     await complete("validate-local-branch-tag", () =>
-      localOps.validateGitTag(state.projectDir, state.tagName),
+      localOps.validateGitTag(state.codeRepositoryDir, state.tagName),
     );
 
     const plan = {
-      command: "command-center-sdk project sync",
+      command: "command-center-sdk code-repository sync",
       dryRun: Boolean(dryRun),
-      projectDir: state.projectDir,
+      codeRepositoryDir: state.codeRepositoryDir,
       canonicalRepositoryIdentity: state.canonicalRepositoryIdentity,
-      projectUid: state.projectUid,
+      codeRepositoryUid: state.codeRepositoryUid,
       gitBranch: state.gitBranch,
       repositoryRef: state.repositoryRef,
       commitSha: state.commitSha,
-      projectBranchUid: state.projectBranchUid,
+      codeRepositoryBranchUid: state.codeRepositoryBranchUid,
       currentVersion: state.currentVersion,
       nextVersion: state.nextVersion,
       tagName: state.tagName,
-      commands: [...PROJECT_SYNC_COMMANDS],
+      commands: [...CODE_REPOSITORY_SYNC_COMMANDS],
     };
     if (onPlan) await onPlan(plan);
     if (dryRun) return { ...plan, version: state.nextVersion, completed: [...state.completed] };
@@ -164,15 +164,15 @@ export async function syncProject({
     );
     const gitEnv = localOps.gitEnvironment(repositoryKey.keyPath);
     const registerDeployKey = () =>
-      projectApi.addProjectDeployKey(state.projectUid, {
+      codeRepositoryApi.addCodeRepositoryDeployKey(state.codeRepositoryUid, {
         keyTitle: repositoryKey.keyTitle,
         publicKey: repositoryKey.publicKey,
       });
     const verifyGitPush = () =>
-      localOps.verifyGitPush(state.projectDir, state.gitBranch, gitEnv, { quiet });
+      localOps.verifyGitPush(state.codeRepositoryDir, state.gitBranch, gitEnv, { quiet });
 
     if (repositoryKey.created) {
-      await complete("register-project-deploy-key", registerDeployKey);
+      await complete("register-code-repository-deploy-key", registerDeployKey);
       await complete("verify-git-push-access", verifyGitPush);
     } else {
       stage = "verify-git-push-access";
@@ -180,24 +180,24 @@ export async function syncProject({
         await verifyGitPush();
         state.completed.push(stage);
       } catch {
-        await complete("register-project-deploy-key", registerDeployKey);
+        await complete("register-code-repository-deploy-key", registerDeployKey);
         await complete("verify-git-push-access", verifyGitPush);
       }
     }
 
     await complete("validate-remote-branch-tag", () =>
-      localOps.validateRemoteGitTag(state.projectDir, state.tagName, gitEnv),
+      localOps.validateRemoteGitTag(state.codeRepositoryDir, state.tagName, gitEnv),
     );
 
     await complete("bump-version", () =>
       localOps.runCommand("npm", ["version", "patch", "--no-git-tag-version"], {
-        cwd: state.projectDir,
+        cwd: state.codeRepositoryDir,
         env: gitEnv,
         quiet,
       }),
     );
     state.version = await complete("read-version", () =>
-      localOps.readPackageVersion(state.projectDir),
+      localOps.readPackageVersion(state.codeRepositoryDir),
     );
     await complete("verify-version-bump", () => {
       if (state.version !== state.nextVersion) {
@@ -208,35 +208,35 @@ export async function syncProject({
     });
     await complete("update-lockfile", () =>
       localOps.runCommand("npm", ["install", "--package-lock-only"], {
-        cwd: state.projectDir,
+        cwd: state.codeRepositoryDir,
         env: gitEnv,
         quiet,
       }),
     );
     await complete("install-lockfile", () =>
       localOps.runCommand("npm", ["ci"], {
-        cwd: state.projectDir,
+        cwd: state.codeRepositoryDir,
         env: gitEnv,
         quiet,
       }),
     );
     await complete("stage", () =>
       localOps.runCommand("git", ["add", "-A"], {
-        cwd: state.projectDir,
+        cwd: state.codeRepositoryDir,
         env: gitEnv,
         quiet,
       }),
     );
     await complete("commit", () =>
       localOps.runCommand("git", ["commit", "-m", state.message], {
-        cwd: state.projectDir,
+        cwd: state.codeRepositoryDir,
         env: gitEnv,
         quiet,
       }),
     );
     await complete("tag", () =>
       localOps.runCommand("git", ["tag", "-a", state.tagName, "-m", state.tagName], {
-        cwd: state.projectDir,
+        cwd: state.codeRepositoryDir,
         env: gitEnv,
         quiet,
       }),
@@ -253,7 +253,7 @@ export async function syncProject({
           `refs/tags/${state.tagName}:refs/tags/${state.tagName}`,
         ],
         {
-          cwd: state.projectDir,
+          cwd: state.codeRepositoryDir,
           env: gitEnv,
           quiet,
         },
@@ -267,8 +267,8 @@ export async function syncProject({
       completed: [...state.completed],
     };
   } catch (error) {
-    if (error instanceof ProjectSyncError) throw error;
-    throw new ProjectSyncError(`Project sync failed during ${stage}: ${error.message}`, {
+    if (error instanceof CodeRepositorySyncError) throw error;
+    throw new CodeRepositorySyncError(`CodeRepository sync failed during ${stage}: ${error.message}`, {
       stage,
       state,
       cause: error,

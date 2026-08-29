@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Breaking: replace the repository deployment contract with canonical `CodeRepository` and `CodeRepositoryBranch` names, routes, exports, result keys, and `code-repository sync` CLI.
+- Remove the top-level `project` CLI group; generic SDK and documentation maintenance now uses `application`, with no legacy command aliases.
+
 ## 0.1.16
 
 - Add the official `command-center-sdk project docs init` scaffold for human and technical

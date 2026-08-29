@@ -8,17 +8,17 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
-  createProjectSyncApi,
-  ProjectSyncApiError,
-} from "../../cli/project-sync-api.mjs";
+  createCodeRepositorySyncApi,
+  CodeRepositorySyncApiError,
+} from "../../cli/code-repository-sync-api.mjs";
 import {
-  createProjectSyncLocalOps,
+  createCodeRepositorySyncLocalOps,
   nextNpmPatchVersion,
   repositorySshKeyIdentity,
   repositorySshKeyName,
   sanitizeCommitMessage,
-} from "../../cli/project-sync-local-ops.mjs";
-import { ProjectSyncError, syncProject } from "../../cli/project-sync.mjs";
+} from "../../cli/code-repository-sync-local-ops.mjs";
+import { CodeRepositorySyncError, syncCodeRepository } from "../../cli/code-repository-sync.mjs";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const cliPath = join(packageRoot, "cli", "command-center-sdk.mjs");
@@ -44,7 +44,7 @@ function emptyResponse(status = 204) {
   };
 }
 
-function projectHarness({
+function codeRepositoryHarness({
   gitBranch = "main",
   renderedTag = "v1.2.4",
   branchError,
@@ -55,15 +55,15 @@ function projectHarness({
   verificationErrors = [],
 } = {}) {
   const events = [];
-  const projectDir = "/project";
+  const codeRepositoryDir = "/project";
   let verificationAttempt = 0;
   const localOps = {
-    async resolveProjectDir(value) {
-      events.push(["resolve-project-directory", value]);
-      return projectDir;
+    async resolveCodeRepositoryDir(value) {
+      events.push(["resolve-code-repository-directory", value]);
+      return codeRepositoryDir;
     },
-    async inspectProject(value) {
-      events.push(["inspect-project", value]);
+    async inspectCodeRepository(value) {
+      events.push(["inspect-code-repository", value]);
       return {
         currentVersion: "1.2.3",
         canonicalRepositoryIdentity: TEST_REPOSITORY_IDENTITY,
@@ -110,29 +110,29 @@ function projectHarness({
   const api = {
     async resolveGitContext(context) {
       events.push(["resolve-git-context", context]);
-      if (branchError) throw new ProjectSyncApiError(branchError);
+      if (branchError) throw new CodeRepositorySyncApiError(branchError);
       return {
         canonicalRepositoryIdentity: context.repositoryIdentity,
         gitBranch: context.repositoryBranch,
         repositoryRef: `refs/heads/${context.repositoryBranch}`,
         commitSha: context.commitSha,
-        projectUid: "project-uid-123",
-        projectBranchUid: "project-branch-uid-123",
+        codeRepositoryUid: "code-repository-uid-123",
+        codeRepositoryBranchUid: "code-repository-branch-uid-123",
       };
     },
-    async addProjectDeployKey(projectUid, key) {
-      events.push(["add-project-deploy-key", projectUid, key]);
+    async addCodeRepositoryDeployKey(codeRepositoryUid, key) {
+      events.push(["add-code-repository-deploy-key", codeRepositoryUid, key]);
       if (registrationError) throw registrationError;
     },
-    async renderDefaultRedeploymentTag(projectBranchUid, version) {
-      events.push(["render-tag", projectBranchUid, version]);
+    async renderDefaultRedeploymentTag(codeRepositoryBranchUid, version) {
+      events.push(["render-tag", codeRepositoryBranchUid, version]);
       return renderedTag;
     },
   };
-  return { api, events, localOps, projectDir };
+  return { api, events, localOps, codeRepositoryDir };
 }
 
-test("normalizes commit messages like the Python project sync command", () => {
+test("normalizes commit messages like the Python code-repository sync command", () => {
   assert.equal(sanitizeCommitMessage('  Deploy\n"dashboard"  '), "Deploy 'dashboard'");
   assert.throws(() => sanitizeCommitMessage("\n\r"), /Commit message is required/u);
 });
@@ -184,19 +184,17 @@ test("repository SSH key identity preserves path case and non-default ports", ()
   });
 });
 
-test("resolves project identity from Git without reading a project .env", async () => {
-  const harness = projectHarness();
-  harness.localOps.readProjectUid = () =>
-    assert.fail("project sync must not read project UID from .env");
-  const result = await syncProject({
+test("resolves CodeRepository identity exclusively from Git context", async () => {
+  const harness = codeRepositoryHarness();
+  const result = await syncCodeRepository({
     message: "Preview application",
-    projectDir: harness.projectDir,
+    codeRepositoryDir: harness.codeRepositoryDir,
     localOps: harness.localOps,
     api: harness.api,
     dryRun: true,
   });
 
-  assert.equal(result.projectUid, "project-uid-123");
+  assert.equal(result.codeRepositoryUid, "code-repository-uid-123");
   assert.equal(result.canonicalRepositoryIdentity, TEST_REPOSITORY_IDENTITY);
   assert.equal(result.repositoryRef, "refs/heads/main");
   assert.equal(result.commitSha, TEST_COMMIT_SHA);
@@ -213,32 +211,32 @@ test("resolves project identity from Git without reading a project .env", async 
   );
 });
 
-test("treats a supplied Project UID only as an assertion", async () => {
-  const matching = projectHarness();
-  const result = await syncProject({
+test("treats a supplied CodeRepository UID only as an assertion", async () => {
+  const matching = codeRepositoryHarness();
+  const result = await syncCodeRepository({
     message: "Preview application",
-    projectUid: "project-uid-123",
-    projectDir: matching.projectDir,
+    codeRepositoryUid: "code-repository-uid-123",
+    codeRepositoryDir: matching.codeRepositoryDir,
     localOps: matching.localOps,
     api: matching.api,
     dryRun: true,
   });
-  assert.equal(result.projectUid, "project-uid-123");
+  assert.equal(result.codeRepositoryUid, "code-repository-uid-123");
 
-  const mismatched = projectHarness();
+  const mismatched = codeRepositoryHarness();
   await assert.rejects(
-    syncProject({
-      message: "Preview another project",
-      projectUid: "another-project-uid",
-      projectDir: mismatched.projectDir,
+    syncCodeRepository({
+      message: "Preview another code repository",
+      codeRepositoryUid: "another-code-repository-uid",
+      codeRepositoryDir: mismatched.codeRepositoryDir,
       localOps: mismatched.localOps,
       api: mismatched.api,
       dryRun: true,
     }),
     (caught) => {
-      assert.equal(caught.stage, "assert-project-uid");
-      assert.match(caught.message, /does not match Git-resolved Project/u);
-      assert.equal(caught.state.projectUid, "project-uid-123");
+      assert.equal(caught.stage, "assert-code-repository-uid");
+      assert.match(caught.message, /does not match Git-resolved CodeRepository/u);
+      assert.equal(caught.state.codeRepositoryUid, "code-repository-uid-123");
       return true;
     },
   );
@@ -252,10 +250,10 @@ for (const [gitBranch, renderedTag] of [
   ["feature/foo", "v1.2.4-feature-foo-12345678.1"],
 ]) {
   test(`uses the backend-owned ${gitBranch} tag unchanged`, async () => {
-    const harness = projectHarness({ gitBranch, renderedTag });
-    const result = await syncProject({
+    const harness = codeRepositoryHarness({ gitBranch, renderedTag });
+    const result = await syncCodeRepository({
       message: "Update application",
-      projectDir: harness.projectDir,
+      codeRepositoryDir: harness.codeRepositoryDir,
       localOps: harness.localOps,
       api: harness.api,
       quiet: true,
@@ -287,7 +285,7 @@ for (const [gitBranch, renderedTag] of [
     );
     assert.deepEqual(
       harness.events.find(([type]) => type === "render-tag"),
-      ["render-tag", "project-branch-uid-123", "1.2.4"],
+      ["render-tag", "code-repository-branch-uid-123", "1.2.4"],
     );
     const eventTypes = harness.events.map(([type]) => type);
     assert.ok(eventTypes.indexOf("validate-tag") < eventTypes.indexOf("ensure-key"));
@@ -295,27 +293,27 @@ for (const [gitBranch, renderedTag] of [
     assert.equal(
       harness.events
         .filter(([type]) => type === "command")
-        .every((event) => event[3] === harness.projectDir),
+        .every((event) => event[3] === harness.codeRepositoryDir),
       true,
     );
   });
 }
 
 test("registers a new repository key and verifies push access before mutation", async () => {
-  const harness = projectHarness();
-  await syncProject({
+  const harness = codeRepositoryHarness();
+  await syncCodeRepository({
     message: "Update application",
-    projectDir: harness.projectDir,
+    codeRepositoryDir: harness.codeRepositoryDir,
     localOps: harness.localOps,
     api: harness.api,
     quiet: true,
   });
 
   assert.deepEqual(
-    harness.events.find(([type]) => type === "add-project-deploy-key"),
+    harness.events.find(([type]) => type === "add-code-repository-deploy-key"),
     [
-      "add-project-deploy-key",
-      "project-uid-123",
+      "add-code-repository-deploy-key",
+      "code-repository-uid-123",
       {
         keyTitle: "developer-workstation",
         publicKey: "ssh-ed25519 AAAATEST command-center",
@@ -323,53 +321,53 @@ test("registers a new repository key and verifies push access before mutation", 
     ],
   );
   const eventTypes = harness.events.map(([type]) => type);
-  assert.ok(eventTypes.indexOf("add-project-deploy-key") < eventTypes.indexOf("verify-git-push"));
+  assert.ok(eventTypes.indexOf("add-code-repository-deploy-key") < eventTypes.indexOf("verify-git-push"));
   assert.ok(eventTypes.indexOf("verify-git-push") < eventTypes.indexOf("command"));
 });
 
 test("does not re-register a reusable repository key that passes Git preflight", async () => {
-  const harness = projectHarness({ keyCreated: false });
-  await syncProject({
+  const harness = codeRepositoryHarness({ keyCreated: false });
+  await syncCodeRepository({
     message: "Update application",
-    projectDir: harness.projectDir,
+    codeRepositoryDir: harness.codeRepositoryDir,
     localOps: harness.localOps,
     api: harness.api,
     quiet: true,
   });
 
   assert.equal(harness.events.filter(([type]) => type === "verify-git-push").length, 1);
-  assert.equal(harness.events.some(([type]) => type === "add-project-deploy-key"), false);
+  assert.equal(harness.events.some(([type]) => type === "add-code-repository-deploy-key"), false);
 });
 
 test("registers and retries an existing repository key that fails Git preflight", async () => {
-  const harness = projectHarness({
+  const harness = codeRepositoryHarness({
     keyCreated: false,
     verificationErrors: [new Error("Permission denied"), null],
   });
-  await syncProject({
+  await syncCodeRepository({
     message: "Update application",
-    projectDir: harness.projectDir,
+    codeRepositoryDir: harness.codeRepositoryDir,
     localOps: harness.localOps,
     api: harness.api,
     quiet: true,
   });
 
   assert.equal(harness.events.filter(([type]) => type === "verify-git-push").length, 2);
-  assert.equal(harness.events.filter(([type]) => type === "add-project-deploy-key").length, 1);
+  assert.equal(harness.events.filter(([type]) => type === "add-code-repository-deploy-key").length, 1);
 });
 
-test("deploy-key registration failure stops before project mutation", async () => {
-  const harness = projectHarness({ registrationError: new Error("Deploy key rejected") });
+test("deploy-key registration failure stops before code repository mutation", async () => {
+  const harness = codeRepositoryHarness({ registrationError: new Error("Deploy key rejected") });
   await assert.rejects(
-    syncProject({
+    syncCodeRepository({
       message: "Update application",
-      projectDir: harness.projectDir,
+      codeRepositoryDir: harness.codeRepositoryDir,
       localOps: harness.localOps,
       api: harness.api,
       quiet: true,
     }),
     (caught) => {
-      assert.equal(caught.stage, "register-project-deploy-key");
+      assert.equal(caught.stage, "register-code-repository-deploy-key");
       assert.match(caught.message, /Deploy key rejected/u);
       return true;
     },
@@ -377,12 +375,12 @@ test("deploy-key registration failure stops before project mutation", async () =
   assert.equal(harness.events.some(([type]) => type === "command"), false);
 });
 
-test("Git push preflight failure stops before project mutation", async () => {
-  const harness = projectHarness({ verificationErrors: [new Error("Permission denied")] });
+test("Git push preflight failure stops before code repository mutation", async () => {
+  const harness = codeRepositoryHarness({ verificationErrors: [new Error("Permission denied")] });
   await assert.rejects(
-    syncProject({
+    syncCodeRepository({
       message: "Update application",
-      projectDir: harness.projectDir,
+      codeRepositoryDir: harness.codeRepositoryDir,
       localOps: harness.localOps,
       api: harness.api,
       quiet: true,
@@ -397,11 +395,11 @@ test("Git push preflight failure stops before project mutation", async () => {
 });
 
 test("remote tag collision stops before version or repository mutation", async () => {
-  const harness = projectHarness({ remoteTagError: new Error("Git tag already exists remotely: v1.2.4") });
+  const harness = codeRepositoryHarness({ remoteTagError: new Error("Git tag already exists remotely: v1.2.4") });
   await assert.rejects(
-    syncProject({
+    syncCodeRepository({
       message: "Update application",
-      projectDir: harness.projectDir,
+      codeRepositoryDir: harness.codeRepositoryDir,
       localOps: harness.localOps,
       api: harness.api,
       quiet: true,
@@ -416,11 +414,11 @@ test("remote tag collision stops before version or repository mutation", async (
 });
 
 test("unexpected npm version stops before lockfile or Git mutation", async () => {
-  const harness = projectHarness({ actualVersion: "1.2.5" });
+  const harness = codeRepositoryHarness({ actualVersion: "1.2.5" });
   await assert.rejects(
-    syncProject({
+    syncCodeRepository({
       message: "Update application",
-      projectDir: harness.projectDir,
+      codeRepositoryDir: harness.codeRepositoryDir,
       localOps: harness.localOps,
       api: harness.api,
       quiet: true,
@@ -437,11 +435,11 @@ test("unexpected npm version stops before lockfile or Git mutation", async () =>
   );
 });
 
-test("dry-run resolves the backend ProjectBranch but performs no local mutation", async () => {
-  const harness = projectHarness({ gitBranch: "dev", renderedTag: "v1.2.4-dev.1" });
-  const result = await syncProject({
+test("dry-run resolves the backend CodeRepositoryBranch but performs no local mutation", async () => {
+  const harness = codeRepositoryHarness({ gitBranch: "dev", renderedTag: "v1.2.4-dev.1" });
+  const result = await syncCodeRepository({
     message: "Preview deployment",
-    projectDir: harness.projectDir,
+    codeRepositoryDir: harness.codeRepositoryDir,
     localOps: harness.localOps,
     api: harness.api,
     dryRun: true,
@@ -455,45 +453,45 @@ test("dry-run resolves the backend ProjectBranch but performs no local mutation"
   assert.equal(harness.events.some(([type]) => type === "resolve-git-context"), true);
   assert.equal(harness.events.some(([type]) => type === "render-tag"), true);
   assert.equal(harness.events.some(([type]) => type === "validate-tag"), true);
-  for (const mutation of ["ensure-key", "git-environment", "add-project-deploy-key", "verify-git-push", "validate-remote-tag", "read-version", "command"]) {
+  for (const mutation of ["ensure-key", "git-environment", "add-code-repository-deploy-key", "verify-git-push", "validate-remote-tag", "read-version", "command"]) {
     assert.equal(harness.events.some(([type]) => type === mutation), false, mutation);
   }
 });
 
 test("an unregistered Git branch stops before every local mutation", async () => {
-  const error = "No visible ProjectBranch matches the Git source context.";
-  const harness = projectHarness({ gitBranch: "feature/missing", branchError: error });
+  const error = "No visible CodeRepositoryBranch matches the Git source context.";
+  const harness = codeRepositoryHarness({ gitBranch: "feature/missing", branchError: error });
 
   await assert.rejects(
-    syncProject({
+    syncCodeRepository({
       message: "Deploy missing branch",
-      projectDir: harness.projectDir,
+      codeRepositoryDir: harness.codeRepositoryDir,
       localOps: harness.localOps,
       api: harness.api,
     }),
     (caught) => {
-      assert.equal(caught instanceof ProjectSyncError, true);
+      assert.equal(caught instanceof CodeRepositorySyncError, true);
       assert.equal(caught.stage, "resolve-git-context");
-      assert.match(caught.message, /No visible ProjectBranch/u);
+      assert.match(caught.message, /No visible CodeRepositoryBranch/u);
       return true;
     },
   );
 
-  for (const mutation of ["ensure-key", "git-environment", "add-project-deploy-key", "verify-git-push", "read-version", "render-tag", "validate-tag", "command"]) {
+  for (const mutation of ["ensure-key", "git-environment", "add-code-repository-deploy-key", "verify-git-push", "read-version", "render-tag", "validate-tag", "command"]) {
     assert.equal(harness.events.some(([type]) => type === mutation), false, mutation);
   }
 });
 
 test("a detached Git checkout stops before the backend or local mutation", async () => {
-  const harness = projectHarness();
-  harness.localOps.inspectProject = async () => {
+  const harness = codeRepositoryHarness();
+  harness.localOps.inspectCodeRepository = async () => {
     throw new Error("Current Git checkout is detached or has no named branch.");
   };
 
   await assert.rejects(
-    syncProject({
+    syncCodeRepository({
       message: "Deploy detached checkout",
-      projectDir: harness.projectDir,
+      codeRepositoryDir: harness.codeRepositoryDir,
       localOps: harness.localOps,
       api: harness.api,
     }),
@@ -503,7 +501,7 @@ test("a detached Git checkout stops before the backend or local mutation", async
   assert.equal(harness.events.some(([type]) => type === "command"), false);
 });
 
-test("backend API resolves the exact ProjectBranch and requests its deployment tag", async () => {
+test("backend API resolves the exact CodeRepositoryBranch and requests its deployment tag", async () => {
   const calls = [];
   const responses = [
     jsonResponse({
@@ -511,16 +509,16 @@ test("backend API resolves the exact ProjectBranch and requests its deployment t
       repository_branch: "dev",
       repository_ref: "refs/heads/dev",
       commit_sha: TEST_COMMIT_SHA,
-      project_branch: {
+      code_repository_branch: {
         uid: "dev-uid",
-        project_uid: "project-uid-123",
+        code_repository_uid: "code-repository-uid-123",
         repository_branch: "dev",
       },
     }),
     emptyResponse(),
     jsonResponse({ version: "1.2.4", tag_name: "v1.2.4-dev.1" }),
   ];
-  const api = createProjectSyncApi({
+  const api = createCodeRepositorySyncApi({
     backendUrl: "https://platform.example/",
     accessToken: "secret-access-token",
     fetchImpl: async (url, options) => {
@@ -534,25 +532,25 @@ test("backend API resolves the exact ProjectBranch and requests its deployment t
     repositoryBranch: "dev",
     commitSha: TEST_COMMIT_SHA,
   });
-  await api.addProjectDeployKey("project-uid-123", {
+  await api.addCodeRepositoryDeployKey("code-repository-uid-123", {
     keyTitle: "developer-workstation",
     publicKey: "ssh-ed25519 AAAATEST command-center",
   });
-  const tag = await api.renderDefaultRedeploymentTag(branch.projectBranchUid, "1.2.4");
+  const tag = await api.renderDefaultRedeploymentTag(branch.codeRepositoryBranchUid, "1.2.4");
 
   assert.deepEqual(branch, {
     canonicalRepositoryIdentity: TEST_REPOSITORY_IDENTITY,
     gitBranch: "dev",
     repositoryRef: "refs/heads/dev",
     commitSha: TEST_COMMIT_SHA,
-    projectUid: "project-uid-123",
-    projectBranchUid: "dev-uid",
+    codeRepositoryUid: "code-repository-uid-123",
+    codeRepositoryBranchUid: "dev-uid",
   });
   assert.equal(tag, "v1.2.4-dev.1");
   assert.deepEqual(calls.map(({ url, options }) => [options.method, url]), [
-    ["POST", "https://platform.example/api/v1/project-branches/resolve-git-context/"],
-    ["POST", "https://platform.example/api/v1/projects/project-uid-123/add-deploy-key/"],
-    ["POST", "https://platform.example/api/v1/project-branches/dev-uid/default-redeployment-tag/"],
+    ["POST", "https://platform.example/api/v1/code-repository-branches/resolve-git-context/"],
+    ["POST", "https://platform.example/api/v1/code-repositories/code-repository-uid-123/add-deploy-key/"],
+    ["POST", "https://platform.example/api/v1/code-repository-branches/dev-uid/default-redeployment-tag/"],
   ]);
   assert.equal(
     calls[0].options.body,
@@ -575,13 +573,13 @@ test("backend API resolves the exact ProjectBranch and requests its deployment t
 
 test("backend API rejects an unregistered branch before requesting a tag", async () => {
   const calls = [];
-  const api = createProjectSyncApi({
+  const api = createCodeRepositorySyncApi({
     backendUrl: "https://platform.example",
     accessToken: "secret-access-token",
     fetchImpl: async (url, options) => {
       calls.push({ url, options });
       return jsonResponse(
-        { detail: "No visible ProjectBranch matches the Git source context." },
+        { detail: "No visible CodeRepositoryBranch matches the Git source context." },
         404,
       );
     },
@@ -593,13 +591,13 @@ test("backend API rejects an unregistered branch before requesting a tag", async
       repositoryBranch: "feature/missing",
       commitSha: TEST_COMMIT_SHA,
     }),
-    /failed \(404\).*No visible ProjectBranch/u,
+    /failed \(404\).*No visible CodeRepositoryBranch/u,
   );
   assert.equal(calls.length, 1);
 });
 
 test("backend API rejects a malformed Git-context response", async () => {
-  const api = createProjectSyncApi({
+  const api = createCodeRepositorySyncApi({
     backendUrl: "https://platform.example",
     accessToken: "secret-access-token",
     fetchImpl: async () =>
@@ -617,12 +615,12 @@ test("backend API rejects a malformed Git-context response", async () => {
       repositoryBranch: "main",
       commitSha: TEST_COMMIT_SHA,
     }),
-    /Resolved ProjectBranch must be an object/u,
+    /Resolved CodeRepositoryBranch must be an object/u,
   );
 });
 
 test("backend API rejects a Git-context response for another commit", async () => {
-  const api = createProjectSyncApi({
+  const api = createCodeRepositorySyncApi({
     backendUrl: "https://platform.example",
     accessToken: "secret-access-token",
     fetchImpl: async () =>
@@ -631,9 +629,9 @@ test("backend API rejects a Git-context response for another commit", async () =
         repository_branch: "main",
         repository_ref: "refs/heads/main",
         commit_sha: "b".repeat(40),
-        project_branch: {
+        code_repository_branch: {
           uid: "main-uid",
-          project_uid: "project-uid-123",
+          code_repository_uid: "code-repository-uid-123",
           repository_branch: "main",
         },
       }),
@@ -650,7 +648,7 @@ test("backend API rejects a Git-context response for another commit", async () =
 });
 
 test("backend API rejects a tag response for another version", async () => {
-  const api = createProjectSyncApi({
+  const api = createCodeRepositorySyncApi({
     backendUrl: "https://platform.example",
     accessToken: "secret-access-token",
     fetchImpl: async () => jsonResponse({ version: "9.9.9", tag_name: "v9.9.9" }),
@@ -666,7 +664,7 @@ test("CLI rejects duplicate commit-message forms as JSON", () => {
     process.execPath,
     [
       cliPath,
-      "project",
+      "code-repository",
       "sync",
       "Positional message",
       "--message",
@@ -682,36 +680,36 @@ test("CLI rejects duplicate commit-message forms as JSON", () => {
 });
 
 test("local preflight rejects missing package-lock.json", async () => {
-  const projectDir = await mkdtemp(join(tmpdir(), "command-center-project-sync-lock-"));
+  const codeRepositoryDir = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-lock-"));
   try {
-    await mkdir(join(projectDir, ".git"), { recursive: true });
-    await writeFile(join(projectDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
-    const localOps = createProjectSyncLocalOps();
-    await assert.rejects(localOps.inspectProject(projectDir), /requires .*package-lock\.json/u);
-    assert.equal(JSON.parse(await readFile(join(projectDir, "package.json"), "utf8")).version, "1.2.3");
+    await mkdir(join(codeRepositoryDir, ".git"), { recursive: true });
+    await writeFile(join(codeRepositoryDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
+    const localOps = createCodeRepositorySyncLocalOps();
+    await assert.rejects(localOps.inspectCodeRepository(codeRepositoryDir), /requires .*package-lock\.json/u);
+    assert.equal(JSON.parse(await readFile(join(codeRepositoryDir, "package.json"), "utf8")).version, "1.2.3");
   } finally {
-    await rm(projectDir, { recursive: true, force: true });
+    await rm(codeRepositoryDir, { recursive: true, force: true });
   }
 });
 
 test("local preflight accepts a repository-root Vite application", async () => {
-  const projectDir = await mkdtemp(join(tmpdir(), "command-center-project-sync-root-"));
+  const codeRepositoryDir = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-root-"));
   try {
-    await writeFile(join(projectDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
-    await writeFile(join(projectDir, "package-lock.json"), "{}\n", "utf8");
+    await writeFile(join(codeRepositoryDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
+    await writeFile(join(codeRepositoryDir, "package-lock.json"), "{}\n", "utf8");
     const initialized = spawnSync("git", ["init", "-b", "main"], {
-      cwd: projectDir,
+      cwd: codeRepositoryDir,
       encoding: "utf8",
     });
     assert.equal(initialized.status, 0, initialized.stderr);
     const remote = spawnSync(
       "git",
       ["remote", "add", "origin", "git@github.com:organization/project.git"],
-      { cwd: projectDir, encoding: "utf8" },
+      { cwd: codeRepositoryDir, encoding: "utf8" },
     );
     assert.equal(remote.status, 0, remote.stderr);
     const staged = spawnSync("git", ["add", "package.json", "package-lock.json"], {
-      cwd: projectDir,
+      cwd: codeRepositoryDir,
       encoding: "utf8",
     });
     assert.equal(staged.status, 0, staged.stderr);
@@ -726,17 +724,17 @@ test("local preflight accepts a repository-root Vite application", async () => {
         "-m",
         "Initial project",
       ],
-      { cwd: projectDir, encoding: "utf8" },
+      { cwd: codeRepositoryDir, encoding: "utf8" },
     );
     assert.equal(committed.status, 0, committed.stderr);
     const head = spawnSync("git", ["rev-parse", "--verify", "HEAD^{commit}"], {
-      cwd: projectDir,
+      cwd: codeRepositoryDir,
       encoding: "utf8",
     });
     assert.equal(head.status, 0, head.stderr);
 
-    const localOps = createProjectSyncLocalOps();
-    assert.deepEqual(await localOps.inspectProject(projectDir), {
+    const localOps = createCodeRepositorySyncLocalOps();
+    assert.deepEqual(await localOps.inspectCodeRepository(codeRepositoryDir), {
       currentVersion: "1.2.3",
       canonicalRepositoryIdentity: TEST_REPOSITORY_IDENTITY,
       gitBranch: "main",
@@ -745,23 +743,23 @@ test("local preflight accepts a repository-root Vite application", async () => {
       origin: "git@github.com:organization/project.git",
     });
   } finally {
-    await rm(projectDir, { recursive: true, force: true });
+    await rm(codeRepositoryDir, { recursive: true, force: true });
   }
 });
 
 test("local preflight rejects a Vite application below the Git repository root", async () => {
-  const repositoryRoot = await mkdtemp(join(tmpdir(), "command-center-project-sync-root-"));
-  const projectDir = join(repositoryRoot, "frontend");
+  const repositoryRoot = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-root-"));
+  const codeRepositoryDir = join(repositoryRoot, "frontend");
   try {
-    await mkdir(projectDir, { recursive: true });
-    await writeFile(join(projectDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
-    await writeFile(join(projectDir, "package-lock.json"), "{}\n", "utf8");
+    await mkdir(codeRepositoryDir, { recursive: true });
+    await writeFile(join(codeRepositoryDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
+    await writeFile(join(codeRepositoryDir, "package-lock.json"), "{}\n", "utf8");
     const initialized = spawnSync("git", ["init"], { cwd: repositoryRoot, encoding: "utf8" });
     assert.equal(initialized.status, 0, initialized.stderr);
 
-    const localOps = createProjectSyncLocalOps();
+    const localOps = createCodeRepositorySyncLocalOps();
     await assert.rejects(
-      localOps.inspectProject(projectDir),
+      localOps.inspectCodeRepository(codeRepositoryDir),
       /requires the Vite application at the Git repository root/u,
     );
   } finally {
@@ -770,13 +768,13 @@ test("local preflight rejects a Vite application below the Git repository root",
 });
 
 test("repository-key preflight never overwrites an existing private key", async () => {
-  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-project-sync-key-"));
+  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-key-"));
   const sshDirectory = join(homeDirectory, ".ssh");
   const keyName = "mainsequence-project-0b359d1a1ee13a62";
   try {
     await mkdir(sshDirectory, { recursive: true });
     await writeFile(join(sshDirectory, keyName), "existing private key", "utf8");
-    const localOps = createProjectSyncLocalOps({
+    const localOps = createCodeRepositorySyncLocalOps({
       homeDirectory,
       spawnSyncImpl() {
         assert.fail("ssh-keygen must not overwrite an existing private key");
@@ -793,9 +791,9 @@ test("repository-key preflight never overwrites an existing private key", async 
 });
 
 test("repository-key preflight returns registration metadata for a newly generated key", async () => {
-  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-project-sync-key-"));
+  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-key-"));
   try {
-    const localOps = createProjectSyncLocalOps({
+    const localOps = createCodeRepositorySyncLocalOps({
       homeDirectory,
       hostName: "developer-workstation",
       spawnSyncImpl(command, args) {
@@ -825,13 +823,13 @@ test("repository-key preflight returns registration metadata for a newly generat
 });
 
 test("same-basename repositories generate distinct keys without touching the legacy basename", async () => {
-  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-project-sync-key-"));
+  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-key-"));
   const generatedPaths = [];
   const sshDirectory = join(homeDirectory, ".ssh");
   try {
     await mkdir(sshDirectory, { recursive: true });
     await writeFile(join(sshDirectory, "app"), "unrelated legacy key", "utf8");
-    const localOps = createProjectSyncLocalOps({
+    const localOps = createCodeRepositorySyncLocalOps({
       homeDirectory,
       spawnSyncImpl(command, args) {
         assert.equal(command, "ssh-keygen");
@@ -857,7 +855,7 @@ test("same-basename repositories generate distinct keys without touching the leg
 });
 
 test("repository-key preflight rejects non-SSH origins", async () => {
-  const localOps = createProjectSyncLocalOps();
+  const localOps = createCodeRepositorySyncLocalOps();
   await assert.rejects(
     localOps.ensureRepositoryKey("https://github.com/organization/project.git"),
     /must use SSH/u,
@@ -866,7 +864,7 @@ test("repository-key preflight rejects non-SSH origins", async () => {
 
 test("Git push preflight uses the forced identity without mutating the remote", () => {
   const calls = [];
-  const localOps = createProjectSyncLocalOps({
+  const localOps = createCodeRepositorySyncLocalOps({
     spawnSyncImpl(command, args, options) {
       calls.push({ command, args, options });
       return { status: 0, stdout: "", stderr: "" };
@@ -897,7 +895,7 @@ test("Git push preflight uses the forced identity without mutating the remote", 
 test("remote tag preflight queries the exact tag ref with the forced identity", () => {
   const calls = [];
   const env = { GIT_SSH_COMMAND: 'ssh -i "/keys/project" -o IdentitiesOnly=yes' };
-  const localOps = createProjectSyncLocalOps({
+  const localOps = createCodeRepositorySyncLocalOps({
     spawnSyncImpl(command, args, options) {
       calls.push({ command, args, options });
       return { status: 2, stdout: "", stderr: "" };
@@ -932,7 +930,7 @@ test("remote tag preflight distinguishes a collision from a transport failure", 
     [0, "", /already exists remotely/u],
     [1, "Permission denied", /Permission denied/u],
   ]) {
-    const localOps = createProjectSyncLocalOps({
+    const localOps = createCodeRepositorySyncLocalOps({
       spawnSyncImpl() {
         return { status, stdout: "", stderr };
       },
