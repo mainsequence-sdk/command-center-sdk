@@ -2,14 +2,14 @@
   "actions": [
     {
       "id": "archive",
-      "label": "Archive projects",
-      "endpoint": "/projects/actions/archive/",
-      "preflight_endpoint": "/projects/actions/archive/preflight/",
+      "label": "Archive code repositories",
+      "endpoint": "/code-repositories/actions/archive/",
+      "preflight_endpoint": "/code-repositories/actions/archive/preflight/",
       "method": "POST",
       "tone": "danger",
       "selection_modes": ["explicit", "all_matching"],
       "confirmation": {
-        "title": "Archive projects",
+        "title": "Archive code repositories",
         "word": "ARCHIVE",
         "button_label": "Archive",
         "warning": "Archived projects stop running."

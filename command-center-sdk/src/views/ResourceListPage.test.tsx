@@ -127,9 +127,9 @@ describe("ResourceListPage", () => {
           items: [{ name: "Alpha", uid: "project-1" }],
           pageInfo,
           controls: {
-            search: { placeholder: "Search by project name or UID", fields: ["name", "uid"] },
+            search: { placeholder: "Search by code repository name or UID", fields: ["name", "uid"] },
             filters: [
-              { key: "project_name__contains", label: "Project name", type: "text" },
+              { key: "code_repository_name__contains", label: "Code repository name", type: "text" },
               { key: "archived", label: "Archived", type: "boolean" },
               { key: "labels__contains", label: "Label", type: "text" },
             ],
@@ -139,8 +139,8 @@ describe("ResourceListPage", () => {
       />,
     );
 
-    expect(html).toContain('placeholder="Search by project name or UID"');
-    expect(html).not.toContain('aria-label="Project name"');
+    expect(html).toContain('placeholder="Search by code repository name or UID"');
+    expect(html).not.toContain('aria-label="Code repository name"');
     expect(html).not.toContain('aria-label="Archived"');
     expect(html).not.toContain('aria-label="Label"');
     expect(html).not.toContain("cc-resource-toolbar__filters");
@@ -154,7 +154,7 @@ describe("ResourceListPage", () => {
           {
             id: "delete",
             label: "Delete selected",
-            endpoint: "/projects/bulk-delete/",
+            endpoint: "/code-repositories/bulk-delete/",
             method: "POST",
             selection_modes: ["explicit"],
             options: [],

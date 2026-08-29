@@ -107,10 +107,10 @@ test("CodeRepository sync guidance uses Git-native identity without a local Code
   for (const value of [maintainProjectSkill, gettingStarted, packageReadme, cliReadme]) {
     assert.match(value, /canonical[^.]*origin[^.]*branch[^.]*HEAD/isu);
     assert.match(value, /assertion/iu);
-    assert.doesNotMatch(value, /(?:requires?|confirm)[^.]*MAIN_SEQUENCE_PROJECT_UID/iu);
+    assert.doesNotMatch(value, /requires?[^.]*local repository identity/iu);
   }
   assert.match(cliReadme, /resolve-git-context/u);
-  assert.match(maintainProjectSkill, /Do not add or restore `MAIN_SEQUENCE_PROJECT_UID`/u);
+  assert.match(maintainProjectSkill, /Do not add or restore superseded caller-supplied repository/u);
 });
 
 test("contract skills point to the canonical manifest without bundling contract copies", async () => {

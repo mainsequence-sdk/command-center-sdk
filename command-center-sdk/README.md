@@ -236,11 +236,11 @@ The Git repository root must contain `package.json` plus `package-lock.json`. Be
 state, the command verifies that the supplied path is that root and resolves its canonical `origin`,
 attached branch, and exact `HEAD` commit through the backend Git-context endpoint. The response
 authoritatively supplies both the registered `CodeRepositoryBranch` and its parent CodeRepository. The command
-does not read or restore `MAIN_SEQUENCE_PROJECT_UID` in `.env`; an optional positional CodeRepository UID
+does not read or restore superseded local repository-identity markers in `.env`; an optional positional CodeRepository UID
 is only a consistency assertion against the Git-resolved result. It previews the npm patch version,
 requests that version's backend-owned tag, and rejects an invalid or existing local tag before
 creating an SSH key. It then registers a newly created repository SSH public key through the owning
-Project, verifies the forced identity with a dry-run push, and checks the exact remote tag ref.
+CodeRepository, verifies the forced identity with a dry-run push, and checks the exact remote tag ref.
 Existing keys that already pass this preflight are not registered again. A nested application
 directory, detached checkout, unresolved Git context, tag collision, deploy-key registration
 failure, or inaccessible Git remote is a hard failure before the version, dependency, commit, or

@@ -32,9 +32,7 @@ current backend `CodeRepositoryBranch`.
 2. Confirm that root contains `package.json` and `package-lock.json`.
 3. Confirm the current Git checkout has an `origin` remote, an attached named branch, and a valid
    `HEAD` commit. The backend resolves this source context to the CodeRepository and CodeRepositoryBranch.
-4. Do not add or restore `MAIN_SEQUENCE_PROJECT_UID`, `MAIN_SEQUENCE_PROJECT_BRANCH_UID`,
-   `MAINSEQUENCE_REPOSITORY_BRANCH`, or `MAIN_SEQUENCE_ORGANIZATION_PROJECT_ENVIRONMENT_UID` in
-   `.env`. They are retired project-identity inputs; an optional positional CodeRepository UID is only a
+4. Do not add or restore superseded caller-supplied repository, branch, or Environment identity inputs in `.env`. They are not source-identity inputs; an optional positional CodeRepository UID is only a
    consistency assertion against the Git-resolved CodeRepository.
 5. Ensure `MAINSEQUENCE_ENDPOINT` and a current `MAINSEQUENCE_ACCESS_TOKEN` are available only in
    the process environment. Never place the token in an argument, file, log, or report.

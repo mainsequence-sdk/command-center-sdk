@@ -111,8 +111,7 @@ npx command-center-sdk code-repository sync -m "Update the project" --path .
 The supplied path must be the Git repository root and contain `package.json` and
 `package-lock.json`. Preflight rejects a nested application directory, then sends the canonical
 `origin`, attached branch, and exact `HEAD` commit to the backend Git-context resolver. That
-authoritative response supplies the matching `CodeRepositoryBranch` and parent CodeRepository UID. Do not add or
-restore `MAIN_SEQUENCE_PROJECT_UID` in `.env`; project identity is derived from Git, and an optional
+authoritative response supplies the matching `CodeRepositoryBranch` and parent CodeRepository UID. Do not add or restore superseded local repository-identity markers in `.env`; CodeRepository identity is derived from Git, and an optional
 positional CodeRepository UID is only a consistency assertion. If the checkout is detached, its Git
 context is unregistered or ambiguous, or the backend echoes another repository, branch, ref, or
 commit, the command stops before versioning, dependency installation, SSH-key creation, Git staging,

@@ -118,9 +118,9 @@ operations live in the focused `code-repository-sync*.mjs` modules and remain de
 Before local mutation, the command resolves the canonical `origin`, attached branch, and exact
 `HEAD` commit through `POST /api/v1/code-repository-branches/resolve-git-context/`, implementing the
 Git-native source-identity contract from platform ADR-0037. The response supplies the exact
-`CodeRepositoryBranch` and its parent CodeRepository UID. `MAIN_SEQUENCE_PROJECT_UID` is neither read nor written;
+`CodeRepositoryBranch` and its parent CodeRepository UID. Superseded local repository-identity markers are neither read nor written;
 if a caller supplies the legacy positional CodeRepository UID, it is only an assertion and cannot select
-another Project. Missing, ambiguous, mismatched, or detached Git identity is a hard failure. The
+another CodeRepository. Missing, ambiguous, mismatched, or detached Git identity is a hard failure. The
 command previews the npm patch version, requests the backend-owned tag, and rejects an invalid or
 existing local tag. It then ensures the repository-specific SSH key is registered through the
 resolved owning CodeRepository's `add-deploy-key` action and verifies the forced identity with

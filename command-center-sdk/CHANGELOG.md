@@ -16,9 +16,9 @@
 
 ## 0.1.15
 
-- Resolve project sync identity authoritatively from canonical Git origin, attached branch, and
-  exact `HEAD` commit through the platform Git-context endpoint. Stop requiring the retired
-  `MAIN_SEQUENCE_PROJECT_UID` `.env` marker; a supplied Project UID is assertion-only.
+- Resolve code-repository sync identity authoritatively from canonical Git origin, attached branch,
+  and exact `HEAD` commit through the platform Git-context endpoint. Stop requiring superseded
+  local `.env` repository-identity markers; a supplied CodeRepository UID is assertion-only.
 
 ## 0.1.14
 
@@ -33,9 +33,9 @@
 - Make project-sync SSH key filenames repository-specific by hashing the canonical origin identity,
   so repositories with the same basename cannot share or overwrite a key. Legacy basename keys are
   left untouched and are not reused as a compatibility fallback.
-- Preserve the platform-standard `--follow-tags` project sync while explicitly pushing the
+- Preserve the platform-standard `--follow-tags` code-repository sync while explicitly pushing the
   resolved branch and backend-generated tag to `origin`, independent of local push configuration.
-- Add npm-native `project sdk-status` and `project update-sdk` commands with Git-root preflight,
+- Add npm-native `application sdk-status` and `application update-sdk` commands with Git-root preflight,
   separate declared/locked/installed/wanted/latest state, compatible package-scoped updates,
   dry-run output, and post-update verification. Dependency maintenance remains separate from
   application versioning, Git release actions, and backend deployment.
@@ -50,7 +50,7 @@
 ## 0.1.12
 
 - Require registered Main Sequence Vite applications to use the Git repository root for npm,
-  project identity, agent guidance, and `project sync`; nested project directories now fail
+  project identity, agent guidance, and `code-repository sync`; nested project directories now fail
   preflight instead of being treated as deployable project roots.
 
 ## 0.1.11
@@ -100,9 +100,9 @@
 
 ## 0.1.6
 
-- Add the dependency-free `command-center-sdk project sync` workflow for registered npm projects.
-  It aligns with Python project sync by resolving the current Git branch to its backend
-  `ProjectBranch` before mutation, using the backend-returned branch-specific deployment tag
+- Add the dependency-free `command-center-sdk code-repository sync` workflow for registered npm projects.
+  It aligns with Python code-repository sync by resolving the current Git branch to its backend
+  `CodeRepositoryBranch` before mutation, using the backend-returned branch-specific deployment tag
   unchanged, refreshing the npm lockfile, committing the complete working tree, and pushing the
   annotated tag that triggers automatic deployment. Ship matching project-maintenance guidance.
 - Add `command-center-sdk theme audit` and strengthen the packaged theme and static-iframe skills
@@ -186,7 +186,7 @@
 ## 0.1.1
 
 - Add shared resource-cell rendering and align consumer list/detail navigation behavior.
-- Publish the Project infrastructure widget's explicit logical Project and ProjectBranch
+- Publish the CodeRepository infrastructure widget's explicit CodeRepository and CodeRepositoryBranch
   configuration contract.
 - Update package layout, documentation, and validation for the consolidated SDK workspace.
 

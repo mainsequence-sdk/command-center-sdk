@@ -322,7 +322,7 @@ try {
   assert.match(maintainProjectSkill, /exact backend tag ref|exact tag ref/iu);
   assert.match(maintainProjectSkill, /--atomic --follow-tags/iu);
   assert.match(maintainProjectSkill, /canonical[^.]*origin[^.]*branch[^.]*HEAD/isu);
-  assert.match(maintainProjectSkill, /Do not add or restore `MAIN_SEQUENCE_PROJECT_UID`/u);
+  assert.match(maintainProjectSkill, /Do not add or restore superseded caller-supplied repository/u);
   assert.match(
     await readFile(
       join(managedRoot, "general", "use-command-center-sdk", "SKILL.md"),

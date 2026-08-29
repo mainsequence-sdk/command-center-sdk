@@ -109,11 +109,11 @@ describe("collection controls", () => {
     expect(
       parseCollectionControls({
         search: {
-          placeholder: "Search by project name or repository UID",
-          fields: ["project_name", "uid"],
+          placeholder: "Search by code repository name or repository UID",
+          fields: ["code_repository_name", "uid"],
         },
         filters: [
-          { key: "project_name__contains", label: "Project name", type: "text" },
+          { key: "code_repository_name__contains", label: "Code repository name", type: "text" },
           {
             key: "class_type",
             label: "Class type",
@@ -128,11 +128,11 @@ describe("collection controls", () => {
       }),
     ).toEqual({
       search: {
-        placeholder: "Search by project name or repository UID",
-        fields: ["project_name", "uid"],
+        placeholder: "Search by code repository name or repository UID",
+        fields: ["code_repository_name", "uid"],
       },
       filters: [
-        { key: "project_name__contains", label: "Project name", type: "text" },
+        { key: "code_repository_name__contains", label: "Code repository name", type: "text" },
         {
           key: "class_type",
           label: "Class type",
@@ -232,7 +232,7 @@ describe("createHttpResourceAdapter", () => {
   it("normalizes conventional paginated requests without owning authentication", async () => {
     const request = vi.fn(async (_input: ResourceHttpRequest) => ({
       count: 1,
-      results: [{ uid: "project-1" }],
+      results: [{ uid: "code-repository-1" }],
     }));
     const client: ResourceHttpClient = {
       async request<Response>(input: ResourceHttpRequest) {
@@ -241,7 +241,7 @@ describe("createHttpResourceAdapter", () => {
     };
     const adapter = createHttpResourceAdapter({
       client,
-      endpoints: { list: "/projects/" },
+      endpoints: { list: "/code-repositories/" },
       normalizeList: (response: { count: number; results: { uid: string }[] }) => ({
         items: response.results,
         pageInfo: {
@@ -257,7 +257,7 @@ describe("createHttpResourceAdapter", () => {
     await expect(
       adapter.list({ pageIndex: 2, pageSize: 25, search: "alpha" }),
     ).resolves.toEqual({
-      items: [{ uid: "project-1" }],
+      items: [{ uid: "code-repository-1" }],
       pageInfo: {
         pageIndex: 2,
         pageSize: 25,
@@ -268,7 +268,7 @@ describe("createHttpResourceAdapter", () => {
     });
     expect(request).toHaveBeenCalledWith({
       method: "GET",
-      path: "/projects/",
+      path: "/code-repositories/",
       query: { limit: 25, offset: 50, search: "alpha" },
       signal: undefined,
     });
@@ -277,8 +277,8 @@ describe("createHttpResourceAdapter", () => {
   it("discovers and executes canonical server-defined bulk actions", async () => {
     const action = {
       id: "delete",
-      label: "Delete projects",
-      endpoint: "/api/v1/projects/bulk-delete/",
+      label: "Delete code repositories",
+      endpoint: "/api/v1/code-repositories/bulk-delete/",
       method: "POST" as const,
       selection_modes: ["explicit", "all_matching"] as const,
       options: [],
@@ -289,8 +289,8 @@ describe("createHttpResourceAdapter", () => {
     const adapter = createHttpResourceAdapter({
       client: { request: request as ResourceHttpClient["request"] },
       endpoints: {
-        list: "/api/v1/projects/",
-        bulkActions: "/api/v1/projects/bulk-actions/",
+        list: "/api/v1/code-repositories/",
+        bulkActions: "/api/v1/code-repositories/bulk-actions/",
       },
       normalizeList: () => ({
         items: [] as { uid: string }[],
@@ -309,13 +309,13 @@ describe("createHttpResourceAdapter", () => {
       filters: { owner_uid: "owner-1" },
     });
     await adapter.executeBulkAction!(actions[0], {
-      selection: buildExplicitBulkSelection(["project-1", "project-2"]),
+      selection: buildExplicitBulkSelection(["code-repository-1", "code-repository-2"]),
       options: {},
     });
 
     expect(request).toHaveBeenNthCalledWith(1, {
       method: "GET",
-      path: "/api/v1/projects/bulk-actions/",
+      path: "/api/v1/code-repositories/bulk-actions/",
       query: { owner_uid: "owner-1", search: "alpha" },
       signal: undefined,
     });
@@ -323,7 +323,7 @@ describe("createHttpResourceAdapter", () => {
       method: "POST",
       path: action.endpoint,
       body: {
-        selection: { mode: "explicit", uids: ["project-1", "project-2"] },
+        selection: { mode: "explicit", uids: ["code-repository-1", "code-repository-2"] },
         options: {},
       },
       signal: undefined,
