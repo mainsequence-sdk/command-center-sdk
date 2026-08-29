@@ -29,7 +29,7 @@ export const MAIN_SEQUENCE_AI_AGENT_TERMINAL_WIDGET_ID = "main-sequence-ai__agen
 export const MAIN_SEQUENCE_AI_WORKSPACE_WIDGET_ID = "main-sequence-ai__workspace";
 export const MAIN_SEQUENCE_AI_UPSTREAM_INSPECTOR_WIDGET_ID = "main-sequence-ai__upstream-inspector";
 export const MAIN_SEQUENCE_FOUNDRY_DEPENDENCY_GRAPH_WIDGET_ID = "main-sequence-foundry__dependency-graph";
-export const MAIN_SEQUENCE_FOUNDRY_PROJECT_INFRA_GRAPH_WIDGET_ID = "main-sequence-foundry__project-infra-graph";
+export const MAIN_SEQUENCE_FOUNDRY_CODE_REPOSITORY_INFRA_GRAPH_WIDGET_ID = "main-sequence-foundry__code-repository-infra-graph";
 
 export function normalizeWidgetTypeId(widgetId: string): string {
   return widgetId.trim();
