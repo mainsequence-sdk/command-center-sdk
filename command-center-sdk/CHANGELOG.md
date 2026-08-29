@@ -3,11 +3,11 @@
 ## Unreleased
 
 - Breaking: replace the repository deployment contract with canonical `CodeRepository` and `CodeRepositoryBranch` names, routes, exports, result keys, and `code-repository sync` CLI.
-- Remove the top-level `project` CLI group; generic SDK and documentation maintenance now uses `application`, with no legacy command aliases.
+- Remove the retired repository-maintenance CLI group; generic SDK and documentation maintenance now uses `application`, with no legacy command aliases.
 
 ## 0.1.16
 
-- Add the official `command-center-sdk project docs init` scaffold for human and technical
+- Add the official `command-center-sdk application docs init` scaffold for human and technical
   application documentation, with one npm/Node toolchain, exact Docusaurus dependencies,
   canonical navigation generation, safe idempotent writes, source validation, and a `/docs/`
   build inside the application's `dist/` artifact.
@@ -27,10 +27,10 @@
   hooks; and real Chromium geometry checks across phone, tablet, desktop, dark, and light states.
 - Ship aligned page-composition documentation and the `compose-command-center-page` agent skill,
   keeping semantic theme auditing separate from computed layout conformance.
-- Preflight the exact backend-owned deployment tag before project mutation: preview the npm patch
+- Preflight the exact backend-owned deployment tag before application mutation: preview the npm patch
   version, reject local and remote tag collisions, verify the applied bump matches the preview, and
   atomically push the explicit branch and tag refs.
-- Make project-sync SSH key filenames repository-specific by hashing the canonical origin identity,
+- Make code-repository-sync SSH key filenames repository-specific by hashing the canonical origin identity,
   so repositories with the same basename cannot share or overwrite a key. Legacy basename keys are
   left untouched and are not reused as a compatibility fallback.
 - Preserve the platform-standard `--follow-tags` code-repository sync while explicitly pushing the
@@ -44,14 +44,14 @@
 
 ## 0.1.13
 
-- Register newly generated or inaccessible project-sync SSH keys through the owning Project and
+- Register newly generated or inaccessible code-repository-sync SSH keys through the owning CodeRepository and
   verify the forced identity with a dry-run push before versioning, backend tagging, or Git mutation.
 
 ## 0.1.12
 
 - Require registered Main Sequence Vite applications to use the Git repository root for npm,
-  project identity, agent guidance, and `code-repository sync`; nested project directories now fail
-  preflight instead of being treated as deployable project roots.
+  application identity, agent guidance, and `code-repository sync`; nested application directories now fail
+  preflight instead of being treated as deployable application roots.
 
 ## 0.1.11
 
@@ -70,7 +70,7 @@
 
 ## 0.1.9
 
-- Complete the project-owned static-site FastAPI transport with public lifecycle state,
+- Complete the CodeRepository-owned static-site FastAPI transport with public lifecycle state,
   cancellation, one bounded credential refresh after `401`, replay-safe cold-start and transport
   retry, and exact `403`/`404`/`502`/`503`/`504` classification.
 - Add real cross-origin Chromium coverage for iframe origin binding, CORS preflight, canonical
@@ -100,11 +100,11 @@
 
 ## 0.1.6
 
-- Add the dependency-free `command-center-sdk code-repository sync` workflow for registered npm projects.
+- Add the dependency-free `command-center-sdk code-repository sync` workflow for registered npm applications.
   It aligns with Python code-repository sync by resolving the current Git branch to its backend
   `CodeRepositoryBranch` before mutation, using the backend-returned branch-specific deployment tag
   unchanged, refreshing the npm lockfile, committing the complete working tree, and pushing the
-  annotated tag that triggers automatic deployment. Ship matching project-maintenance guidance.
+  annotated tag that triggers automatic deployment. Ship matching CodeRepository-maintenance guidance.
 - Add `command-center-sdk theme audit` and strengthen the packaged theme and static-iframe skills
   so themed consumers fail on unknown tokens, literal fallbacks, hardcoded semantic visual values,
   or aliases that do not resolve to published SDK variables. Require computed-style verification
@@ -125,7 +125,7 @@
 
 - Add strict `command-center-sdk skills sync` support for the authenticated, ontology-declared MCP
   platform catalog. Install backend-owned skills under `.agents/skills/mainsequence`, track and
-  overwrite only MCP-managed folders, preserve Python and project-owned content, and make the
+  overwrite only MCP-managed folders, preserve Python and repository-owned content, and make the
   postinstall MCP lane best-effort without weakening the existing packaged-skill installation.
 - Publish strict `command-center.resource_discovery@v1` TypeScript/runtime and draft-2020-12 schema
   contracts with fixtures; add `ResourceAdapter.discover`, safe compound identity and generic
