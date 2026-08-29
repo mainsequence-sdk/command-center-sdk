@@ -65,7 +65,7 @@ function resourceRow({ uri, name, path, mimeType, content, manifestSha256 = "a".
 
 function platformRows(skills = [
   { name: "command_center", path: "skills/command_center/command_center/SKILL.md" },
-  { name: "project_design", path: "skills/platform/project_design/SKILL.md" },
+  { name: "code_repository_design", path: "skills/platform/code_repository_design/SKILL.md" },
 ]) {
   const declarations = skills.map((skill) => ({
     name: skill.name,
@@ -149,7 +149,7 @@ test("fetches the ontology-owned MCP catalog and ignores unrelated resources", a
     fetchImpl: mockMcpFetch(rows, calls),
   });
 
-  assert.deepEqual(result.skills.map((skill) => skill.name), ["command_center", "project_design"]);
+  assert.deepEqual(result.skills.map((skill) => skill.name), ["code_repository_design", "command_center"]);
   assert.deepEqual(calls.map((call) => call.payload.method), [
     "initialize",
     "resources/list",
@@ -243,7 +243,7 @@ test("installs MCP skill folders, removes stale managed folders, and preserves u
     });
 
     await assert.rejects(
-      readFile(join(first.destinationRoot, "platform", "project_design", "SKILL.md"), "utf8"),
+      readFile(join(first.destinationRoot, "platform", "code_repository_design", "SKILL.md"), "utf8"),
       { code: "ENOENT" },
     );
     await readFile(join(first.destinationRoot, "pod_manager", "static_site", "SKILL.md"), "utf8");
@@ -254,7 +254,7 @@ test("installs MCP skill folders, removes stale managed folders, and preserves u
     );
     assert.match(sentinel, /namespace=mainsequence/u);
     assert.match(sentinel, /managed_skill_path=pod_manager\/static_site/u);
-    assert.doesNotMatch(sentinel, /managed_skill_path=platform\/project_design/u);
+    assert.doesNotMatch(sentinel, /managed_skill_path=platform\/code_repository_design/u);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
