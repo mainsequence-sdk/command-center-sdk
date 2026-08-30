@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.17
+
 - Breaking: replace the repository deployment contract with canonical `CodeRepository` and `CodeRepositoryBranch` names, routes, exports, result keys, and `code-repository sync` CLI.
 - Remove the retired repository-maintenance CLI group; generic SDK and documentation maintenance now uses `application`, with no legacy command aliases.
 

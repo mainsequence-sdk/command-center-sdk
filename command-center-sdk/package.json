@@ -1,6 +1,6 @@
 {
   "name": "@dev-mainsequence/command-center-sdk",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "private": false,
   "description": "The unified framework for building Command Center-compatible resource applications, widgets, workspaces, connections, themes, and embeds.",
   "type": "module",
