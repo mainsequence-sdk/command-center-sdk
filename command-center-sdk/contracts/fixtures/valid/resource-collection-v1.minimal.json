@@ -1,8 +1,8 @@
 {
   "items": [
     {
-      "uid": "project-1",
-      "name": "Example project"
+      "uid": "service-1",
+      "name": "Example service"
     }
   ],
   "pageInfo": {

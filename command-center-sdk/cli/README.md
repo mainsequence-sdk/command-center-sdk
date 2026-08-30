@@ -2,14 +2,14 @@
 
 This directory contains the Node-only command line surface shipped by
 `@dev-mainsequence/command-center-sdk`. `command-center-sdk.mjs` is the npm binary,
-`postinstall.mjs` performs automatic installation for local project dependencies, and the focused
-installer modules own package copying, MCP discovery, provenance, validation, staging, and
-rollback.
+`postinstall.mjs` performs automatic installation for local application dependencies, and the
+focused installer modules own package copying, MCP discovery, provenance, validation, staging,
+and rollback.
 
 The installer recursively discovers skill leaves under `../agent_scaffold/skills` and preserves
-their relative hierarchy below `<project>/.agents/skills/command-center`. Parent category folders
-do not need a `SKILL.md`. It preserves other skill namespaces and unrelated folders in the managed
-namespace. Every successful write records package provenance and managed relative paths in
+their relative hierarchy below `<repository-root>/.agents/skills/command-center`. Parent category
+folders do not need a `SKILL.md`. It preserves other skill namespaces and unrelated folders in the
+managed namespace. Every successful write records package provenance and managed relative paths in
 `PINNED_FROM.txt`; upgrades remove only paths recorded as SDK-managed, including the legacy flat
 layout.
 
@@ -31,8 +31,8 @@ dynamic index. It reads only those skills and validates one manifest revision, l
 hashes, byte sizes, MIME types, safe paths, and skill frontmatter before writing.
 
 Backend-owned skills keep their declared hierarchy below
-`<project>/.agents/skills/mainsequence/`. `MCP_PINNED_FROM.txt` records the exact manifest and paths
-managed by this installer. Refreshes overwrite or remove only those recorded folders. An existing
+`<repository-root>/.agents/skills/mainsequence/`. `MCP_PINNED_FROM.txt` records the exact manifest
+and paths managed by this installer. Refreshes overwrite or remove only those recorded folders. An existing
 Python `PINNED_FROM.txt` may prove that a matching folder is already MCP-owned; it is never
 rewritten by this package. An unknown pre-existing destination blocks the strict command.
 
@@ -52,10 +52,10 @@ entrypoint map. Exercise changes through the Node tests and a packed-package smo
 existing backend MCP manifest version 2 is authoritative; do not create a second Command Center
 contract for the same catalog.
 
-## Project Documentation Initialization
+## Application Documentation Initialization
 
 `command-center-sdk application docs init --path .` safely installs the official application
-documentation system into a consuming npm frontend. The project root must contain `package.json`
+documentation system into a consuming npm frontend. The application root must contain `package.json`
 and `package-lock.json`, use the active Node major declared by `engines.node` and `.node-version`
 or `.nvmrc`, and contain no competing package-manager lockfile. `--dry-run` reports changes,
 `--json` returns structured evidence, and `--skip-install` writes the scaffold without running
@@ -75,10 +75,10 @@ freshness. The consuming frontend remains responsible for its authored content, 
 proxy when desired, and browser tests against the combined production artifact. Deployment
 configuration remains platform-owned.
 
-## Project SDK Status And Update
+## Application SDK Status And Update
 
-`command-center-sdk application sdk-status --path .` inspects a consuming project at the Git repository
-root. It reads the SDK declaration from `package.json`, the resolved version from
+`command-center-sdk application sdk-status --path .` inspects a consuming application at the Git
+repository root. It reads the SDK declaration from `package.json`, the resolved version from
 `package-lock.json`, and the installed version from `node_modules`, then uses npm registry commands
 to resolve the compatible `wanted` version and registry `latest` version. `--json` returns these
 facts together with `dependencyType`, `status`, `updateAvailable`, `updateSupported`, and a
@@ -94,7 +94,7 @@ Status values are deliberately explicit:
 | `lock_missing` | The dependency is declared but absent from `package-lock.json`. |
 | `install_required` | The locked package is absent from `node_modules`. |
 | `installed_drift` | The installed and locked versions differ. |
-| `not_declared` | The project does not declare the SDK. |
+| `not_declared` | The application does not declare the SDK. |
 | `unsupported_dependency_type` | The SDK is declared only as a peer dependency. |
 | `unsupported_source` | The declaration uses a linked, workspace, file, Git, URL, or alias source. |
 
@@ -102,25 +102,26 @@ Status values are deliberately explicit:
 `npm update @dev-mainsequence/command-center-sdk --save` only for a supported declaration that
 needs repair or has a compatible update. `--dry-run` reports that exact command without mutation.
 The command disables only the authenticated MCP postinstall attempt so npm output cannot trigger a
-network-dependent guidance refresh, then re-inspects the project and fails if the package remains
+network-dependent guidance refresh, then re-inspects the application and fails if the package remains
 inconsistent. It never updates unrelated packages, widens a blocked dependency range, calls the
 backend, changes the application version, commits, tags, or pushes. Run `skills sync` explicitly
 afterward when strict backend-owned guidance refresh is required.
 
 ## CodeRepository Sync
 
-`command-center-sdk code-repository sync` mirrors Python's `mainsequence code-repository sync` for consuming npm
-projects whose Vite application is at the Git repository root. The supplied path must be that root
-and contain `package.json` and `package-lock.json`; nested application directories fail preflight
+`command-center-sdk code-repository sync` mirrors Python's `mainsequence code-repository sync` for
+consuming npm applications whose Vite application is at the Git repository root. The supplied path
+must be that root and contain `package.json` and `package-lock.json`; nested application directories fail preflight
 rather than being discovered or translated. The orchestration, backend client, and local npm/Git/SSH
 operations live in the focused `code-repository-sync*.mjs` modules and remain dependency-free and bin-only.
 
 Before local mutation, the command resolves the canonical `origin`, attached branch, and exact
 `HEAD` commit through `POST /api/v1/code-repository-branches/resolve-git-context/`, implementing the
 Git-native source-identity contract from platform ADR-0037. The response supplies the exact
-`CodeRepositoryBranch` and its parent CodeRepository UID. Superseded local repository-identity markers are neither read nor written;
-if a caller supplies the legacy positional CodeRepository UID, it is only an assertion and cannot select
-another CodeRepository. Missing, ambiguous, mismatched, or detached Git identity is a hard failure. The
+`CodeRepositoryBranch` and its parent CodeRepository UID. Superseded local repository-identity
+markers are neither read nor written; if a caller supplies the legacy positional CodeRepository
+UID, it is only an assertion and cannot select another CodeRepository. Missing, ambiguous,
+mismatched, or detached Git identity is a hard failure. The
 command previews the npm patch version, requests the backend-owned tag, and rejects an invalid or
 existing local tag. It then ensures the repository-specific SSH key is registered through the
 resolved owning CodeRepository's `add-deploy-key` action and verifies the forced identity with

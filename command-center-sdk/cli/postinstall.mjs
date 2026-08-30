@@ -32,7 +32,7 @@ export async function runPostinstall({
 } = {}) {
   if (env.npm_config_global === "true") {
     logger.log(
-      "[command-center-sdk] Global install detected; run the explicit skills install command inside a project.",
+      "[command-center-sdk] Global install detected; run the explicit skills install command inside a repository.",
     );
     return { skipped: "global-install" };
   }
@@ -40,7 +40,7 @@ export async function runPostinstall({
   const projectDir = env.INIT_CWD?.trim();
   if (!projectDir) {
     throw new Error(
-      "INIT_CWD is unavailable, so the target project cannot be resolved. Run `command-center-sdk skills install --path .` explicitly.",
+      "INIT_CWD is unavailable, so the target repository cannot be resolved. Run `command-center-sdk skills install --path .` explicitly.",
     );
   }
 

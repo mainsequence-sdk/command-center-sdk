@@ -8,15 +8,15 @@ not describe or own surrounding product applications, routes, backend implementa
 repository-specific application modules.
 
 The npm postinstall hook and the explicit `command-center-sdk skills install` command copy each
-immediate skill directory into `<project>/.agents/skills/command-center`. Matching folders are
+immediate skill directory into `<repository-root>/.agents/skills/command-center`. Matching folders are
 SDK-managed and refreshed from the installed package version; unrelated folders and other
 namespaces are preserved. `PINNED_FROM.txt` records the supplying package version and source.
 
 Postinstall also makes a nonblocking authenticated attempt to synchronize the backend-owned MCP
-catalog into `<project>/.agents/skills/mainsequence` when its URL and access token are available.
+catalog into `<repository-root>/.agents/skills/mainsequence` when its URL and access token are available.
 The strict `command-center-sdk skills sync` command refreshes both sources and fails on an invalid
 or unavailable MCP lane. `MCP_PINNED_FROM.txt` tracks the exact platform folders owned by the npm
-installer without overwriting the Python SDK's provenance or unrelated project skills.
+installer without overwriting the Python SDK's provenance or unrelated application skills.
 
 Every immediate child of `skills/` must be a valid standalone skill with `SKILL.md` and
 `agents/openai.yaml`. Use lowercase hyphenated names, keep triggering descriptions specific, rely

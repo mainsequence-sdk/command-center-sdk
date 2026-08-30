@@ -6,9 +6,10 @@ title: Command Center SDK
 # Build with the Command Center SDK
 
 `@dev-mainsequence/command-center-sdk` gives you the reusable parts of a Command Center
-application: navigation, responsive page layout, resource lists and details, pickers and actions,
-widgets, workspaces, themes, and secure iframe bridges. Your application keeps control of
-authentication, API clients, routes, persistence, permissions, and product-specific behavior.
+application: navigation, responsive page layout, staged application feedback, resource lists and
+details, pickers and actions, widgets, workspaces, themes, and secure iframe bridges. Your
+application keeps control of authentication, API clients, routes, persistence, permissions, and
+product-specific behavior.
 
 If you are new to the SDK, start with [Getting started](./getting-started.md). It installs the
 package and renders a real resource list in a few minutes.
@@ -22,6 +23,7 @@ package and renders a real resource list in a few minutes.
 | Design, route, and add application navigation | [Application navigation](./navigation.md) | `general/build-command-center-application` |
 | Create, validate, and ship application documentation at `/docs/` | [Application documentation](./application-documentation.md) | `documentation/document-command-center-application` |
 | Compose and verify a complete responsive page | [Application layout](./application-layout.md) | `layout/compose-command-center-page` |
+| Build staged application startup or reconnection feedback | [Application feedback](./application-feedback.md) | `feedback/build-application-loading-flow` |
 | Build a paginated list | [Resources](./resources.md#build-a-resource-list) | `views/build-resource-list` |
 | Build a detail page | [Resources](./resources.md#build-a-resource-detail) | `views/build-resource-detail` |
 | Add a searchable selector | [Resources](./resources.md#build-a-resource-picker) | `views/build-resource-picker` |
@@ -40,11 +42,11 @@ package and renders a real resource list in a few minutes.
 | Normalize, snapshot, or render a workspace | [Widgets and workspaces](./widgets-and-workspaces.md#build-a-workspace) | `workspace/build-command-center-workspace` |
 | Apply a theme | [Themes and embeds](./themes-and-embeds.md#theme-an-application) | `theme/theme-command-center-app` |
 | Embed an external widget | [Themes and embeds](./themes-and-embeds.md#embed-an-external-widget) | `embed/embed-command-center-app` |
-| Embed a project-owned static site | [Themes and embeds](./themes-and-embeds.md#embed-a-project-owned-static-site) | `embed/integrate-static-site-iframe` |
+| Embed an application-owned static site | [Themes and embeds](./themes-and-embeds.md#embed-an-application-owned-static-site) | `embed/integrate-static-site-iframe` |
 
 The table is intentionally kept in one-to-one alignment with the consumer skills shipped in the
 npm package. SDK-maintainer workflows are package-local and are not installed into applications.
-The `implement-*` skills operate only in the consuming project. When an installed contract is
+The `implement-*` skills operate only in the consuming application. When an installed contract is
 insufficient, they report the exact gap and stop; SDK functionality or serialized contracts change
 only in a separate source-maintenance task.
 
@@ -78,6 +80,7 @@ The SDK owns reusable UI and lifecycle. Your application owns product policy.
 | Iframe message validation and lifecycle | Origin allowlists, CSP, launch tokens, and backend authorization |
 | Navigation hierarchy, composition, and controlled React chrome | Routes, permission filtering, favorites, branding, and product actions |
 | Page gutters, section rhythm, cards, grids, and layout verification | Domain-specific layouts, section ordering, and product state |
+| Status/progress presentation, responsive behavior, and accessible announcements | Readiness APIs, polling, retry/timeout policy, cancellation, and reconnection |
 
 Do not import from `dist`, repository source paths, or another application's private modules. If a
 public surface is missing, keep one-off behavior in the consumer or follow
@@ -89,6 +92,8 @@ public surface is missing, keep one-off behavior in the consumer or follow
   definitions, validation, and contribution composition.
 - `/layout` and `/layout/testing`: complete-application page, header, stack, card, and grid
   primitives plus real-browser geometry verification.
+- `/feedback`: controlled application status, ordered progress-stage, and activity-indicator
+  primitives.
 - `/resource` and `/resource/react`: framework-neutral resource definitions/adapters and React
   selection state.
 - `/views`: `ResourceListPage`, `ResourceDetailShell`, `ResourcePicker`, summaries, tables, cards,
@@ -106,7 +111,7 @@ public surface is missing, keep one-off behavior in the consumer or follow
   and read-only rendering.
 - `/theme`, `/theme/presets`, and `/theme/data-viz`: presets, variables, density, surfaces, and
   chart palettes.
-- `/embed` and `/embed/react`: generic external-widget and project-owned static-site iframe APIs.
+- `/embed` and `/embed/react`: generic external-widget and application-owned static-site iframe APIs.
 - `/styles.css` and `/theme/*.css`: browser-ready styles.
 
 Read the installed package's `package.json` export map when working against a specific version. An
@@ -124,7 +129,7 @@ npx command-center-sdk skills install --path .
 ```
 
 Use `--dry-run` to inspect changes and `--json` for machine-readable output. The packaged-skill
-lane manages only the `command-center` namespace; keep project-specific skills in another
+lane manages only the `command-center` namespace; keep application-specific skills in another
 directory.
 
 The package also understands the backend-owned MCP platform catalog. When the npm lifecycle has an
@@ -139,7 +144,7 @@ npx command-center-sdk skills sync --path . --dry-run --json
 
 `skills sync` refreshes both namespaces and exits nonzero on authentication, transport, manifest,
 or ownership failure. `MCP_PINNED_FROM.txt` records only the MCP folders managed in the
-`mainsequence` namespace; project-owned siblings and the Python SDK's `PINNED_FROM.txt` are
+`mainsequence` namespace; application-owned siblings and the Python SDK's `PINNED_FROM.txt` are
 preserved.
 
 Contract skills always resolve the installed `contracts/manifest.json`. The manifest is the

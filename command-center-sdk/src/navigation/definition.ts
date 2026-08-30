@@ -24,6 +24,14 @@ function assertLabel(value: string, owner: string) {
   }
 }
 
+function assertHref(value: string | undefined, owner: string) {
+  if (value !== undefined && !value.trim()) {
+    throw new NavigationDefinitionError(
+      `${owner} href must be non-empty when provided.`,
+    );
+  }
+}
+
 function assertOrder(value: number | undefined, owner: string) {
   if (value !== undefined && !Number.isFinite(value)) {
     throw new NavigationDefinitionError(
@@ -60,6 +68,7 @@ function validateDestinations(
       `Navigation destination in ${applicationId}/${subApplication.id}`,
     );
     assertLabel(destination.label, `Navigation destination ${destination.id}`);
+    assertHref(destination.href, `Navigation destination ${destination.id}`);
     assertOrder(destination.order, `Navigation destination ${destination.id}`);
 
     if (localIds.has(destination.id)) {
@@ -84,6 +93,7 @@ export function validateNavigationApplication(
 ) {
   assertStableId(definition.id, "Navigation application");
   assertLabel(definition.label, `Navigation application ${definition.id}`);
+  assertHref(definition.href, `Navigation application ${definition.id}`);
   assertOrder(definition.order, `Navigation application ${definition.id}`);
 
   const subApplicationIds = new Set<string>();

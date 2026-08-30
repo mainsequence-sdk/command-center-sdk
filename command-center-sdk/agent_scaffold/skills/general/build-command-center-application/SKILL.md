@@ -21,7 +21,7 @@ second rail; model only the child's own internal hierarchy.
 
 Make these cross-cutting decisions first:
 
-1. Integrate the complete application through the project-owned `mainsequence.*` version-one
+1. Integrate the complete application through the application-owned `mainsequence.*` version-one
    ready/initialize protocol. Route this work to `$integrate-static-site-iframe`. This embedding is
    the default for a Command Center application, not an optional alternative to its internal
    pages. When the application calls a FastAPI ResourceRelease, use that same skill's delegated
@@ -32,12 +32,14 @@ Make these cross-cutting decisions first:
 3. Compose complete route gutters, headers, top-level section rhythm, cards, and responsive card
    grids through `$compose-command-center-page`. Keep its browser geometry verifier separate from
    the semantic theme audit.
-4. Create and maintain human and technical application documentation through
+4. Route application-wide startup, prerequisite, reconnection, and terminal recovery feedback to
+   `$build-application-loading-flow`. Keep readiness transport and retry policy in the application.
+5. Create and maintain human and technical application documentation through
    `$document-command-center-application`. Ship it at `/docs/` inside the same static artifact and
    verify its deep links in the application's real-browser suite.
-5. Keep authentication, API clients, routing, permissions, notifications, persistence, and domain
+6. Keep authentication, API clients, routing, permissions, notifications, persistence, and domain
    rules in the application or its backend. Inject them through published SDK extension points.
-6. Inspect the installed package version, exports, and declarations through
+7. Inspect the installed package version, exports, and declarations through
    `$use-command-center-sdk` before selecting an implementation.
 
 Do not confuse the complete-application protocol with the generic external-widget iframe
@@ -53,6 +55,7 @@ Choose the highest-level composition that owns the required lifecycle:
 | --- | --- | --- |
 | Application rail with grouped sub-applications | `/navigation` controlled primitives | This skill |
 | Complete route gutters, header, section rhythm, cards, and card grids | `/layout` primitives | `$compose-command-center-page` |
+| Blocking application startup, reconnection, or prerequisite progress | `/feedback` controlled primitives | `$build-application-loading-flow` |
 | Domain-object collection | `ResourceListPage` | `$build-resource-list` |
 | One domain object with summary, actions, and sections | `ResourceDetailShell` | `$build-resource-detail` |
 | Searchable single or multiple choice | `ResourcePicker` | `$build-resource-picker` |
@@ -79,7 +82,10 @@ Use `ApplicationNavigationShell` when the SDK can own the rail/panel layout. Use
 positioning. `ApplicationRailItem` is the narrow primitive for an existing host rail.
 
 Keep state controlled. Filter inaccessible definitions before render, pass active and open IDs from
-the consumer, and translate `NavigationIntent` into the consumer router. Use
+the consumer, give every routed application and destination a stable `href`, and translate ordinary
+unmodified `NavigationIntent` clicks into the consumer router. The SDK renders routed items as
+anchors so Command/Control-click, middle-click, context menus, and copy-link remain browser-native;
+do not recreate routed items as callback-only buttons. Use
 `defineNavigationContribution` plus `composeNavigationApplications` when one package contributes
 a complete sub-application to another package owned application. Do not import another application
 registry, router, auth store, or private sidebar components.

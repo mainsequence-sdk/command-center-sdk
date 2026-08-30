@@ -2,10 +2,31 @@
 
 ## Unreleased
 
+## 0.1.18
+
+- Render navigation applications and destinations with configured `href` values as real anchors,
+  preserving controlled routing for ordinary clicks while restoring native Command/Control-click,
+  middle-click, context-menu, and copy-link behavior.
+- Complete application-only naming across generic SDK and documentation maintenance with
+  `Application*` implementation names and `applicationRoot` machine output, with no legacy command
+  or JSON-key aliases.
+- Breaking: replace the retired repository-infrastructure widget identity with
+  `main-sequence-foundry__code-repository-infra-graph`. Backend registries and persisted workspace
+  documents must migrate the exact ID before the new host/runtime cutover; the SDK intentionally
+  provides no runtime alias.
+- Add a public `/feedback` entrypoint with controlled application status, ordered progress-stage,
+  and activity-indicator primitives for truthful startup, retry, reconnection, and terminal failure
+  presentation. Keep readiness transport, polling, timeout, cancellation, and backend status
+  mapping application-owned.
+- Ship SDK ADR 004, human guidance, real-browser responsive/accessibility coverage, and the
+  `build-application-loading-flow` packaged skill.
+
 ## 0.1.17
 
-- Breaking: replace the repository deployment contract with canonical `CodeRepository` and `CodeRepositoryBranch` names, routes, exports, result keys, and `code-repository sync` CLI.
-- Remove the retired repository-maintenance CLI group; generic SDK and documentation maintenance now uses `application`, with no legacy command aliases.
+- Breaking: replace the repository deployment contract with canonical `CodeRepository` and
+  `CodeRepositoryBranch` names, routes, exports, result keys, and `code-repository sync` CLI.
+- Remove the retired repository-maintenance CLI group; generic SDK and documentation maintenance
+  now uses `application`, with no legacy command aliases.
 
 ## 0.1.16
 
@@ -18,8 +39,8 @@
 
 ## 0.1.15
 
-- Resolve code-repository sync identity authoritatively from canonical Git origin, attached branch,
-  and exact `HEAD` commit through the platform Git-context endpoint. Stop requiring superseded
+- Resolve code-repository sync identity authoritatively from canonical Git origin, attached branch, and
+  exact `HEAD` commit through the platform Git-context endpoint. Stop requiring the retired
   local `.env` repository-identity markers; a supplied CodeRepository UID is assertion-only.
 
 ## 0.1.14

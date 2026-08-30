@@ -1,4 +1,9 @@
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type {
+  CSSProperties,
+  KeyboardEvent,
+  MouseEvent,
+  ReactNode,
+} from "react";
 import { X } from "lucide-react";
 
 import type {
@@ -12,7 +17,7 @@ function joinClassNames(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
-function moveDestinationFocus(event: KeyboardEvent<HTMLButtonElement>) {
+function moveDestinationFocus(event: KeyboardEvent<HTMLElement>) {
   if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
     return;
   }
@@ -20,10 +25,12 @@ function moveDestinationFocus(event: KeyboardEvent<HTMLButtonElement>) {
   const panel = event.currentTarget.closest("[data-app-navigation-panel]");
   const buttons = panel
     ? Array.from(
-        panel.querySelectorAll<HTMLButtonElement>(
+        panel.querySelectorAll<HTMLElement>(
           "[data-cc-navigation-destination]",
         ),
-      ).filter((button) => !button.disabled)
+      ).filter(
+        (item) => !(item instanceof HTMLButtonElement && item.disabled),
+      )
     : [];
   const currentIndex = buttons.indexOf(event.currentTarget);
 
@@ -40,6 +47,14 @@ function moveDestinationFocus(event: KeyboardEvent<HTMLButtonElement>) {
         ? (currentIndex + 1) % buttons.length
         : (currentIndex - 1 + buttons.length) % buttons.length;
   buttons[nextIndex]?.focus();
+}
+
+function isPlainPrimaryClick(event: MouseEvent<HTMLElement>) {
+  return event.button === 0 &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey;
 }
 
 export interface DestinationTrailingRenderProps {
@@ -139,6 +154,35 @@ export function ApplicationNavigationPanel({
                   const destinationDescription = destination.disabled
                     ? unavailableLabel
                     : showDestinationDescriptions ? destination.description : undefined;
+                  const intent = {
+                    applicationId: application.id,
+                    destinationId: destination.id,
+                    subApplicationId: subApplication.id,
+                  };
+                  const destinationContent = (
+                    <>
+                      {Icon ? (
+                        <Icon className="cc-application-navigation-panel__destination-icon" />
+                      ) : null}
+                      <span className="cc-application-navigation-panel__destination-copy">
+                        <span className="cc-application-navigation-panel__destination-label">
+                          {destination.label}
+                        </span>
+                        {destinationDescription ? (
+                          <span className="cc-application-navigation-panel__destination-description">
+                            {destinationDescription}
+                          </span>
+                        ) : null}
+                      </span>
+                    </>
+                  );
+                  const sharedDestinationProps = {
+                    "aria-current": active ? "page" as const : undefined,
+                    className: "cc-application-navigation-panel__destination",
+                    "data-cc-navigation-destination": true,
+                    onKeyDown: moveDestinationFocus,
+                    title: destination.disabled ? unavailableLabel : undefined,
+                  };
 
                   return (
                     <div
@@ -148,36 +192,30 @@ export function ApplicationNavigationPanel({
                       )}
                       key={destination.id}
                     >
-                      <button
-                        aria-current={active ? "page" : undefined}
-                        className="cc-application-navigation-panel__destination"
-                        data-cc-navigation-destination
-                        disabled={destination.disabled}
-                        onClick={() => {
-                          onNavigate({
-                            applicationId: application.id,
-                            destinationId: destination.id,
-                            subApplicationId: subApplication.id,
-                          });
-                        }}
-                        onKeyDown={moveDestinationFocus}
-                        title={destination.disabled ? unavailableLabel : undefined}
-                        type="button"
-                      >
-                        {Icon ? (
-                          <Icon className="cc-application-navigation-panel__destination-icon" />
-                        ) : null}
-                        <span className="cc-application-navigation-panel__destination-copy">
-                          <span className="cc-application-navigation-panel__destination-label">
-                            {destination.label}
-                          </span>
-                          {destinationDescription ? (
-                            <span className="cc-application-navigation-panel__destination-description">
-                              {destinationDescription}
-                            </span>
-                          ) : null}
-                        </span>
-                      </button>
+                      {destination.href && !destination.disabled ? (
+                        <a
+                          {...sharedDestinationProps}
+                          href={destination.href}
+                          onClick={(event) => {
+                            if (!isPlainPrimaryClick(event)) {
+                              return;
+                            }
+                            event.preventDefault();
+                            onNavigate(intent);
+                          }}
+                        >
+                          {destinationContent}
+                        </a>
+                      ) : (
+                        <button
+                          {...sharedDestinationProps}
+                          disabled={destination.disabled}
+                          onClick={() => onNavigate(intent)}
+                          type="button"
+                        >
+                          {destinationContent}
+                        </button>
+                      )}
                       {renderDestinationTrailing ? (
                         <div className="cc-application-navigation-panel__destination-trailing">
                           {renderDestinationTrailing({

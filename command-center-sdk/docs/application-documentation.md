@@ -7,7 +7,7 @@ title: Application documentation
 
 Every maintained Command Center frontend should explain both what people can do and how engineers
 can safely change it. Keep that documentation beside the application, validate it in the same npm
-project, and ship it in the same static artifact at `/docs/`.
+application, and ship it in the same static artifact at `/docs/`.
 
 This guide matches the `documentation/document-command-center-application` skill and the official
 `command-center-sdk application docs init` scaffold.
@@ -55,7 +55,7 @@ The generated `npm run docs:check` verifies:
 The check also calls out a known install hazard: a lockfile containing
 `postman-code-generators` together with a root `packageManager` declaration. That dependency can
 invoke globally installed Yarn during postinstall, which can make Corepack reject the install even
-though npm owns the project. The base template intentionally excludes OpenAPI tooling. Add it only
+though npm is the declared package manager. The base template intentionally excludes OpenAPI tooling. Add it only
 after pinning and validating its complete install lifecycle in a clean environment.
 
 Keep `documentation/package.json` without a `type` field even when the application root uses
@@ -96,8 +96,8 @@ Every navigation item has this shape:
 
 ```json
 {
-  "label": "Projects",
-  "doc": "surfaces/projects",
+  "label": "Services",
+  "doc": "surfaces/services",
   "items": []
 }
 ```
@@ -142,7 +142,7 @@ production-equivalent static server, prove:
 5. the documentation back link targets `/`; and
 6. same-origin `/docs/` scripts, styles, and images load without error responses.
 
-Exercise the project's supported desktop browser and a narrow viewport. Verify light and dark
+Exercise the application's supported desktop browser matrix and a narrow viewport. Verify light and dark
 documentation when the product supports both. A successful Docusaurus compilation is necessary,
 but it does not replace integrated browser verification of the final artifact.
 

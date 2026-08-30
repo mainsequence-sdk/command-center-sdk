@@ -1,8 +1,8 @@
 {
   "items": [
     {
-      "uid": "project-1",
-      "name": "Example project",
+      "uid": "service-1",
+      "name": "Example service",
       "status": "active"
     }
   ],
@@ -15,7 +15,7 @@
   },
   "controls": {
     "search": {
-      "placeholder": "Search projects",
+      "placeholder": "Search services",
       "fields": ["uid", "name"]
     },
     "filters": [
@@ -40,17 +40,17 @@
   "bulkActions": [
     {
       "id": "archive",
-      "label": "Archive code repositories",
-      "endpoint": "/code-repositories/actions/archive/",
-      "preflight_endpoint": "/code-repositories/actions/archive/preflight/",
+      "label": "Archive services",
+      "endpoint": "/services/actions/archive/",
+      "preflight_endpoint": "/services/actions/archive/preflight/",
       "method": "POST",
       "tone": "danger",
       "selection_modes": ["explicit", "all_matching"],
       "confirmation": {
-        "title": "Archive code repositories",
+        "title": "Archive services",
         "word": "ARCHIVE",
         "button_label": "Archive",
-        "warning": "Archived projects stop running."
+        "warning": "Archived services stop running."
       },
       "options": [
         {

@@ -28,15 +28,15 @@ import {
   type ResourceHttpClient,
 } from "@dev-mainsequence/command-center-sdk/resource";
 
-interface Project {
+interface Service {
   uid: string;
   name: string;
   status: "active" | "paused";
 }
 
-interface ProjectListResponse {
+interface ServiceListResponse {
   count: number;
-  results: Project[];
+  results: Service[];
 }
 
 const client: ResourceHttpClient = {
@@ -60,15 +60,15 @@ const client: ResourceHttpClient = {
 };
 
 const adapter = createHttpResourceAdapter<
-  Project,
+  Service,
   string,
-  ProjectListResponse
+  ServiceListResponse
 >({
   client,
   endpoints: {
-    list: "/projects/",
-    detail: (uid) => `/projects/${encodeURIComponent(uid)}/`,
-    discovery: "/projects/discovery/",
+    list: "/services/",
+    detail: (uid) => `/services/${encodeURIComponent(uid)}/`,
+    discovery: "/services/discovery/",
   },
   serializeListQuery: ({ pageIndex, pageSize, search, filters, sort }) => ({
     offset: pageIndex * pageSize,
@@ -91,15 +91,15 @@ const adapter = createHttpResourceAdapter<
   }),
 });
 
-export const projectResource = defineResourceApplication({
-  id: "projects",
-  label: "Projects",
-  itemLabel: "project",
-  getId: (project: Project) => project.uid,
+export const serviceResource = defineResourceApplication({
+  id: "services",
+  label: "Services",
+  itemLabel: "service",
+  getId: (service: Service) => service.uid,
   adapter,
   columns: [
-    { id: "name", header: "Name", getValue: (project) => project.name, sortableKey: "name" },
-    { id: "status", header: "Status", getValue: (project) => project.status },
+    { id: "name", header: "Name", getValue: (service) => service.name, sortableKey: "name" },
+    { id: "status", header: "Status", getValue: (service) => service.status },
   ],
 });
 ```
@@ -150,12 +150,12 @@ for validator setup, semantic constraints, and versioning rules.
 ```tsx
 import { ResourceListPage } from "@dev-mainsequence/command-center-sdk/views";
 
-export function ProjectsPage() {
+export function ServicesPage() {
   return (
     <ResourceListPage
-      definition={projectResource}
+      definition={serviceResource}
       searchable
-      searchPlaceholder="Search projects"
+      searchPlaceholder="Search services"
       refreshable
       pageSize={25}
       filterDefinitions={[
@@ -172,12 +172,12 @@ export function ProjectsPage() {
       ]}
       filters={{ status }}
       primaryActions={[
-        { id: "create", label: "New project", tone: "primary", onSelect: openCreateDialog },
+        { id: "create", label: "New service", tone: "primary", onSelect: openCreateDialog },
       ]}
       rowActions={[
-        { id: "open", label: "Open", onSelect: (project) => openProject(project.uid) },
+        { id: "open", label: "Open", onSelect: (service) => openService(service.uid) },
       ]}
-      onBulkActionSuccess={() => showToast("Projects updated")}
+      onBulkActionSuccess={() => showToast("Services updated")}
     />
   );
 }
@@ -208,14 +208,14 @@ import {
   ResourceDetailShell,
 } from "@dev-mainsequence/command-center-sdk/views";
 
-export function ProjectDetail({ project }: { project: Project }) {
+export function ServiceDetail({ service }: { service: Service }) {
   const [tab, setTab] = useState("overview");
 
   return (
-    <ResourceDetailShell<Project>
+    <ResourceDetailShell<Service>
       breadcrumbs={[
-        { id: "projects", label: "Projects", onSelect: () => navigate("/projects") },
-        { id: project.uid, label: project.name },
+        { id: "services", label: "Services", onSelect: () => navigate("/services") },
+        { id: service.uid, label: service.name },
       ]}
       activeTabId={tab}
       onTabChange={setTab}
@@ -223,12 +223,12 @@ export function ProjectDetail({ project }: { project: Project }) {
         { id: "overview", label: "Overview" },
         { id: "releases", label: "Releases" },
       ]}
-      headerActions={<button onClick={() => openEditDialog(project)}>Edit</button>}
+      headerActions={<button onClick={() => openEditDialog(service)}>Edit</button>}
       summary={
         <EntitySummary
           summary={{
-            entity: { id: project.uid, type: "project", title: project.name },
-            badges: [{ key: "status", label: project.status }],
+            entity: { id: service.uid, type: "service", title: service.name },
+            badges: [{ key: "status", label: service.status }],
             inline_fields: [],
             highlight_fields: [],
             stats: [],
@@ -236,7 +236,7 @@ export function ProjectDetail({ project }: { project: Project }) {
         />
       }
     >
-      {tab === "overview" ? <ProjectOverview project={project} /> : <ProjectReleases project={project} />}
+      {tab === "overview" ? <ServiceOverview service={service} /> : <ServiceReleases service={service} />}
     </ResourceDetailShell>
   );
 }

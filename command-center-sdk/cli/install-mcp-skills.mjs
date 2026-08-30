@@ -258,7 +258,7 @@ export async function installMcpAgentSkills({
   command = "command-center-sdk skills sync",
   onBeforeSentinelWrite,
 } = {}) {
-  if (!projectDir) throw new Error("A target project directory is required.");
+  if (!projectDir) throw new Error("A target repository directory is required.");
   if (!catalog || !Array.isArray(catalog.skills) || !Array.isArray(catalog.resources)) {
     throw new Error("A validated MCP platform skill catalog is required.");
   }
@@ -267,7 +267,7 @@ export async function installMcpAgentSkills({
   const requestedProjectDir = resolve(projectDir);
   const projectState = await pathState(requestedProjectDir);
   if (!projectState?.isDirectory() || projectState.isSymbolicLink()) {
-    throw new Error(`Target project directory does not exist: ${requestedProjectDir}`);
+    throw new Error(`Target repository directory does not exist: ${requestedProjectDir}`);
   }
   const resolvedProjectDir = await realpath(requestedProjectDir);
   const destinationRoot = join(

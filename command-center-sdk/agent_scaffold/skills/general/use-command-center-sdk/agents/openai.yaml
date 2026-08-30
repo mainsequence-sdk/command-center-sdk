@@ -1,4 +1,4 @@
 interface:
   display_name: "Use Command Center SDK"
-  short_description: "Choose SDK entrypoints and project setup"
-  default_prompt: "Use $use-command-center-sdk to set up this project with the Command Center SDK."
+  short_description: "Choose SDK entrypoints and application setup"
+  default_prompt: "Use $use-command-center-sdk to set up this application with the Command Center SDK."

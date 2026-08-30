@@ -95,7 +95,7 @@ The SDK has two unrelated protocols:
 | Use case | Protocol | Host | Child |
 | --- | --- | --- | --- |
 | External widget with props, inputs, outputs, user state, sizing, and scoped capabilities | `command-center-iframe@v1` | `SandboxedIframeWidget` or `createIframeBridgeHost` | `createIframeBridgeEmbed` |
-| Project-owned static site receiving theme and public-user context | `mainsequence.*`, numeric version `1` | `StaticSiteIframe` or `createStaticSiteIframeHost` | `createStaticSiteIframeClient` |
+| Application-owned static site receiving theme and public-user context | `mainsequence.*`, numeric version `1` | `StaticSiteIframe` or `createStaticSiteIframeHost` | `createStaticSiteIframeClient` |
 
 Do not translate between them. The npm version does not replace either wire-protocol version.
 
@@ -152,7 +152,7 @@ Never send a Command Center session JWT, cookies, unrestricted authorization hea
 backend proxy. If capabilities are required, mint short-lived, audience-bound, capability-scoped
 tokens on the server and enforce them at the backend.
 
-## Embed a project-owned static site
+## Embed an application-owned static site
 
 The host supplies an authorized launch URL plus current theme/public-user context:
 

@@ -3,10 +3,10 @@
 import { auditThemeCss } from "./audit-theme-css.mjs";
 import { installAgentSkills, readSdkPackageMetadata } from "./install-agent-skills.mjs";
 import {
-  inspectProjectSdk,
-  updateProjectSdk,
-} from "./project-sdk-maintenance.mjs";
-import { initializeProjectDocumentation } from "./project-docs.mjs";
+  inspectApplicationSdk,
+  updateApplicationSdk,
+} from "./application-sdk-maintenance.mjs";
+import { initializeApplicationDocumentation } from "./application-docs.mjs";
 import { syncCodeRepository } from "./code-repository-sync.mjs";
 import { syncAgentSkills } from "./sync-agent-skills.mjs";
 
@@ -36,7 +36,7 @@ package-lock.json, commits all changes, tags, and pushes. It resolves CodeReposi
 canonical Git origin, attached branch, and exact HEAD commit; an optional expected CodeRepository UID is
 only a consistency assertion.
 
-The SDK status and update commands compare and refresh only the project's declared Command Center
+The SDK status and update commands compare and refresh only the application's declared Command Center
 SDK dependency. Updates respect its existing npm semver policy and do not commit, tag, push, or
 call the backend.
 
@@ -97,7 +97,7 @@ function parseSkillArguments(args, { allowMcpUrl = false } = {}) {
     if (argument === "--path" || argument === "-p") {
       index += 1;
       if (!args[index]) {
-        throw new Error(`${argument} requires a project directory.`);
+        throw new Error(`${argument} requires a repository directory.`);
       }
       projectDir = args[index];
       continue;
@@ -105,7 +105,7 @@ function parseSkillArguments(args, { allowMcpUrl = false } = {}) {
     if (argument.startsWith("--path=")) {
       projectDir = argument.slice("--path=".length);
       if (!projectDir) {
-        throw new Error("--path requires a project directory.");
+        throw new Error("--path requires a repository directory.");
       }
       continue;
     }
@@ -190,8 +190,8 @@ export function parseCodeRepositorySyncArguments(args) {
   };
 }
 
-function parseProjectSdkArguments(args, { allowDryRun = false } = {}) {
-  let projectDir = process.cwd();
+function parseApplicationSdkArguments(args, { allowDryRun = false } = {}) {
+  let applicationDir = process.cwd();
   let dryRun = false;
   let json = false;
 
@@ -207,27 +207,27 @@ function parseProjectSdkArguments(args, { allowDryRun = false } = {}) {
       continue;
     }
     if (argument === "--help" || argument === "-h") {
-      return { help: true, projectDir, dryRun, json };
+      return { help: true, applicationDir, dryRun, json };
     }
     if (argument === "--path" || argument === "-p") {
       index += 1;
-      if (!args[index]) throw new Error(argument + " requires a project directory.");
-      projectDir = args[index];
+      if (!args[index]) throw new Error(argument + " requires an application directory.");
+      applicationDir = args[index];
       continue;
     }
     if (argument.startsWith("--path=")) {
-      projectDir = argument.slice("--path=".length);
-      if (!projectDir) throw new Error("--path requires a project directory.");
+      applicationDir = argument.slice("--path=".length);
+      if (!applicationDir) throw new Error("--path requires an application directory.");
       continue;
     }
     throw new Error("Unknown argument: " + argument);
   }
 
-  return { help: false, projectDir, dryRun, json };
+  return { help: false, applicationDir, dryRun, json };
 }
 
-export function parseProjectDocsArguments(args) {
-  let projectDir = process.cwd();
+export function parseApplicationDocsArguments(args) {
+  let applicationDir = process.cwd();
   let dryRun = false;
   let json = false;
   let install = true;
@@ -247,23 +247,23 @@ export function parseProjectDocsArguments(args) {
       continue;
     }
     if (argument === "--help" || argument === "-h") {
-      return { help: true, projectDir, dryRun, json, install };
+      return { help: true, applicationDir, dryRun, json, install };
     }
     if (argument === "--path" || argument === "-p") {
       index += 1;
-      if (!args[index]) throw new Error(`${argument} requires a project directory.`);
-      projectDir = args[index];
+      if (!args[index]) throw new Error(`${argument} requires an application directory.`);
+      applicationDir = args[index];
       continue;
     }
     if (argument.startsWith("--path=")) {
-      projectDir = argument.slice("--path=".length);
-      if (!projectDir) throw new Error("--path requires a project directory.");
+      applicationDir = argument.slice("--path=".length);
+      if (!applicationDir) throw new Error("--path requires an application directory.");
       continue;
     }
     throw new Error(`Unknown argument: ${argument}`);
   }
 
-  return { help: false, projectDir, dryRun, json, install };
+  return { help: false, applicationDir, dryRun, json, install };
 }
 
 function printHumanSyncResult(result) {
@@ -328,9 +328,9 @@ function printHumanCodeRepositorySyncResult(result) {
   console.log(`Branch tag: ${result.tagName}`);
 }
 
-function printHumanProjectSdkStatus(result) {
+function printHumanApplicationSdkStatus(result) {
   console.log("SDK Status");
-  console.log("Project: " + result.projectRoot);
+  console.log("Application: " + result.applicationRoot);
   console.log("Package: " + result.package);
   console.log("Dependency type: " + (result.dependencyType || "not declared"));
   console.log("Declared: " + (result.declared || "not declared"));
@@ -342,9 +342,9 @@ function printHumanProjectSdkStatus(result) {
   console.log("Hint: " + result.hint);
 }
 
-function printHumanProjectSdkUpdatePlan(plan) {
+function printHumanApplicationSdkUpdatePlan(plan) {
   console.log("SDK Update Plan");
-  console.log("Project: " + plan.projectRoot);
+  console.log("Application: " + plan.applicationRoot);
   console.log("Current status: " + plan.before.status);
   if (plan.commands.length === 0) {
     console.log("Action: none (" + plan.before.hint + ")");
@@ -353,7 +353,7 @@ function printHumanProjectSdkUpdatePlan(plan) {
   plan.commands.forEach((command, index) => console.log("  " + (index + 1) + ". " + command));
 }
 
-function printHumanProjectSdkUpdateResult(result) {
+function printHumanApplicationSdkUpdateResult(result) {
   if (result.dryRun) {
     console.log("Dry run: package.json, package-lock.json, node_modules, and skills were unchanged.");
     return;
@@ -374,9 +374,9 @@ function printHumanProjectSdkUpdateResult(result) {
   console.log("Next: command-center-sdk skills sync --path .");
 }
 
-function printHumanProjectDocsResult(result) {
+function printHumanApplicationDocsResult(result) {
   const mode = result.dryRun ? "Documentation initialization preview" : "Documentation initialized";
-  console.log(`${mode}: ${result.projectRoot}`);
+  console.log(`${mode}: ${result.applicationRoot}`);
   console.log(`Node.js major: ${result.nodeMajor}`);
   console.log(`Documentation route: ${result.docsBaseUrl}`);
   if (result.created.length > 0) console.log(`Created: ${result.created.join(", ")}`);
@@ -412,46 +412,46 @@ async function main() {
     return;
   }
   if (args[0] === "application" && args[1] === "sdk-status") {
-    const options = parseProjectSdkArguments(args.slice(2));
+    const options = parseApplicationSdkArguments(args.slice(2));
     if (options.help) {
       console.log(usage);
       return;
     }
-    const result = await inspectProjectSdk({ projectDir: options.projectDir });
+    const result = await inspectApplicationSdk({ applicationDir: options.applicationDir });
     if (options.json) console.log(JSON.stringify(result, null, 2));
-    else printHumanProjectSdkStatus(result);
+    else printHumanApplicationSdkStatus(result);
     return;
   }
   if (args[0] === "application" && args[1] === "docs" && args[2] === "init") {
-    const options = parseProjectDocsArguments(args.slice(3));
+    const options = parseApplicationDocsArguments(args.slice(3));
     if (options.help) {
       console.log(usage);
       return;
     }
-    const result = await initializeProjectDocumentation({
-      projectDir: options.projectDir,
+    const result = await initializeApplicationDocumentation({
+      applicationDir: options.applicationDir,
       dryRun: options.dryRun,
       install: options.install,
       quiet: options.json,
     });
     if (options.json) console.log(JSON.stringify(result, null, 2));
-    else printHumanProjectDocsResult(result);
+    else printHumanApplicationDocsResult(result);
     return;
   }
   if (args[0] === "application" && args[1] === "update-sdk") {
-    const options = parseProjectSdkArguments(args.slice(2), { allowDryRun: true });
+    const options = parseApplicationSdkArguments(args.slice(2), { allowDryRun: true });
     if (options.help) {
       console.log(usage);
       return;
     }
-    const result = await updateProjectSdk({
-      projectDir: options.projectDir,
+    const result = await updateApplicationSdk({
+      applicationDir: options.applicationDir,
       dryRun: options.dryRun,
       quiet: options.json,
-      onPlan: options.json ? undefined : printHumanProjectSdkUpdatePlan,
+      onPlan: options.json ? undefined : printHumanApplicationSdkUpdatePlan,
     });
     if (options.json) console.log(JSON.stringify(result, null, 2));
-    else printHumanProjectSdkUpdateResult(result);
+    else printHumanApplicationSdkUpdateResult(result);
     return;
   }
   if (args[0] === "code-repository" && args[1] === "sync") {
@@ -463,7 +463,7 @@ async function main() {
     const result = await syncCodeRepository({
       message: options.message,
       codeRepositoryUid: options.codeRepositoryUid,
-      projectDir: options.codeRepositoryDir,
+      codeRepositoryDir: options.codeRepositoryDir,
       dryRun: options.dryRun,
       quiet: options.json,
       onPlan: options.json ? undefined : printHumanCodeRepositorySyncPlan,

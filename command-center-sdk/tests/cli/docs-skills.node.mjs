@@ -28,7 +28,7 @@ test("human documentation maps every packaged agent skill", async () => {
   for (const skillPath of skillPaths) {
     assert.equal(docsIndex.includes(`\`${skillPath}\``), true, `${skillPath} is not documented`);
   }
-  assert.equal(skillPaths.length, 23);
+  assert.equal(skillPaths.length, 24);
 });
 
 test("application documentation guidance stays aligned with the official scaffold", async () => {
@@ -70,33 +70,50 @@ test("consumer scaffold excludes SDK-maintainer workflows", async () => {
   }
 });
 
-test("consumer guidance documents SDK status and update as a separate project lifecycle", async () => {
+test("consumer guidance documents SDK status and update as a separate application lifecycle", async () => {
   const useSdkSkill = await readFile(
     join(skillsRoot, "general", "use-command-center-sdk", "SKILL.md"),
     "utf8",
   );
-  const maintainProjectSkill = await readFile(
+  const maintainCodeRepositorySkill = await readFile(
     join(skillsRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
     "utf8",
   );
   const gettingStarted = await readFile(join(docsRoot, "getting-started.md"), "utf8");
 
-  for (const value of [useSdkSkill, maintainProjectSkill, gettingStarted]) {
+  for (const value of [useSdkSkill, maintainCodeRepositorySkill, gettingStarted]) {
     assert.match(value, /application sdk-status/u);
     assert.match(value, /application update-sdk/u);
     assert.match(value, /dry-run/u);
   }
   assert.match(useSdkSkill, /declared.*locked.*installed.*wanted.*latest/isu);
-  assert.match(maintainProjectSkill, /does not change the application version/iu);
-  for (const value of [maintainProjectSkill, gettingStarted]) {
+  assert.match(maintainCodeRepositorySkill, /does not change the application version/iu);
+  for (const value of [maintainCodeRepositorySkill, gettingStarted]) {
     assert.match(value, /(?:next|preview\w*)[^.]*npm[^.]*patch[^.]*version/iu);
     assert.match(value, /exact.*tag.*origin|exact `refs\/tags/isu);
     assert.match(value, /--atomic --follow-tags/iu);
   }
 });
 
+test("active application lifecycle guidance does not revive the retired platform ontology", async () => {
+  const paths = [
+    resolve(packageRoot, "README.md"),
+    resolve(packageRoot, "cli", "README.md"),
+    join(docsRoot, "README.md"),
+    join(docsRoot, "application-documentation.md"),
+    join(docsRoot, "getting-started.md"),
+    join(skillsRoot, "documentation", "document-command-center-application", "SKILL.md"),
+    join(skillsRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
+    join(skillsRoot, "general", "use-command-center-sdk", "SKILL.md"),
+  ];
+
+  for (const path of paths) {
+    assert.doesNotMatch(await readFile(path, "utf8"), /\bProjects?\b/u, path);
+  }
+});
+
 test("CodeRepository sync guidance uses Git-native identity without a local CodeRepository UID marker", async () => {
-  const maintainProjectSkill = await readFile(
+  const maintainCodeRepositorySkill = await readFile(
     join(skillsRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
     "utf8",
   );
@@ -104,13 +121,13 @@ test("CodeRepository sync guidance uses Git-native identity without a local Code
   const packageReadme = await readFile(resolve(packageRoot, "README.md"), "utf8");
   const cliReadme = await readFile(resolve(packageRoot, "cli", "README.md"), "utf8");
 
-  for (const value of [maintainProjectSkill, gettingStarted, packageReadme, cliReadme]) {
+  for (const value of [maintainCodeRepositorySkill, gettingStarted, packageReadme, cliReadme]) {
     assert.match(value, /canonical[^.]*origin[^.]*branch[^.]*HEAD/isu);
     assert.match(value, /assertion/iu);
     assert.doesNotMatch(value, /requires?[^.]*local repository identity/iu);
   }
   assert.match(cliReadme, /resolve-git-context/u);
-  assert.match(maintainProjectSkill, /Do not add or restore superseded caller-supplied repository/u);
+  assert.match(maintainCodeRepositorySkill, /Do not add or restore superseded caller-supplied repository/u);
 });
 
 test("contract skills point to the canonical manifest without bundling contract copies", async () => {
@@ -186,6 +203,30 @@ test("layout guidance uses public primitives and real-browser geometry verificat
   assert.match(applicationSkill, /\$compose-command-center-page/u);
   assert.match(themeSkill, /\$compose-command-center-page/u);
   assert.match(themeSkill, /theme audit as proof/iu);
+});
+
+test("application feedback guidance keeps presentation controlled and lifecycle application-owned", async () => {
+  const feedbackSkill = await readFile(
+    join(skillsRoot, "feedback", "build-application-loading-flow", "SKILL.md"),
+    "utf8",
+  );
+  const feedbackGuide = await readFile(join(docsRoot, "application-feedback.md"), "utf8");
+  const applicationSkill = await readFile(
+    join(skillsRoot, "general", "build-command-center-application", "SKILL.md"),
+    "utf8",
+  );
+
+  for (const value of [feedbackSkill, feedbackGuide]) {
+    assert.match(value, /@dev-mainsequence\/command-center-sdk\/feedback/u);
+    assert.match(value, /ApplicationStatusScreen/u);
+    assert.match(value, /ProgressStageList/u);
+    assert.match(value, /375×812/u);
+    assert.match(value, /dark\s+and one light/iu);
+    assert.match(value, /reduced motion/iu);
+    assert.match(value, /polling.*retry.*timeout.*application|application.*polling.*retry/isu);
+    assert.match(value, /Do not.*percentage|Do not calculate a percentage/iu);
+  }
+  assert.match(applicationSkill, /\$build-application-loading-flow/u);
 });
 
 test("static-site guidance keeps delegated FastAPI credentials behind the SDK lifecycle", async () => {

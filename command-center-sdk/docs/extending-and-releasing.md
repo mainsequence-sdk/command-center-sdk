@@ -42,13 +42,13 @@ For example, a reusable framework-neutral normalizer belongs in a module and its
 index:
 
 ```ts
-// src/resource/normalize-project-label.ts
+// src/resource/normalize-resource-label.ts
 export function normalizeResourceLabel(value: unknown): string {
   return typeof value === "string" && value.trim() ? value.trim() : "Untitled";
 }
 
 // src/resource/index.ts
-export { normalizeResourceLabel } from "./normalize-project-label.js";
+export { normalizeResourceLabel } from "./normalize-resource-label.js";
 ```
 
 Then add focused tests, document the behavior in the nearest module README and public guide, and

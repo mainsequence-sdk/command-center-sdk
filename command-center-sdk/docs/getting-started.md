@@ -10,7 +10,7 @@ This guide matches the `use-command-center-sdk`, `maintain-command-center-code-r
 
 ## Install the package
 
-For a Main Sequence Vite project, the application lives at the Git repository root. Keep
+For a Main Sequence Vite application, the application lives at the Git repository root. Keep
 `package.json`, `package-lock.json`, `.env`, `.agents/`, `src/`, and `vite.config.*` at that root;
 the production build normally writes `dist/`. Do not create a nested `frontend/` application.
 
@@ -69,7 +69,7 @@ browser-verification requirements.
 
 ## Inspect or update the installed SDK
 
-Run the status command at the Git repository root before changing a consuming project's SDK:
+Run the status command at the Git repository root before changing a consuming application's SDK:
 
 ```bash
 npx command-center-sdk application sdk-status --path .
@@ -91,28 +91,30 @@ npx command-center-sdk application update-sdk --path .
 The update respects the existing npm declaration and refuses linked, workspace, file, Git, URL,
 alias, and peer dependency sources. A newer `latest` release outside the declared range is
 `constraint_blocked`; the command leaves `package.json` unchanged so crossing that compatibility
-boundary remains an explicit project decision. It never calls the backend or performs a Git
+boundary remains an explicit application decision. It never calls the backend or performs a Git
 commit, tag, or push. After an applied update, run `command-center-sdk skills sync --path .` when
 the backend-owned guidance must also be refreshed strictly.
 
 ## Sync a code repository for automatic deployment
 
-`command-center-sdk code-repository sync` is the npm-project equivalent of Python's
-`mainsequence code-repository sync`. Use it after a consuming project change is ready to become one commit
-and one backend-recognized automatic deployment:
+`command-center-sdk code-repository sync` is the npm-application equivalent of Python's
+`mainsequence code-repository sync`. Use it after a consuming application change is ready to
+become one commit and one backend-recognized automatic deployment:
 
 ```bash
 export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
 export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
-npx command-center-sdk code-repository sync -m "Update the project" --path . --dry-run
-npx command-center-sdk code-repository sync -m "Update the project" --path .
+npx command-center-sdk code-repository sync -m "Update the application" --path . --dry-run
+npx command-center-sdk code-repository sync -m "Update the application" --path .
 ```
 
 The supplied path must be the Git repository root and contain `package.json` and
 `package-lock.json`. Preflight rejects a nested application directory, then sends the canonical
 `origin`, attached branch, and exact `HEAD` commit to the backend Git-context resolver. That
-authoritative response supplies the matching `CodeRepositoryBranch` and parent CodeRepository UID. Do not add or restore superseded local repository-identity markers in `.env`; CodeRepository identity is derived from Git, and an optional
-positional CodeRepository UID is only a consistency assertion. If the checkout is detached, its Git
+authoritative response supplies the matching `CodeRepositoryBranch` and parent CodeRepository UID.
+Do not add or restore superseded local repository-identity markers in `.env`; CodeRepository
+identity is derived from Git, and an optional positional CodeRepository UID is only a consistency
+assertion. If the checkout is detached, its Git
 context is unregistered or ambiguous, or the backend echoes another repository, branch, ref, or
 commit, the command stops before versioning, dependency installation, SSH-key creation, Git staging,
 commit, tag, or push. Register the branch through the platform workflow; never search a nested
@@ -169,7 +171,7 @@ Start with the composition that already owns the interaction lifecycle:
 | Persisted multi-widget document | `/workspace` and `/workspace/react` |
 | Theme preset or CSS variables | `/theme` and the theme CSS exports |
 | External widget with props, inputs, and outputs | Generic `/embed` protocol |
-| Project-owned static site with theme/user context | Static-site `/embed` protocol |
+| Application-owned static site with theme/user context | Static-site `/embed` protocol |
 
 Treat complete-application embedding and SDK theming as cross-cutting requirements. Inside that
 boundary, select the composition whose contract owns the required lifecycle: resource views for
@@ -185,22 +187,22 @@ easy to see:
 import { defineResourceApplication } from "@dev-mainsequence/command-center-sdk/resource";
 import { ResourceListPage } from "@dev-mainsequence/command-center-sdk/views";
 
-interface Project {
+interface Service {
   uid: string;
   name: string;
   status: "active" | "paused";
 }
 
-const projects = defineResourceApplication<Project, string>({
-  id: "projects",
-  label: "Projects",
-  getId: (project) => project.uid,
+const services = defineResourceApplication<Service, string>({
+  id: "services",
+  label: "Services",
+  getId: (service) => service.uid,
   activation: {
-    resolve: (project) => ({ resource: "projects", uid: project.uid }),
+    resolve: (service) => ({ resource: "services", uid: service.uid }),
   },
   columns: [
-    { id: "name", header: "Name", getValue: (project) => project.name },
-    { id: "status", header: "Status", getValue: (project) => project.status },
+    { id: "name", header: "Name", getValue: (service) => service.name },
+    { id: "status", header: "Status", getValue: (service) => service.status },
   ],
   adapter: {
     async list({ pageIndex, pageSize, search, signal }) {
@@ -209,9 +211,9 @@ const projects = defineResourceApplication<Project, string>({
         limit: String(pageSize),
         ...(search ? { search } : {}),
       });
-      const response = await fetch(`/api/projects?${query}`, { signal });
-      if (!response.ok) throw new Error("Projects could not be loaded.");
-      const body = (await response.json()) as { count: number; results: Project[] };
+      const response = await fetch(`/api/services?${query}`, { signal });
+      if (!response.ok) throw new Error("Services could not be loaded.");
+      const body = (await response.json()) as { count: number; results: Service[] };
 
       return {
         items: body.results,
@@ -227,14 +229,14 @@ const projects = defineResourceApplication<Project, string>({
   },
 });
 
-export function ProjectsPage() {
+export function ServicesPage() {
   return (
     <ResourceListPage
-      definition={projects}
+      definition={services}
       searchable
       refreshable
       navigation={{
-        open: ({ uid }) => window.location.assign(`/projects/${encodeURIComponent(uid)}`),
+        open: ({ uid }) => window.location.assign(`/services/${encodeURIComponent(uid)}`),
       }}
     />
   );

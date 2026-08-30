@@ -45,6 +45,12 @@ Removing an id from the registry does not rewrite persisted workspace documents.
 saved widget that still carries a retired id remains recoverable but resolves as unavailable. The
 backend widget registry must publish and return the same canonical id as the executable manifest.
 
+The CodeRepository infrastructure graph hard cut uses
+`MAIN_SEQUENCE_FOUNDRY_CODE_REPOSITORY_INFRA_GRAPH_WIDGET_ID` with the exact value
+`main-sequence-foundry__code-repository-infra-graph`. Storage owners must migrate the retired
+legacy value before deploying the new backend registry and executable widget. The host does
+not alias or rewrite either persisted identity.
+
 ## Architecture Documentation
 
 - [Legacy-package migration](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/docs/packages/migrating-from-legacy-packages.md)

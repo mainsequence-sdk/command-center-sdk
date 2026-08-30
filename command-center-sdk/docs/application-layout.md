@@ -84,7 +84,9 @@ Specialized chart, form, split-pane, map, editor, canvas, widget, and workspace 
 application-owned unless their public module says otherwise.
 
 The SDK does not own section order, routing, authentication, permissions, API transport,
-persistence, notifications, or product-specific loading and error policy.
+persistence, notifications, or product-specific loading and error policy. Use the controlled
+[`/feedback` primitives](./application-feedback.md) when the SDK should own reusable status and
+progress presentation while the application retains that policy.
 
 ## Extend with public metrics
 

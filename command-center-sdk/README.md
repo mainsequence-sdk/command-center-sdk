@@ -1,18 +1,17 @@
 # Command Center SDK
 
 `@dev-mainsequence/command-center-sdk` is the public TypeScript/React package for building
-Command Center-compatible navigation, responsive application layouts, resource applications,
-widgets, workspaces, themes, and iframe integrations.
+Command Center-compatible navigation, responsive application layouts, application feedback,
+resource applications, widgets, workspaces, themes, and iframe integrations.
 
 The SDK owns reusable contracts, UI, and lifecycle. Your application keeps authentication, API
 clients, routing, persistence, permissions, notifications, and product-specific behavior.
 
 ## Install
 
-Main Sequence Vite projects place the application at the Git repository root. Run package
-installation there so `package.json`, `package-lock.json`, `.env`, `.agents/`, `src/`, and the Git
-root share one project boundary. Nested application directories are not a supported Main Sequence
-project layout.
+Main Sequence Vite applications live at the Git repository root. Run package installation there so
+`package.json`, `package-lock.json`, `.env`, `.agents/`, `src/`, and the Git root share one
+application and repository boundary. Nested application directories are not supported.
 
 ```bash
 npm install @dev-mainsequence/command-center-sdk react react-dom
@@ -34,6 +33,8 @@ require Vite.
 - [Application navigation](./docs/navigation.md): build a controlled app rail with sub-applications.
 - [Application layout](./docs/application-layout.md): compose and verify responsive pages and
   standard card surfaces.
+- [Application feedback](./docs/application-feedback.md): show truthful staged startup,
+  reconnection, retry, and terminal failure feedback.
 - [Application documentation](./docs/application-documentation.md): scaffold, validate, and ship
   human and technical documentation at `/docs/` in the application artifact.
 - [Resources](./docs/resources.md): lists, details, pickers, actions, and backend adapters.
@@ -56,23 +57,23 @@ require Vite.
 import { defineResourceApplication } from "@dev-mainsequence/command-center-sdk/resource";
 import { ResourceListPage } from "@dev-mainsequence/command-center-sdk/views";
 
-interface Project {
+interface Service {
   uid: string;
   name: string;
 }
 
-const projects = defineResourceApplication<Project, string>({
-  id: "projects",
-  label: "Projects",
-  getId: (project) => project.uid,
+const services = defineResourceApplication<Service, string>({
+  id: "services",
+  label: "Services",
+  getId: (service) => service.uid,
   adapter: {
     async list({ pageIndex, pageSize, signal }) {
       const response = await fetch(
-        `/api/projects?offset=${pageIndex * pageSize}&limit=${pageSize}`,
+        `/api/services?offset=${pageIndex * pageSize}&limit=${pageSize}`,
         { signal },
       );
-      if (!response.ok) throw new Error("Projects could not be loaded.");
-      const body = (await response.json()) as { count: number; results: Project[] };
+      if (!response.ok) throw new Error("Services could not be loaded.");
+      const body = (await response.json()) as { count: number; results: Service[] };
       return {
         items: body.results,
         pageInfo: {
@@ -85,11 +86,11 @@ const projects = defineResourceApplication<Project, string>({
       };
     },
   },
-  columns: [{ id: "name", header: "Name", getValue: (project) => project.name }],
+  columns: [{ id: "name", header: "Name", getValue: (service) => service.name }],
 });
 
-export function ProjectsPage() {
-  return <ResourceListPage definition={projects} searchable refreshable />;
+export function ServicesPage() {
+  return <ResourceListPage definition={services} searchable refreshable />;
 }
 ```
 
@@ -99,9 +100,12 @@ error normalization stay outside the resource definition.
 ## Choose a public entrypoint
 
 - `/navigation`: controlled application rail, grouped sub-application panel, composed shell,
-  runtime definitions, validation, and contribution composition.
+  runtime definitions, validation, contribution composition, and native anchor behavior for
+  routed applications and destinations with `href`.
 - `/layout` and `/layout/testing`: responsive page, header, stack, card, and card-grid primitives
   plus real-browser geometry verification.
+- `/feedback`: controlled activity indicator, ordered progress stages, and application-level
+  loading, retrying, and error surfaces.
 - `/resource`: framework-neutral resource definitions, adapters, HTTP normalization, pagination,
   activation, and discovered bulk actions.
 - `/resource/react`: loaded-page and explicit/all-matching selection state.
@@ -121,7 +125,7 @@ error normalization stay outside the resource definition.
   and read-only rendering.
 - `/theme`, `/theme/presets`, and `/theme/data-viz`: presets, CSS variables, density, surfaces, and
   chart palettes.
-- `/embed` and `/embed/react`: generic external-widget and project-owned static-site iframe APIs.
+- `/embed` and `/embed/react`: generic external-widget and application-owned static-site iframe APIs.
 - `/styles.css` and `/theme/*.css`: browser-ready styles.
 
 Import only declared package exports. Do not import `dist` files or repository source paths.
@@ -142,6 +146,7 @@ The npm package installs version-matched skills into:
 .agents/skills/command-center/
   general/
   documentation/
+  feedback/
   layout/
   resource/
   views/
@@ -200,9 +205,9 @@ only when npm installation will be performed separately. See the
 [application-documentation guide](./docs/application-documentation.md) for the complete authoring
 and browser-verification contract.
 
-## Inspect and update the project SDK
+## Inspect and update the application SDK
 
-Use the project CLI from a consuming application's Git repository root to compare its declared,
+Use the application CLI from a consuming application's Git repository root to compare its declared,
 locked, and installed SDK versions with npm's compatible `wanted` version and the registry's
 `latest` version:
 

@@ -22,7 +22,7 @@ authenticated API client. It injects a backend-neutral resolver that returns a
 narrow credential for the requested release. The SDK transfers that credential
 to the exact managed iframe through the `mainsequence.*` protocol.
 
-Project static-site code uses a supported SDK child API. It never parses raw
+Application static-site code uses a supported SDK child API. It never parses raw
 postMessage events, receives the host application's general credential, imports
 the host application's auth store, or calls a control-plane exchange endpoint
 directly.
@@ -61,13 +61,13 @@ This ADR does not define or implement:
 - a host application's authenticated API adapter, endpoint selection, auth
   store, router, or viewer-specific resolver closure;
 - Django token claims, permissions, serializers, models, or validators;
-- backend MCP ontology or project-design skills;
+- backend MCP ontology or backend-owned design skills;
 - FastAPI gateway routing or authentication configuration;
 - PodDeploymentOrchestrator middleware;
 - FastAPI runtime request-user injection;
 - Main Sequence Python SDK behavior;
 - target FastAPI CORS persistence or deployment;
-- project FastAPI route authorization; or
+- application FastAPI route authorization; or
 - a static-site direct-link authentication service.
 
 Those are external dependencies or application responsibilities. This ADR
@@ -91,7 +91,7 @@ Its existing handshake carries:
 - the logged-in user's public UID as untrusted display context.
 
 The current contract correctly prohibits sending a normal host access token or
-session into project-controlled iframe code.
+session into application-controlled iframe code.
 
 Static-site dashboards also need to call separately deployed FastAPI releases.
 CORS permits a browser origin but does not authenticate a user. The trusted
@@ -99,8 +99,8 @@ parent can obtain a delegated credential through an application-owned adapter,
 then satisfy the SDK's resolver contract without exposing its general session.
 
 The missing frontend capability is a supported bridge. Without one, every
-project would invent its own postMessage payloads, token caching, refresh,
-origin checks, and error behavior. Some projects would eventually pass the host
+application would invent its own postMessage payloads, token caching, refresh,
+origin checks, and error behavior. Some applications would eventually pass the host
 user's general credential because it is the easiest credential available to the
 parent.
 
@@ -138,9 +138,9 @@ It must never be included in:
 - `ready`, `initialize`, or credential messages;
 - SDK static-site context;
 - static-site build environment variables;
-- project-owned browser storage;
-- project logs, analytics, or errors; or
-- a FastAPI request made by hosted project code.
+- application-owned browser storage;
+- application logs, analytics, or errors; or
+- a FastAPI request made by hosted application code.
 
 The SDK accepts only the already delegated credential returned by the
 application-provided resolver. It has no access to the application's auth store
@@ -191,7 +191,7 @@ Rules:
 - the message is subject to the existing payload-size limit.
 
 The host derives source identity from the viewer association owned by the
-parent application. It never trusts source identity from project code.
+parent application. It never trusts source identity from application code.
 
 ### 4. Credential response message
 
@@ -390,7 +390,7 @@ API code.
 
 ### 10. Hosted application request usage
 
-Project-owned static-site code normally uses the SDK's high-level fetch method:
+Application-owned static-site code normally uses the SDK's high-level fetch method:
 
 ```ts
 const response = await iframeClient.fetchFastApi(
@@ -402,8 +402,8 @@ const response = await iframeClient.fetchFastApi(
 );
 ```
 
-Projects use the exact `rpcUrl`; they do not reconstruct `fapi` hostnames. They
-do not set the browser-controlled `Origin` header. Normal project code does not receive or manage
+Applications use the exact `rpcUrl`; they do not reconstruct `fapi` hostnames. They
+do not set the browser-controlled `Origin` header. Normal application code does not receive or manage
 the token directly.
 
 The SDK documentation must explain that the credential authenticates the user
@@ -557,14 +557,14 @@ is not owned by this ADR.
 
 - The host application is trusted to hold its normal user session.
 - The SDK host is trusted to enforce iframe source/origin/channel binding.
-- Project static-site JavaScript is not trusted with general platform
+- Application static-site JavaScript is not trusted with general platform
   authority but intentionally receives the narrow delegated credential.
 - The backend and public gateway remain authoritative for authentication and
   release access; the frontend is not an authorization boundary.
 
 ### Residual risk
 
-Project JavaScript can exercise every FastAPI operation that the target
+Application JavaScript can exercise every FastAPI operation that the target
 application authorizes for the current user while the delegated credential is
 valid. It can also exfiltrate returned data.
 
@@ -588,7 +588,7 @@ agent_scaffold/skills/general/
 ```
 
 Update associated skill metadata, installation/copy tests, skill maps, packed
-package assertions, and any static-site project template that emits iframe
+package assertions, and any static-site application template that emits iframe
 client code.
 
 `integrate-static-site-iframe` must teach agents to:
@@ -610,7 +610,7 @@ there is no supported authenticated transport.
 
 Skills must name only APIs exported by the same packed SDK version. Raw
 postMessage examples may illustrate the wire contract in protocol docs but
-must not be presented as the project implementation workflow.
+must not be presented as the application implementation workflow.
 
 ## Human Documentation
 
@@ -633,7 +633,7 @@ Documentation must include:
 - application-owned FastAPI authorization;
 - mixed-version behavior;
 - direct-link limitations; and
-- the residual risk of project JavaScript receiving the narrow credential.
+- the residual risk of application JavaScript receiving the narrow credential.
 
 ## Backend and Storage Impact
 
@@ -663,10 +663,10 @@ unchanged.
 Rejected. It would mix untrusted display context with general platform
 authority and expose the credential to every hosted application.
 
-### Let each project implement postMessage
+### Let each application implement postMessage
 
 Rejected. It would duplicate validation, correlation, refresh, cancellation,
-storage, and error behavior and would make security dependent on every project.
+storage, and error behavior and would make security dependent on every application.
 
 ### Import the host application's auth store into the SDK
 
@@ -794,7 +794,7 @@ contract, skill, packaging, and docs checks required by the final diff.
 ### Positive
 
 - Hosted applications gain one supported authenticated FastAPI bridge.
-- The host application's general credential remains outside project-controlled
+- The host application's general credential remains outside application-controlled
   code.
 - SDK consumers do not implement security-sensitive postMessage or refresh
   logic independently.
@@ -809,7 +809,7 @@ contract, skill, packaging, and docs checks required by the final diff.
   FastAPI gateway enforcement remaining available and compatible.
 - Old hosts cannot satisfy new credential requests, so new clients must handle
   `unsupported` without unsafe fallback.
-- Project JavaScript intentionally sees the narrow delegated credential and can
+- Application JavaScript intentionally sees the narrow delegated credential and can
   use it for the target release until expiry.
 - Public source, schemas, fixtures, docs, skills, templates, and packaging must
   remain synchronized.
@@ -824,7 +824,7 @@ This ADR is `Accepted` because:
 3. runtime parsers, JSON Schema, manifest, and valid/invalid fixtures agree;
 4. a clean external consumer can inject a resolver and complete the bridge
    through only public package entrypoints;
-5. no general host credential crosses the iframe boundary or enters project
+5. no general host credential crosses the iframe boundary or enters application
    code;
 6. public docs, threat model, examples, templates, and packaged
    skills teach the exact released APIs;

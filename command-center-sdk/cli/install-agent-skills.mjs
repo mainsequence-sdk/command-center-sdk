@@ -323,13 +323,13 @@ export async function installAgentSkills({
   packageMetadata,
 } = {}) {
   if (!projectDir) {
-    throw new Error("A target project directory is required.");
+    throw new Error("A target repository directory is required.");
   }
 
   const requestedProjectDir = resolve(projectDir);
   const projectState = await pathState(requestedProjectDir);
   if (!projectState?.isDirectory() || projectState.isSymbolicLink()) {
-    throw new Error(`Target project directory does not exist: ${requestedProjectDir}`);
+    throw new Error(`Target repository directory does not exist: ${requestedProjectDir}`);
   }
 
   const resolvedProjectDir = await realpath(requestedProjectDir);

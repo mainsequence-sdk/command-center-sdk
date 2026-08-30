@@ -33,7 +33,7 @@ schemas and indexed fixtures. Do not reproduce either contract in this skill.
 3. Configure only schema-supported modes and fields, and let the canonical schema enforce every
    mode-specific requirement.
 4. Use bracketed field references for computed-column formulas.
-5. Project stable field names rather than display labels.
+5. Expose stable field names rather than display labels.
 6. Bind seed consumers to `dataset` and live consumers to `updates`; do not silently change the
    publication role.
 7. Keep large-data materialization and richer orchestration in injected host behavior while

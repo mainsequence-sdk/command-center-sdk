@@ -31,14 +31,14 @@ describe("application layout primitives", () => {
         actions={<button type="button">Create</button>}
         description="A sufficiently descriptive page summary."
         eyebrow="Operations"
-        title="Projects"
+        title="Services"
         titleAs="h2"
       />,
     );
 
     expect(html).toContain("data-cc-application-page-header");
     expect(html).toContain("data-cc-application-page-header-actions");
-    expect(html).toContain('<h2 class="cc-application-page-header__title">Projects</h2>');
+    expect(html).toContain('<h2 class="cc-application-page-header__title">Services</h2>');
     expect(html).toContain("Operations");
     expect(html).toContain("Create");
   });

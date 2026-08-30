@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { ActivityIndicator } from "../feedback/components.js";
+
 export interface ResourceTransitionShellProps {
   description?: ReactNode;
   embedded?: boolean;
@@ -20,7 +22,7 @@ export function ResourceTransitionShell({
       role="status"
     >
       <div className="cc-resource-transition-shell__content">
-        <span aria-hidden="true" className="cc-resource-transition-shell__spinner" />
+        <ActivityIndicator className="cc-resource-transition-shell__spinner" size="large" />
         <strong>{title}</strong>
         {description ? <span>{description}</span> : null}
       </div>

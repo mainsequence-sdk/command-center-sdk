@@ -1,4 +1,9 @@
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import type {
+  CSSProperties,
+  KeyboardEvent,
+  MouseEvent,
+  ReactNode,
+} from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -9,8 +14,8 @@ function joinClassNames(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
-function focusSiblingButton(
-  event: KeyboardEvent<HTMLButtonElement>,
+function focusSiblingNavigationItem(
+  event: KeyboardEvent<HTMLElement>,
   selector: string,
 ) {
   if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
@@ -19,8 +24,9 @@ function focusSiblingButton(
 
   const container = event.currentTarget.closest("[data-cc-navigation-rail]");
   const buttons = container
-    ? Array.from(container.querySelectorAll<HTMLButtonElement>(selector)).filter(
-        (button) => !button.disabled,
+    ? Array.from(container.querySelectorAll<HTMLElement>(selector)).filter(
+        (item) => item.getAttribute("aria-disabled") !== "true" &&
+          !(item instanceof HTMLButtonElement && item.disabled),
       )
     : [];
   const currentIndex = buttons.indexOf(event.currentTarget);
@@ -38,6 +44,35 @@ function focusSiblingButton(
         ? (currentIndex + 1) % buttons.length
         : (currentIndex - 1 + buttons.length) % buttons.length;
   buttons[nextIndex]?.focus();
+}
+
+function isPlainPrimaryClick(event: MouseEvent<HTMLElement>) {
+  return event.button === 0 &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey;
+}
+
+function resolveApplicationHref(application: NavigationApplicationDefinition) {
+  if (application.href) {
+    return application.href;
+  }
+
+  if (!application.defaultDestinationId) {
+    return undefined;
+  }
+
+  for (const subApplication of application.subApplications) {
+    const destination = subApplication.destinations.find(
+      (candidate) => candidate.id === application.defaultDestinationId,
+    );
+    if (destination?.href && !destination.disabled) {
+      return destination.href;
+    }
+  }
+
+  return undefined;
 }
 
 export interface ApplicationRailItemProps {
@@ -60,6 +95,7 @@ export function ApplicationRailItem({
   renderTrailing,
 }: ApplicationRailItemProps) {
   const Icon = application.icon;
+  const anchorRef = useRef<HTMLAnchorElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const tooltipId = useId();
   const [tooltipPosition, setTooltipPosition] = useState<{
@@ -90,7 +126,7 @@ export function ApplicationRailItem({
       return;
     }
 
-    const bounds = buttonRef.current?.getBoundingClientRect();
+    const bounds = (anchorRef.current ?? buttonRef.current)?.getBoundingClientRect();
     if (bounds) {
       setTooltipPosition({
         left: bounds.right + 8,
@@ -99,50 +135,87 @@ export function ApplicationRailItem({
     }
   };
 
+  const href = resolveApplicationHref(application);
+  const itemClassName = joinClassNames(
+    "cc-application-rail__item",
+    collapsed && "cc-application-rail__item--collapsed",
+    (active || open) && "cc-application-rail__item--active",
+  );
+  const itemContent = (
+    <>
+      <span aria-hidden="true" className="cc-application-rail__icon">
+        {Icon ? (
+          <Icon className="cc-application-rail__icon-svg" />
+        ) : (
+          <span className="cc-application-rail__icon-fallback">
+            {application.label.trim().slice(0, 1).toUpperCase()}
+          </span>
+        )}
+      </span>
+      {!collapsed ? (
+        <span className="cc-application-rail__label">{application.label}</span>
+      ) : null}
+      {!collapsed && renderTrailing ? (
+        <span className="cc-application-rail__trailing">
+          {renderTrailing(application)}
+        </span>
+      ) : null}
+    </>
+  );
+  const sharedItemProps = {
+    "aria-current": active ? "page" as const : undefined,
+    "aria-describedby": collapsed && tooltipPosition ? tooltipId : undefined,
+    "aria-expanded": open,
+    "aria-label": collapsed ? label : undefined,
+    className: itemClassName,
+    "data-cc-navigation-application": true,
+    onBlur: () => setTooltipPosition(null),
+    onFocus: showTooltip,
+    onMouseEnter: showTooltip,
+    onMouseLeave: () => setTooltipPosition(null),
+    title: application.disabled ? label : undefined,
+  };
+
   return (
     <>
-      <button
-        aria-current={active ? "page" : undefined}
-        aria-describedby={collapsed && tooltipPosition ? tooltipId : undefined}
-        aria-expanded={open}
-        aria-label={collapsed ? label : undefined}
-        className={joinClassNames(
-          "cc-application-rail__item",
-          collapsed && "cc-application-rail__item--collapsed",
-          (active || open) && "cc-application-rail__item--active",
-        )}
-        data-cc-navigation-application
-        disabled={application.disabled}
-        onBlur={() => setTooltipPosition(null)}
-        onClick={() => onOpenChange(open ? null : application.id)}
-        onFocus={showTooltip}
-        onKeyDown={(event) =>
-          focusSiblingButton(event, "[data-cc-navigation-application]")
-        }
-        onMouseEnter={showTooltip}
-        onMouseLeave={() => setTooltipPosition(null)}
-        ref={buttonRef}
-        title={application.disabled ? label : undefined}
-        type="button"
-      >
-        <span aria-hidden="true" className="cc-application-rail__icon">
-          {Icon ? (
-            <Icon className="cc-application-rail__icon-svg" />
-          ) : (
-            <span className="cc-application-rail__icon-fallback">
-              {application.label.trim().slice(0, 1).toUpperCase()}
-            </span>
-          )}
-        </span>
-        {!collapsed ? (
-          <span className="cc-application-rail__label">{application.label}</span>
-        ) : null}
-        {!collapsed && renderTrailing ? (
-          <span className="cc-application-rail__trailing">
-            {renderTrailing(application)}
-          </span>
-        ) : null}
-      </button>
+      {href && !application.disabled ? (
+        <a
+          {...sharedItemProps}
+          href={href}
+          onClick={(event) => {
+            if (!isPlainPrimaryClick(event)) {
+              return;
+            }
+            event.preventDefault();
+            onOpenChange(open ? null : application.id);
+          }}
+          onKeyDown={(event) =>
+            focusSiblingNavigationItem(
+              event,
+              "[data-cc-navigation-application]",
+            )
+          }
+          ref={anchorRef}
+        >
+          {itemContent}
+        </a>
+      ) : (
+        <button
+          {...sharedItemProps}
+          disabled={application.disabled}
+          onClick={() => onOpenChange(open ? null : application.id)}
+          onKeyDown={(event) =>
+            focusSiblingNavigationItem(
+              event,
+              "[data-cc-navigation-application]",
+            )
+          }
+          ref={buttonRef}
+          type="button"
+        >
+          {itemContent}
+        </button>
+      )}
       {collapsed && tooltipPosition && typeof document !== "undefined"
         ? createPortal(
             <span

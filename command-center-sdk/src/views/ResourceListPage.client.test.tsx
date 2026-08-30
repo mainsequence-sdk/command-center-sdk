@@ -709,7 +709,7 @@ describe("ResourceListPage discovered row actions", () => {
   });
 
   it("resolves row activation through the resource adapter and delegates the intent to the host", async () => {
-    const resolve = vi.fn().mockResolvedValue({ resource: "project", uid: "project-uid" });
+    const resolve = vi.fn().mockResolvedValue({ resource: "service", uid: "service-uid" });
     const open = vi.fn();
     const definition: ResourceApplicationDefinition<Bucket, string> = {
       id: "buckets",
@@ -735,7 +735,7 @@ describe("ResourceListPage discovered row actions", () => {
       page.items[0],
       { signal: expect.any(AbortSignal) },
     );
-    expect(open).toHaveBeenCalledWith({ resource: "project", uid: "project-uid" });
+    expect(open).toHaveBeenCalledWith({ resource: "service", uid: "service-uid" });
   });
 
   it("keeps an explicit row callback as the override for custom activation workflows", async () => {
@@ -773,7 +773,7 @@ describe("ResourceListPage discovered row actions", () => {
   });
 
   it("renders adapter failures without navigating or removing the list", async () => {
-    const resolve = vi.fn().mockRejectedValue(new Error("Project target could not be resolved."));
+    const resolve = vi.fn().mockRejectedValue(new Error("Service target could not be resolved."));
     const open = vi.fn();
     const definition: ResourceApplicationDefinition<Bucket, string> = {
       id: "buckets",
@@ -795,7 +795,7 @@ describe("ResourceListPage discovered row actions", () => {
     await act(async () => container.querySelector<HTMLTableRowElement>("tbody tr")!.click());
 
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(
-      "Project target could not be resolved.",
+      "Service target could not be resolved.",
     );
     expect(container.querySelector("tbody tr")).toBeTruthy();
     expect(open).not.toHaveBeenCalled();
@@ -857,15 +857,15 @@ describe("ResourceListPage discovered row actions", () => {
     expect(container.querySelector("table")).toBeNull();
 
     await act(async () => {
-      resolveFirst({ resource: "project", uid: "first-project-uid" });
-      resolveSecond({ resource: "project", uid: "second-project-uid" });
+      resolveFirst({ resource: "service", uid: "first-service-uid" });
+      resolveSecond({ resource: "service", uid: "second-service-uid" });
       await Promise.all([firstIntent, secondIntent]);
     });
 
     expect(open).toHaveBeenCalledTimes(1);
     expect(open).toHaveBeenCalledWith({
-      resource: "project",
-      uid: "second-project-uid",
+      resource: "service",
+      uid: "second-service-uid",
     });
     expect(container.querySelector("table")).toBeTruthy();
   });

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:mainsequence:command-center-sdk:schema:static-site-iframe:v1",
   "title": "Command Center Static-Site Iframe Protocol v1",
-  "description": "Language-neutral messages exchanged between a trusted host and one project-owned static-site iframe.",
+  "description": "Language-neutral messages exchanged between a trusted host and one application-owned static-site iframe.",
   "type": "object",
   "oneOf": [
     { "$ref": "#/$defs/ready" },

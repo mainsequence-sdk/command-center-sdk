@@ -7,6 +7,7 @@
   /
   /contracts and language-neutral schema paths
   /embed and /embed/react
+  /feedback
   /navigation
   /resource and /resource/react
   /views
@@ -55,6 +56,7 @@ The SDK owns reusable mechanics and presentation:
 - extension and surface-contribution contracts;
 - resource definitions, normalized adapters, list/detail controllers, actions, forms, and views;
 - generic UI primitives and consistent async states;
+- controlled application-level status, progress, and activity feedback;
 - widget authoring, registry, runtime, built-ins, guidance, and testing;
 - workspace model, renderer, editor engine, graph/layout behavior, and injected persistence APIs;
 - connection schemas, registries, authoring views, preview/result contracts, and injected

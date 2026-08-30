@@ -16,7 +16,7 @@ The SDK intentionally supports two independently versioned contracts:
 
 Do not translate messages between these protocols or choose one based on the npm package version.
 Use the generic bridge for independently deployed widgets participating in the widget runtime. Use
-the static-site bridge for project-owned web applications opened in the Command Center static-site
+the static-site bridge for application-owned web applications opened in the Command Center static-site
 viewer.
 
 ## Entry Points
@@ -114,7 +114,7 @@ Install the listener before calling `announceReady`, keep it active for every in
 configure the exact parent origin from trusted deployment configuration. The channel must be a
 stable application-specific value beginning with `mainsequence.`.
 
-`fetchFastApi` is the normal project API. It accepts only a relative path, uses the exact
+`fetchFastApi` is the normal application API. It accepts only a relative path, uses the exact
 backend-issued RPC URL, and adds the delegated bearer credential plus canonical
 `X-Resource-Release-UID` header. The client coordinates one in-flight acquisition per target,
 reuses valid credentials in memory, refreshes before expiry, and clears them on public-user change,
@@ -137,7 +137,7 @@ response. A `401` clears the cached credential and permits one bounded reacquisi
 never retried.
 
 `requestFastApiCredential` is a lower-level advanced API for a transport that cannot use
-`fetchFastApi`; using it exposes the narrow token to project code and transfers responsibility for
+`fetchFastApi`; using it exposes the narrow token to application code and transfers responsibility for
 containing it in memory. It must never be used to expose or request the host application's general
 session credential.
 

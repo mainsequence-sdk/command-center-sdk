@@ -526,7 +526,7 @@ describe("static-site iframe client", () => {
     const callsAfterCredential = parentWindow.postMessage.mock.calls.length;
     const response = await client.fetchFastApi(
       { resourceReleaseUid: targetUid, path: "api/me?view=summary" },
-      { headers: { "X-Project-Header": "one" } },
+      { headers: { "X-Application-Header": "one" } },
     );
     expect(await response.text()).toBe("ok");
     expect(parentWindow.postMessage).toHaveBeenCalledTimes(callsAfterCredential);
@@ -536,7 +536,7 @@ describe("static-site iframe client", () => {
     expect(headers.get("Authorization")).toBe("Bearer delegated-token");
     expect(headers.get("X-Resource-Release-UID")).toBe(targetUid);
     expect(headers.has("X-FastAPI-ID")).toBe(false);
-    expect(headers.get("X-Project-Header")).toBe("one");
+    expect(headers.get("X-Application-Header")).toBe("one");
     await expect(
       client.fetchFastApi({ resourceReleaseUid: targetUid, path: "https://evil.example.com/" }),
     ).rejects.toMatchObject({ code: "invalid_request" });

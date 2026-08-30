@@ -122,7 +122,7 @@ artifact or a production-equivalent static server:
 5. the documentation back link returns to `/`; and
 6. no same-origin asset request under `/docs/` returns an error.
 
-Exercise at least the project's supported desktop browser and one narrow viewport. When the
+Exercise at least the application's supported desktop browser and one narrow viewport. When the
 application has light and dark modes, verify documentation in both. Do not treat a source-level
 test or Docusaurus build alone as browser proof of the integrated artifact.
 

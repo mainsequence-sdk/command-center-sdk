@@ -2,10 +2,10 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
 
-const projectRoot = process.cwd();
-const navigationPath = resolve(projectRoot, "documentation/navigation.json");
-const summaryPath = resolve(projectRoot, "docs/SUMMARY.md");
-const sidebarsPath = resolve(projectRoot, "documentation/sidebars.mjs");
+const applicationRoot = process.cwd();
+const navigationPath = resolve(applicationRoot, "documentation/navigation.json");
+const summaryPath = resolve(applicationRoot, "docs/SUMMARY.md");
+const sidebarsPath = resolve(applicationRoot, "documentation/sidebars.mjs");
 const check = process.argv.slice(2).includes("--check");
 
 if (!existsSync(navigationPath)) {

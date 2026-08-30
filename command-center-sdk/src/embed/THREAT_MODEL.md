@@ -16,7 +16,7 @@
 - another frame spoofing bridge messages;
 - malformed or oversized payloads attempting resource exhaustion;
 - replayed or expired capability tokens.
-- project static-site code attempting to choose a source identity, broaden a target credential,
+- application static-site code attempting to choose a source identity, broaden a target credential,
   persist delegated credentials, or trick the host into returning raw backend errors.
 
 ## Required Controls
@@ -37,7 +37,7 @@
 - application-owned source release identity and origin validation inside the injected resolver;
 - one in-flight credential acquisition per target, bounded timeouts, replay rejection, abort on
   iframe/user/resolver disposal, and in-memory-only refresh before expiry;
-- normal project code uses `fetchFastApi` so token/header handling stays inside the SDK; the SDK
+- normal application code uses `fetchFastApi` so token/header handling stays inside the SDK; the SDK
   removes legacy routing headers and sends only canonical `X-Resource-Release-UID` authority;
 - one bounded, abortable retry policy that retries only replay-safe methods by default, refreshes
   once after `401`, never retries `403`, and treats only `502`/`503`/`504` as runtime start;
@@ -52,7 +52,7 @@ An approved embed can exfiltrate data intentionally provided through props or in
 review requested capabilities and data classifications before approval. Native widgets remain more
 powerful and therefore require deployment-time code trust rather than iframe trust controls.
 
-Project JavaScript intentionally receives enough authority to call the selected FastAPI release
+Application JavaScript intentionally receives enough authority to call the selected FastAPI release
 through `fetchFastApi`. Compromised code in that iframe can exercise operations authorized by that
 FastAPI application and exfiltrate returned data while the credential is valid. The bridge limits
 target and lifetime; it cannot make code trusted once that code must use the credential. A direct

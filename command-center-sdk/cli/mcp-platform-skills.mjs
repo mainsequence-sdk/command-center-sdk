@@ -268,7 +268,7 @@ function validateResourcePayload(rawRow, uri) {
 
 export function parsePlatformSkillCatalog(rows, { sourceUrl }) {
   if (!Array.isArray(rows) || rows.length === 0) {
-    throw new McpPlatformSkillError("The platform returned no MCP project resources.");
+    throw new McpPlatformSkillError("The platform returned no MCP skill resources.");
   }
   const normalizedSourceUrl = requireSingleLine(sourceUrl, "Platform source URL");
   const rowsByUri = new Map();
@@ -281,7 +281,7 @@ export function parsePlatformSkillCatalog(rows, { sourceUrl }) {
       );
     }
     if (uri !== PLATFORM_ONTOLOGY_URI && !uri.startsWith(PLATFORM_SKILL_URI_PREFIX)) {
-      throw new McpPlatformSkillError(`Unsupported platform project resource URI ${JSON.stringify(uri)}.`);
+      throw new McpPlatformSkillError(`Unsupported platform skill resource URI ${JSON.stringify(uri)}.`);
     }
     rowsByUri.set(uri, row);
   }

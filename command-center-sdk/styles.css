@@ -163,6 +163,312 @@
   }
 }
 
+.cc-application-status-screen,
+.cc-application-status-screen *,
+.cc-application-status-screen *::before,
+.cc-application-status-screen *::after {
+  box-sizing: border-box;
+}
+
+.cc-application-status-screen {
+  background: var(--background);
+  color: var(--foreground);
+  display: grid;
+  min-width: 0;
+  padding: var(--application-page-gutter-block) var(--application-page-gutter-inline);
+  place-items: center;
+  width: 100%;
+}
+
+.cc-application-status-screen--viewport {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.cc-application-status-screen--contained {
+  min-height: clamp(16rem, 50vh, 32rem);
+}
+
+.cc-application-status-screen__content {
+  display: grid;
+  gap: var(--application-card-content-gap);
+  max-width: 45rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.cc-application-status-screen__header {
+  align-items: center;
+  display: flex;
+  gap: var(--application-card-header-gap);
+  min-width: 0;
+}
+
+.cc-application-status-screen__header > div {
+  display: grid;
+  gap: 0.1875rem;
+  min-width: 0;
+}
+
+.cc-application-status-screen__icon {
+  align-items: center;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.cc-application-status-screen__icon > svg {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.cc-application-status-screen[data-state="error"] .cc-application-status-screen__icon,
+.cc-application-status-screen[data-state="error"] .cc-application-status-screen__eyebrow {
+  color: var(--danger);
+}
+
+.cc-application-status-screen[data-state="retrying"] .cc-application-status-screen__eyebrow {
+  color: var(--warning);
+}
+
+.cc-application-status-screen__eyebrow {
+  color: var(--primary);
+  font-size: var(--font-size-body-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-eyebrow);
+  text-transform: var(--text-transform-label);
+}
+
+.cc-application-status-screen__title {
+  font-size: calc(var(--font-size-page-title) * 1.5);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-title);
+  line-height: var(--line-height-compact);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.cc-application-status-screen__message,
+.cc-progress-stage-list__empty {
+  color: var(--muted-foreground);
+  font-size: var(--font-size-body-lg);
+  line-height: var(--line-height-copy);
+  margin: 0;
+}
+
+.cc-application-status-screen__notice {
+  color: var(--warning);
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-copy);
+}
+
+.cc-application-status-screen__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--application-card-header-gap);
+}
+
+.cc-application-status-screen__action {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: max(0.25rem, calc(var(--radius) - 4px));
+  color: var(--primary-foreground);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  min-height: 2.25rem;
+  padding: 0.4rem 0.75rem;
+}
+
+.cc-application-status-screen__action:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
+}
+
+.cc-application-status-screen__action:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.cc-application-status-screen__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cc-application-status-screen__footer {
+  color: var(--muted-foreground);
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-copy);
+}
+
+.cc-activity-indicator {
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  line-height: 0;
+}
+
+.cc-activity-indicator--small {
+  height: 0.9375rem;
+  width: 0.9375rem;
+}
+
+.cc-activity-indicator--medium {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.cc-activity-indicator--large {
+  height: 2.25rem;
+  width: 2.25rem;
+}
+
+.cc-activity-indicator > svg {
+  animation: cc-activity-indicator-spin 800ms linear infinite;
+  height: 100%;
+  width: 100%;
+}
+
+@keyframes cc-activity-indicator-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cc-progress-stage-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  list-style: none;
+  margin: 0.25rem 0 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.cc-progress-stage-list > li {
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  display: grid;
+  gap: var(--application-card-header-gap);
+  padding: 0.8125rem 0.875rem;
+}
+
+.cc-progress-stage-list > li + li {
+  border-top: 1px solid var(--border);
+}
+
+.cc-progress-stage-list__stage {
+  align-items: center;
+  display: grid;
+  gap: var(--application-card-header-gap);
+  grid-template-columns: 1.125rem minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+.cc-progress-stage-list__icon {
+  align-items: center;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  justify-content: center;
+}
+
+.cc-progress-stage-list__icon > svg {
+  height: 0.9375rem;
+  width: 0.9375rem;
+}
+
+.cc-progress-stage-list > li[data-status="active"] .cc-progress-stage-list__icon,
+.cc-progress-stage-list > li[data-status="active"] .cc-progress-stage-list__state {
+  color: var(--primary);
+}
+
+.cc-progress-stage-list > li[data-status="complete"] .cc-progress-stage-list__icon {
+  color: var(--success);
+}
+
+.cc-progress-stage-list > li[data-status="error"] .cc-progress-stage-list__icon,
+.cc-progress-stage-list > li[data-status="error"] .cc-progress-stage-list__state {
+  color: var(--danger);
+}
+
+.cc-progress-stage-list__copy {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.cc-progress-stage-list__copy strong {
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.cc-progress-stage-list__copy > span {
+  color: var(--muted-foreground);
+  font-size: var(--font-size-body-sm);
+  line-height: var(--line-height-copy);
+  overflow-wrap: anywhere;
+}
+
+.cc-progress-stage-list__state {
+  color: var(--muted-foreground);
+  font-size: var(--font-size-body-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.cc-progress-stage-list__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3125rem;
+  list-style: none;
+  margin: 0 0 0 1.625rem;
+  padding: 0;
+}
+
+.cc-progress-stage-list__details li {
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-code);
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-body-xs);
+  letter-spacing: var(--letter-spacing-code);
+  line-height: var(--line-height-copy);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 0.1875rem 0.375rem;
+}
+
+.cc-feedback-visually-hidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (max-width: 559px) {
+  .cc-progress-stage-list__stage {
+    grid-template-columns: 1.125rem minmax(0, 1fr);
+  }
+
+  .cc-progress-stage-list__state {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-activity-indicator > svg {
+    animation: none;
+  }
+}
+
 .cc-resource-pagination {
   align-items: center;
   border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
@@ -1010,10 +1316,6 @@
 }
 
 .cc-resource-transition-shell__spinner {
-  animation: cc-resource-transition-spin 800ms linear infinite;
-  border: 2px solid color-mix(in srgb, var(--primary) 22%, transparent);
-  border-radius: var(--radius-pill);
-  border-top-color: var(--primary);
   height: 2rem;
   width: 2rem;
 }
@@ -1021,12 +1323,6 @@
 @keyframes cc-resource-transition-spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cc-resource-transition-shell__spinner {
-    animation: none;
   }
 }
 
@@ -1989,6 +2285,7 @@
   padding: 0 0.625rem;
   position: relative;
   text-align: left;
+  text-decoration: none;
   width: 100%;
 }
 
@@ -2182,6 +2479,7 @@
   min-width: 0;
   padding: 0.25rem 0.5rem;
   text-align: left;
+  text-decoration: none;
 }
 
 .cc-application-navigation-panel__destination-copy {

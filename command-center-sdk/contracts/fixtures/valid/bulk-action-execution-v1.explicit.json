@@ -1,7 +1,7 @@
 {
   "selection": {
     "mode": "explicit",
-    "uids": ["project-1", "project-2"]
+    "uids": ["service-1", "service-2"]
   },
   "options": {
     "delete_outputs": false

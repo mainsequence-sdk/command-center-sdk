@@ -137,7 +137,7 @@ test("normalizes commit messages like the Python code-repository sync command", 
   assert.throws(() => sanitizeCommitMessage("\n\r"), /Commit message is required/u);
 });
 
-test("calculates npm patch versions without mutating the project", () => {
+test("calculates npm patch versions without mutating the repository", () => {
   assert.equal(nextNpmPatchVersion("1.2.3"), "1.2.4");
   assert.equal(nextNpmPatchVersion("1.2.3-rc.2"), "1.2.3");
   assert.equal(nextNpmPatchVersion("1.2.3+build.7"), "1.2.4");
@@ -677,6 +677,33 @@ test("CLI rejects duplicate commit-message forms as JSON", () => {
   assert.deepEqual(JSON.parse(result.stderr), {
     error: "Pass the commit message either positionally or with --message, not both.",
   });
+});
+
+test("CLI forwards --path to CodeRepository preflight", () => {
+  const missingCodeRepository = join(
+    tmpdir(),
+    `command-center-sdk-missing-code-repository-${process.pid}`,
+  );
+  const result = spawnSync(
+    process.execPath,
+    [
+      cliPath,
+      "code-repository",
+      "sync",
+      "Terminology audit",
+      "--path",
+      missingCodeRepository,
+      "--dry-run",
+      "--json",
+    ],
+    { encoding: "utf8" },
+  );
+
+  assert.equal(result.status, 1);
+  const payload = JSON.parse(result.stderr);
+  assert.equal(payload.stage, "resolve-code-repository-directory");
+  assert.match(payload.error, /Code repository directory does not exist/u);
+  assert.equal(payload.codeRepositoryDir, null);
 });
 
 test("local preflight rejects missing package-lock.json", async () => {

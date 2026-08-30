@@ -19,6 +19,12 @@ import {
   StaticSiteIframe,
 } from "@dev-mainsequence/command-center-sdk/embed/react";
 import {
+  ActivityIndicator,
+  ApplicationStatusScreen,
+  ProgressStageList,
+  type ProgressStageDefinition,
+} from "@dev-mainsequence/command-center-sdk/feedback";
+import {
   ApplicationNavigationShell,
   defineNavigationApplication,
 } from "@dev-mainsequence/command-center-sdk/navigation";
@@ -50,7 +56,10 @@ import {
 import { proTableWidgetModule } from "@dev-mainsequence/command-center-sdk/widget/built-ins/pro-table";
 import { appComponentWidgetModule } from "@dev-mainsequence/command-center-sdk/widget/built-ins/app-component";
 import { tabularTransformWidgetModule } from "@dev-mainsequence/command-center-sdk/widget/built-ins/tabular-transform";
-import { createWidgetRegistry } from "@dev-mainsequence/command-center-sdk/widget/host";
+import {
+  createWidgetRegistry,
+  MAIN_SEQUENCE_FOUNDRY_CODE_REPOSITORY_INFRA_GRAPH_WIDGET_ID,
+} from "@dev-mainsequence/command-center-sdk/widget/host";
 import { validateWidgetManifest } from "@dev-mainsequence/command-center-sdk/widget/testing";
 import { widgetThemeTokens } from "@dev-mainsequence/command-center-sdk/widget/ui";
 import {
@@ -64,7 +73,7 @@ import "@dev-mainsequence/command-center-sdk/styles.css";
 import "@dev-mainsequence/command-center-sdk/theme/styles.css";
 import "@dev-mainsequence/command-center-sdk/widget/built-ins.css";
 
-type Project = {
+type Service = {
   uid: string;
   name: string;
 };
@@ -75,17 +84,17 @@ const client = {
   },
 };
 
-export const projectsResource = defineResourceApplication({
-  id: "projects",
-  label: "Projects",
-  getId: (project: Project) => project.uid,
+export const servicesResource = defineResourceApplication({
+  id: "services",
+  label: "Services",
+  getId: (service: Service) => service.uid,
   adapter: createHttpResourceAdapter({
     client,
     endpoints: {
-      list: "/projects/",
-      detail: (uid) => `/projects/${encodeURIComponent(uid)}/`,
+      list: "/services/",
+      detail: (uid) => `/services/${encodeURIComponent(uid)}/`,
     },
-    normalizeList: (response: { count: number; results: Project[] }) => ({
+    normalizeList: (response: { count: number; results: Service[] }) => ({
       items: response.results,
       pageInfo: {
         pageIndex: 0,
@@ -97,8 +106,8 @@ export const projectsResource = defineResourceApplication({
     }),
   }),
   columns: [
-    { id: "name", header: "Name", getValue: (project) => project.name },
-    { id: "uid", header: "UID", getValue: (project) => project.uid },
+    { id: "name", header: "Name", getValue: (service) => service.name },
+    { id: "uid", header: "UID", getValue: (service) => service.uid },
   ],
   actions: [
     {
@@ -120,20 +129,23 @@ export const projectsResource = defineResourceApplication({
 export const packedNavigationApplication = defineNavigationApplication({
   id: "foundry",
   label: "Foundry",
-  defaultDestinationId: "projects",
+  href: "/app/foundry/services",
+  defaultDestinationId: "services",
   subApplications: [
     {
       id: "build",
       label: "Build",
       destinations: [
-        { id: "projects", label: "Projects" },
-        { id: "clusters", label: "Clusters" },
+        { id: "services", label: "Services", href: "/app/foundry/services" },
+        { id: "clusters", label: "Clusters", href: "/app/foundry/clusters" },
       ],
     },
     {
       id: "ship",
       label: "Ship",
-      destinations: [{ id: "releases", label: "Releases" }],
+      destinations: [
+        { id: "releases", label: "Releases", href: "/app/foundry/releases" },
+      ],
     },
   ],
 });
@@ -141,7 +153,7 @@ export const packedNavigationApplication = defineNavigationApplication({
 export const packedNavigationHtml = renderToStaticMarkup(
   <ApplicationNavigationShell
     activeApplicationId="foundry"
-    activeDestinationId="projects"
+    activeDestinationId="services"
     applications={[packedNavigationApplication]}
     collapsed={false}
     onNavigate={() => undefined}
@@ -155,23 +167,43 @@ export const packedNavigationHtml = renderToStaticMarkup(
 export const packedLayoutHtml = renderToStaticMarkup(
   <ApplicationPage maxWidth="content">
     <ApplicationPageHeader
-      actions={<button type="button">Create project</button>}
-      description="Manage projects through the public SDK layout."
-      title="Projects"
+      actions={<button type="button">Create service</button>}
+      description="Manage services through the public SDK layout."
+      title="Services"
     />
     <ApplicationPageStack>
       <ApplicationCardGrid>
-        <ApplicationCard header={<h2>Active</h2>}>12 projects</ApplicationCard>
-        <ApplicationCard header={<h2>Queued</h2>}>3 projects</ApplicationCard>
+        <ApplicationCard header={<h2>Active</h2>}>12 services</ApplicationCard>
+        <ApplicationCard header={<h2>Queued</h2>}>3 services</ApplicationCard>
       </ApplicationCardGrid>
     </ApplicationPageStack>
   </ApplicationPage>,
 );
 
+export const packedFeedbackStages = [
+  {
+    id: "runtime",
+    label: "Application runtime",
+    description: "Attaching registered capabilities.",
+    status: "active",
+    elapsedSeconds: 4.2,
+    details: [{ id: "resources", label: "Resource registry" }],
+  },
+] satisfies ProgressStageDefinition[];
+
+export const packedFeedbackHtml = renderToStaticMarkup(
+  <ApplicationStatusScreen
+    eyebrow="Runtime startup"
+    message="Preparing the application runtime."
+    stages={packedFeedbackStages}
+    title="Preparing application"
+  />,
+);
+
 export const packedConsumerHtml = renderToStaticMarkup(
   <ResourcePagination
     count={42}
-    itemLabel="projects"
+    itemLabel="services"
     pageIndex={0}
     pageSize={20}
     onPageChange={() => undefined}
@@ -208,13 +240,17 @@ export const packedStaticSiteHostHtml = renderToStaticMarkup(
 export const packedSdkSurfaceSmoke = {
   ApplicationCard,
   ApplicationCardGrid,
+  ActivityIndicator,
+  ApplicationStatusScreen,
   ApplicationNavigationShell,
   ApplicationPage,
   ApplicationPageHeader,
   ApplicationPageStack,
+  ProgressStageList,
   APP_COMPONENT_AUTHORING_CONTRACT,
   COMMAND_CENTER_WIDGET_API_VERSION,
   IFRAME_BRIDGE_PROTOCOL_VERSION,
+  MAIN_SEQUENCE_FOUNDRY_CODE_REPOSITORY_INFRA_GRAPH_WIDGET_ID,
   STATIC_SITE_IFRAME_CONTRACT,
   SandboxedIframeWidget,
   TABULAR_TRANSFORM_AUTHORING_CONTRACT,

@@ -50,3 +50,8 @@ Generic built-in widget styles use:
 Package consolidation does not change widget IDs, workspace schema values, connection references,
 theme IDs, or the `command-center-iframe@v1` protocol. Applications must still run their normal
 workspace and registry compatibility tests when changing imports.
+
+The later CodeRepository ontology cutover is separate from package consolidation and intentionally
+changes the Foundry infrastructure widget ID. See the
+[compatibility policy](./compatibility.md#coderepository-infrastructure-widget-cutover) before
+upgrading a host or migrating persisted workspace documents.

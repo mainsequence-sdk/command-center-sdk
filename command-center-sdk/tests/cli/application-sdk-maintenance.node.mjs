@@ -8,13 +8,13 @@ import { fileURLToPath } from "node:url";
 
 import {
   COMMAND_CENTER_SDK_PACKAGE,
-  createProjectSdkMaintenanceLocalOps,
-  inspectProjectSdk,
-  ProjectSdkMaintenanceError,
-  updateProjectSdk,
-} from "../../cli/project-sdk-maintenance.mjs";
+  createApplicationSdkMaintenanceLocalOps,
+  inspectApplicationSdk,
+  ApplicationSdkMaintenanceError,
+  updateApplicationSdk,
+} from "../../cli/application-sdk-maintenance.mjs";
 
-const projectRoot = "/project";
+const applicationRoot = "/application";
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const cliPath = join(packageRoot, "cli", "command-center-sdk.mjs");
 
@@ -25,8 +25,8 @@ function createHarness({ localStates, registryStates }) {
   return {
     updates,
     localOps: {
-      async resolveProjectRoot() {
-        return projectRoot;
+      async resolveApplicationRoot() {
+        return applicationRoot;
       },
       async readLocalState() {
         const state = localStates[Math.min(localIndex, localStates.length - 1)];
@@ -64,8 +64,10 @@ test("SDK status separates declared, locked, installed, wanted, and latest versi
     registryStates: [{ current: "0.1.11", wanted: "0.1.12", latest: "0.1.12" }],
   });
 
-  const result = await inspectProjectSdk({ projectDir: projectRoot, localOps: harness.localOps });
+  const result = await inspectApplicationSdk({ applicationDir: applicationRoot, localOps: harness.localOps });
 
+  assert.equal(result.applicationRoot, applicationRoot);
+  assert.equal("projectRoot" in result, false);
   assert.deepEqual(
     {
       declared: result.declared,
@@ -96,14 +98,14 @@ test("SDK status distinguishes a newer registry release blocked by the declared 
     registryStates: [{ current: "0.1.11", wanted: "0.1.11", latest: "0.2.0" }],
   });
 
-  const result = await inspectProjectSdk({ projectDir: projectRoot, localOps: harness.localOps });
+  const result = await inspectApplicationSdk({ applicationDir: applicationRoot, localOps: harness.localOps });
 
   assert.equal(result.status, "constraint_blocked");
   assert.equal(result.updateAvailable, false);
   assert.match(result.hint, /does not allow the registry latest version/u);
 });
 
-test("SDK status distinguishes missing, drifted, and unsupported project states", async () => {
+test("SDK status distinguishes missing, drifted, and unsupported application states", async () => {
   const cases = [
     [dependencyState({ locked: null }), "lock_missing", true],
     [dependencyState({ installed: null }), "install_required", true],
@@ -118,8 +120,8 @@ test("SDK status distinguishes missing, drifted, and unsupported project states"
       localStates: [localState],
       registryStates: [{ current: null, wanted: null, latest: "0.1.12" }],
     });
-    const result = await inspectProjectSdk({
-      projectDir: projectRoot,
+    const result = await inspectApplicationSdk({
+      applicationDir: applicationRoot,
       localOps: harness.localOps,
     });
     assert.equal(result.status, status);
@@ -133,8 +135,8 @@ test("update SDK dry-run reports the exact npm command without mutation", async 
     registryStates: [{ current: "0.1.11", wanted: "0.1.12", latest: "0.1.12" }],
   });
 
-  const result = await updateProjectSdk({
-    projectDir: projectRoot,
+  const result = await updateApplicationSdk({
+    applicationDir: applicationRoot,
     dryRun: true,
     localOps: harness.localOps,
   });
@@ -159,25 +161,25 @@ test("update SDK targets only the SDK and verifies the resulting state", async (
     ],
   });
 
-  const result = await updateProjectSdk({
-    projectDir: projectRoot,
+  const result = await updateApplicationSdk({
+    applicationDir: applicationRoot,
     quiet: true,
     localOps: harness.localOps,
   });
 
   assert.equal(result.updated, true);
   assert.equal(result.after.status, "current");
-  assert.deepEqual(harness.updates, [{ value: projectRoot, options: { quiet: true } }]);
+  assert.deepEqual(harness.updates, [{ value: applicationRoot, options: { quiet: true } }]);
 });
 
-test("update SDK leaves a constraint-blocked project unchanged", async () => {
+test("update SDK leaves a constraint-blocked application unchanged", async () => {
   const harness = createHarness({
     localStates: [dependencyState({ declared: "0.1.11" })],
     registryStates: [{ current: "0.1.11", wanted: "0.1.11", latest: "0.2.0" }],
   });
 
-  const result = await updateProjectSdk({
-    projectDir: projectRoot,
+  const result = await updateApplicationSdk({
+    applicationDir: applicationRoot,
     localOps: harness.localOps,
   });
 
@@ -194,9 +196,9 @@ test("update SDK refuses linked and workspace dependency sources", async () => {
       registryStates: [{ current: null, wanted: null, latest: "0.1.12" }],
     });
     await assert.rejects(
-      updateProjectSdk({ projectDir: projectRoot, localOps: harness.localOps }),
+      updateApplicationSdk({ applicationDir: applicationRoot, localOps: harness.localOps }),
       (error) => {
-        assert.equal(error instanceof ProjectSdkMaintenanceError, true);
+        assert.equal(error instanceof ApplicationSdkMaintenanceError, true);
         assert.equal(error.stage, "update-sdk-preflight");
         assert.match(error.message, /are not replaced/u);
         return true;
@@ -205,7 +207,7 @@ test("update SDK refuses linked and workspace dependency sources", async () => {
   }
 });
 
-test("local SDK inspection reads npm project state and registry status", async () => {
+test("local SDK inspection reads npm application state and registry status", async () => {
   const root = await mkdtemp(join(tmpdir(), "command-center-sdk-status-"));
   try {
     await writeFile(
@@ -243,7 +245,7 @@ test("local SDK inspection reads npm project state and registry status", async (
     });
     assert.equal(initialized.status, 0, initialized.stderr);
 
-    const localOps = createProjectSdkMaintenanceLocalOps({
+    const localOps = createApplicationSdkMaintenanceLocalOps({
       spawnSyncImpl(command, args, options) {
         if (command === "git") return spawnSync(command, args, options);
         if (args[0] === "view") {
@@ -269,8 +271,8 @@ test("local SDK inspection reads npm project state and registry status", async (
       },
     });
 
-    const result = await inspectProjectSdk({ projectDir: root, localOps });
-    assert.equal(result.projectRoot, root);
+    const result = await inspectApplicationSdk({ applicationDir: root, localOps });
+    assert.equal(result.applicationRoot, root);
     assert.equal(result.status, "update_available");
     assert.equal(result.dependencyType, "dependencies");
   } finally {
@@ -278,7 +280,7 @@ test("local SDK inspection reads npm project state and registry status", async (
   }
 });
 
-test("SDK maintenance rejects a nested Vite project before querying npm", async () => {
+test("SDK maintenance rejects a nested Vite application before querying npm", async () => {
   const root = await mkdtemp(join(tmpdir(), "command-center-sdk-status-root-"));
   const nested = join(root, "frontend");
   try {
@@ -288,9 +290,9 @@ test("SDK maintenance rejects a nested Vite project before querying npm", async 
       encoding: "utf8",
     });
     assert.equal(initialized.status, 0, initialized.stderr);
-    const localOps = createProjectSdkMaintenanceLocalOps();
+    const localOps = createApplicationSdkMaintenanceLocalOps();
     await assert.rejects(
-      inspectProjectSdk({ projectDir: nested, localOps }),
+      inspectApplicationSdk({ applicationDir: nested, localOps }),
       /require the Vite application at the Git repository root/u,
     );
   } finally {
@@ -298,9 +300,31 @@ test("SDK maintenance rejects a nested Vite project before querying npm", async 
   }
 });
 
+test("application preflight reports application-oriented JSON", async () => {
+  const missingApplication = join(
+    tmpdir(),
+    `command-center-sdk-missing-application-${process.pid}`,
+  );
+  const localOps = createApplicationSdkMaintenanceLocalOps();
+
+  await assert.rejects(
+    inspectApplicationSdk({ applicationDir: missingApplication, localOps }),
+    (error) => {
+      assert.equal(error instanceof ApplicationSdkMaintenanceError, true);
+      assert.equal(error.stage, "resolve-application-root");
+      assert.deepEqual(error.toJSON(), {
+        error: `Application directory does not exist: ${missingApplication}`,
+        stage: "resolve-application-root",
+        applicationRoot: missingApplication,
+      });
+      return true;
+    },
+  );
+});
+
 test("npm update disables authenticated MCP postinstall and preserves JSON output isolation", () => {
   const calls = [];
-  const localOps = createProjectSdkMaintenanceLocalOps({
+  const localOps = createApplicationSdkMaintenanceLocalOps({
     processEnv: { EXISTING: "value", MAINSEQUENCE_ACCESS_TOKEN: "secret" },
     spawnSyncImpl(command, args, options) {
       calls.push({ command, args, options });
@@ -308,7 +332,7 @@ test("npm update disables authenticated MCP postinstall and preserves JSON outpu
     },
   });
 
-  localOps.updateSdk(projectRoot, { quiet: true });
+  localOps.updateSdk(applicationRoot, { quiet: true });
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].command, "npm");
@@ -317,7 +341,7 @@ test("npm update disables authenticated MCP postinstall and preserves JSON outpu
     COMMAND_CENTER_SDK_PACKAGE,
     "--save",
   ]);
-  assert.equal(calls[0].options.cwd, projectRoot);
+  assert.equal(calls[0].options.cwd, applicationRoot);
   assert.equal(calls[0].options.stdio, "pipe");
   assert.equal(calls[0].options.env.COMMAND_CENTER_SDK_MCP_POSTINSTALL, "0");
   assert.equal(calls[0].options.env.MAINSEQUENCE_ACCESS_TOKEN, "secret");
@@ -342,5 +366,15 @@ test("CLI routes SDK maintenance commands and rejects unsupported options as JSO
   assert.equal(updateResult.status, 1);
   assert.deepEqual(JSON.parse(updateResult.stderr), {
     error: "Unknown argument: unexpected",
+  });
+
+  const retiredGroupResult = spawnSync(
+    process.execPath,
+    [cliPath, "project", "sdk-status", "--json"],
+    { encoding: "utf8" },
+  );
+  assert.equal(retiredGroupResult.status, 1);
+  assert.deepEqual(JSON.parse(retiredGroupResult.stderr), {
+    error: "Unknown command: project sdk-status --json",
   });
 });

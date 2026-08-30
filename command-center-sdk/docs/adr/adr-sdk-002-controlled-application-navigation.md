@@ -37,9 +37,12 @@ components and navigation actions are callbacks, so this API is not a JSON-safe 
 5. Keep routers, auth clients, permission stores, app registries, favorites, user menus, and
    branding out of the SDK module. Consumers filter inaccessible definitions and translate intents
    into routes.
-6. Use existing SDK theme tokens and the shared `/styles.css`; do not create a second navigation
+6. Accept optional runtime-only `href` values for routed applications and destinations. Render
+   them as anchors, intercept only ordinary unmodified primary clicks for controlled routing, and
+   preserve the browser's native modified-click, middle-click, context-menu, and copy-link behavior.
+7. Use existing SDK theme tokens and the shared `/styles.css`; do not create a second navigation
    theme system.
-7. Keep the model runtime-only. A future backend-authored navigation contract requires a separate
+8. Keep the model runtime-only. A future backend-authored navigation contract requires a separate
    JSON-safe model and compatibility decision instead of serializing React icons or callbacks.
 
 ## Consequences
@@ -48,3 +51,5 @@ components and navigation actions are callbacks, so this API is not a JSON-safe 
 - The Command Center host can consume the public renderer while preserving its product policy.
 - Extension packages can contribute sub-applications without importing host internals.
 - Consumers must explicitly own route state and permission filtering; the SDK will not infer them.
+- Consumers must provide `href` for routed items so browser-native link behavior is available;
+  callback-only items remain buttons.

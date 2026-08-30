@@ -22,19 +22,19 @@ const INCOMPATIBLE_AFTER_UPDATE = new Set([
   "update_available",
 ]);
 
-export class ProjectSdkMaintenanceError extends Error {
-  constructor(message, { stage, projectRoot, cause } = {}) {
+export class ApplicationSdkMaintenanceError extends Error {
+  constructor(message, { stage, applicationRoot, cause } = {}) {
     super(message, { cause });
-    this.name = "ProjectSdkMaintenanceError";
+    this.name = "ApplicationSdkMaintenanceError";
     this.stage = stage || "unknown";
-    this.projectRoot = projectRoot || null;
+    this.applicationRoot = applicationRoot || null;
   }
 
   toJSON() {
     return {
       error: this.message,
       stage: this.stage,
-      projectRoot: this.projectRoot,
+      applicationRoot: this.applicationRoot,
     };
   }
 }
@@ -61,16 +61,16 @@ function runSpawn(
     stdio: quiet ? "pipe" : "inherit",
   });
   if (result.error) {
-    throw new ProjectSdkMaintenanceError(
+    throw new ApplicationSdkMaintenanceError(
       `Could not run ${commandText(command, args)}: ${result.error.message}`,
-      { stage, projectRoot: cwd, cause: result.error },
+      { stage, applicationRoot: cwd, cause: result.error },
     );
   }
   if (!allowStatuses.includes(result.status)) {
     const detail = resultText(result);
-    throw new ProjectSdkMaintenanceError(
+    throw new ApplicationSdkMaintenanceError(
       `${commandText(command, args)} failed with status ${result.status ?? "unknown"}${detail ? `: ${detail}` : "."}`,
-      { stage, projectRoot: cwd },
+      { stage, applicationRoot: cwd },
     );
   }
   return result;
@@ -81,23 +81,23 @@ async function readJson(path, { stage, missingMessage }) {
     return JSON.parse(await readFile(path, "utf8"));
   } catch (error) {
     if (error?.code === "ENOENT" && missingMessage) {
-      throw new ProjectSdkMaintenanceError(missingMessage, {
+      throw new ApplicationSdkMaintenanceError(missingMessage, {
         stage,
-        projectRoot: resolve(path, ".."),
+        applicationRoot: resolve(path, ".."),
         cause: error,
       });
     }
-    throw new ProjectSdkMaintenanceError(`Could not read valid JSON from ${path}: ${error.message}`, {
+    throw new ApplicationSdkMaintenanceError(`Could not read valid JSON from ${path}: ${error.message}`, {
       stage,
-      projectRoot: resolve(path, ".."),
+      applicationRoot: resolve(path, ".."),
       cause: error,
     });
   }
 }
 
-async function readInstalledVersion(projectRoot) {
+async function readInstalledVersion(applicationRoot) {
   const manifestPath = join(
-    projectRoot,
+    applicationRoot,
     "node_modules",
     "@dev-mainsequence",
     "command-center-sdk",
@@ -108,22 +108,22 @@ async function readInstalledVersion(projectRoot) {
     return typeof manifest.version === "string" ? manifest.version.trim() || null : null;
   } catch (error) {
     if (error?.code === "ENOENT") return null;
-    throw new ProjectSdkMaintenanceError(
+    throw new ApplicationSdkMaintenanceError(
       `Could not inspect the installed Command Center SDK at ${manifestPath}: ${error.message}`,
-      { stage: "inspect-installed-sdk", projectRoot, cause: error },
+      { stage: "inspect-installed-sdk", applicationRoot, cause: error },
     );
   }
 }
 
-function dependencyDeclaration(manifest, projectRoot) {
+function dependencyDeclaration(manifest, applicationRoot) {
   const declarations = DEPENDENCY_SECTIONS.flatMap((section) => {
     const value = manifest?.[section]?.[COMMAND_CENTER_SDK_PACKAGE];
     return typeof value === "string" ? [{ section, value: value.trim() }] : [];
   });
   if (declarations.length > 1) {
-    throw new ProjectSdkMaintenanceError(
+    throw new ApplicationSdkMaintenanceError(
       `${COMMAND_CENTER_SDK_PACKAGE} must be declared in exactly one dependency section; found ${declarations.map(({ section }) => section).join(", ")}.`,
-      { stage: "inspect-package-manifest", projectRoot },
+      { stage: "inspect-package-manifest", applicationRoot },
     );
   }
   return declarations[0] || null;
@@ -149,15 +149,15 @@ function isRegistryDependencySpec(spec) {
   );
 }
 
-function parseJsonOutput(raw, label, projectRoot, { allowEmpty = false } = {}) {
+function parseJsonOutput(raw, label, applicationRoot, { allowEmpty = false } = {}) {
   const source = String(raw || "").trim();
   if (!source && allowEmpty) return {};
   try {
     return JSON.parse(source);
   } catch (error) {
-    throw new ProjectSdkMaintenanceError(`${label} returned invalid JSON.`, {
+    throw new ApplicationSdkMaintenanceError(`${label} returned invalid JSON.`, {
       stage: "resolve-sdk-registry-state",
-      projectRoot,
+      applicationRoot,
       cause: error,
     });
   }
@@ -172,7 +172,7 @@ function registryVersion(value) {
 function statusHint(status, declared) {
   switch (status) {
     case "current":
-      return "The project SDK dependency, lockfile, and installed package are aligned.";
+      return "The application SDK dependency, lockfile, and installed package are aligned.";
     case "update_available":
       return "Run command-center-sdk application update-sdk --path .";
     case "constraint_blocked":
@@ -184,7 +184,7 @@ function statusHint(status, declared) {
     case "installed_drift":
       return "The installed SDK version differs from package-lock.json.";
     case "not_declared":
-      return `Install ${COMMAND_CENTER_SDK_PACKAGE} before using project update-sdk.`;
+      return `Install ${COMMAND_CENTER_SDK_PACKAGE} before using application update-sdk.`;
     case "unsupported_dependency_type":
       return "The SDK must be a dependency, devDependency, or optionalDependency to be updated.";
     case "unsupported_source":
@@ -208,26 +208,26 @@ function resolveStatus({ declaration, locked, installed, wanted, latest }) {
   return "current";
 }
 
-export function createProjectSdkMaintenanceLocalOps({
+export function createApplicationSdkMaintenanceLocalOps({
   spawnSyncImpl = spawnSync,
   processEnv = process.env,
 } = {}) {
   return {
-    async resolveProjectRoot(path) {
-      const projectRoot = resolve(path || process.cwd());
-      let projectStat;
+    async resolveApplicationRoot(path) {
+      const applicationRoot = resolve(path || process.cwd());
+      let applicationStat;
       try {
-        projectStat = await stat(projectRoot);
+        applicationStat = await stat(applicationRoot);
       } catch (error) {
-        throw new ProjectSdkMaintenanceError(
-          `Project directory does not exist: ${projectRoot}`,
-          { stage: "resolve-project-root", projectRoot, cause: error },
+        throw new ApplicationSdkMaintenanceError(
+          `Application directory does not exist: ${applicationRoot}`,
+          { stage: "resolve-application-root", applicationRoot, cause: error },
         );
       }
-      if (!projectStat.isDirectory()) {
-        throw new ProjectSdkMaintenanceError(`Project path is not a directory: ${projectRoot}`, {
-          stage: "resolve-project-root",
-          projectRoot,
+      if (!applicationStat.isDirectory()) {
+        throw new ApplicationSdkMaintenanceError(`Application path is not a directory: ${applicationRoot}`, {
+          stage: "resolve-application-root",
+          applicationRoot,
         });
       }
 
@@ -235,32 +235,32 @@ export function createProjectSdkMaintenanceLocalOps({
         spawnSyncImpl,
         "git",
         ["rev-parse", "--show-toplevel"],
-        { cwd: projectRoot, env: processEnv, stage: "resolve-project-root" },
+        { cwd: applicationRoot, env: processEnv, stage: "resolve-application-root" },
       );
       const repositoryRootOutput = String(gitResult.stdout || "").trim();
       if (!repositoryRootOutput) {
-        throw new ProjectSdkMaintenanceError("Git did not return a repository root.", {
-          stage: "resolve-project-root",
-          projectRoot,
+        throw new ApplicationSdkMaintenanceError("Git did not return a repository root.", {
+          stage: "resolve-application-root",
+          applicationRoot,
         });
       }
       const repositoryRoot = resolve(repositoryRootOutput);
-      const [canonicalProjectRoot, canonicalRepositoryRoot] = await Promise.all([
-        realpath(projectRoot),
+      const [canonicalApplicationRoot, canonicalRepositoryRoot] = await Promise.all([
+        realpath(applicationRoot),
         realpath(repositoryRoot),
       ]);
-      if (canonicalProjectRoot !== canonicalRepositoryRoot) {
-        throw new ProjectSdkMaintenanceError(
-          `Command Center project commands require the Vite application at the Git repository root (${repositoryRoot}); received nested project directory ${projectRoot}.`,
-          { stage: "resolve-project-root", projectRoot },
+      if (canonicalApplicationRoot !== canonicalRepositoryRoot) {
+        throw new ApplicationSdkMaintenanceError(
+          `Command Center application commands require the Vite application at the Git repository root (${repositoryRoot}); received nested application directory ${applicationRoot}.`,
+          { stage: "resolve-application-root", applicationRoot },
         );
       }
-      return projectRoot;
+      return applicationRoot;
     },
 
-    async readLocalState(projectRoot) {
-      const manifestPath = join(projectRoot, "package.json");
-      const lockPath = join(projectRoot, "package-lock.json");
+    async readLocalState(applicationRoot) {
+      const manifestPath = join(applicationRoot, "package.json");
+      const lockPath = join(applicationRoot, "package-lock.json");
       const [manifest, lockfile, installed] = await Promise.all([
         readJson(manifestPath, {
           stage: "inspect-package-manifest",
@@ -270,9 +270,9 @@ export function createProjectSdkMaintenanceLocalOps({
           stage: "inspect-package-lock",
           missingMessage: `Command Center SDK maintenance requires ${lockPath}.`,
         }),
-        readInstalledVersion(projectRoot),
+        readInstalledVersion(applicationRoot),
       ]);
-      const declaration = dependencyDeclaration(manifest, projectRoot);
+      const declaration = dependencyDeclaration(manifest, applicationRoot);
       return {
         declaration,
         locked: lockedVersion(lockfile),
@@ -280,13 +280,13 @@ export function createProjectSdkMaintenanceLocalOps({
       };
     },
 
-    readRegistryState(projectRoot, { declaration }) {
+    readRegistryState(applicationRoot, { declaration }) {
       const latestResult = runSpawn(
         spawnSyncImpl,
         "npm",
         ["view", COMMAND_CENTER_SDK_PACKAGE, "dist-tags.latest", "--json"],
         {
-          cwd: projectRoot,
+          cwd: applicationRoot,
           env: processEnv,
           stage: "resolve-sdk-registry-state",
         },
@@ -294,13 +294,13 @@ export function createProjectSdkMaintenanceLocalOps({
       const latestPayload = parseJsonOutput(
         latestResult.stdout,
         "npm view",
-        projectRoot,
+        applicationRoot,
       );
       const latest = registryVersion(latestPayload);
       if (!latest) {
-        throw new ProjectSdkMaintenanceError(
+        throw new ApplicationSdkMaintenanceError(
           `npm did not return a latest version for ${COMMAND_CENTER_SDK_PACKAGE}.`,
-          { stage: "resolve-sdk-registry-state", projectRoot },
+          { stage: "resolve-sdk-registry-state", applicationRoot },
         );
       }
 
@@ -316,7 +316,7 @@ export function createProjectSdkMaintenanceLocalOps({
         "npm",
         ["outdated", COMMAND_CENTER_SDK_PACKAGE, "--json", "--long"],
         {
-          cwd: projectRoot,
+          cwd: applicationRoot,
           env: processEnv,
           allowStatuses: [0, 1],
           stage: "resolve-sdk-registry-state",
@@ -325,7 +325,7 @@ export function createProjectSdkMaintenanceLocalOps({
       const outdatedPayload = parseJsonOutput(
         outdatedResult.stdout,
         "npm outdated",
-        projectRoot,
+        applicationRoot,
         { allowEmpty: true },
       );
       const entry = outdatedPayload?.[COMMAND_CENTER_SDK_PACKAGE];
@@ -336,13 +336,13 @@ export function createProjectSdkMaintenanceLocalOps({
       };
     },
 
-    updateSdk(projectRoot, { quiet = false } = {}) {
+    updateSdk(applicationRoot, { quiet = false } = {}) {
       runSpawn(
         spawnSyncImpl,
         "npm",
         ["update", COMMAND_CENTER_SDK_PACKAGE, "--save"],
         {
-          cwd: projectRoot,
+          cwd: applicationRoot,
           env: {
             ...processEnv,
             COMMAND_CENTER_SDK_MCP_POSTINSTALL: "0",
@@ -355,15 +355,15 @@ export function createProjectSdkMaintenanceLocalOps({
   };
 }
 
-export const projectSdkMaintenanceLocalOps = createProjectSdkMaintenanceLocalOps();
+export const applicationSdkMaintenanceLocalOps = createApplicationSdkMaintenanceLocalOps();
 
-export async function inspectProjectSdk({
-  projectDir,
-  localOps = projectSdkMaintenanceLocalOps,
+export async function inspectApplicationSdk({
+  applicationDir,
+  localOps = applicationSdkMaintenanceLocalOps,
 } = {}) {
-  const projectRoot = await localOps.resolveProjectRoot(projectDir);
-  const local = await localOps.readLocalState(projectRoot);
-  const registry = await localOps.readRegistryState(projectRoot, {
+  const applicationRoot = await localOps.resolveApplicationRoot(applicationDir);
+  const local = await localOps.readLocalState(applicationRoot);
+  const registry = await localOps.readRegistryState(applicationRoot, {
     declaration: local.declaration,
   });
   const wanted =
@@ -377,7 +377,7 @@ export async function inspectProjectSdk({
   });
   return {
     command: "command-center-sdk application sdk-status",
-    projectRoot,
+    applicationRoot,
     package: COMMAND_CENTER_SDK_PACKAGE,
     dependencyType: local.declaration?.section || null,
     declared: local.declaration?.value || null,
@@ -402,18 +402,18 @@ function hasChanged(before, after) {
   );
 }
 
-export async function updateProjectSdk({
-  projectDir,
+export async function updateApplicationSdk({
+  applicationDir,
   dryRun = false,
   quiet = false,
-  localOps = projectSdkMaintenanceLocalOps,
+  localOps = applicationSdkMaintenanceLocalOps,
   onPlan,
 } = {}) {
-  const before = await inspectProjectSdk({ projectDir, localOps });
+  const before = await inspectApplicationSdk({ applicationDir, localOps });
   if (!before.updateSupported) {
-    throw new ProjectSdkMaintenanceError(before.hint, {
+    throw new ApplicationSdkMaintenanceError(before.hint, {
       stage: "update-sdk-preflight",
-      projectRoot: before.projectRoot,
+      applicationRoot: before.applicationRoot,
     });
   }
 
@@ -421,7 +421,7 @@ export async function updateProjectSdk({
   const plan = {
     command: "command-center-sdk application update-sdk",
     dryRun: Boolean(dryRun),
-    projectRoot: before.projectRoot,
+    applicationRoot: before.applicationRoot,
     package: COMMAND_CENTER_SDK_PACKAGE,
     before,
     commands: shouldRun
@@ -444,12 +444,12 @@ export async function updateProjectSdk({
     };
   }
 
-  await localOps.updateSdk(before.projectRoot, { quiet });
-  const after = await inspectProjectSdk({ projectDir: before.projectRoot, localOps });
+  await localOps.updateSdk(before.applicationRoot, { quiet });
+  const after = await inspectApplicationSdk({ applicationDir: before.applicationRoot, localOps });
   if (INCOMPATIBLE_AFTER_UPDATE.has(after.status)) {
-    throw new ProjectSdkMaintenanceError(
-      `SDK update completed but the project remains inconsistent (${after.status}): ${after.hint}`,
-      { stage: "verify-sdk-update", projectRoot: before.projectRoot },
+    throw new ApplicationSdkMaintenanceError(
+      `SDK update completed but the application remains inconsistent (${after.status}): ${after.hint}`,
+      { stage: "verify-sdk-update", applicationRoot: before.applicationRoot },
     );
   }
   return {

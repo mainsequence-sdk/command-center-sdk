@@ -5,6 +5,7 @@ export type NavigationIcon = ComponentType<{ className?: string }>;
 export interface NavigationDestinationDefinition {
   id: string;
   label: string;
+  href?: string;
   description?: string;
   icon?: NavigationIcon;
   order?: number;
@@ -24,6 +25,7 @@ export interface NavigationSubApplicationDefinition {
 export interface NavigationApplicationDefinition {
   id: string;
   label: string;
+  href?: string;
   description?: string;
   icon?: NavigationIcon;
   order?: number;

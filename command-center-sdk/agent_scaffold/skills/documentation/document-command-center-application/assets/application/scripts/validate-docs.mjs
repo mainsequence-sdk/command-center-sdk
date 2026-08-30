@@ -2,9 +2,9 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, extname, relative, resolve } from "node:path";
 import process from "node:process";
 
-const projectRoot = process.cwd();
-const docsRoot = resolve(projectRoot, "docs");
-const navigationPath = resolve(projectRoot, "documentation/navigation.json");
+const applicationRoot = process.cwd();
+const docsRoot = resolve(applicationRoot, "docs");
+const navigationPath = resolve(applicationRoot, "documentation/navigation.json");
 const errors = [];
 
 for (const directory of ["surfaces", "technical"]) {
@@ -27,7 +27,7 @@ for (const file of rootMarkdown) {
 const pages = ["surfaces", "technical"].flatMap((directory) =>
   collectPages(resolve(docsRoot, directory)),
 );
-const filesToCheck = [resolve(projectRoot, "README.md"), resolve(docsRoot, "SUMMARY.md"), ...pages]
+const filesToCheck = [resolve(applicationRoot, "README.md"), resolve(docsRoot, "SUMMARY.md"), ...pages]
   .filter(existsSync);
 for (const file of filesToCheck) validateLocalLinks(file);
 
@@ -42,7 +42,7 @@ if (existsSync(navigationPath)) {
   for (const page of pages) {
     const id = pageId(page);
     if (!declaredIds.has(id)) {
-      errors.push(`Documentation page is missing from documentation/navigation.json: ${relative(projectRoot, page)}`);
+      errors.push(`Documentation page is missing from documentation/navigation.json: ${relative(applicationRoot, page)}`);
     }
   }
 }
@@ -88,7 +88,7 @@ function validateLocalLinks(file) {
   for (const rawTarget of localTargets(markdown)) {
     const target = resolveLocalTarget(file, rawTarget);
     if (target && !existsSync(target)) {
-      errors.push(`Broken local link in ${relative(projectRoot, file)}: ${rawTarget}`);
+      errors.push(`Broken local link in ${relative(applicationRoot, file)}: ${rawTarget}`);
     }
   }
 }
@@ -119,7 +119,7 @@ function resolveLocalTarget(sourceFile, rawTarget) {
       : resolve(dirname(sourceFile), decoded);
     return resolveTarget(target);
   } catch {
-    errors.push(`Invalid encoded local link in ${relative(projectRoot, sourceFile)}: ${rawTarget}`);
+    errors.push(`Invalid encoded local link in ${relative(applicationRoot, sourceFile)}: ${rawTarget}`);
     return null;
   }
 }

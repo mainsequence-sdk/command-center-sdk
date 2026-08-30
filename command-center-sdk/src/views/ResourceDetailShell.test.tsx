@@ -16,7 +16,7 @@ const summary: EntitySummaryModel = {
 };
 
 describe("ResourceDetailShell", () => {
-  it("renders Project-style primary and nested tabs from controlled definitions", () => {
+  it("renders resource-style primary and nested tabs from controlled definitions", () => {
     const html = renderToStaticMarkup(
       <ResourceDetailShell
         activeSubTabId="history"
@@ -53,11 +53,11 @@ describe("ResourceDetailShell", () => {
 
   it("uses the blocking transition shell for initial detail loading", () => {
     const html = renderToStaticMarkup(
-      <ResourceDetailShell loading loadingTitle="Loading project…" />,
+      <ResourceDetailShell loading loadingTitle="Loading service…" />,
     );
 
     expect(html).toContain("cc-resource-transition-shell");
-    expect(html).toContain("Loading project…");
+    expect(html).toContain("Loading service…");
     expect(html).not.toContain("cc-resource-detail-tabs");
   });
 });

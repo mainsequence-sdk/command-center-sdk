@@ -58,6 +58,10 @@ try {
     types: "./dist/layout/testing/index.d.ts",
     import: "./dist/layout/testing/index.js",
   });
+  assert.deepEqual(packageJson.exports["./feedback"], {
+    types: "./dist/feedback/index.d.ts",
+    import: "./dist/feedback/index.js",
+  });
   assert.deepEqual(packageJson.exports["./widget/built-ins/table"], {
     types: "./dist/widget/built-ins/table/table/index.d.ts",
     import: "./dist/widget/built-ins/table/table/index.js",
@@ -86,10 +90,15 @@ try {
     "code-repository-sync-api.mjs",
     "code-repository-sync-local-ops.mjs",
     "code-repository-sync.mjs",
-    "project-sdk-maintenance.mjs",
-    "project-docs.mjs",
+    "application-sdk-maintenance.mjs",
+    "application-docs.mjs",
     "sync-agent-skills.mjs",
   ].map((name) => readFile(join(extractedPackage, "cli", name), "utf8")));
+  await Promise.all(
+    ["project-sdk-maintenance.mjs", "project-docs.mjs"].map((name) =>
+      assert.rejects(readFile(join(extractedPackage, "cli", name), "utf8"), { code: "ENOENT" }),
+    ),
+  );
   const cliHelp = execFileSync(
     process.execPath,
     [join(extractedPackage, "cli", "command-center-sdk.mjs"), "--help"],
@@ -117,6 +126,15 @@ try {
   );
   assert.equal(typeof resourceModule.parseResourceDiscovery, "function");
   assert.equal(typeof resourceModule.serializeResourceIdentity, "function");
+  const packedWidgetIds = await readFile(
+    join(extractedPackage, "dist", "widget", "host", "widget-id.js"),
+    "utf8",
+  );
+  assert.match(
+    packedWidgetIds,
+    /MAIN_SEQUENCE_FOUNDRY_CODE_REPOSITORY_INFRA_GRAPH_WIDGET_ID\s*=\s*"main-sequence-foundry__code-repository-infra-graph"/u,
+  );
+  assert.doesNotMatch(packedWidgetIds, /MAIN_SEQUENCE_FOUNDRY_PROJECT_INFRA_GRAPH_WIDGET_ID/u);
   await Promise.all([
     "index.js",
     "index.d.ts",
@@ -135,10 +153,17 @@ try {
     "index.js",
     "index.d.ts",
   ].map((name) => readFile(join(extractedPackage, "dist", "layout", "testing", name), "utf8")));
+  await Promise.all([
+    "index.js",
+    "index.d.ts",
+    "components.js",
+    "components.d.ts",
+  ].map((name) => readFile(join(extractedPackage, "dist", "feedback", name), "utf8")));
   const docsIndex = await readFile(join(extractedPackage, "docs", "README.md"), "utf8");
   assert.match(docsIndex, /build-command-center-application/u);
   await Promise.all([
     "backend-contracts.md",
+    "application-feedback.md",
     "application-layout.md",
     "application-documentation.md",
     "getting-started.md",
@@ -190,6 +215,8 @@ try {
   );
   const docsInitPayload = JSON.parse(docsInit);
   assert.equal(docsInitPayload.docsBaseUrl, "/docs/");
+  assert.equal(docsInitPayload.applicationRoot, await realpath(documentationConsumerRoot));
+  assert.equal("projectRoot" in docsInitPayload, false);
   assert.match(
     await readFile(join(documentationConsumerRoot, "documentation", "docusaurus.config.mjs"), "utf8"),
     /baseUrl: "\/docs\/"/u,
@@ -280,7 +307,7 @@ try {
     (await readdir(managedRoot, { withFileTypes: true })).filter(
       (entry) => entry.isDirectory() && !entry.name.startsWith("."),
     ).length,
-    10,
+    11,
   );
   const documentationSkillRoot = join(
     managedRoot,
@@ -293,12 +320,16 @@ try {
   );
   await readFile(join(documentationSkillRoot, "agents", "openai.yaml"), "utf8");
   await readFile(
-    join(documentationSkillRoot, "assets", "project", "scripts", "validate-docs.mjs"),
+    join(documentationSkillRoot, "assets", "application", "scripts", "validate-docs.mjs"),
     "utf8",
   );
   await readFile(
-    join(documentationSkillRoot, "assets", "project", "documentation", "docusaurus.config.mjs"),
+    join(documentationSkillRoot, "assets", "application", "documentation", "docusaurus.config.mjs"),
     "utf8",
+  );
+  await assert.rejects(
+    readFile(join(documentationSkillRoot, "assets", "project", "scripts", "validate-docs.mjs"), "utf8"),
+    { code: "ENOENT" },
   );
   const layoutSkill = await readFile(
     join(managedRoot, "layout", "compose-command-center-page", "SKILL.md"),
@@ -310,19 +341,29 @@ try {
     join(managedRoot, "layout", "compose-command-center-page", "agents", "openai.yaml"),
     "utf8",
   );
+  const feedbackSkill = await readFile(
+    join(managedRoot, "feedback", "build-application-loading-flow", "SKILL.md"),
+    "utf8",
+  );
+  assert.match(feedbackSkill, /@dev-mainsequence\/command-center-sdk\/feedback/u);
+  assert.match(feedbackSkill, /ApplicationStatusScreen/u);
+  await readFile(
+    join(managedRoot, "feedback", "build-application-loading-flow", "agents", "openai.yaml"),
+    "utf8",
+  );
   await readFile(
     join(managedRoot, "general", "use-command-center-sdk", "agents", "openai.yaml"),
     "utf8",
   );
-  const maintainProjectSkill = await readFile(
+  const maintainCodeRepositorySkill = await readFile(
     join(managedRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
     "utf8",
   );
-  assert.match(maintainProjectSkill, /backend-owned tag|backend-returned annotated tag/iu);
-  assert.match(maintainProjectSkill, /exact backend tag ref|exact tag ref/iu);
-  assert.match(maintainProjectSkill, /--atomic --follow-tags/iu);
-  assert.match(maintainProjectSkill, /canonical[^.]*origin[^.]*branch[^.]*HEAD/isu);
-  assert.match(maintainProjectSkill, /Do not add or restore superseded caller-supplied repository/u);
+  assert.match(maintainCodeRepositorySkill, /backend-owned tag|backend-returned annotated tag/iu);
+  assert.match(maintainCodeRepositorySkill, /exact backend tag ref|exact tag ref/iu);
+  assert.match(maintainCodeRepositorySkill, /--atomic --follow-tags/iu);
+  assert.match(maintainCodeRepositorySkill, /canonical[^.]*origin[^.]*branch[^.]*HEAD/isu);
+  assert.match(maintainCodeRepositorySkill, /Do not add or restore superseded caller-supplied repository/u);
   assert.match(
     await readFile(
       join(managedRoot, "general", "use-command-center-sdk", "SKILL.md"),

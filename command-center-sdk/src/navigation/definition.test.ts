@@ -14,7 +14,7 @@ describe("navigation definitions", () => {
       id: "foundry",
       label: "Foundry",
       order: 20,
-      defaultDestinationId: "projects",
+      defaultDestinationId: "services",
       subApplications: [
         {
           id: "develop",
@@ -22,7 +22,7 @@ describe("navigation definitions", () => {
           order: 20,
           destinations: [
             { id: "clusters", label: "Clusters", order: 20 },
-            { id: "projects", label: "Projects", order: 10 },
+            { id: "services", label: "Services", order: 10 },
           ],
         },
       ],
@@ -57,7 +57,7 @@ describe("navigation definitions", () => {
       "develop",
     ]);
     expect(result[1]?.subApplications[1]?.destinations.map((item) => item.id)).toEqual([
-      "projects",
+      "services",
       "clusters",
     ]);
     expect(findNavigationDestination(result[1]!, "sources")?.subApplication.id)
@@ -72,12 +72,12 @@ describe("navigation definitions", () => {
         {
           id: "develop",
           label: "Develop",
-          destinations: [{ id: "projects", label: "Projects" }],
+          destinations: [{ id: "services", label: "Services" }],
         },
         {
           id: "ship",
           label: "Ship",
-          destinations: [{ id: "projects", label: "Projects" }],
+          destinations: [{ id: "services", label: "Services" }],
         },
       ],
     })).toThrow(NavigationDefinitionError);
@@ -93,5 +93,24 @@ describe("navigation definitions", () => {
         destinations: [],
       },
     }])).toThrow(/targets unknown application missing/u);
+  });
+
+  it("rejects blank application and destination hrefs", () => {
+    expect(() => defineNavigationApplication({
+      id: "foundry",
+      label: "Foundry",
+      href: "   ",
+      subApplications: [],
+    })).toThrow(/application foundry href must be non-empty/u);
+
+    expect(() => defineNavigationApplication({
+      id: "foundry",
+      label: "Foundry",
+      subApplications: [{
+        id: "build",
+        label: "Build",
+        destinations: [{ id: "services", label: "Services", href: "" }],
+      }],
+    })).toThrow(/destination services href must be non-empty/u);
   });
 });

@@ -1,6 +1,6 @@
 ---
 name: integrate-static-site-iframe
-description: Build, migrate, review, or secure a project-owned static-site application embedded in Command Center with @dev-mainsequence/command-center-sdk/embed or /embed/react. Use for the mainsequence.* version-one handshake, StaticSiteIframe hosts, createStaticSiteIframeClient children, delegated FastAPI release calls, parent-origin configuration, theme propagation, public user UID context, iframe sandboxing, CSP, or static-site embed lifecycle and tests.
+description: Build, migrate, review, or secure an application-owned static site embedded in Command Center with @dev-mainsequence/command-center-sdk/embed or /embed/react. Use for the mainsequence.* version-one handshake, StaticSiteIframe hosts, createStaticSiteIframeClient children, delegated FastAPI release calls, parent-origin configuration, theme propagation, public user UID context, iframe sandboxing, CSP, or static-site embed lifecycle and tests.
 ---
 
 # Integrate A Static-Site Iframe
@@ -10,7 +10,7 @@ description: Build, migrate, review, or secure a project-owned static-site appli
 Inspect the installed `/embed`, `/embed/react`, and `/theme` declarations and the iframe module
 README before changing an integration. Use only APIs published by that installed SDK version.
 
-Use this skill for project-owned static sites that exchange `mainsequence.*`, numeric version-one
+Use this skill for application-owned static sites that exchange `mainsequence.*`, numeric version-one
 `ready` and `initialize` messages. Use `$embed-command-center-app` instead for external widgets on
 the separate `command-center-iframe@v1` props/inputs/outputs protocol. Never translate between the
 two contracts.
@@ -37,7 +37,7 @@ other backends still require their own application-defined authentication.
 
 ### Call a FastAPI release
 
-When an embedded project needs a FastAPI release, use the client's high-level request method. The
+When an embedded application needs a FastAPI release, use the client's high-level request method. The
 SDK obtains, reuses, refreshes, and clears the short-lived delegated credential internally:
 
 ```ts
@@ -51,7 +51,7 @@ const response = await client.fetchFastApi(
 ```
 
 Pass a relative path only. The SDK uses the backend-issued RPC URL and adds the delegated bearer
-credential plus canonical `X-Resource-Release-UID` header. Normal project code must not call
+credential plus canonical `X-Resource-Release-UID` header. Normal application code must not call
 `requestFastApiCredential`, construct authorization headers, decode a token, call the platform
 exchange endpoint, or persist/log credential material. That lower-level method exists only for an
 advanced transport that cannot use `fetchFastApi` and accepts responsibility for containing the

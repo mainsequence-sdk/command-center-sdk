@@ -37,7 +37,7 @@ const templateRoot = join(
   "documentation",
   "document-command-center-application",
   "assets",
-  "project",
+  "application",
 );
 const ignoredDirectories = new Set([".git", "node_modules"]);
 const generatedTemplateMarkers = new Map([
@@ -51,30 +51,30 @@ const generatedTemplateMarkers = new Map([
   ],
 ]);
 
-export class ProjectDocsInitError extends Error {
-  constructor(message, { stage = "project-docs-init", projectRoot = null, cause } = {}) {
+export class ApplicationDocsInitError extends Error {
+  constructor(message, { stage = "application-docs-init", applicationRoot = null, cause } = {}) {
     super(message, { cause });
-    this.name = "ProjectDocsInitError";
+    this.name = "ApplicationDocsInitError";
     this.stage = stage;
-    this.projectRoot = projectRoot;
+    this.applicationRoot = applicationRoot;
   }
 
   toJSON() {
     return {
       error: this.message,
       stage: this.stage,
-      projectRoot: this.projectRoot,
+      applicationRoot: this.applicationRoot,
     };
   }
 }
 
-function parsePinnedMajor(value, label, projectRoot) {
+function parsePinnedMajor(value, label, applicationRoot) {
   const normalized = String(value || "").trim().replace(/^v/u, "");
   const match = normalized.match(/^(\d+)(?:\.x)?$/u);
   if (!match) {
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       `${label} must select one Node.js major such as 24 or 24.x; found ${JSON.stringify(normalized)}.`,
-      { stage: "toolchain-preflight", projectRoot },
+      { stage: "toolchain-preflight", applicationRoot },
     );
   }
   return Number(match[1]);
@@ -99,13 +99,13 @@ async function pathExists(path) {
   }
 }
 
-async function assertSafeProjectPath(projectRoot, target, stage) {
-  const relativePath = relative(projectRoot, target);
+async function assertSafeApplicationPath(applicationRoot, target, stage) {
+  const relativePath = relative(applicationRoot, target);
   if (!relativePath || relativePath === ".." || relativePath.startsWith(`..${sep}`)) {
-    throw new ProjectDocsInitError(`Unsafe project path: ${target}`, { stage, projectRoot });
+    throw new ApplicationDocsInitError(`Unsafe application path: ${target}`, { stage, applicationRoot });
   }
   const segments = relativePath.split(sep);
-  let current = projectRoot;
+  let current = applicationRoot;
   for (let index = 0; index < segments.length; index += 1) {
     current = join(current, segments[index]);
     let state;
@@ -116,127 +116,127 @@ async function assertSafeProjectPath(projectRoot, target, stage) {
       throw error;
     }
     if (state.isSymbolicLink()) {
-      throw new ProjectDocsInitError(`Refusing to use a symbolic link during initialization: ${current}`, {
+      throw new ApplicationDocsInitError(`Refusing to use a symbolic link during initialization: ${current}`, {
         stage,
-        projectRoot,
+        applicationRoot,
       });
     }
     if (index < segments.length - 1 && !state.isDirectory()) {
-      throw new ProjectDocsInitError(`Project path component is not a directory: ${current}`, {
+      throw new ApplicationDocsInitError(`Application path component is not a directory: ${current}`, {
         stage,
-        projectRoot,
+        applicationRoot,
       });
     }
   }
 }
 
-async function resolveProjectRoot(projectDir) {
-  const target = resolve(projectDir);
+async function resolveApplicationRoot(applicationDir) {
+  const target = resolve(applicationDir);
   let targetState;
   try {
     targetState = await stat(target);
   } catch (error) {
-    throw new ProjectDocsInitError(`Project directory does not exist: ${target}`, {
-      stage: "project-root-preflight",
-      projectRoot: target,
+    throw new ApplicationDocsInitError(`Application directory does not exist: ${target}`, {
+      stage: "application-root-preflight",
+      applicationRoot: target,
       cause: error,
     });
   }
   if (!targetState.isDirectory()) {
-    throw new ProjectDocsInitError(`Project path is not a directory: ${target}`, {
-      stage: "project-root-preflight",
-      projectRoot: target,
+    throw new ApplicationDocsInitError(`Application path is not a directory: ${target}`, {
+      stage: "application-root-preflight",
+      applicationRoot: target,
     });
   }
   return realpath(target);
 }
 
-async function readManifest(projectRoot) {
-  const path = join(projectRoot, "package.json");
-  await assertSafeProjectPath(projectRoot, path, "project-manifest-preflight");
+async function readManifest(applicationRoot) {
+  const path = join(applicationRoot, "package.json");
+  await assertSafeApplicationPath(applicationRoot, path, "application-manifest-preflight");
   let source;
   try {
     source = await readFile(path, "utf8");
   } catch (error) {
-    throw new ProjectDocsInitError(`Project root must contain package.json: ${projectRoot}`, {
-      stage: "project-manifest-preflight",
-      projectRoot,
+    throw new ApplicationDocsInitError(`Application root must contain package.json: ${applicationRoot}`, {
+      stage: "application-manifest-preflight",
+      applicationRoot,
       cause: error,
     });
   }
   try {
     return { manifest: JSON.parse(source), path, source };
   } catch (error) {
-    throw new ProjectDocsInitError(`Project package.json is not valid JSON: ${error.message}`, {
-      stage: "project-manifest-preflight",
-      projectRoot,
+    throw new ApplicationDocsInitError(`Application package.json is not valid JSON: ${error.message}`, {
+      stage: "application-manifest-preflight",
+      applicationRoot,
       cause: error,
     });
   }
 }
 
-async function assertNpmProject(projectRoot) {
-  const requiredLock = join(projectRoot, "package-lock.json");
-  await assertSafeProjectPath(projectRoot, requiredLock, "package-manager-preflight");
+async function assertNpmApplication(applicationRoot) {
+  const requiredLock = join(applicationRoot, "package-lock.json");
+  await assertSafeApplicationPath(applicationRoot, requiredLock, "package-manager-preflight");
   try {
     const state = await stat(requiredLock);
     if (!state.isFile()) throw new Error("not a regular file");
   } catch (error) {
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       "Documented Command Center applications require a root package-lock.json.",
-      { stage: "package-manager-preflight", projectRoot, cause: error },
+      { stage: "package-manager-preflight", applicationRoot, cause: error },
     );
   }
   for (const name of ["yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb"]) {
-    if (await pathExists(join(projectRoot, name))) {
-      throw new ProjectDocsInitError(
+    if (await pathExists(join(applicationRoot, name))) {
+      throw new ApplicationDocsInitError(
         `Remove the conflicting root package-manager lockfile before initialization: ${name}`,
-        { stage: "package-manager-preflight", projectRoot },
+        { stage: "package-manager-preflight", applicationRoot },
       );
     }
   }
 }
 
-async function prepareToolchain(projectRoot, manifest) {
+async function prepareToolchain(applicationRoot, manifest) {
   const pins = [];
   for (const name of [".node-version", ".nvmrc"]) {
-    const pinPath = join(projectRoot, name);
-    await assertSafeProjectPath(projectRoot, pinPath, "toolchain-preflight");
+    const pinPath = join(applicationRoot, name);
+    await assertSafeApplicationPath(applicationRoot, pinPath, "toolchain-preflight");
     const source = await optionalFile(pinPath);
-    if (source !== null) pins.push({ name, major: parsePinnedMajor(source, name, projectRoot) });
+    if (source !== null) pins.push({ name, major: parsePinnedMajor(source, name, applicationRoot) });
   }
   const engineValue = manifest?.engines?.node;
   const engineMajor = engineValue
-    ? parsePinnedMajor(engineValue, "package.json engines.node", projectRoot)
+    ? parsePinnedMajor(engineValue, "package.json engines.node", applicationRoot)
     : null;
   const declaredMajors = new Set([
     ...pins.map(({ major }) => major),
     ...(engineMajor === null ? [] : [engineMajor]),
   ]);
   if (declaredMajors.size > 1) {
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       `Node.js declarations disagree: ${[...declaredMajors].join(", ")}.`,
-      { stage: "toolchain-preflight", projectRoot },
+      { stage: "toolchain-preflight", applicationRoot },
     );
   }
   const runningMajor = Number(process.versions.node.split(".")[0]);
   const expectedMajor = [...declaredMajors][0] ?? runningMajor;
   if (expectedMajor < 20 || expectedMajor % 2 !== 0) {
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       `Documentation tooling requires an even-numbered Node.js LTS major at or above 20; found ${expectedMajor}.`,
-      { stage: "toolchain-preflight", projectRoot },
+      { stage: "toolchain-preflight", applicationRoot },
     );
   }
   if (runningMajor !== expectedMajor) {
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       `Run this command with Node.js ${expectedMajor}; the current runtime is ${process.versions.node}.`,
-      { stage: "toolchain-preflight", projectRoot },
+      { stage: "toolchain-preflight", applicationRoot },
     );
   }
   if (manifest.packageManager && !String(manifest.packageManager).startsWith("npm@")) {
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       `package.json packageManager must select npm when package-lock.json is authoritative; found ${manifest.packageManager}.`,
-      { stage: "package-manager-preflight", projectRoot },
+      { stage: "package-manager-preflight", applicationRoot },
     );
   }
   return {
@@ -252,7 +252,7 @@ async function listTemplateFiles(directory = templateRoot) {
     if (ignoredDirectories.has(entry.name)) continue;
     const path = join(directory, entry.name);
     if (entry.isSymbolicLink()) {
-      throw new ProjectDocsInitError(`Documentation template may not contain symbolic links: ${path}`, {
+      throw new ApplicationDocsInitError(`Documentation template may not contain symbolic links: ${path}`, {
         stage: "template-preflight",
       });
     }
@@ -265,30 +265,30 @@ async function listTemplateFiles(directory = templateRoot) {
 function ensureManifestSlot(manifest, key) {
   if (manifest[key] === undefined) manifest[key] = {};
   if (!manifest[key] || typeof manifest[key] !== "object" || Array.isArray(manifest[key])) {
-    throw new ProjectDocsInitError(`package.json ${key} must be an object.`, {
-      stage: "project-manifest-preflight",
+    throw new ApplicationDocsInitError(`package.json ${key} must be an object.`, {
+      stage: "application-manifest-preflight",
     });
   }
   return manifest[key];
 }
 
-function setExactValue(target, key, value, label, projectRoot) {
+function setExactValue(target, key, value, label, applicationRoot) {
   if (target[key] !== undefined && target[key] !== value) {
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       `${label}.${key} already exists with a different value; preserve it and integrate documentation deliberately.`,
-      { stage: "project-manifest-preflight", projectRoot },
+      { stage: "application-manifest-preflight", applicationRoot },
     );
   }
   target[key] = value;
 }
 
-function prepareManifest(original, toolchain, projectRoot) {
+function prepareManifest(original, toolchain, applicationRoot) {
   const manifest = structuredClone(original);
   const scripts = ensureManifestSlot(manifest, "scripts");
   if (typeof scripts.build !== "string" || !scripts.build.trim()) {
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       "package.json must declare the application build script before documentation is initialized.",
-      { stage: "project-manifest-preflight", projectRoot },
+      { stage: "application-manifest-preflight", applicationRoot },
     );
   }
   if (scripts.build !== COMBINED_BUILD_SCRIPT) {
@@ -296,25 +296,25 @@ function prepareManifest(original, toolchain, projectRoot) {
     scripts.build = COMBINED_BUILD_SCRIPT;
   }
   if (typeof scripts["build:app"] !== "string" || !scripts["build:app"].trim()) {
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       "package.json must retain a non-empty build:app script for the application artifact.",
-      { stage: "project-manifest-preflight", projectRoot },
+      { stage: "application-manifest-preflight", applicationRoot },
     );
   }
   for (const [name, value] of Object.entries(DOCUMENTATION_SCRIPTS)) {
-    setExactValue(scripts, name, value, "scripts", projectRoot);
+    setExactValue(scripts, name, value, "scripts", applicationRoot);
   }
   const dependencies = ensureManifestSlot(manifest, "devDependencies");
   for (const [name, value] of Object.entries(DOCUMENTATION_DEV_DEPENDENCIES)) {
     for (const section of ["dependencies", "optionalDependencies", "peerDependencies"]) {
       if (manifest?.[section]?.[name] !== undefined) {
-        throw new ProjectDocsInitError(
+        throw new ApplicationDocsInitError(
           `${name} is already declared in ${section}; documentation tooling must live in devDependencies.`,
-          { stage: "project-manifest-preflight", projectRoot },
+          { stage: "application-manifest-preflight", applicationRoot },
         );
       }
     }
-    setExactValue(dependencies, name, value, "devDependencies", projectRoot);
+    setExactValue(dependencies, name, value, "devDependencies", applicationRoot);
   }
   if (toolchain.addEngine) {
     const engines = ensureManifestSlot(manifest, "engines");
@@ -323,7 +323,7 @@ function prepareManifest(original, toolchain, projectRoot) {
   return manifest;
 }
 
-async function prepareFileWrites(projectRoot, templateFiles) {
+async function prepareFileWrites(applicationRoot, templateFiles) {
   const writes = [];
   const unchanged = [];
   const scaffoldPackageRelativePath = "documentation/package.json";
@@ -333,14 +333,14 @@ async function prepareFileWrites(projectRoot, templateFiles) {
   const scaffoldPackageContent = scaffoldPackageSource
     ? await readFile(scaffoldPackageSource, "utf8")
     : null;
-  await assertSafeProjectPath(
-    projectRoot,
-    join(projectRoot, scaffoldPackageRelativePath),
+  await assertSafeApplicationPath(
+    applicationRoot,
+    join(applicationRoot, scaffoldPackageRelativePath),
     "template-preflight",
   );
   const scaffoldManaged =
     scaffoldPackageContent !== null &&
-    (await optionalFile(join(projectRoot, scaffoldPackageRelativePath))) === scaffoldPackageContent;
+    (await optionalFile(join(applicationRoot, scaffoldPackageRelativePath))) === scaffoldPackageContent;
   for (const source of templateFiles) {
     const relativePath = relative(templateRoot, source);
     if (
@@ -348,13 +348,13 @@ async function prepareFileWrites(projectRoot, templateFiles) {
       relativePath === ".." ||
       relativePath.startsWith(`..${sep}`)
     ) {
-      throw new ProjectDocsInitError(`Unsafe documentation template path: ${source}`, {
+      throw new ApplicationDocsInitError(`Unsafe documentation template path: ${source}`, {
         stage: "template-preflight",
-        projectRoot,
+        applicationRoot,
       });
     }
-    const destination = join(projectRoot, relativePath);
-    await assertSafeProjectPath(projectRoot, destination, "template-preflight");
+    const destination = join(applicationRoot, relativePath);
+    await assertSafeApplicationPath(applicationRoot, destination, "template-preflight");
     const content = await readFile(source, "utf8");
     const existing = await optionalFile(destination);
     if (existing === null) writes.push({ destination, relativePath, content });
@@ -370,18 +370,18 @@ async function prepareFileWrites(projectRoot, templateFiles) {
     ) {
       unchanged.push(relativePath);
     } else {
-      throw new ProjectDocsInitError(
+      throw new ApplicationDocsInitError(
         `Refusing to overwrite existing documentation file: ${relativePath}`,
-        { stage: "template-conflict", projectRoot },
+        { stage: "template-conflict", applicationRoot },
       );
     }
   }
   return { writes, unchanged };
 }
 
-async function prepareGitignore(projectRoot) {
-  const path = join(projectRoot, ".gitignore");
-  await assertSafeProjectPath(projectRoot, path, "template-preflight");
+async function prepareGitignore(applicationRoot) {
+  const path = join(applicationRoot, ".gitignore");
+  await assertSafeApplicationPath(applicationRoot, path, "template-preflight");
   const existing = (await optionalFile(path)) ?? "";
   const additions = ["documentation/.docusaurus/", "dist/"];
   const lines = new Set(existing.split(/\r?\n/u).map((line) => line.trim()));
@@ -395,50 +395,50 @@ async function writePreparedFile({ destination, content }) {
   await mkdir(dirname(destination), { recursive: true });
   const parent = await lstat(dirname(destination));
   if (parent.isSymbolicLink()) {
-    throw new ProjectDocsInitError(`Refusing to write through a symbolic-link directory: ${dirname(destination)}`, {
+    throw new ApplicationDocsInitError(`Refusing to write through a symbolic-link directory: ${dirname(destination)}`, {
       stage: "template-write",
     });
   }
   await writeFile(destination, content, "utf8");
 }
 
-function installDependencies(projectRoot, { quiet, spawnSyncImpl, processEnv }) {
+function installDependencies(applicationRoot, { quiet, spawnSyncImpl, processEnv }) {
   const result = spawnSyncImpl("npm", ["install"], {
-    cwd: projectRoot,
+    cwd: applicationRoot,
     encoding: "utf8",
     stdio: quiet ? "pipe" : "inherit",
     env: { ...processEnv, COMMAND_CENTER_SDK_MCP_POSTINSTALL: "0" },
   });
   if (result.error || result.status !== 0) {
     const detail = String(result.stderr || result.stdout || result.error?.message || "").trim();
-    throw new ProjectDocsInitError(
+    throw new ApplicationDocsInitError(
       `Documentation files were created, but npm install failed${detail ? `: ${detail.slice(0, 1_000)}` : "."}`,
-      { stage: "dependency-install", projectRoot, cause: result.error },
+      { stage: "dependency-install", applicationRoot, cause: result.error },
     );
   }
 }
 
-export async function initializeProjectDocumentation({
-  projectDir = process.cwd(),
+export async function initializeApplicationDocumentation({
+  applicationDir = process.cwd(),
   dryRun = false,
   install = true,
   quiet = false,
   spawnSyncImpl = spawnSync,
   processEnv = process.env,
 } = {}) {
-  const projectRoot = await resolveProjectRoot(projectDir);
-  await assertNpmProject(projectRoot);
-  const { manifest: originalManifest, path: packageJsonPath } = await readManifest(projectRoot);
-  const toolchain = await prepareToolchain(projectRoot, originalManifest);
-  const manifest = prepareManifest(originalManifest, toolchain, projectRoot);
+  const applicationRoot = await resolveApplicationRoot(applicationDir);
+  await assertNpmApplication(applicationRoot);
+  const { manifest: originalManifest, path: packageJsonPath } = await readManifest(applicationRoot);
+  const toolchain = await prepareToolchain(applicationRoot, originalManifest);
+  const manifest = prepareManifest(originalManifest, toolchain, applicationRoot);
   const templateFiles = await listTemplateFiles();
-  const preparedFiles = await prepareFileWrites(projectRoot, templateFiles);
-  const gitignore = await prepareGitignore(projectRoot);
+  const preparedFiles = await prepareFileWrites(applicationRoot, templateFiles);
+  const gitignore = await prepareGitignore(applicationRoot);
   const packageContent = `${JSON.stringify(manifest, null, 2)}\n`;
   const existingPackageContent = await readFile(packageJsonPath, "utf8");
   const packageChanged = existingPackageContent !== packageContent;
-  const nodeVersionPath = join(projectRoot, ".node-version");
-  await assertSafeProjectPath(projectRoot, nodeVersionPath, "toolchain-preflight");
+  const nodeVersionPath = join(applicationRoot, ".node-version");
+  await assertSafeApplicationPath(applicationRoot, nodeVersionPath, "toolchain-preflight");
   const nodeVersionWrite = toolchain.createNodeVersion
     ? { destination: nodeVersionPath, relativePath: ".node-version", content: `${toolchain.expectedMajor}\n` }
     : null;
@@ -457,11 +457,11 @@ export async function initializeProjectDocumentation({
     if (nodeVersionWrite) await writePreparedFile(nodeVersionWrite);
     if (packageChanged) await writeFile(packageJsonPath, packageContent, "utf8");
     if (gitignore.changed) await writeFile(gitignore.path, gitignore.content, "utf8");
-    if (install) installDependencies(projectRoot, { quiet, spawnSyncImpl, processEnv });
+    if (install) installDependencies(applicationRoot, { quiet, spawnSyncImpl, processEnv });
   }
 
   return {
-    projectRoot,
+    applicationRoot,
     dryRun,
     installed: !dryRun && install,
     nodeMajor: toolchain.expectedMajor,
@@ -474,7 +474,7 @@ export async function initializeProjectDocumentation({
       ...(install ? [] : ["npm install"]),
       "npm run docs:check",
       "npm run build",
-      "run the project's production-artifact browser suite for /docs/ and a nested route",
+      "run the application's production-artifact browser suite for /docs/ and a nested route",
     ],
   };
 }

@@ -1,11 +1,11 @@
 ---
 name: embed-command-center-app
-description: Build, review, or secure an external widget integration with the generic command-center-iframe@v1 APIs in @dev-mainsequence/command-center-sdk/embed or /embed/react. Use for SandboxedIframeWidget hosts, createIframeBridgeEmbed clients, widget props, inputs and outputs, theme tokens, locale, user state, sizing, scoped capability tokens, lifecycle teardown, or external-widget iframe threat modeling. Use integrate-static-site-iframe instead for project-owned mainsequence.* ready/initialize static sites.
+description: Build, review, or secure an external widget integration with the generic command-center-iframe@v1 APIs in @dev-mainsequence/command-center-sdk/embed or /embed/react. Use for SandboxedIframeWidget hosts, createIframeBridgeEmbed clients, widget props, inputs and outputs, theme tokens, locale, user state, sizing, scoped capability tokens, lifecycle teardown, or external-widget iframe threat modeling. Use integrate-static-site-iframe instead for application-owned mainsequence.* ready/initialize static sites.
 ---
 
 # Embed A Command Center Application
 
-This skill covers the generic external-widget protocol. Route project-owned static sites that
+This skill covers the generic external-widget protocol. Route application-owned static sites that
 receive theme mode, theme ID, and public user UID through `$integrate-static-site-iframe` instead.
 
 ## Read The Protocol And Threat Boundary

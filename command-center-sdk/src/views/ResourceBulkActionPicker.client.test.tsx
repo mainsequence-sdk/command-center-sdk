@@ -29,7 +29,7 @@ describe("ResourceBulkActionPicker", () => {
         <ResourceBulkActionPicker
           actions={[{
             id: "delete",
-            label: "Delete projects",
+            label: "Delete services",
             tone: "danger",
             onSelect: onDelete,
           }]}
@@ -41,14 +41,14 @@ describe("ResourceBulkActionPicker", () => {
       'button[aria-haspopup="menu"]',
     );
     expect(trigger?.textContent).toContain("Actions");
-    expect(container.textContent).not.toContain("Delete projects");
+    expect(container.textContent).not.toContain("Delete services");
 
     await act(async () => trigger!.click());
     const menu = document.body.querySelector('[role="menu"]');
     expect(menu?.parentElement?.parentElement).toBe(document.body);
     expect(menu?.parentElement?.getAttribute("data-resource-picker-popup")).toBe("action");
     const action = menu?.querySelector<HTMLButtonElement>('[role="menuitem"]');
-    expect(action?.textContent).toBe("Delete projects");
+    expect(action?.textContent).toBe("Delete services");
 
     await act(async () => action!.click());
     expect(onDelete).toHaveBeenCalledOnce();

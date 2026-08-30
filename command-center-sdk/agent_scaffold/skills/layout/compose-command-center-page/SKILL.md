@@ -83,7 +83,9 @@ Do the same for a widget or workspace renderer whose public documentation says i
 
 Keep domain-specific charts, forms, split panes, maps, editors, and canvases application-owned.
 The layout primitives do not own routing, authentication, permissions, persistence, API transport,
-notifications, or product actions.
+notifications, or product actions. Route application-level staged loading, retry, and failure
+presentation to `$build-application-loading-flow`; the application still owns the underlying
+policy.
 
 ## Verify Final Browser Geometry
 

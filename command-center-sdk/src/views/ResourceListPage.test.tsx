@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ResourceApplicationDefinition } from "../resource/types.js";
 import { ResourceListPage, type ResourcePrimaryAction } from "./ResourceListPage.js";
 
-type Project = { name: string; uid: string };
+type Service = { name: string; uid: string };
 
 const pageInfo = {
   pageIndex: 0,
@@ -14,19 +14,19 @@ const pageInfo = {
   hasPreviousPage: false,
 };
 
-const definition: ResourceApplicationDefinition<Project, string> = {
-  id: "projects",
-  label: "Projects",
-  description: "Reusable project registry",
-  getId: (project) => project.uid,
+const definition: ResourceApplicationDefinition<Service, string> = {
+  id: "services",
+  label: "Services",
+  description: "Reusable service registry",
+  getId: (service) => service.uid,
   adapter: {
-    list: async () => ({ items: [{ name: "Alpha", uid: "project-1" }], pageInfo }),
+    list: async () => ({ items: [{ name: "Alpha", uid: "service-1" }], pageInfo }),
   },
   columns: [
     {
       id: "name",
       header: "Name",
-      getValue: (project) => project.name,
+      getValue: (service) => service.name,
       sortableKey: "name",
     },
   ],
@@ -36,7 +36,7 @@ function render(primaryActions: readonly ResourcePrimaryAction[]) {
   return renderToStaticMarkup(
     <ResourceListPage
       definition={definition}
-      initialResult={{ items: [{ name: "Alpha", uid: "project-1" }], pageInfo }}
+      initialResult={{ items: [{ name: "Alpha", uid: "service-1" }], pageInfo }}
       primaryActions={primaryActions}
     />,
   );
@@ -45,20 +45,20 @@ function render(primaryActions: readonly ResourcePrimaryAction[]) {
 describe("ResourceListPage", () => {
   it("renders zero, one, or multiple primary actions without changing the list shell", () => {
     const none = render([]);
-    const one = render([{ id: "create", label: "Create project", onSelect: () => undefined }]);
+    const one = render([{ id: "create", label: "Create service", onSelect: () => undefined }]);
     const multiple = render([
-      { id: "create", label: "Create project", onSelect: () => undefined },
+      { id: "create", label: "Create service", onSelect: () => undefined },
       { id: "import", label: "Import", onSelect: () => undefined },
     ]);
 
     for (const html of [none, one, multiple]) {
       expect(html).toContain("cc-resource-toolbar");
       expect(html).toContain("cc-data-table");
-      expect(html).toContain("Search projects");
+      expect(html).toContain("Search services");
     }
-    expect(none).not.toContain("Create project");
-    expect(one).toContain("Create project");
-    expect(multiple).toContain("Create project");
+    expect(none).not.toContain("Create service");
+    expect(one).toContain("Create service");
+    expect(multiple).toContain("Create service");
     expect(multiple).toContain("Import");
   });
 
@@ -68,15 +68,15 @@ describe("ResourceListPage", () => {
         definition={definition}
         filterControls={<span>Custom filter</span>}
         headerAccessory={<span>Header accessory</span>}
-        initialResult={{ items: [{ name: "Alpha", uid: "project-1" }], pageInfo }}
+        initialResult={{ items: [{ name: "Alpha", uid: "service-1" }], pageInfo }}
         toolbarLeading={<span>Leading accessory</span>}
         toolbarTrailing={<span>Trailing accessory</span>}
       />,
     );
 
     expect(html.indexOf("Header accessory")).toBeLessThan(html.indexOf("cc-resource-list-page__card"));
-    expect(html.indexOf("Leading accessory")).toBeLessThan(html.indexOf("Search projects"));
-    expect(html.indexOf("Search projects")).toBeLessThan(html.indexOf("Custom filter"));
+    expect(html.indexOf("Leading accessory")).toBeLessThan(html.indexOf("Search services"));
+    expect(html.indexOf("Search services")).toBeLessThan(html.indexOf("Custom filter"));
     expect(html.indexOf("Custom filter")).toBeLessThan(html.indexOf("Trailing accessory"));
     expect(html).not.toContain("renderToolbar");
   });
@@ -85,13 +85,13 @@ describe("ResourceListPage", () => {
     const html = renderToStaticMarkup(
       <ResourceListPage
         definition={definition}
-        initialResult={{ items: [{ name: "Alpha", uid: "project-1" }], pageInfo }}
+        initialResult={{ items: [{ name: "Alpha", uid: "service-1" }], pageInfo }}
         refreshable
       />,
     );
 
     expect(html).toContain(">Refresh</button>");
-    expect(html.indexOf("Search projects")).toBeLessThan(html.indexOf(">Refresh</button>"));
+    expect(html.indexOf("Search services")).toBeLessThan(html.indexOf(">Refresh</button>"));
   });
 
   it("renders standard select filters as accessible single-row toolbar controls", () => {
@@ -107,7 +107,7 @@ describe("ResourceListPage", () => {
             onChange: () => undefined,
           },
         ]}
-        initialResult={{ items: [{ name: "Alpha", uid: "project-1" }], pageInfo }}
+        initialResult={{ items: [{ name: "Alpha", uid: "service-1" }], pageInfo }}
       />,
     );
 
@@ -124,12 +124,12 @@ describe("ResourceListPage", () => {
       <ResourceListPage
         definition={definition}
         initialResult={{
-          items: [{ name: "Alpha", uid: "project-1" }],
+          items: [{ name: "Alpha", uid: "service-1" }],
           pageInfo,
           controls: {
-            search: { placeholder: "Search by code repository name or UID", fields: ["name", "uid"] },
+            search: { placeholder: "Search by service name or UID", fields: ["name", "uid"] },
             filters: [
-              { key: "code_repository_name__contains", label: "Code repository name", type: "text" },
+              { key: "service_name__contains", label: "Service name", type: "text" },
               { key: "archived", label: "Archived", type: "boolean" },
               { key: "labels__contains", label: "Label", type: "text" },
             ],
@@ -139,8 +139,8 @@ describe("ResourceListPage", () => {
       />,
     );
 
-    expect(html).toContain('placeholder="Search by code repository name or UID"');
-    expect(html).not.toContain('aria-label="Code repository name"');
+    expect(html).toContain('placeholder="Search by service name or UID"');
+    expect(html).not.toContain('aria-label="Service name"');
     expect(html).not.toContain('aria-label="Archived"');
     expect(html).not.toContain('aria-label="Label"');
     expect(html).not.toContain("cc-resource-toolbar__filters");
@@ -154,21 +154,21 @@ describe("ResourceListPage", () => {
           {
             id: "delete",
             label: "Delete selected",
-            endpoint: "/code-repositories/bulk-delete/",
+            endpoint: "/services/bulk-delete/",
             method: "POST",
             selection_modes: ["explicit"],
             options: [],
           },
         ]}
-        initialResult={{ items: [{ name: "Alpha", uid: "project-1" }], pageInfo }}
-        initialSelectedIds={["project-1"]}
-        primaryActions={[{ id: "create", label: "Create project", onSelect: () => undefined }]}
+        initialResult={{ items: [{ name: "Alpha", uid: "service-1" }], pageInfo }}
+        initialSelectedIds={["service-1"]}
+        primaryActions={[{ id: "create", label: "Create service", onSelect: () => undefined }]}
       />,
     );
 
-    expect(html).toContain("Create project");
+    expect(html).toContain("Create service");
     expect(html).toContain("Actions");
     expect(html).not.toContain("Delete selected");
-    expect(html.indexOf("Create project")).toBeLessThan(html.indexOf("Actions"));
+    expect(html.indexOf("Create service")).toBeLessThan(html.indexOf("Actions"));
   });
 });

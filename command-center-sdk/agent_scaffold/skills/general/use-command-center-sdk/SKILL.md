@@ -1,13 +1,13 @@
 ---
 name: use-command-center-sdk
-description: Set up, inspect, upgrade, or troubleshoot a TypeScript or React project that consumes @dev-mainsequence/command-center-sdk. Use when locating the installed SDK, choosing a published entrypoint, loading packaged styles, checking peer dependencies, or establishing the boundary between SDK contracts and consumer-owned behavior.
+description: Set up, inspect, upgrade, or troubleshoot a TypeScript or React application that consumes @dev-mainsequence/command-center-sdk. Use when locating the installed SDK, choosing a published entrypoint, loading packaged styles, checking peer dependencies, or establishing the boundary between SDK contracts and consumer-owned behavior.
 ---
 
 # Use Command Center SDK
 
-## Use The Repository-Root Project Layout
+## Use The Repository-Root Application Layout
 
-For a registered Main Sequence Vite project, treat the Git repository root as the application
+For a registered Main Sequence Vite application, treat the Git repository root as the application
 root. Keep `package.json`, `package-lock.json`, `.env`, `.agents/`, `src/`, and `vite.config.*`
 there, and expect the production build under `dist/`. Do not create or discover a nested
 `frontend/` application.
@@ -23,7 +23,7 @@ there, and expect the production build under `dist/`. Do not create or discover 
 Treat the installed version as authoritative. Do not assume that a capability described by a plan,
 ADR, older checkout, or another application exists in the installed SDK.
 
-## Inspect And Update The Project SDK
+## Inspect And Update The Application SDK
 
 From the Git repository root, inspect the dependency without changing it:
 
@@ -67,7 +67,7 @@ Use `--dry-run` before writing and `--json` for machine-readable evidence. Resol
 `MAINSEQUENCE_ACCESS_TOKEN` in the process environment and never put it in a command argument.
 Inspect `.agents/skills/command-center/PINNED_FROM.txt` for the package version and
 `.agents/skills/mainsequence/MCP_PINNED_FROM.txt` for the backend manifest. The installer owns only
-the recorded paths in each namespace and preserves unrelated project guidance.
+the recorded paths in each namespace and preserves unrelated application-owned guidance.
 
 ## Choose Public Entrypoints
 
@@ -75,6 +75,8 @@ the recorded paths in each namespace and preserves unrelated project guidance.
 - Use `/layout` for complete page, header, stack, card, and card-grid composition. Use
   `/layout/testing` for real-browser geometry verification, and route the workflow to
   `$compose-command-center-page`.
+- Use `/feedback` for controlled application status, ordered progress stages, and activity
+  indicators. Route startup and reconnection feedback to `$build-application-loading-flow`.
 - Use `/resource` for framework-neutral resource definitions and adapters.
 - Use `/resource/react` for resource selection state.
 - Use `/views` for React resource lists, details, pickers, and supporting compositions.
@@ -88,7 +90,7 @@ the recorded paths in each namespace and preserves unrelated project guidance.
 - Use `/workspace` for workspace documents and `/workspace/react` for read-only rendering.
 - Use `/theme`, `/theme/presets`, and `/theme/data-viz` for theme behavior.
 - Use `/embed` and `/embed/react` for both deliberately separate iframe protocols: generic external
-  widgets use `command-center-iframe@v1`; project-owned static sites use the numeric v1
+  widgets use `command-center-iframe@v1`; application-owned static sites use the numeric v1
   `mainsequence.*` handshake. Static sites call an authorized FastAPI ResourceRelease through the
   client's high-level `fetchFastApi` method while the host injects `resolveFastApiCredential`.
   The child consumes `StaticSiteFastApiTransportState` through `onFastApiStateChange` or

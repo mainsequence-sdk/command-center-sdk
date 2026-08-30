@@ -2,16 +2,16 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
 
-const projectRoot = process.cwd();
-const packagePath = resolve(projectRoot, "package.json");
-const lockPath = resolve(projectRoot, "package-lock.json");
-const documentationPackagePath = resolve(projectRoot, "documentation/package.json");
+const applicationRoot = process.cwd();
+const packagePath = resolve(applicationRoot, "package.json");
+const lockPath = resolve(applicationRoot, "package-lock.json");
+const documentationPackagePath = resolve(applicationRoot, "documentation/package.json");
 const errors = [];
 
-if (!existsSync(packagePath)) errors.push("Missing package.json at the project root.");
-if (!existsSync(lockPath)) errors.push("Missing package-lock.json at the project root.");
+if (!existsSync(packagePath)) errors.push("Missing package.json at the application root.");
+if (!existsSync(lockPath)) errors.push("Missing package-lock.json at the application root.");
 for (const name of ["yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb"]) {
-  if (existsSync(resolve(projectRoot, name))) errors.push(`Conflicting root lockfile: ${name}`);
+  if (existsSync(resolve(applicationRoot, name))) errors.push(`Conflicting root lockfile: ${name}`);
 }
 
 const manifest = existsSync(packagePath) ? JSON.parse(readFileSync(packagePath, "utf8")) : {};
@@ -30,14 +30,14 @@ if (manifest?.engines?.node) {
   errors.push("package.json must declare engines.node as one exact major such as 24.x.");
 }
 for (const name of [".node-version", ".nvmrc"]) {
-  const path = resolve(projectRoot, name);
+  const path = resolve(applicationRoot, name);
   if (existsSync(path)) declarations.push({ source: name, major: parseMajor(readFileSync(path, "utf8")) });
 }
 if (!declarations.some(({ source }) => source === ".node-version" || source === ".nvmrc")) {
   errors.push("Add .node-version or .nvmrc with the same Node.js major as package.json.");
 }
 
-const workflowRoot = resolve(projectRoot, ".mainsequence/workflows");
+const workflowRoot = resolve(applicationRoot, ".mainsequence/workflows");
 if (existsSync(workflowRoot)) {
   for (const entry of readdirSync(workflowRoot, { withFileTypes: true })) {
     if (!entry.isFile() || !/\.ya?ml$/u.test(entry.name)) continue;

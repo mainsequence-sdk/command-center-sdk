@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Application Loading Flow"
+  short_description: "Build truthful staged application feedback"
+  default_prompt: "Use $build-application-loading-flow to build a controlled staged loading and recovery experience for this Command Center application."

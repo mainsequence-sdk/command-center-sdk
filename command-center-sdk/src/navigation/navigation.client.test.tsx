@@ -15,13 +15,14 @@ const applications: NavigationApplicationDefinition[] = [
   {
     id: "foundry",
     label: "Foundry",
+    defaultDestinationId: "services",
     subApplications: [
       {
         id: "build",
         label: "Build",
         destinations: [
-          { id: "projects", label: "Projects" },
-          { id: "clusters", label: "Clusters" },
+          { id: "services", label: "Services", href: "/app/foundry/services" },
+          { id: "clusters", label: "Clusters", href: "/app/foundry/clusters" },
         ],
       },
       {
@@ -37,6 +38,7 @@ const applications: NavigationApplicationDefinition[] = [
   {
     id: "ai",
     label: "AI",
+    href: "/app/ai",
     subApplications: [],
   },
 ];
@@ -66,22 +68,41 @@ describe("application navigation", () => {
       );
     });
 
-    const buttons = Array.from(
-      container.querySelectorAll<HTMLButtonElement>(
+    const items = Array.from(
+      container.querySelectorAll<HTMLElement>(
         "[data-cc-navigation-application]",
       ),
     );
-    await act(async () => buttons[0]!.click());
+    expect(items[0]?.tagName).toBe("A");
+    expect(items[0]?.getAttribute("href")).toBe("/app/foundry/services");
+    expect(items[1]?.getAttribute("href")).toBe("/app/ai");
+
+    await act(async () => items[0]!.click());
     expect(onOpenChange).toHaveBeenCalledWith("foundry");
 
-    buttons[0]!.focus();
+    let preventedBeforeNativeFallback: boolean | undefined;
+    document.addEventListener("click", (event) => {
+      preventedBeforeNativeFallback = event.defaultPrevented;
+      event.preventDefault();
+    }, { once: true });
     await act(async () => {
-      buttons[0]!.dispatchEvent(new KeyboardEvent("keydown", {
+      items[0]!.dispatchEvent(new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        metaKey: true,
+      }));
+    });
+    expect(preventedBeforeNativeFallback).toBe(false);
+    expect(onOpenChange).toHaveBeenCalledOnce();
+
+    items[0]!.focus();
+    await act(async () => {
+      items[0]!.dispatchEvent(new KeyboardEvent("keydown", {
         bubbles: true,
         key: "ArrowDown",
       }));
     });
-    expect(document.activeElement).toBe(buttons[1]);
+    expect(document.activeElement).toBe(items[1]);
   });
 
   it("renders all sub-app destinations and emits route-neutral navigation intents", async () => {
@@ -95,7 +116,7 @@ describe("application navigation", () => {
     await act(async () => {
       root.render(
         <ApplicationNavigationPanel
-          activeDestinationId="projects"
+          activeDestinationId="services"
           application={applications[0]!}
           onClose={onClose}
           onNavigate={onNavigate}
@@ -103,28 +124,71 @@ describe("application navigation", () => {
       );
     });
 
-    const projectButton = Array.from(container.querySelectorAll("button"))
-      .find((button) => button.textContent === "Projects");
-    expect(projectButton?.getAttribute("aria-current")).toBe("page");
+    const serviceLink = Array.from(container.querySelectorAll("a"))
+      .find((link) => link.textContent === "Services");
+    expect(serviceLink?.getAttribute("aria-current")).toBe("page");
+    expect(serviceLink?.getAttribute("href")).toBe("/app/foundry/services");
     expect(container.textContent).toContain("Build");
     expect(container.textContent).toContain("Ship");
     expect(container.textContent).toContain("Unavailable");
 
-    await act(async () => projectButton!.click());
+    await act(async () => serviceLink!.click());
     expect(onNavigate).toHaveBeenCalledWith({
       applicationId: "foundry",
-      destinationId: "projects",
+      destinationId: "services",
       subApplicationId: "build",
     });
 
     await act(async () => {
-      projectButton!.dispatchEvent(new KeyboardEvent("keydown", {
+      serviceLink!.dispatchEvent(new KeyboardEvent("keydown", {
         bubbles: true,
         key: "Escape",
       }));
     });
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it.each(["metaKey", "ctrlKey"] as const)(
+    "leaves %s destination clicks to the browser",
+    async (modifier) => {
+      const onNavigate = vi.fn();
+      const container = document.createElement("div");
+      document.body.append(container);
+      const root = createRoot(container);
+      roots.push(root);
+
+      await act(async () => {
+        root.render(
+          <ApplicationNavigationPanel
+            application={applications[0]!}
+            onNavigate={onNavigate}
+          />,
+        );
+      });
+
+      const serviceLink = Array.from(container.querySelectorAll("a"))
+        .find((link) => link.textContent === "Services")!;
+      let preventedBeforeNativeFallback: boolean | undefined;
+      const recordAndCancelNativeFallback = (event: MouseEvent) => {
+        preventedBeforeNativeFallback = event.defaultPrevented;
+        event.preventDefault();
+      };
+      document.addEventListener("click", recordAndCancelNativeFallback, {
+        once: true,
+      });
+
+      await act(async () => {
+        serviceLink.dispatchEvent(new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          [modifier]: true,
+        }));
+      });
+
+      expect(preventedBeforeNativeFallback).toBe(false);
+      expect(onNavigate).not.toHaveBeenCalled();
+    },
+  );
 
   it("composes a rail, open panel, and consumer-owned content", async () => {
     const container = document.createElement("div");

@@ -1,19 +1,20 @@
 ---
 name: maintain-command-center-code-repository
-description: Safely finish, version, and deploy a Main Sequence Command Center project with command-center-sdk code-repository sync. Use when a project change is ready to commit and must produce the backend-recognized branch tag that triggers automatic deployment.
+description: Safely finish, version, and deploy a Main Sequence Command Center application code repository with command-center-sdk code-repository sync. Use when an application change is ready to commit and must produce the backend-recognized branch tag that triggers automatic deployment.
 ---
 
 # Maintain And Deploy A Command Center CodeRepository
 
-Use this workflow only in a consuming npm project that is registered as a Main Sequence CodeRepository.
-It is not the source-maintenance workflow for changing the SDK package itself.
+Use this workflow only in a consuming npm application that is registered as a Main Sequence
+CodeRepository. It is not the source-maintenance workflow for changing the SDK package itself.
 
 ## Why CodeRepository Sync Is Required
 
-Automatic deployment is keyed by a backend-owned tag for one registered `CodeRepositoryBranch`. A plain
-commit, a locally invented `v<version>` tag, or a tag copied from another branch does not establish
-that deployment identity. `command-center-sdk code-repository sync` keeps the npm version, lockfile, Git
-commit, backend CodeRepositoryBranch, annotated tag, and pushed remote state in one ordered workflow.
+Automatic deployment is keyed by a backend-owned tag for one registered `CodeRepositoryBranch`.
+A plain commit, a locally invented `v<version>` tag, or a tag copied from another branch does not
+establish that deployment identity. `command-center-sdk code-repository sync` keeps the npm
+version, lockfile, Git commit, backend CodeRepositoryBranch, annotated tag, and pushed remote state
+in one ordered workflow.
 
 The backend decides the tag. Typical results include:
 
@@ -22,7 +23,7 @@ The backend decides the tag. Typical results include:
 - `feature/foo` at version `1.2.4`: a backend-generated feature tag such as
   `v1.2.4-feature-foo-12345678.1`
 
-Never reproduce these rules in project code. Always use the exact `tag_name` returned for the
+Never reproduce these rules in application code. Always use the exact `tag_name` returned for the
 current backend `CodeRepositoryBranch`.
 
 ## Preflight The CodeRepository
@@ -31,9 +32,11 @@ current backend `CodeRepositoryBranch`.
    not supported.
 2. Confirm that root contains `package.json` and `package-lock.json`.
 3. Confirm the current Git checkout has an `origin` remote, an attached named branch, and a valid
-   `HEAD` commit. The backend resolves this source context to the CodeRepository and CodeRepositoryBranch.
-4. Do not add or restore superseded caller-supplied repository, branch, or Environment identity inputs in `.env`. They are not source-identity inputs; an optional positional CodeRepository UID is only a
-   consistency assertion against the Git-resolved CodeRepository.
+   `HEAD` commit. The backend resolves this source context to the CodeRepository and
+   CodeRepositoryBranch.
+4. Do not add or restore superseded caller-supplied repository, branch, or Environment identity
+   inputs in `.env`. They are not source-identity inputs; an optional positional CodeRepository UID
+   is only a consistency assertion against the Git-resolved CodeRepository.
 5. Ensure `MAINSEQUENCE_ENDPOINT` and a current `MAINSEQUENCE_ACCESS_TOKEN` are available only in
    the process environment. Never place the token in an argument, file, log, or report.
 6. Inspect the installed SDK and resolve any authorized compatible update separately:
@@ -44,10 +47,10 @@ npx command-center-sdk application update-sdk --path . --dry-run
 ```
 
 `update-sdk` is dependency maintenance only. Run it only when the user authorizes the update, then
-refresh guidance and rerun the project checks. It does not change the application version, contact
+refresh guidance and rerun the application checks. It does not change the application version, contact
 the deployment backend, commit, tag, or push, and it never replaces the release sync below.
 
-7. If the project has `docs:check` or `build:docs`, verify the documentation source and combined
+7. If the application has `docs:check` or `build:docs`, verify the documentation source and combined
    artifact from the same root:
 
 ```bash
@@ -58,7 +61,7 @@ npm run test:e2e
 
 The root build must contain the application and `dist/docs`; a standalone documentation build is
 not release proof. Follow `$document-command-center-application` for the canonical navigation,
-toolchain, and browser checks. If the project uses another browser-script name, run its equivalent
+toolchain, and browser checks. If the application uses another browser-script name, run its equivalent
 production-artifact suite and record the exact command.
 
 8. Run the read-only deployment preview from that root:
