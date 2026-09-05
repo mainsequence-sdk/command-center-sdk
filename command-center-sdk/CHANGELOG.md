@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.1.19
+
+- Retheme the `main-sequence-space` preset from navy-and-gold to warm charcoal: near-black warm
+  neutrals derived from a single hue bias, a dusty indigo brand at `#8B96C0`, `radius` from `12px`
+  to `4px`, and a monospace-first font stack. The `danger`, `success`, `warning`, `positive`, and
+  `negative` tokens are unchanged. Replace the theme's background, workspace canvas, and overlay
+  gradients with a flat ground and a 48px canvas grid, drop `--shadow-panel`, and add a solid
+  `::selection` pair. Also replaces the data-visualization palette with an eight-entry pigment set
+  spaced by luminance as well as hue, reserving teal, rose, and gold for status tokens. The theme ID
+  and every token key are unchanged, so this is a visual change only.
+
 ## 0.1.18
 
 - Render navigation applications and destinations with configured `href` values as real anchors,

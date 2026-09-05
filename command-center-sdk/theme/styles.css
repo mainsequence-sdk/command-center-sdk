@@ -241,26 +241,37 @@ html[data-theme="main-sequence"],
 
 html[data-theme="main-sequence-space"],
 [data-command-center-theme-root][data-theme="main-sequence-space"] {
-  --ms-bg-gradient:
-    radial-gradient(circle at 16% 14%, rgba(244, 248, 255, 0.16) 0%, rgba(244, 248, 255, 0.055) 9%, rgba(244, 248, 255, 0) 24%),
-    radial-gradient(circle at 74% 32%, rgba(108, 183, 255, 0.20) 0%, rgba(108, 183, 255, 0.075) 13%, rgba(108, 183, 255, 0) 30%),
-    radial-gradient(circle at 82% 64%, rgba(223, 168, 91, 0.12) 0%, rgba(223, 168, 91, 0.035) 12%, rgba(223, 168, 91, 0) 28%),
-    linear-gradient(180deg, rgba(3, 7, 14, 0.96) 0%, rgba(2, 5, 11, 1) 100%);
-  --workspace-canvas-base-color: #03070e;
+  /* Mono-first: this theme sets UI type in the monospace stack, as `grandpa` does.
+     Declared here as well as on the preset so CSS-only consumers match hosts that
+     call applyThemePresetToRoot. */
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: var(--font-mono);
+  --letter-spacing-label: 0.15em;
+  --letter-spacing-eyebrow: 0.2em;
+  --radius-image: 2px;
+  --radius-code: 3px;
+  /* Flat by design: separation comes from hairline borders and the canvas grid,
+     never from tinted glow or lifted surfaces. */
+  --ms-bg-gradient: none;
+  --shadow-panel: none;
+  --shadow-dialog: 0 24px 64px -32px rgb(0 0 0 / 72%);
+  --shadow-picker: 0 16px 40px -28px rgb(0 0 0 / 68%);
+  --workspace-canvas-base-color: #0e0d0c;
   --workspace-canvas-background:
-    radial-gradient(ellipse 62% 12% at 26% 76%, rgba(125, 211, 252, 0.13) 0%, rgba(125, 211, 252, 0.035) 44%, rgba(125, 211, 252, 0) 72%),
-    radial-gradient(ellipse 68% 10% at 72% 42%, rgba(223, 168, 91, 0.115) 0%, rgba(223, 168, 91, 0.032) 46%, rgba(223, 168, 91, 0) 74%),
-    linear-gradient(143deg, rgba(255, 255, 255, 0) 0 42%, rgba(244, 248, 255, 0.028) 43%, rgba(244, 248, 255, 0.007) 48%, rgba(255, 255, 255, 0) 55%),
-    linear-gradient(180deg, #07101c 0%, #040913 46%, #02050b 100%);
-  --workspace-canvas-overlay:
-    radial-gradient(circle at 18% 70%, rgba(244, 248, 255, 0.085) 0 1px, rgba(244, 248, 255, 0) 2.6px),
-    radial-gradient(circle at 28% 64%, rgba(125, 211, 252, 0.12) 0 1px, rgba(125, 211, 252, 0) 2.4px),
-    radial-gradient(circle at 43% 58%, rgba(244, 248, 255, 0.09) 0 1px, rgba(244, 248, 255, 0) 2.5px),
-    radial-gradient(circle at 62% 49%, rgba(223, 168, 91, 0.11) 0 1px, rgba(223, 168, 91, 0) 2.5px),
-    radial-gradient(circle at 78% 40%, rgba(246, 197, 111, 0.12) 0 1px, rgba(246, 197, 111, 0) 2.6px),
-    linear-gradient(180deg, rgba(244, 248, 255, 0.032) 0%, rgba(244, 248, 255, 0.012) 16%, rgba(255, 255, 255, 0) 38%);
-  --workspace-grid-dot: rgba(216, 232, 255, 0.34);
-  --workspace-grid-dot-selected: rgba(125, 211, 252, 0.96);
+    repeating-linear-gradient(0deg, rgb(240 238 234 / 5.5%) 0 1px, rgb(0 0 0 / 0%) 1px 48px),
+    repeating-linear-gradient(90deg, rgb(240 238 234 / 5.5%) 0 1px, rgb(0 0 0 / 0%) 1px 48px),
+    linear-gradient(180deg, #0e0d0c 0%, #0e0d0c 100%);
+  --workspace-canvas-overlay: none;
+  --workspace-grid-dot: rgb(240 238 234 / 22%);
+  --workspace-grid-dot-selected: rgb(139 150 192 / 95%);
+}
+
+/* Solid selection pair rather than the shared translucent tint of --primary,
+   which reads muddy against this warm ground. */
+html[data-theme="main-sequence-space"] ::selection,
+[data-command-center-theme-root][data-theme="main-sequence-space"] ::selection {
+  background: #2b2f4a;
+  color: #cfd3e8;
 }
 
 html[data-theme="cyberpunk"],
