@@ -241,37 +241,24 @@ html[data-theme="main-sequence"],
 
 html[data-theme="main-sequence-space"],
 [data-command-center-theme-root][data-theme="main-sequence-space"] {
-  /* Mono-first: this theme sets UI type in the monospace stack, as `grandpa` does.
-     Declared here as well as on the preset so CSS-only consumers match hosts that
-     call applyThemePresetToRoot. */
-  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --font-sans: var(--font-mono);
-  --letter-spacing-label: 0.15em;
-  --letter-spacing-eyebrow: 0.2em;
-  --radius-image: 2px;
-  --radius-code: 3px;
-  /* Flat by design: separation comes from hairline borders and the canvas grid,
-     never from tinted glow or lifted surfaces. */
+  /* Flat by design: separation comes from hairline borders, never from tinted
+     glow or lifted panels. Typography stays on the shared sans stack. */
   --ms-bg-gradient: none;
   --shadow-panel: none;
   --shadow-dialog: 0 24px 64px -32px rgb(0 0 0 / 72%);
   --shadow-picker: 0 16px 40px -28px rgb(0 0 0 / 68%);
-  --workspace-canvas-base-color: #0e0d0c;
-  --workspace-canvas-background:
-    repeating-linear-gradient(0deg, rgb(240 238 234 / 5.5%) 0 1px, rgb(0 0 0 / 0%) 1px 48px),
-    repeating-linear-gradient(90deg, rgb(240 238 234 / 5.5%) 0 1px, rgb(0 0 0 / 0%) 1px 48px),
-    linear-gradient(180deg, #0e0d0c 0%, #0e0d0c 100%);
+  --workspace-canvas-base-color: #08090a;
+  --workspace-canvas-background: linear-gradient(180deg, #08090a 0%, #08090a 100%);
   --workspace-canvas-overlay: none;
-  --workspace-grid-dot: rgb(240 238 234 / 22%);
-  --workspace-grid-dot-selected: rgb(139 150 192 / 95%);
+  --workspace-grid-dot: rgb(247 248 248 / 20%);
+  --workspace-grid-dot-selected: rgb(113 112 255 / 95%);
 }
 
-/* Solid selection pair rather than the shared translucent tint of --primary,
-   which reads muddy against this warm ground. */
+/* Solid selection pair rather than the shared translucent tint of --primary. */
 html[data-theme="main-sequence-space"] ::selection,
 [data-command-center-theme-root][data-theme="main-sequence-space"] ::selection {
-  background: #2b2f4a;
-  color: #cfd3e8;
+  background: #2c3172;
+  color: #e6e8ff;
 }
 
 html[data-theme="cyberpunk"],

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.1.20
+
+- Replace the `main-sequence-space` preset with a Linear-derived dark theme: dead-neutral
+  near-black ground (`#08090A`), off-white text, a soft indigo brand at `#5E6AD2`, `radius` at
+  `8px`, and the shared sans-serif font stack. This supersedes the 0.1.19 warm-charcoal,
+  monospace-first retheme, which read as brown in dense screens. Status tokens now use Linear's
+  green, red, and yellow. Keeps the flat chrome introduced in 0.1.19 (no background or canvas
+  gradients, no panel shadow) and the solid `::selection` pair, now in indigo. Data-visualization
+  palette leads with the brand indigo and Linear's label hues, reserving the status colors. The
+  theme ID and every token key are unchanged.
+
 ## 0.1.19
 
 - Retheme the `main-sequence-space` preset from navy-and-gold to warm charcoal: near-black warm
