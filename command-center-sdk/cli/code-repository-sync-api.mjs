@@ -1,4 +1,8 @@
-const DEFAULT_TIMEOUT_MS = 15_000;
+export const CODE_REPOSITORY_SYNC_TIMEOUT_ENV =
+  "COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS";
+export const DEFAULT_CODE_REPOSITORY_SYNC_TIMEOUT_MS = 60_000;
+export const MIN_CODE_REPOSITORY_SYNC_TIMEOUT_MS = 1_000;
+export const MAX_CODE_REPOSITORY_SYNC_TIMEOUT_MS = 300_000;
 const CANONICAL_COMMIT_SHA_PATTERN = /^[0-9a-f]{40}$/u;
 
 export class CodeRepositorySyncApiError extends Error {
@@ -51,13 +55,37 @@ function normalizeBackendUrl(value) {
   return url.toString().replace(/\/+$/u, "");
 }
 
+export function parseCodeRepositorySyncTimeoutMs(value) {
+  const candidate = typeof value === "string" ? value.trim() : value;
+  const timeoutMs =
+    typeof candidate === "string" && /^\d+$/u.test(candidate) ? Number(candidate) : candidate;
+  if (
+    !Number.isSafeInteger(timeoutMs) ||
+    timeoutMs < MIN_CODE_REPOSITORY_SYNC_TIMEOUT_MS ||
+    timeoutMs > MAX_CODE_REPOSITORY_SYNC_TIMEOUT_MS
+  ) {
+    throw new CodeRepositorySyncApiError(
+      `CodeRepository backend timeout must be an integer between ${MIN_CODE_REPOSITORY_SYNC_TIMEOUT_MS} and ${MAX_CODE_REPOSITORY_SYNC_TIMEOUT_MS} milliseconds.`,
+    );
+  }
+  return timeoutMs;
+}
+
 export function resolveCodeRepositorySyncConfiguration({
   backendUrl,
   accessToken,
+  timeoutMs,
   env = process.env,
 } = {}) {
   const endpoint = (backendUrl || env.MAINSEQUENCE_ENDPOINT || "").trim();
   const token = (accessToken || env.MAINSEQUENCE_ACCESS_TOKEN || "").trim();
+  const configuredTimeout = timeoutMs ?? env[CODE_REPOSITORY_SYNC_TIMEOUT_ENV];
+  const resolvedTimeoutMs =
+    configuredTimeout === undefined ||
+    configuredTimeout === null ||
+    (typeof configuredTimeout === "string" && !configuredTimeout.trim())
+      ? DEFAULT_CODE_REPOSITORY_SYNC_TIMEOUT_MS
+      : parseCodeRepositorySyncTimeoutMs(configuredTimeout);
   const missing = [];
   if (!endpoint) missing.push("MAINSEQUENCE_ENDPOINT");
   if (!token) missing.push("MAINSEQUENCE_ACCESS_TOKEN");
@@ -65,6 +93,7 @@ export function resolveCodeRepositorySyncConfiguration({
     available: missing.length === 0,
     backendUrl: endpoint ? normalizeBackendUrl(endpoint) : null,
     accessToken: token || null,
+    timeoutMs: resolvedTimeoutMs,
     missing,
   };
 }
@@ -79,7 +108,7 @@ export function createCodeRepositorySyncApi({
   backendUrl,
   accessToken,
   fetchImpl = globalThis.fetch,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
+  timeoutMs = DEFAULT_CODE_REPOSITORY_SYNC_TIMEOUT_MS,
 } = {}) {
   const normalizedBackendUrl = normalizeBackendUrl(backendUrl);
   const token = requireSingleLine(accessToken, "Main Sequence access token");
@@ -106,7 +135,9 @@ export function createCodeRepositorySyncApi({
         signal: controller.signal,
       });
     } catch (error) {
-      const detail = error?.name === "AbortError" ? `timed out after ${timeoutMs}ms` : "failed";
+      const detail = controller.signal.aborted
+        ? `timed out after ${timeoutMs}ms; increase --timeout-ms or ${CODE_REPOSITORY_SYNC_TIMEOUT_ENV}`
+        : "failed";
       throw new CodeRepositorySyncApiError(`Backend ${method} ${path} ${detail}.`, { cause: error });
     } finally {
       clearTimeout(timer);

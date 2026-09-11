@@ -109,6 +109,7 @@ try {
   assert.match(cliHelp, /application update-sdk/u);
   assert.match(cliHelp, /application docs init/u);
   assert.match(cliHelp, /code-repository sync/u);
+  assert.match(cliHelp, /--timeout-ms/u);
   assert.match(cliHelp, /repository-root/u);
   const embedModule = await import(
     pathToFileURL(join(extractedPackage, "dist", "embed", "index.js")).href

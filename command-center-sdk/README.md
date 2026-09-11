@@ -266,6 +266,10 @@ the installed `general/maintain-command-center-code-repository` skill and the
 [code-repository-sync guide](./docs/getting-started.md#sync-a-code-repository-for-automatic-deployment) for failure
 and recovery semantics.
 
+Backend requests use a 60-second default timeout. Slow environments can override it with
+`--timeout-ms` or `COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS`, bounded from 1 through 300
+seconds. The CLI option takes precedence, and Git-context timeouts stop before mutation.
+
 ## Maintenance constraints
 
 - Source maintainers must run the package-local

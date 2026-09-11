@@ -8,8 +8,11 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import {
+  CODE_REPOSITORY_SYNC_TIMEOUT_ENV,
   createCodeRepositorySyncApi,
   CodeRepositorySyncApiError,
+  DEFAULT_CODE_REPOSITORY_SYNC_TIMEOUT_MS,
+  resolveCodeRepositorySyncConfiguration,
 } from "../../cli/code-repository-sync-api.mjs";
 import {
   createCodeRepositorySyncLocalOps,
@@ -501,6 +504,82 @@ test("a detached Git checkout stops before the backend or local mutation", async
   assert.equal(harness.events.some(([type]) => type === "command"), false);
 });
 
+test("backend configuration uses a bounded timeout with explicit-over-environment precedence", () => {
+  const base = {
+    backendUrl: "https://platform.example",
+    accessToken: "secret-access-token",
+  };
+  assert.equal(
+    resolveCodeRepositorySyncConfiguration(base).timeoutMs,
+    DEFAULT_CODE_REPOSITORY_SYNC_TIMEOUT_MS,
+  );
+  assert.equal(
+    resolveCodeRepositorySyncConfiguration({
+      ...base,
+      env: { [CODE_REPOSITORY_SYNC_TIMEOUT_ENV]: "120000" },
+    }).timeoutMs,
+    120_000,
+  );
+  assert.equal(
+    resolveCodeRepositorySyncConfiguration({
+      ...base,
+      timeoutMs: 90_000,
+      env: { [CODE_REPOSITORY_SYNC_TIMEOUT_ENV]: "120000" },
+    }).timeoutMs,
+    90_000,
+  );
+  for (const value of ["not-a-number", "1.5", "999", "300001"]) {
+    assert.throws(
+      () =>
+        resolveCodeRepositorySyncConfiguration({
+          ...base,
+          env: { [CODE_REPOSITORY_SYNC_TIMEOUT_ENV]: value },
+        }),
+      /timeout must be an integer between 1000 and 300000 milliseconds/u,
+    );
+  }
+});
+
+test("a configured Git-context timeout is identified and stops before mutation", async () => {
+  const harness = codeRepositoryHarness();
+  const fetchImpl = async (_url, { signal }) =>
+    new Promise((_resolve, reject) => {
+      signal.addEventListener("abort", () => reject(new TypeError("fetch failed")), { once: true });
+    });
+
+  await assert.rejects(
+    syncCodeRepository({
+      message: "Deploy after slow preflight",
+      codeRepositoryDir: harness.codeRepositoryDir,
+      localOps: harness.localOps,
+      backendUrl: "https://platform.example",
+      accessToken: "secret-access-token",
+      timeoutMs: 1_000,
+      fetchImpl,
+    }),
+    (caught) => {
+      assert.equal(caught instanceof CodeRepositorySyncError, true);
+      assert.equal(caught.stage, "resolve-git-context");
+      assert.match(caught.message, /timed out after 1000ms/u);
+      assert.match(caught.message, /--timeout-ms/u);
+      assert.match(caught.message, new RegExp(CODE_REPOSITORY_SYNC_TIMEOUT_ENV, "u"));
+      return true;
+    },
+  );
+
+  for (const mutation of [
+    "ensure-key",
+    "git-environment",
+    "add-code-repository-deploy-key",
+    "verify-git-push",
+    "validate-remote-tag",
+    "read-version",
+    "command",
+  ]) {
+    assert.equal(harness.events.some(([type]) => type === mutation), false, mutation);
+  }
+});
+
 test("backend API resolves the exact CodeRepositoryBranch and requests its deployment tag", async () => {
   const calls = [];
   const responses = [
@@ -676,6 +755,18 @@ test("CLI rejects duplicate commit-message forms as JSON", () => {
   assert.equal(result.status, 1);
   assert.deepEqual(JSON.parse(result.stderr), {
     error: "Pass the commit message either positionally or with --message, not both.",
+  });
+});
+
+test("CLI rejects an out-of-range backend timeout before sync", () => {
+  const result = spawnSync(
+    process.execPath,
+    [cliPath, "code-repository", "sync", "Deploy", "--timeout-ms=999", "--json"],
+    { encoding: "utf8" },
+  );
+  assert.equal(result.status, 1);
+  assert.deepEqual(JSON.parse(result.stderr), {
+    error: "CodeRepository backend timeout must be an integer between 1000 and 300000 milliseconds.",
   });
 });
 

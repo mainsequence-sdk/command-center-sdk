@@ -63,6 +63,7 @@ export async function syncCodeRepository({
   env = process.env,
   backendUrl,
   accessToken,
+  timeoutMs,
   fetchImpl,
   localOps = codeRepositorySyncLocalOps,
   api,
@@ -91,13 +92,19 @@ export async function syncCodeRepository({
     let codeRepositoryApi = api;
     if (!codeRepositoryApi) {
       stage = "resolve-backend-configuration";
-      const configuration = resolveCodeRepositorySyncConfiguration({ backendUrl, accessToken, env });
+      const configuration = resolveCodeRepositorySyncConfiguration({
+        backendUrl,
+        accessToken,
+        timeoutMs,
+        env,
+      });
       if (!configuration.available) {
         throw new Error(`CodeRepository sync requires ${configuration.missing.join(" and ")}.`);
       }
       codeRepositoryApi = createCodeRepositorySyncApi({
         backendUrl: configuration.backendUrl,
         accessToken: configuration.accessToken,
+        timeoutMs: configuration.timeoutMs,
         fetchImpl,
       });
       state.completed.push(stage);

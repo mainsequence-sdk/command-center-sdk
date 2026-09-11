@@ -131,6 +131,11 @@ therefore stop before the version, commit, or local Git tag changes. The exact b
 queried on `origin`; a collision or indeterminate result also stops before mutation. Tag syntax
 remains backend-owned. Do not add local main/dev/feature naming rules.
 
+Backend requests default to 60,000 milliseconds. Consumers may pass `--timeout-ms` or set
+`COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS` to an integer from 1,000 through 300,000; the CLI
+option takes precedence. Timeout errors identify the effective limit and retain the preflight
+no-mutation guarantee. The client does not retry POST requests automatically.
+
 The governing decision is
 [platform ADR-0037](https://github.com/Main-Sequence-Server-Side/tdag-django/blob/development/docs/platform/adr/adr-0037-git-native-project-source-context.md).
 

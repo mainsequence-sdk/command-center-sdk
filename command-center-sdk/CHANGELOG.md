@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Raise the CodeRepository sync backend timeout from 15 to 60 seconds and add bounded
+  `--timeout-ms` and `COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS` overrides. Timeout failures
+  remain preflight-safe and now report the effective limit and remediation.
+
 ## 0.1.20
 
 - Replace the `main-sequence-space` preset with a Linear-derived dark theme: dead-neutral

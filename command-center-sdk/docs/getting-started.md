@@ -108,6 +108,11 @@ npx command-center-sdk code-repository sync -m "Update the application" --path .
 npx command-center-sdk code-repository sync -m "Update the application" --path .
 ```
 
+Backend requests default to a 60-second timeout. For a slower environment, pass a bounded timeout
+from 1,000 through 300,000 milliseconds with `--timeout-ms`, or set
+`COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS`; the CLI option takes precedence. A timeout during
+Git-context resolution stops before local or remote mutation and reports the effective limit.
+
 The supplied path must be the Git repository root and contain `package.json` and
 `package-lock.json`. Preflight rejects a nested application directory, then sends the canonical
 `origin`, attached branch, and exact `HEAD` commit to the backend Git-context resolver. That

@@ -7,6 +7,7 @@ import {
   updateApplicationSdk,
 } from "./application-sdk-maintenance.mjs";
 import { initializeApplicationDocumentation } from "./application-docs.mjs";
+import { parseCodeRepositorySyncTimeoutMs } from "./code-repository-sync-api.mjs";
 import { syncCodeRepository } from "./code-repository-sync.mjs";
 import { syncAgentSkills } from "./sync-agent-skills.mjs";
 
@@ -18,7 +19,7 @@ Usage:
   command-center-sdk application docs init [--path <repository-root>] [--dry-run] [--skip-install] [--json]
   command-center-sdk application sdk-status [--path <repository-root>] [--json]
   command-center-sdk application update-sdk [--path <repository-root>] [--dry-run] [--json]
-  command-center-sdk code-repository sync [message] [expectedCodeRepositoryUid] [--path <repository-root>] [-m <message>] [--dry-run] [--json]
+  command-center-sdk code-repository sync [message] [expectedCodeRepositoryUid] [--path <repository-root>] [-m <message>] [--timeout-ms <milliseconds>] [--dry-run] [--json]
   command-center-sdk theme audit [--path <css-file-or-directory>] [--json]
   command-center-sdk --version
   command-center-sdk --help
@@ -131,6 +132,7 @@ function parseSkillArguments(args, { allowMcpUrl = false } = {}) {
 export function parseCodeRepositorySyncArguments(args) {
   let codeRepositoryDir = process.cwd();
   let messageOption;
+  let timeoutMs;
   let dryRun = false;
   let json = false;
   const positional = [];
@@ -146,7 +148,15 @@ export function parseCodeRepositorySyncArguments(args) {
       continue;
     }
     if (argument === "--help" || argument === "-h") {
-      return { help: true, codeRepositoryDir, message: null, codeRepositoryUid: null, dryRun, json };
+      return {
+        help: true,
+        codeRepositoryDir,
+        message: null,
+        codeRepositoryUid: null,
+        timeoutMs,
+        dryRun,
+        json,
+      };
     }
     if (argument === "--path" || argument === "-p") {
       index += 1;
@@ -170,6 +180,18 @@ export function parseCodeRepositorySyncArguments(args) {
       if (!messageOption) throw new Error("--message requires a commit message.");
       continue;
     }
+    if (argument === "--timeout-ms") {
+      index += 1;
+      if (!args[index]) throw new Error("--timeout-ms requires a number of milliseconds.");
+      timeoutMs = parseCodeRepositorySyncTimeoutMs(args[index]);
+      continue;
+    }
+    if (argument.startsWith("--timeout-ms=")) {
+      const value = argument.slice("--timeout-ms=".length);
+      if (!value) throw new Error("--timeout-ms requires a number of milliseconds.");
+      timeoutMs = parseCodeRepositorySyncTimeoutMs(value);
+      continue;
+    }
     if (argument.startsWith("-")) throw new Error(`Unknown argument: ${argument}`);
     positional.push(argument);
   }
@@ -185,6 +207,7 @@ export function parseCodeRepositorySyncArguments(args) {
     codeRepositoryDir,
     message: positional[0] ?? messageOption,
     codeRepositoryUid: positional[1] ?? null,
+    timeoutMs,
     dryRun,
     json,
   };
@@ -464,6 +487,7 @@ async function main() {
       message: options.message,
       codeRepositoryUid: options.codeRepositoryUid,
       codeRepositoryDir: options.codeRepositoryDir,
+      timeoutMs: options.timeoutMs,
       dryRun: options.dryRun,
       quiet: options.json,
       onPlan: options.json ? undefined : printHumanCodeRepositorySyncPlan,
