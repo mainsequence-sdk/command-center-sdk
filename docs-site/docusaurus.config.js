@@ -80,7 +80,6 @@ const config = {
             items: [
               { label: "Getting started", to: "/getting-started" },
               { label: "Resources", to: "/resources" },
-              { label: "Widgets and workspaces", to: "/widgets-and-workspaces" },
               { label: "Backend contracts", to: "/backend-contracts" },
             ],
           },

@@ -33,8 +33,6 @@ model and controlled SDK component plus a consumer-owned adapter.
 | JSON-safe contracts, normalizers, migrations | `src/contracts` → `/contracts` |
 | Framework-neutral resources and adapters | `src/resource` → `/resource` |
 | Controlled React lists/details/pickers | `src/views` → `/views` |
-| Widget authoring, host, testing, built-ins | `src/widget` → `/widget/*` |
-| Workspace model and read-only renderer | `src/workspace` → `/workspace/*` |
 | Tokens, presets, palettes, CSS | `src/theme` and package CSS exports |
 | Versioned iframe behavior | `src/embed` → `/embed/*` |
 
@@ -63,10 +61,8 @@ An npm version is only one compatibility axis. Identify every affected version b
 serialized behavior:
 
 - npm public API;
-- widget manifest API and widget semantic version;
-- workspace schema, widget props, and widget user-state versions;
 - value-contract and runtime-update identifiers;
-- stable widget, resource, theme, and contribution IDs; and
+- stable resource, theme, and contribution IDs; and
 - iframe wire-protocol identifier.
 
 Prefer additive optional fields with deterministic defaults. Preserve unknown JSON fields and
@@ -120,9 +116,7 @@ manifest bundle exists in the packed tarball.
 
 Use the repository's
 [SDK consumer fixture](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/sdk-consumer-fixture)
-for export coverage and the
-[basic widget example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/basic-widget)
-for separately distributed widget-package coverage.
+for export coverage.
 
 Before handoff, report:
 

@@ -9,9 +9,8 @@ The SDK publishes language-neutral JSON Schemas so backend teams can design payl
 reverse-engineering TypeScript or frontend normalizers.
 
 Use `contracts/implement-command-center-contract` to implement any existing manifest entry in
-another language. More focused workflows live under `contracts/` for resource collections, bulk
-actions, and Adapter From API. These installed skills consume the published bundle and never
-redefine or modify it.
+another language. More focused workflows live under `contracts/` for resource collections and
+bulk actions. These installed skills consume the published bundle and never redefine or modify it.
 
 ## Package layout
 
@@ -61,83 +60,6 @@ additive skills dynamically without a new npm contract or hard-coded skill list.
 semantics require a new backend manifest version and an SDK compatibility update. Run
 `command-center-sdk skills sync --path . --json` to validate the complete live revision before it
 is written under `.agents/skills/mainsequence/`.
-
-## Adapter From API ownership
-
-An Adapter From API connection is a transport and security boundary, not a response transformer.
-Each executable operation declares `responseContract`, and the provider body must implement that
-contract exactly in backend and direct modes. In particular, raw JSON and columnar
-`{fields: [{values: ...}]}` envelopes are not `core.tabular_frame@v1`. That ID is reserved for the
-canonical row-oriented tabular schema in this bundle.
-
-The Adapter From API v1 schemas define no compatibility aliases. Unsaved form drafts may be
-partial, but persisted config and executable query payloads must validate exactly.
-
-## Table authoring versus table data
-
-These two contracts solve different problems:
-
-- `command-center.table_widget_authoring@v1` describes which widget to create and the persisted
-  props controlling its source mode, columns, visuals, formulas, and selection behavior.
-- `core.tabular_frame@v1` describes the actual bound dataset passed through the `seedData` input
-  and republished through the `dataset` output.
-
-Use the manifest-indexed Table and Pro Table fixtures as the canonical examples; do not copy their
-payloads into another guide or skill. Host-specific
-connection props may be preserved, but portable consumers cannot require them to render bound or
-manual data.
-
-When a backend owns default presentation, put it on the frame under
-`meta.tableVisuals.columns.<field>`. The tabular-frame schema defines labels, formats, date formats,
-decimal precision, visibility, width, thresholds, color/range metadata, heatmaps, data bars,
-gauges, inline-series hints, and formula display metadata. Start with
-`fixtures/valid/tabular-frame-v1.table-visuals.json`; these values never mutate the canonical rows.
-
-## AppComponent, Tabular Transform, and workspace documents
-
-AppComponent and Tabular Transform use the same authoring-envelope convention as Table:
-
-```json
-{
-  "contract": "command-center.app_component_authoring@v1",
-  "widgetId": "core__app-component",
-  "props": {
-    "apiTargetMode": "mock-json",
-    "mockJson": {
-      "version": 1,
-      "operation": { "method": "get", "path": "/preview" },
-      "response": { "status": 200, "body": { "ok": true } }
-    }
-  }
-}
-```
-
-The AppComponent contract includes `mock-json`; there is no separate Mock JSON widget or contract.
-The schema intentionally allows unknown top-level props so trusted hosts can persist their own
-target references, but the SDK-defined Mock JSON and binding objects remain strictly versioned.
-
-Tabular Transform mode-specific rules are enforced by its schema: pivot needs both pivot fields,
-unpivot needs value fields, and latest-row merge needs key fields or mappings. Its envelope authors
-the transform widget; transformed data continues to use `core.tabular_frame@v1`.
-
-`command-center.workspace_document@v1` validates the direct normalized `DashboardDefinition`, not
-an extra wrapper and not the export snapshot envelope. Unknown widget IDs, props, runtime state,
-and forward metadata remain allowed and are preserved by `normalizeWorkspaceDocument(...)`.
-
-Before these entries, the SDK had TypeScript/runtime definitions but no language-neutral schemas
-for these persisted bytes. The new schemas document the existing v1 shapes; they do not change the
-stored payload, widget IDs, widget versions, or workspace schema version. Recommended backend
-rollout is: pin the SDK release, compile all manifest schemas, validate existing records in shadow
-mode, then enforce validation only for endpoints that claim these contracts. Mixed deployments are
-safe because older clients read the same JSON and unknown fields remain preserved. Rollback is to
-disable the new validation while retaining stored documents unchanged; no data rewrite is needed.
-
-Backends must additionally enforce cross-field rules that portable JSON Schema cannot express:
-variable keys and operation IDs are unique, public and secret keys do not overlap, health/query
-operation IDs resolve to declared operations, the referenced health operation is a safe GET whose
-method/path are declared once in `availableOperations`, executable operations declare an exact
-response contract, and query parameters stay in their declared locations. Secret values never
-enter public config, response bodies, logs, traces, or cache keys.
 
 ## Resource-list discovery and bulk-action lifecycle
 
@@ -269,11 +191,8 @@ includes a Python validator example.
 - Backend handoffs must state rollout order, defaults, mixed-version behavior, and rollback.
 
 Portable JSON Schema cannot enforce uniqueness by one object property. Runtime parsers additionally
-require unique action IDs, option keys, filter keys, and ordering values, while tabular
-normalization canonicalizes duplicate field keys. Schemas mark those rules with `$comment` where
-applicable.
+require unique action IDs, option keys, filter keys, and ordering values. Schemas mark those rules
+with `$comment` where applicable.
 
-Adding the schema bundle documents existing contracts and does not itself migrate backend or stored
-workspace/widget data. A backend changes only when an endpoint opts into or evolves one of these
-contracts. The widget authoring envelopes and workspace-document schema describe existing IDs,
-props, layouts, bindings, and version fields, so they do not require a storage migration.
+Adding the SDK schema bundle documents SDK-owned contracts and does not itself migrate stored data.
+A backend changes only when an endpoint opts into or evolves one of these contracts.

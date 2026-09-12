@@ -7,7 +7,7 @@ title: Command Center SDK
 
 `@dev-mainsequence/command-center-sdk` gives you the reusable parts of a Command Center
 application: navigation, responsive page layout, staged application feedback, resource lists and
-details, pickers and actions, widgets, workspaces, themes, and secure iframe bridges. Your
+details, pickers and actions, themes, backend contracts, and secure static-site iframe bridges. Your
 application keeps control of authentication, API clients, routes, persistence, permissions, and
 product-specific behavior.
 
@@ -33,15 +33,7 @@ package and renders a real resource list in a few minutes.
 | Implement canonical resource-list discovery | [Backend contracts](./backend-contracts.md#resource-list-discovery-and-bulk-action-lifecycle) | `contracts/implement-command-center-contract` |
 | Implement the normalized resource collection | [Backend contracts](./backend-contracts.md) | `contracts/implement-resource-collection-contract` |
 | Implement bulk-action discovery and execution | [Backend contracts](./backend-contracts.md) | `contracts/implement-bulk-actions-contract` |
-| Implement Adapter From API contracts | [Backend contracts](./backend-contracts.md#adapter-from-api-ownership) | `contracts/implement-adapter-from-api-contract` |
-| Implement Table or Pro Table | [Table and Pro Table](./table-and-pro-table.md) | `widget/built-ins/implement-table-widget` |
-| Implement AppComponent or Mock JSON | [Widgets and workspaces](./widgets-and-workspaces.md#implement-appcomponent) | `widget/built-ins/implement-app-component` |
-| Implement a Tabular Transform | [Widgets and workspaces](./widgets-and-workspaces.md#implement-tabular-transform) | `widget/built-ins/implement-tabular-transform` |
-| Author a portable custom widget | [Widgets and workspaces](./widgets-and-workspaces.md#build-a-custom-widget) | `widget/build-command-center-widget` |
-| Compose widget extensions in a host | [Widgets and workspaces](./widgets-and-workspaces.md#host-widgets) | `widget/host-command-center-widgets` |
-| Normalize, snapshot, or render a workspace | [Widgets and workspaces](./widgets-and-workspaces.md#build-a-workspace) | `workspace/build-command-center-workspace` |
 | Apply a theme | [Themes and embeds](./themes-and-embeds.md#theme-an-application) | `theme/theme-command-center-app` |
-| Embed an external widget | [Themes and embeds](./themes-and-embeds.md#embed-an-external-widget) | `embed/embed-command-center-app` |
 | Embed an application-owned static site | [Themes and embeds](./themes-and-embeds.md#embed-an-application-owned-static-site) | `embed/integrate-static-site-iframe` |
 
 The table is intentionally kept in one-to-one alignment with the consumer skills shipped in the
@@ -74,8 +66,6 @@ The SDK owns reusable UI and lifecycle. Your application owns product policy.
 | --- | --- |
 | List/detail/picker composition and async states | URLs, routing, query caching, and notifications |
 | Normalized adapter interfaces | Authentication, base URLs, headers, and product-specific adaptation |
-| Widget manifests, runtime contracts, and host registry | Which extensions are trusted, installed, and permitted |
-| Workspace normalization, snapshots, and read-only rendering | Storage, editing workflows, sharing, and publication |
 | Theme presets, variables, and CSS | Persisting the user's theme preference |
 | Iframe message validation and lifecycle | Origin allowlists, CSP, launch tokens, and backend authorization |
 | Navigation hierarchy, composition, and controlled React chrome | Routes, permission filtering, favorites, branding, and product actions |
@@ -98,20 +88,12 @@ public surface is missing, keep one-off behavior in the consumer or follow
   selection state.
 - `/views`: `ResourceListPage`, `ResourceDetailShell`, `ResourcePicker`, summaries, tables, cards,
   pagination, and action UI.
-- `/contracts`: JSON-safe widget, runtime-data, value, migration, tabular-frame, Table/Pro Table,
-  AppComponent/Mock JSON, Tabular Transform, workspace-document, and Adapter From API contracts.
+- `/contracts`: ordered migration helpers.
 - `/contracts/manifest.json`, `/contracts/schemas/*`, and `/contracts/fixtures/*`: draft-2020-12
   JSON Schemas and conformance fixtures for backend teams.
-- `/widget`, `/widget/host`, `/widget/testing`, and `/widget/ui`: widget authoring, composition,
-  validation, and controls.
-- `/widget/built-ins` plus narrow `/widget/built-ins/app-component`,
-  `/widget/built-ins/tabular-transform`, `/widget/built-ins/table`, and
-  `/widget/built-ins/pro-table`: portable built-ins and their contract-specific entrypoints.
-- `/workspace` and `/workspace/react`: workspace documents, normalization, snapshots, migrations,
-  and read-only rendering.
 - `/theme`, `/theme/presets`, and `/theme/data-viz`: presets, variables, density, surfaces, and
   chart palettes.
-- `/embed` and `/embed/react`: generic external-widget and application-owned static-site iframe APIs.
+- `/embed` and `/embed/react`: application-owned static-site iframe APIs.
 - `/styles.css` and `/theme/*.css`: browser-ready styles.
 
 Read the installed package's `package.json` export map when working against a specific version. An
@@ -153,7 +135,5 @@ guides must not reproduce those definitions.
 
 ## Current scope
 
-The package currently provides read-only workspace rendering, not a public workspace editor or
-persistence service. Adapter From API serialized contracts are published from `/contracts`, but
-connection UI, authentication, and transport execution remain consumer-owned. The docs describe
-only exports available in this package version.
+The docs describe only exports available in this package version. Authentication, transport
+execution, persistence, routes, and product-domain behavior remain consumer-owned.

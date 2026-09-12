@@ -10,10 +10,8 @@ description: Build, migrate, review, or secure an application-owned static site 
 Inspect the installed `/embed`, `/embed/react`, and `/theme` declarations and the iframe module
 README before changing an integration. Use only APIs published by that installed SDK version.
 
-Use this skill for application-owned static sites that exchange `mainsequence.*`, numeric version-one
-`ready` and `initialize` messages. Use `$embed-command-center-app` instead for external widgets on
-the separate `command-center-iframe@v1` props/inputs/outputs protocol. Never translate between the
-two contracts.
+Use this skill for application-owned static sites that exchange `mainsequence.*`, numeric
+version-one `ready` and `initialize` messages.
 
 ## Build The Child Application
 

@@ -107,19 +107,6 @@
   --ms-bg-gradient:
     radial-gradient(circle at top right, color-mix(in srgb, var(--primary) 16%, transparent), transparent 30%),
     radial-gradient(circle at bottom left, color-mix(in srgb, var(--accent) 12%, transparent), transparent 25%);
-  --workspace-canvas-base-color: #040914;
-  --workspace-canvas-background:
-    radial-gradient(circle at 14% 12%, color-mix(in srgb, var(--primary) 22%, transparent) 0%, transparent 28%),
-    radial-gradient(circle at 82% 78%, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 24%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--background) 72%, black 28%) 0%,
-      color-mix(in srgb, var(--background) 88%, black 12%) 100%
-    );
-  --workspace-canvas-overlay:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 14%, rgba(255, 255, 255, 0) 32%);
-  --workspace-grid-dot: rgba(230, 237, 247, 0.36);
-  --workspace-grid-dot-selected: rgba(110, 170, 255, 0.98);
 }
 
 /* Default border color only. Layered so Tailwind border-color utilities
@@ -230,13 +217,6 @@ html[data-theme="main-sequence"],
 [data-command-center-theme-root][data-theme="main-sequence"] {
   --ms-bg-gradient:
     radial-gradient(circle at top left, rgba(83, 109, 232, 0.20) 0%, rgba(0, 0, 0, 0) 50%);
-  --workspace-canvas-base-color: #07101b;
-  --workspace-canvas-background:
-    linear-gradient(180deg, #121c31 0%, #0b1424 44%, #060c16 100%);
-  --workspace-canvas-overlay:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.012) 18%, rgba(255, 255, 255, 0) 42%);
-  --workspace-grid-dot: rgba(208, 220, 255, 0.38);
-  --workspace-grid-dot-selected: rgba(110, 154, 255, 0.98);
 }
 
 html[data-theme="main-sequence-space"],
@@ -247,11 +227,6 @@ html[data-theme="main-sequence-space"],
   --shadow-panel: none;
   --shadow-dialog: 0 24px 64px -32px rgb(0 0 0 / 72%);
   --shadow-picker: 0 16px 40px -28px rgb(0 0 0 / 68%);
-  --workspace-canvas-base-color: #08090a;
-  --workspace-canvas-background: linear-gradient(180deg, #08090a 0%, #08090a 100%);
-  --workspace-canvas-overlay: none;
-  --workspace-grid-dot: rgb(247 248 248 / 20%);
-  --workspace-grid-dot-selected: rgb(113 112 255 / 95%);
 }
 
 /* Solid selection pair rather than the shared translucent tint of --primary. */
@@ -284,33 +259,6 @@ html[data-theme="cyberpunk"],
     radial-gradient(circle at 66% 18%, rgba(144, 99, 255, 0.18) 0%, rgba(144, 99, 255, 0.05) 14%, rgba(0, 0, 0, 0) 32%),
     radial-gradient(circle at 82% 70%, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 8%),
     linear-gradient(180deg, rgba(6, 5, 12, 0.98) 0%, rgba(1, 1, 4, 1) 100%);
-  --workspace-canvas-base-color: #04030a;
-  --workspace-canvas-background:
-    radial-gradient(circle at 8% 10%, rgba(255, 255, 255, 0.94) 0, rgba(196, 230, 255, 0.58) 1px, rgba(196, 230, 255, 0.14) 1.9px, transparent 3.2px),
-    radial-gradient(circle at 14% 22%, rgba(255, 255, 255, 0.82) 0, rgba(255, 255, 255, 0.34) 0.8px, transparent 2.2px),
-    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.86) 0, rgba(186, 224, 255, 0.42) 0.85px, transparent 2.6px),
-    radial-gradient(circle at 28% 16%, rgba(255, 255, 255, 0.74) 0, rgba(255, 255, 255, 0.24) 0.7px, transparent 2px),
-    radial-gradient(circle at 36% 26%, rgba(255, 255, 255, 0.9) 0, rgba(185, 220, 255, 0.42) 0.85px, transparent 2.6px),
-    radial-gradient(circle at 42% 14%, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.22) 0.65px, transparent 1.8px),
-    radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.84) 0, rgba(196, 228, 255, 0.36) 0.8px, transparent 2.3px),
-    radial-gradient(circle at 58% 12%, rgba(255, 255, 255, 0.78) 0, rgba(255, 255, 255, 0.24) 0.7px, transparent 2px),
-    radial-gradient(circle at 66% 28%, rgba(255, 255, 255, 0.92) 0, rgba(186, 220, 255, 0.46) 0.9px, transparent 2.7px),
-    radial-gradient(circle at 74% 18%, rgba(255, 255, 255, 0.74) 0, rgba(255, 255, 255, 0.24) 0.7px, transparent 2px),
-    radial-gradient(circle at 82% 24%, rgba(255, 255, 255, 0.9) 0, rgba(190, 224, 255, 0.44) 0.85px, transparent 2.6px),
-    radial-gradient(circle at 90% 14%, rgba(255, 255, 255, 0.76) 0, rgba(255, 255, 255, 0.24) 0.7px, transparent 2px),
-    radial-gradient(circle at 12% 58%, rgba(255, 255, 255, 0.82) 0, rgba(191, 223, 255, 0.34) 0.8px, transparent 2.3px),
-    radial-gradient(circle at 22% 68%, rgba(255, 255, 255, 0.72) 0, rgba(255, 255, 255, 0.22) 0.65px, transparent 1.8px),
-    radial-gradient(circle at 32% 74%, rgba(255, 255, 255, 0.88) 0, rgba(186, 220, 255, 0.4) 0.82px, transparent 2.5px),
-    radial-gradient(circle at 44% 62%, rgba(255, 255, 255, 0.76) 0, rgba(255, 255, 255, 0.24) 0.7px, transparent 2px),
-    radial-gradient(circle at 56% 70%, rgba(255, 255, 255, 0.86) 0, rgba(193, 224, 255, 0.38) 0.82px, transparent 2.5px),
-    radial-gradient(circle at 68% 78%, rgba(255, 255, 255, 0.74) 0, rgba(255, 255, 255, 0.22) 0.65px, transparent 1.8px),
-    radial-gradient(circle at 78% 66%, rgba(255, 255, 255, 0.88) 0, rgba(188, 220, 255, 0.38) 0.82px, transparent 2.5px),
-    radial-gradient(circle at 88% 72%, rgba(255, 255, 255, 0.8) 0, rgba(255, 255, 255, 0.24) 0.7px, transparent 2px),
-    linear-gradient(180deg, rgba(8, 6, 16, 0.98) 0%, rgba(2, 2, 6, 1) 100%);
-  --workspace-canvas-overlay:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.01) 18%, rgba(0, 0, 0, 0) 42%);
-  --workspace-grid-dot: rgba(70, 207, 255, 0.28);
-  --workspace-grid-dot-selected: rgba(255, 88, 186, 0.92);
 }
 
 html[data-theme="panda-trueno"],
@@ -321,42 +269,14 @@ html[data-theme="panda-trueno"],
     radial-gradient(circle at 12% 58%, rgba(213, 138, 47, 0.16) 0%, rgba(213, 138, 47, 0.06) 10%, rgba(213, 138, 47, 0) 22%),
     radial-gradient(circle at 88% 78%, rgba(47, 120, 242, 0.18) 0%, rgba(47, 120, 242, 0.07) 14%, rgba(47, 120, 242, 0) 32%),
     linear-gradient(180deg, rgba(245, 245, 241, 1) 0%, rgba(235, 238, 241, 1) 100%);
-  --workspace-canvas-base-color: #eceeeb;
-  --workspace-canvas-background:
-    linear-gradient(180deg, rgba(250, 250, 247, 0.98) 0%, rgba(241, 243, 245, 0.98) 56%, rgba(228, 232, 236, 0.98) 100%);
-  --workspace-canvas-overlay:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0.10) 18%, rgba(255, 255, 255, 0) 38%),
-    linear-gradient(180deg, rgba(17, 20, 23, 0) 0%, rgba(17, 20, 23, 0) 72%, rgba(17, 20, 23, 0.06) 72%, rgba(17, 20, 23, 0.06) 100%),
-    linear-gradient(90deg, rgba(47, 120, 242, 0) 0%, rgba(47, 120, 242, 0) 74%, rgba(47, 120, 242, 0.11) 84%, rgba(47, 120, 242, 0) 100%),
-    linear-gradient(90deg, rgba(213, 138, 47, 0) 0%, rgba(213, 138, 47, 0.12) 8%, rgba(213, 138, 47, 0) 18%);
-  --workspace-grid-dot: rgba(22, 26, 30, 0.24);
-  --workspace-grid-dot-selected: rgba(47, 120, 242, 0.92);
 }
 
 html[data-theme="graphite"],
 [data-command-center-theme-root][data-theme="graphite"] {
-  --workspace-canvas-base-color: #060b13;
-  --workspace-canvas-background:
-    radial-gradient(circle at 16% 14%, rgba(79, 140, 255, 0.20) 0%, rgba(79, 140, 255, 0.06) 14%, rgba(0, 0, 0, 0) 30%),
-    radial-gradient(circle at 82% 72%, rgba(16, 185, 129, 0.10) 0%, rgba(16, 185, 129, 0.03) 10%, rgba(0, 0, 0, 0) 22%),
-    linear-gradient(180deg, #07101a 0%, #03070d 100%);
-  --workspace-canvas-overlay:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.015) 14%, rgba(255, 255, 255, 0) 36%);
-  --workspace-grid-dot: rgba(224, 235, 255, 0.38);
-  --workspace-grid-dot-selected: rgba(116, 165, 255, 0.98);
 }
 
 html[data-theme="quartz-light"],
 [data-command-center-theme-root][data-theme="quartz-light"] {
-  --workspace-canvas-base-color: #eef4fb;
-  --workspace-canvas-background:
-    radial-gradient(circle at 16% 10%, rgba(37, 99, 235, 0.14) 0%, rgba(37, 99, 235, 0.04) 14%, rgba(255, 255, 255, 0) 30%),
-    radial-gradient(circle at 82% 76%, rgba(14, 165, 233, 0.12) 0%, rgba(14, 165, 233, 0.04) 10%, rgba(255, 255, 255, 0) 24%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(239, 245, 252, 0.98) 100%);
-  --workspace-canvas-overlay:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.16) 18%, rgba(255, 255, 255, 0) 42%);
-  --workspace-grid-dot: rgba(37, 58, 83, 0.28);
-  --workspace-grid-dot-selected: rgba(37, 99, 235, 0.90);
 }
 
 html[data-theme="sakura"],
@@ -367,15 +287,6 @@ html[data-theme="sakura"],
     radial-gradient(circle at 18% 72%, rgba(215, 100, 151, 0.14) 0%, rgba(215, 100, 151, 0.05) 12%, rgba(215, 100, 151, 0) 28%),
     radial-gradient(circle at 84% 18%, rgba(242, 167, 200, 0.16) 0%, rgba(242, 167, 200, 0.05) 14%, rgba(242, 167, 200, 0) 30%),
     linear-gradient(180deg, rgba(255, 246, 251, 1) 0%, rgba(252, 236, 244, 1) 100%);
-  --workspace-canvas-base-color: #fcebf2;
-  --workspace-canvas-background:
-    radial-gradient(circle at 14% 10%, rgba(215, 100, 151, 0.12) 0%, rgba(215, 100, 151, 0.04) 14%, rgba(255, 255, 255, 0) 30%),
-    radial-gradient(circle at 82% 76%, rgba(242, 167, 200, 0.14) 0%, rgba(242, 167, 200, 0.05) 10%, rgba(255, 255, 255, 0) 24%),
-    linear-gradient(180deg, rgba(255, 252, 253, 0.94) 0%, rgba(251, 238, 244, 0.98) 100%);
-  --workspace-canvas-overlay:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.60) 0%, rgba(255, 255, 255, 0.18) 18%, rgba(255, 255, 255, 0) 42%);
-  --workspace-grid-dot: rgba(88, 52, 72, 0.22);
-  --workspace-grid-dot-selected: rgba(215, 100, 151, 0.92);
 }
 
 html[data-theme="grandpa"],
@@ -388,16 +299,6 @@ html[data-theme="grandpa"],
     radial-gradient(circle at 14% 10%, rgba(242, 161, 43, 0.12) 0%, rgba(242, 161, 43, 0.04) 8%, rgba(0, 0, 0, 0) 26%),
     radial-gradient(circle at 78% 15%, rgba(52, 93, 155, 0.16) 0%, rgba(52, 93, 155, 0.06) 10%, rgba(0, 0, 0, 0) 26%),
     linear-gradient(180deg, rgba(11, 12, 14, 0.98) 0%, rgba(5, 5, 5, 1) 100%);
-  --workspace-canvas-base-color: #050505;
-  --workspace-canvas-background:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 1px, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0) 6px),
-    radial-gradient(circle at 14% 10%, rgba(242, 161, 43, 0.14) 0%, rgba(242, 161, 43, 0.05) 10%, rgba(0, 0, 0, 0) 28%),
-    radial-gradient(circle at 78% 16%, rgba(52, 93, 155, 0.16) 0%, rgba(52, 93, 155, 0.05) 10%, rgba(0, 0, 0, 0) 28%),
-    linear-gradient(180deg, rgba(13, 14, 17, 0.98) 0%, rgba(4, 4, 4, 1) 100%);
-  --workspace-canvas-overlay:
-    linear-gradient(180deg, rgba(242, 161, 43, 0.06) 0%, rgba(242, 161, 43, 0.01) 16%, rgba(0, 0, 0, 0) 38%);
-  --workspace-grid-dot: rgba(242, 161, 43, 0.40);
-  --workspace-grid-dot-selected: rgba(255, 202, 112, 0.98);
 }
 
 html[data-theme="grandpa"] body,
@@ -479,8 +380,8 @@ html[data-theme="cyberpunk"] [data-theme-chrome="sidebar"],
     14px 0 40px -34px rgba(70, 207, 255, 0.28);
 }
 
-html[data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-shell="default"][data-widget-surface="card"]),
-[data-command-center-theme-root][data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-shell="default"][data-widget-surface="card"]) {
+html[data-theme="cyberpunk"] [data-card-variant="default"],
+[data-command-center-theme-root][data-theme="cyberpunk"] [data-card-variant="default"] {
   position: relative;
   isolation: isolate;
   border: 1px solid transparent;
@@ -492,8 +393,8 @@ html[data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-she
     0 18px 34px -28px rgba(7, 5, 18, 0.64);
 }
 
-html[data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-shell="default"][data-widget-surface="card"])::before,
-[data-command-center-theme-root][data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-shell="default"][data-widget-surface="card"])::before {
+html[data-theme="cyberpunk"] [data-card-variant="default"]::before,
+[data-command-center-theme-root][data-theme="cyberpunk"] [data-card-variant="default"]::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -521,13 +422,8 @@ html[data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-she
   mask-composite: exclude;
 }
 
-html[data-theme="cyberpunk"] [data-widget-shell="default"][data-widget-surface="card"] [data-widget-shell-header],
-[data-command-center-theme-root][data-theme="cyberpunk"] [data-widget-shell="default"][data-widget-surface="card"] [data-widget-shell-header] {
-  border-color: rgba(111, 95, 190, 0.32);
-}
-
-html[data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-shell="default"][data-widget-surface="card"]):hover,
-[data-command-center-theme-root][data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-shell="default"][data-widget-surface="card"]):hover {
+html[data-theme="cyberpunk"] [data-card-variant="default"]:hover,
+[data-command-center-theme-root][data-theme="cyberpunk"] [data-card-variant="default"]:hover {
   background: color-mix(in srgb, var(--card) 96%, var(--background) 4%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -536,8 +432,8 @@ html[data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-she
     0 18px 38px -28px rgba(7, 5, 18, 0.68);
 }
 
-html[data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-shell="default"][data-widget-surface="card"]):hover::before,
-[data-command-center-theme-root][data-theme="cyberpunk"] :is([data-card-variant="default"], [data-widget-shell="default"][data-widget-surface="card"]):hover::before {
+html[data-theme="cyberpunk"] [data-card-variant="default"]:hover::before,
+[data-command-center-theme-root][data-theme="cyberpunk"] [data-card-variant="default"]:hover::before {
   background: linear-gradient(
     90deg,
     rgba(255, 88, 186, 0.98) 0%,

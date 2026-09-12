@@ -2,7 +2,7 @@
 
 ## Role
 
-This standalone example is a release-validation consumer, not a package workspace. It proves that the
+This standalone example is a release-validation consumer. It proves that the
 unified SDK can be packed, installed, imported through its declared export map, and compiled without
 monorepo aliases, source traversal, or any other Command Center package.
 
@@ -12,8 +12,8 @@ monorepo aliases, source traversal, or any other Command Center package.
 - uses the conventional HTTP resource adapter;
 - declares columns, actions, and detail tabs;
 - renders an SDK-owned resource pagination view;
-- resolves contracts, embed, widget, widget host, built-ins, widget testing/UI, workspace,
-  workspace React, theme, palette, preset, and stylesheet export maps; and
+- resolves contracts, embed, navigation, layout, feedback, resource, views, theme, palette, preset,
+  and stylesheet export maps; and
 - compiles against the tarball produced by the release workflow.
 
 ## Constraints

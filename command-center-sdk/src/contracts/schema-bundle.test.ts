@@ -5,27 +5,10 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
-  ADAPTER_FROM_API_DISCOVERY_CONTRACT,
-  ADAPTER_FROM_API_PUBLIC_CONFIG_CONTRACT,
-  ADAPTER_FROM_API_QUERY_CONTRACT,
-  ADAPTER_FROM_API_SECURE_CONFIG_CONTRACT,
-} from "./adapter-from-api.js";
-import {
-  APP_COMPONENT_AUTHORING_CONTRACT,
-  APP_COMPONENT_AUTHORING_SCHEMA_ID,
-  TABULAR_TRANSFORM_AUTHORING_CONTRACT,
-  TABULAR_TRANSFORM_AUTHORING_SCHEMA_ID,
-} from "./core-widget-authoring.js";
-import { CORE_TABULAR_FRAME_SOURCE_CONTRACT } from "./tabular-frame-source.js";
-import {
   readStaticSiteIframeMessage,
   STATIC_SITE_IFRAME_CONTRACT,
   STATIC_SITE_IFRAME_SCHEMA_ID,
 } from "../embed/static-site.js";
-import {
-  TABLE_WIDGET_AUTHORING_CONTRACT,
-  TABLE_WIDGET_AUTHORING_SCHEMA_ID,
-} from "./table-widget-authoring.js";
 import {
   parseBulkActionDiscovery,
   parseBulkActionPreflight,
@@ -38,11 +21,6 @@ import {
   RESOURCE_DISCOVERY_CONTRACT,
 } from "../resource/types.js";
 import { parseResourceDiscovery } from "../resource/discovery.js";
-import {
-  normalizeWorkspaceDocument,
-  WORKSPACE_DOCUMENT_CONTRACT,
-  WORKSPACE_DOCUMENT_SCHEMA_ID,
-} from "../workspace/index.js";
 
 interface ContractManifestEntry {
   contract: string;
@@ -68,7 +46,9 @@ interface ContractManifest {
   schemas: ContractManifestEntry[];
 }
 
-const contractsRoot = fileURLToPath(new URL("../../contracts/", import.meta.url));
+const contractsRoot = fileURLToPath(
+  new URL("../../contracts/", import.meta.url),
+);
 
 function readJson(path: string): unknown {
   return JSON.parse(readFileSync(join(contractsRoot, path), "utf8"));
@@ -102,16 +82,7 @@ describe("published contract schema bundle", () => {
     const contracts = manifest.schemas.map((entry) => entry.contract);
     expect(new Set(contracts).size).toBe(contracts.length);
     expect(contracts).toEqual([
-      CORE_TABULAR_FRAME_SOURCE_CONTRACT,
-      TABLE_WIDGET_AUTHORING_CONTRACT,
-      APP_COMPONENT_AUTHORING_CONTRACT,
-      TABULAR_TRANSFORM_AUTHORING_CONTRACT,
-      WORKSPACE_DOCUMENT_CONTRACT,
       STATIC_SITE_IFRAME_CONTRACT,
-      ADAPTER_FROM_API_DISCOVERY_CONTRACT,
-      ADAPTER_FROM_API_QUERY_CONTRACT,
-      ADAPTER_FROM_API_PUBLIC_CONFIG_CONTRACT,
-      ADAPTER_FROM_API_SECURE_CONFIG_CONTRACT,
       RESOURCE_COLLECTION_CONTRACT,
       RESOURCE_BULK_ACTION_DISCOVERY_CONTRACT,
       RESOURCE_DISCOVERY_CONTRACT,
@@ -122,19 +93,9 @@ describe("published contract schema bundle", () => {
     const ids = manifest.schemas.map((entry) => entry.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(
-      manifest.schemas.find((entry) => entry.contract === TABLE_WIDGET_AUTHORING_CONTRACT)?.id,
-    ).toBe(TABLE_WIDGET_AUTHORING_SCHEMA_ID);
-    expect(
-      manifest.schemas.find((entry) => entry.contract === APP_COMPONENT_AUTHORING_CONTRACT)?.id,
-    ).toBe(APP_COMPONENT_AUTHORING_SCHEMA_ID);
-    expect(
-      manifest.schemas.find((entry) => entry.contract === TABULAR_TRANSFORM_AUTHORING_CONTRACT)?.id,
-    ).toBe(TABULAR_TRANSFORM_AUTHORING_SCHEMA_ID);
-    expect(
-      manifest.schemas.find((entry) => entry.contract === WORKSPACE_DOCUMENT_CONTRACT)?.id,
-    ).toBe(WORKSPACE_DOCUMENT_SCHEMA_ID);
-    expect(
-      manifest.schemas.find((entry) => entry.contract === STATIC_SITE_IFRAME_CONTRACT)?.id,
+      manifest.schemas.find(
+        (entry) => entry.contract === STATIC_SITE_IFRAME_CONTRACT,
+      )?.id,
     ).toBe(STATIC_SITE_IFRAME_SCHEMA_ID);
     manifest.schemas.forEach((entry) => {
       expect(readJson(entry.file)).toMatchObject({
@@ -144,7 +105,9 @@ describe("published contract schema bundle", () => {
       expect(entry.npmPath).toBe(
         `@dev-mainsequence/command-center-sdk/contracts/${entry.file}`,
       );
-      expect(entry.typescript.entrypoint).toMatch(/^@dev-mainsequence\/command-center-sdk\//u);
+      expect(entry.typescript.entrypoint).toMatch(
+        /^@dev-mainsequence\/command-center-sdk\//u,
+      );
       expect(entry.typescript.type.trim()).not.toBe("");
       expect(entry.role.trim()).not.toBe("");
     });
@@ -155,14 +118,22 @@ describe("published contract schema bundle", () => {
 
     manifest.schemas.forEach((entry) => {
       const validate = ajv.getSchema(entry.id);
-      expect(validate, `Missing compiled schema ${entry.id}`).toBeTypeOf("function");
+      expect(validate, `Missing compiled schema ${entry.id}`).toBeTypeOf(
+        "function",
+      );
 
       entry.fixtures.valid.forEach((fixture) => {
         const value = readJson(fixture);
-        expect(validate!(value), `${fixture}: ${ajv.errorsText(validate!.errors)}`).toBe(true);
+        expect(
+          validate!(value),
+          `${fixture}: ${ajv.errorsText(validate!.errors)}`,
+        ).toBe(true);
       });
       entry.fixtures.invalid.forEach((fixture) => {
-        expect(validate!(readJson(fixture)), `${fixture} unexpectedly validated`).toBe(false);
+        expect(
+          validate!(readJson(fixture)),
+          `${fixture} unexpectedly validated`,
+        ).toBe(false);
       });
     });
   });
@@ -178,7 +149,9 @@ describe("published contract schema bundle", () => {
       const indexedFixtures = new Set(
         manifest.schemas.flatMap((entry) => entry.fixtures[fixtureKind]),
       );
-      const actualFixtures = readdirSync(join(contractsRoot, "fixtures", fixtureKind))
+      const actualFixtures = readdirSync(
+        join(contractsRoot, "fixtures", fixtureKind),
+      )
         .filter((name) => name.endsWith(".json"))
         .map((name) => `fixtures/${fixtureKind}/${name}`);
       expect([...indexedFixtures].sort()).toEqual(actualFixtures.sort());
@@ -217,28 +190,20 @@ describe("published contract schema bundle", () => {
     });
   });
 
-  it("keeps workspace fixtures aligned with the public workspace normalizer", () => {
-    const workspace = manifest.schemas.find(
-      (entry) => entry.contract === WORKSPACE_DOCUMENT_CONTRACT,
-    )!;
-    workspace.fixtures.valid.forEach((fixture) => {
-      expect(() => normalizeWorkspaceDocument(readJson(fixture))).not.toThrow();
-    });
-    workspace.fixtures.invalid.forEach((fixture) => {
-      expect(() => normalizeWorkspaceDocument(readJson(fixture))).toThrow();
-    });
-  });
-
   it("keeps static-site iframe fixtures aligned with the public runtime parser", () => {
     const iframe = manifest.schemas.find(
       (entry) => entry.contract === STATIC_SITE_IFRAME_CONTRACT,
     )!;
     const channel = "mainsequence.portfolio-dashboard";
     iframe.fixtures.valid.forEach((fixture) => {
-      expect(readStaticSiteIframeMessage(readJson(fixture), channel)).not.toBeNull();
+      expect(
+        readStaticSiteIframeMessage(readJson(fixture), channel),
+      ).not.toBeNull();
     });
     iframe.fixtures.invalid.forEach((fixture) => {
-      expect(readStaticSiteIframeMessage(readJson(fixture), channel)).toBeNull();
+      expect(
+        readStaticSiteIframeMessage(readJson(fixture), channel),
+      ).toBeNull();
     });
   });
 });

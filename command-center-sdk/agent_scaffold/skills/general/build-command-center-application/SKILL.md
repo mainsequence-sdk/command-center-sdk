@@ -1,6 +1,6 @@
 ---
 name: build-command-center-application
-description: Design, build, migrate, or review a Command Center-compatible application and select the correct @dev-mainsequence/command-center-sdk surfaces before implementation. Use when deciding how a standalone or embedded application should compose application navigation, resource lists, custom and discovered actions, resource details, widgets, workspaces, themes, backend contracts, and application-level or widget-level iframe integration. Route each selected surface to its focused implementation skill without redefining SDK contracts.
+description: Design, build, migrate, or review a Command Center-compatible application and select the correct @dev-mainsequence/command-center-sdk surfaces before implementation. Use when deciding how a standalone or embedded application should compose application navigation, resource lists, custom and discovered actions, resource details, themes, backend contracts, and iframe integration. Route each selected surface to its focused implementation skill without redefining SDK contracts.
 ---
 
 # Build A Command Center Application
@@ -42,11 +42,6 @@ Make these cross-cutting decisions first:
 7. Inspect the installed package version, exports, and declarations through
    `$use-command-center-sdk` before selecting an implementation.
 
-Do not confuse the complete-application protocol with the generic external-widget iframe
-protocol. Use `$embed-command-center-app` only when a separately hosted widget inside the
-application needs typed props, inputs, outputs, user state, sizing, or scoped capabilities across
-the `command-center-iframe@v1` boundary.
-
 ## Choose The Internal Surface
 
 Choose the highest-level composition that owns the required lifecycle:
@@ -60,13 +55,6 @@ Choose the highest-level composition that owns the required lifecycle:
 | One domain object with summary, actions, and sections | `ResourceDetailShell` | `$build-resource-detail` |
 | Searchable single or multiple choice | `ResourcePicker` | `$build-resource-picker` |
 | List, row, detail, or bulk operation | Resource action contracts | `$add-resource-actions` |
-| Portable tabular panel | Table built-in | `$implement-table-widget` |
-| Portable tabular panel requiring formulas or an explicitly installed advanced renderer | Pro Table built-in | `$implement-table-widget` |
-| One compiled HTTP operation with generated ports | AppComponent built-in | `$implement-app-component` |
-| Reusable filter, projection, aggregation, pivot, or merge step | Tabular Transform built-in | `$implement-tabular-transform` |
-| Reusable panel with props, settings, IO, preview, or runtime behavior | Existing built-in or custom widget | `$build-command-center-widget` |
-| Persisted composition of widget instances, layouts, and bindings | Workspace | `$build-command-center-workspace` |
-| External hosted widget crossing a trust boundary | Generic iframe widget | `$embed-command-center-app` |
 
 Do not select a primitive because it can display similar pixels. Select the composition whose
 contract owns the behavior, state, and reuse boundary.
@@ -126,39 +114,9 @@ Use `ResourceDetailShell` for one identified domain object. Compose it from:
 - related-resource collections rendered with the embedded list composition; and
 - domain-specific content contributed inside the standard shell.
 
-Keep tab state controlled by the host router when it must survive navigation or deep links. A
-portable analytical panel inside a detail tab may be a widget, but the complete detail route is
-not a widget. Route the implementation to `$build-resource-detail`.
-
-## Distinguish Resource Lists From Table Widgets
-
-Use a resource list when each row is a domain object and the screen owns server paging, search,
-filtering, sorting, navigation, selection, or resource actions.
-
-Use the Table built-in when tabular values are portable data with widget settings, IO ports,
-preview data, bindings, and possible workspace reuse. Use Pro Table only when formulas or the
-explicit advanced host renderer are required; row count alone is not a reason to choose it.
-
-Do not replace resource management with a Table or Pro Table widget. Do not embed an application
-route inside a widget merely to make it portable.
-
-## Decide When To Use Widgets And Workspaces
-
-Prefer an existing built-in before authoring a custom widget. Inspect Markdown, Statistic, Table,
-Pro Table, AppComponent, and Tabular Transform first.
-
-Use a widget when an independently meaningful panel benefits from a stable ID and version,
-JSON-safe props, settings, preview fixtures, typed IO, host capabilities, registry discovery, or
-reuse inside a workspace. If a panel should eventually be placed, bound, saved, or exported from
-a Command Center workspace, make the panel a widget from the start.
-
-Do not turn a complete route, resource-list lifecycle, resource-detail lifecycle, or global
-application chrome into a widget. Route custom portable panels to
-`$build-command-center-widget`.
-
-Use a workspace only when users persist a composition of multiple widget instances, layouts,
-bindings, and presentation state. A workspace is not a replacement for ordinary application
-routing or resource CRUD. Route modeling and rendering to `$build-command-center-workspace`.
+Keep tab state controlled by the host router when it must survive navigation or deep links. Route
+the implementation to `$build-resource-detail`. Product-specific composition remains in the
+consumer application.
 
 ## Route Backend And Contract Work
 
@@ -169,7 +127,6 @@ Keep the backend independent of application routes and shell placement:
   `$implement-resource-collection-contract`.
 - Implement discovery, optional preflight, and execution with
   `$implement-bulk-actions-contract`.
-- Implement Adapter From API wire contracts with `$implement-adapter-from-api-contract`.
 - Implement any other existing language-neutral contract with
   `$implement-command-center-contract`.
 
@@ -192,8 +149,6 @@ Application-owned routes:
 Resource collections:
 Resource details:
 Action placement:
-Portable widgets:
-Workspace composition:
 Backend adapters/contracts:
 Selected focused skills:
 Rejected alternatives and reasons:
@@ -205,9 +160,6 @@ contracts or rebuild their owned behavior in this general skill.
 ## Enforce The Guardrails
 
 - Do not rebuild the SDK list or detail shells.
-- Do not use Table or Pro Table for domain-resource management.
-- Do not author a custom widget before checking built-ins.
-- Do not turn the complete application into a widget.
 - Do not ship an undocumented application or a separately versioned documentation artifact.
 - Do not treat complete-application iframe integration as optional.
 - Do not add an `Open` action column when identity-cell activation exists.

@@ -27,14 +27,14 @@ describe("navigation definitions", () => {
         },
       ],
     });
-    const connections = defineNavigationContribution({
-      id: "connections.workspace",
+    const reports = defineNavigationContribution({
+      id: "reports.foundry",
       targetApplicationId: "foundry",
       subApplication: {
-        id: "connections",
-        label: "Connections",
+        id: "reports",
+        label: "Reports",
         order: 10,
-        destinations: [{ id: "sources", label: "Sources" }],
+        destinations: [{ id: "daily", label: "Daily" }],
       },
     });
 
@@ -48,20 +48,20 @@ describe("navigation definitions", () => {
           subApplications: [],
         },
       ],
-      [connections],
+      [reports],
     );
 
     expect(result.map((application) => application.id)).toEqual(["ai", "foundry"]);
     expect(result[1]?.subApplications.map((section) => section.id)).toEqual([
-      "connections",
+      "reports",
       "develop",
     ]);
     expect(result[1]?.subApplications[1]?.destinations.map((item) => item.id)).toEqual([
       "services",
       "clusters",
     ]);
-    expect(findNavigationDestination(result[1]!, "sources")?.subApplication.id)
-      .toBe("connections");
+    expect(findNavigationDestination(result[1]!, "daily")?.subApplication.id)
+      .toBe("reports");
   });
 
   it("rejects duplicate destination ids across an application", () => {
@@ -85,11 +85,11 @@ describe("navigation definitions", () => {
 
   it("rejects contributions targeting unknown applications", () => {
     expect(() => composeNavigationApplications([], [{
-      id: "connections.workspace",
+      id: "reports.foundry",
       targetApplicationId: "missing",
       subApplication: {
-        id: "connections",
-        label: "Connections",
+        id: "reports",
+        label: "Reports",
         destinations: [],
       },
     }])).toThrow(/targets unknown application missing/u);

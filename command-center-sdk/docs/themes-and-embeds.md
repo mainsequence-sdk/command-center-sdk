@@ -5,8 +5,7 @@ title: Themes and embeds
 
 # Themes and embeds
 
-This guide matches the `theme-command-center-app`, `embed-command-center-app`, and
-`integrate-static-site-iframe` skills.
+This guide matches the `theme-command-center-app` and `integrate-static-site-iframe` skills.
 
 ## Theme an application
 
@@ -40,8 +39,6 @@ Optional skins are separate exports. Import only those used by the application:
 ```css
 @import "@dev-mainsequence/command-center-sdk/theme/markdown.css";
 @import "@dev-mainsequence/command-center-sdk/theme/ag-grid.css";
-@import "@dev-mainsequence/command-center-sdk/theme/react-flow.css";
-@import "@dev-mainsequence/command-center-sdk/theme/react-grid-layout.css";
 ```
 
 Use exported CSS variables, density, surface hierarchy, and data-visualization helpers instead of
@@ -87,70 +84,6 @@ The theme audit does not prove layout conformance. Use
 `@dev-mainsequence/command-center-sdk/layout/testing` in a real browser to verify computed sibling
 gaps, standard card insets, responsive grid collapse, header-action wrapping, overflow, and
 interactive geometry. See [Application layout](./application-layout.md).
-
-## Choose the correct iframe protocol
-
-The SDK has two unrelated protocols:
-
-| Use case | Protocol | Host | Child |
-| --- | --- | --- | --- |
-| External widget with props, inputs, outputs, user state, sizing, and scoped capabilities | `command-center-iframe@v1` | `SandboxedIframeWidget` or `createIframeBridgeHost` | `createIframeBridgeEmbed` |
-| Application-owned static site receiving theme and public-user context | `mainsequence.*`, numeric version `1` | `StaticSiteIframe` or `createStaticSiteIframeHost` | `createStaticSiteIframeClient` |
-
-Do not translate between them. The npm version does not replace either wire-protocol version.
-
-## Embed an external widget
-
-The React host pins one exact HTTPS origin and gives the iframe a scripts-only sandbox:
-
-```tsx
-import { SandboxedIframeWidget } from "@dev-mainsequence/command-center-sdk/embed/react";
-
-<SandboxedIframeWidget
-  instanceId="risk-summary-1"
-  src="https://widgets.example.com/risk-summary"
-  allowedOrigin="https://widgets.example.com"
-  props={{ portfolioUid }}
-  inputs={{ positions }}
-  theme={{ "--background": "#09090b", "--foreground": "#fafafa" }}
-  locale="en"
-  onOutputs={(outputs) => publishWidgetOutputs(outputs)}
-  onUserState={(state) => saveWidgetUserState(state)}
-  onError={(message) => reportEmbedError(message)}
-/>;
-```
-
-The external application uses the framework-neutral child controller:
-
-```ts
-import { createIframeBridgeEmbed } from "@dev-mainsequence/command-center-sdk/embed";
-
-const bridge = createIframeBridgeEmbed({
-  instanceId: "risk-summary-1",
-  hostOrigin: "https://command-center.example.com",
-  parentWindow: window.parent,
-  onMessage(message) {
-    if (message.type === "host:init") applyHostContext(message);
-    if (message.type === "host:inputs") renderInputs(message.inputs);
-  },
-});
-
-const onMessage = (event: MessageEvent<unknown>) => bridge.handleMessage(event);
-window.addEventListener("message", onMessage);
-bridge.post({ type: "embed:ready" });
-
-function publish(outputs: Record<string, unknown>) {
-  bridge.post({ type: "embed:outputs", outputs });
-}
-
-// On permanent disposal:
-window.removeEventListener("message", onMessage);
-bridge.dispose();
-```
-
-Never send a Command Center session JWT, cookies, unrestricted authorization headers, or an open
-backend proxy. If capabilities are required, mint short-lived, audience-bound, capability-scoped
-tokens on the server and enforce them at the backend.
 
 ## Embed an application-owned static site
 
@@ -251,7 +184,6 @@ host's `frame-src`, the child's `frame-ancestors`, and an operator-controlled ex
   ID alone is not proof that the application is themed.
 - Wrong iframe origin/source, malformed or replayed messages, payload limits, timeout, navigation,
   repeated initialization, and teardown.
-- Expired capabilities and backend token enforcement for generic external widgets.
 - Anonymous/public UID behavior and real-browser CSP/sandbox behavior for static sites.
 - Delegated FastAPI source/origin/target validation, single-flight reuse, refresh before expiry,
   sanitized errors, bounded cold-start retry, cancellation, exact HTTP-state classification,

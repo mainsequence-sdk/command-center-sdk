@@ -2,7 +2,7 @@
 
 `@dev-mainsequence/command-center-sdk` is the public TypeScript/React package for building
 Command Center-compatible navigation, responsive application layouts, application feedback,
-resource applications, widgets, workspaces, themes, and iframe integrations.
+resource applications, themes, backend contracts, and static-site iframe integrations.
 
 The SDK owns reusable contracts, UI, and lifecycle. Your application keeps authentication, API
 clients, routing, persistence, permissions, notifications, and product-specific behavior.
@@ -38,10 +38,8 @@ require Vite.
 - [Application documentation](./docs/application-documentation.md): scaffold, validate, and ship
   human and technical documentation at `/docs/` in the application artifact.
 - [Resources](./docs/resources.md): lists, details, pickers, actions, and backend adapters.
-- [Widgets and workspaces](./docs/widgets-and-workspaces.md): author widgets, compose a host, and
-  render workspace documents.
-- [Themes and embeds](./docs/themes-and-embeds.md): apply themes and integrate both iframe
-  protocols safely.
+- [Themes and embeds](./docs/themes-and-embeds.md): apply themes and integrate application-owned
+  static sites safely.
 - [Extending and releasing](./docs/extending-and-releasing.md): add SDK capabilities, evolve
   contracts, and verify a release.
 - [Backend contract schemas](./contracts/README.md): JSON Schemas, manifest, and valid/invalid
@@ -111,21 +109,12 @@ error normalization stay outside the resource definition.
 - `/resource/react`: loaded-page and explicit/all-matching selection state.
 - `/views`: React resource lists, details, summaries, pickers, tables, cards, pagination, and
   action UI.
-- `/contracts`: JSON-safe widget, runtime-data, value, migration, tabular-frame, Table/Pro Table,
-  AppComponent/Mock JSON, Tabular Transform authoring, and Adapter From API contracts.
+- `/contracts`: ordered migration helpers.
 - `/contracts/manifest.json`, `/contracts/schemas/*`, and `/contracts/fixtures/*`: the versioned
   backend-facing JSON Schema bundle and conformance fixtures.
-- `/widget`: widget modules, executable runtimes, extensions, IO, settings, and capabilities.
-- `/widget/host`: collision-safe registry, availability, and canonical widget identity.
-- `/widget/testing` and `/widget/ui`: validation and reusable authoring controls.
-- `/widget/built-ins` and its narrow `/app-component`, `/tabular-transform`, `/table`, and
-  `/pro-table` subpaths: Markdown, Statistic, AppComponent with Mock JSON, Tabular Transform,
-  Community Table, and Pro Table modules.
-- `/workspace` and `/workspace/react`: workspace documents, normalization, migrations, snapshots,
-  and read-only rendering.
 - `/theme`, `/theme/presets`, and `/theme/data-viz`: presets, CSS variables, density, surfaces, and
   chart palettes.
-- `/embed` and `/embed/react`: generic external-widget and application-owned static-site iframe APIs.
+- `/embed` and `/embed/react`: application-owned static-site iframe APIs.
 - `/styles.css` and `/theme/*.css`: browser-ready styles.
 
 Import only declared package exports. Do not import `dist` files or repository source paths.
@@ -134,9 +123,7 @@ Import only declared package exports. Do not import `dist` files or repository s
 
 The SDK supplies reusable controlled navigation chrome but does not own authentication, routes,
 permission evaluation, query caching, backend authorization, deployment configuration, branding,
-favorites, user menus, or persistence policy. The current `/workspace/react`
-surface is a read-only renderer; it is not a public workspace editor. Connection-neutral contracts
-and views are not yet a published entrypoint.
+favorites, user menus, persistence policy, or product-domain models and applications.
 
 ## Agent skills
 
@@ -150,8 +137,6 @@ The npm package installs version-matched skills into:
   layout/
   resource/
   views/
-  widget/
-  workspace/
   contracts/
   theme/
   embed/
@@ -282,5 +267,5 @@ seconds. The CLI option takes precedence, and Git-context timeouts stop before m
 - React views live behind deliberate UI subpaths.
 - Public JavaScript, declarations, CSS, package exports, examples, and agent skills must agree.
 - Major modules require a nearest README.
-- Persisted workspace, widget, binding, runtime-state, theme-ID, or protocol changes require an
-  explicit compatibility and backend/storage assessment.
+- Persisted contract, theme-ID, or protocol changes require an explicit compatibility and
+  backend/storage assessment.

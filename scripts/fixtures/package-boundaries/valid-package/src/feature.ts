@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 
 import type { LocalProps } from "./model";
 
-export type ValidWidgetFixture = {
+export type ValidFeatureFixture = {
   component: ComponentType<LocalProps>;
   theme: ThemePreset;
 };

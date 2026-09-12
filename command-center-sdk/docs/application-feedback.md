@@ -149,7 +149,7 @@ existing page landmark:
 ```
 
 Use `ResourceTransitionShell` from `/views` instead when one resource activation is temporarily
-resolving navigation to another resource. Keep list, detail, picker, widget, and action-dialog
+resolving navigation to another resource. Keep list, detail, picker, and action-dialog
 loading inside the higher-level SDK component that already owns that lifecycle.
 
 ## Preserve accessible and accurate copy

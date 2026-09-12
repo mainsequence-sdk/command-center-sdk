@@ -223,7 +223,7 @@ test("explicit CLI installs the packaged skills and emits JSON", async () => {
     assert.equal(result.status, 0, result.stderr);
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.namespace, AGENT_SKILL_NAMESPACE);
-    assert.equal(payload.copied.length, 24);
+    assert.equal(payload.copied.length, 16);
     assert.equal(
       await readFile(
         join(payload.destinationRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
@@ -235,13 +235,6 @@ test("explicit CLI installs the packaged skills and emits JSON", async () => {
       await readFile(join(payload.destinationRoot, "PINNED_FROM.txt"), "utf8").then((value) =>
         value.includes(`pinned_version=${payload.pinnedVersion}`),
       ),
-      true,
-    );
-    assert.equal(
-      await readFile(
-        join(payload.destinationRoot, "widget", "built-ins", "implement-app-component", "SKILL.md"),
-        "utf8",
-      ).then((value) => value.includes("command-center.app_component_authoring@v1")),
       true,
     );
     await readFile(
@@ -266,7 +259,7 @@ test("postinstall resolves and installs into INIT_CWD", async () => {
       },
     });
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /Installed 24 agent skill/u);
+    assert.match(result.stdout, /Installed 16 agent skill/u);
     const sentinel = await readFile(
       join(projectRoot, ".agents", "skills", AGENT_SKILL_NAMESPACE, "PINNED_FROM.txt"),
       "utf8",

@@ -1,23 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
-  APP_COMPONENT_AUTHORING_CONTRACT,
-  COMMAND_CENTER_WIDGET_API_VERSION,
-  TABLE_WIDGET_AUTHORING_CONTRACT,
-  TABULAR_TRANSFORM_AUTHORING_CONTRACT,
-  type AppComponentAuthoringContractV1,
-  type TabularTransformAuthoringContractV1,
-} from "@dev-mainsequence/command-center-sdk/contracts";
-import {
-  IFRAME_BRIDGE_PROTOCOL_VERSION,
   STATIC_SITE_IFRAME_CONTRACT,
   type ResolveStaticSiteFastApiCredential,
   type StaticSiteFastApiTransportState,
 } from "@dev-mainsequence/command-center-sdk/embed";
-import {
-  SandboxedIframeWidget,
-  StaticSiteIframe,
-} from "@dev-mainsequence/command-center-sdk/embed/react";
+import { StaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed/react";
 import {
   ActivityIndicator,
   ApplicationStatusScreen,
@@ -47,31 +35,9 @@ import { mainSequenceTheme } from "@dev-mainsequence/command-center-sdk/theme";
 import { getThemeCategoricalPalette } from "@dev-mainsequence/command-center-sdk/theme/data-viz";
 import { graphiteTheme } from "@dev-mainsequence/command-center-sdk/theme/presets";
 import { ResourcePagination } from "@dev-mainsequence/command-center-sdk/views";
-import { defineExtension } from "@dev-mainsequence/command-center-sdk/widget";
-import { coreWidgetsExtension } from "@dev-mainsequence/command-center-sdk/widget/built-ins";
-import {
-  tableWidgetModule,
-  type TableWidgetProps,
-} from "@dev-mainsequence/command-center-sdk/widget/built-ins/table";
-import { proTableWidgetModule } from "@dev-mainsequence/command-center-sdk/widget/built-ins/pro-table";
-import { appComponentWidgetModule } from "@dev-mainsequence/command-center-sdk/widget/built-ins/app-component";
-import { tabularTransformWidgetModule } from "@dev-mainsequence/command-center-sdk/widget/built-ins/tabular-transform";
-import {
-  createWidgetRegistry,
-  MAIN_SEQUENCE_FOUNDRY_CODE_REPOSITORY_INFRA_GRAPH_WIDGET_ID,
-} from "@dev-mainsequence/command-center-sdk/widget/host";
-import { validateWidgetManifest } from "@dev-mainsequence/command-center-sdk/widget/testing";
-import { widgetThemeTokens } from "@dev-mainsequence/command-center-sdk/widget/ui";
-import {
-  WORKSPACE_DOCUMENT_CONTRACT,
-  WORKSPACE_DOCUMENT_SCHEMA_ID,
-  WORKSPACE_SCHEMA_VERSION,
-} from "@dev-mainsequence/command-center-sdk/workspace";
-import { WorkspaceRenderer } from "@dev-mainsequence/command-center-sdk/workspace/react";
 
 import "@dev-mainsequence/command-center-sdk/styles.css";
 import "@dev-mainsequence/command-center-sdk/theme/styles.css";
-import "@dev-mainsequence/command-center-sdk/widget/built-ins.css";
 
 type Service = {
   uid: string;
@@ -247,59 +213,11 @@ export const packedSdkSurfaceSmoke = {
   ApplicationPageHeader,
   ApplicationPageStack,
   ProgressStageList,
-  APP_COMPONENT_AUTHORING_CONTRACT,
-  COMMAND_CENTER_WIDGET_API_VERSION,
-  IFRAME_BRIDGE_PROTOCOL_VERSION,
-  MAIN_SEQUENCE_FOUNDRY_CODE_REPOSITORY_INFRA_GRAPH_WIDGET_ID,
   STATIC_SITE_IFRAME_CONTRACT,
-  SandboxedIframeWidget,
-  TABULAR_TRANSFORM_AUTHORING_CONTRACT,
-  WORKSPACE_DOCUMENT_CONTRACT,
-  WORKSPACE_DOCUMENT_SCHEMA_ID,
-  WORKSPACE_SCHEMA_VERSION,
   COMMAND_CENTER_LAYOUT_VIEWPORTS,
-  WorkspaceRenderer,
-  coreWidgetsExtension,
-  appComponentWidgetModule,
-  proTableWidgetModule,
-  tabularTransformWidgetModule,
-  tableWidgetModule,
-  TABLE_WIDGET_AUTHORING_CONTRACT,
-  createWidgetRegistry,
-  defineExtension,
   defineNavigationApplication,
   getThemeCategoricalPalette,
   graphiteTheme,
   mainSequenceTheme,
-  validateWidgetManifest,
   verifyCommandCenterPageLayout,
-  widgetThemeTokens,
 } satisfies Record<string, unknown>;
-
-export const packedTableProps = {
-  tableSourceMode: "manual",
-  manualColumns: [{ key: "symbol", type: "string" }],
-  manualRows: [{ symbol: "ALPHA" }],
-} satisfies TableWidgetProps;
-
-export const packedAppComponentAuthoring = {
-  contract: APP_COMPONENT_AUTHORING_CONTRACT,
-  widgetId: "core__app-component",
-  props: {
-    apiTargetMode: "mock-json",
-    mockJson: {
-      version: 1,
-      operation: { method: "post", path: "/preview" },
-      response: { status: 200, body: { accepted: true } },
-    },
-  },
-} satisfies AppComponentAuthoringContractV1;
-
-export const packedTabularTransformAuthoring = {
-  contract: TABULAR_TRANSFORM_AUTHORING_CONTRACT,
-  widgetId: "core__tabular-transform",
-  props: {
-    transformMode: "filter",
-    filterRules: [{ field: "status", operator: "equals", value: "active" }],
-  },
-} satisfies TabularTransformAuthoringContractV1;

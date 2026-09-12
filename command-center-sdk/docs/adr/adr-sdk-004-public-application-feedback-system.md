@@ -146,7 +146,7 @@ implement an SDK feedback schema.
 replaces one resource surface with another. It reuses `ActivityIndicator` internally without
 changing its existing props or purpose.
 
-`ResourceListPage`, `ResourceDetailShell`, `ResourcePicker`, widget surfaces, and action dialogs
+`ResourceListPage`, `ResourceDetailShell`, `ResourcePicker`, and action dialogs
 retain their current local loading contracts. Consumers should not replace those owned states with
 an application status screen.
 
@@ -157,7 +157,7 @@ consumer-owned region and meaningful progress or recovery information exists.
 
 This decision adds no serialized, persisted, iframe, or backend protocol. Public props contain
 React nodes and callbacks and cannot be treated as wire data. Existing contract IDs, JSON Schemas,
-fixtures, manifest entries, workspace documents, widget state, and iframe versions remain
+fixtures, manifest entries, application state, and iframe versions remain
 unchanged.
 
 If multiple independent backends later need to exchange one canonical progress payload, that is a

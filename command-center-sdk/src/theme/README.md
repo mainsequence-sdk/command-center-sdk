@@ -30,8 +30,6 @@ External iframe applications install the SDK and resolve the active `themeId` se
 - `fonts.css`: shared Command Center font-stack custom properties.
 - `markdown.css`: optional scoped markdown skin for `.command-center-markdown`.
 - `ag-grid.css`: optional AG Grid skin keyed off Command Center CSS variables.
-- `react-flow.css`: optional React Flow workspace graph controls and handle skin.
-- `react-grid-layout.css`: optional React Grid Layout resize and placeholder skin.
 
 ## Usage
 
@@ -80,8 +78,6 @@ Import optional skins only when the consuming application uses those surfaces:
 ```css
 @import "@dev-mainsequence/command-center-sdk/theme/markdown.css";
 @import "@dev-mainsequence/command-center-sdk/theme/ag-grid.css";
-@import "@dev-mainsequence/command-center-sdk/theme/react-flow.css";
-@import "@dev-mainsequence/command-center-sdk/theme/react-grid-layout.css";
 ```
 
 ## Maintenance Notes
@@ -111,6 +107,5 @@ changes.
 
 ## Architecture Documentation
 
-- [Legacy-package migration](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/docs/packages/migrating-from-legacy-packages.md)
 - [Package publishing](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/docs/packages/publishing.md)
 - [Platform theming](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/docs/platform/theming.md)

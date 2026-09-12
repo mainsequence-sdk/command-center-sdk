@@ -62,22 +62,6 @@ try {
     types: "./dist/feedback/index.d.ts",
     import: "./dist/feedback/index.js",
   });
-  assert.deepEqual(packageJson.exports["./widget/built-ins/table"], {
-    types: "./dist/widget/built-ins/table/table/index.d.ts",
-    import: "./dist/widget/built-ins/table/table/index.js",
-  });
-  assert.deepEqual(packageJson.exports["./widget/built-ins/pro-table"], {
-    types: "./dist/widget/built-ins/table/pro-table/index.d.ts",
-    import: "./dist/widget/built-ins/table/pro-table/index.js",
-  });
-  assert.deepEqual(packageJson.exports["./widget/built-ins/app-component"], {
-    types: "./dist/widget/built-ins/app-component/index.d.ts",
-    import: "./dist/widget/built-ins/app-component/index.js",
-  });
-  assert.deepEqual(packageJson.exports["./widget/built-ins/tabular-transform"], {
-    types: "./dist/widget/built-ins/tabular-transform/index.d.ts",
-    import: "./dist/widget/built-ins/tabular-transform/index.js",
-  });
   assert.notEqual(
     (await stat(join(extractedPackage, "cli", "command-center-sdk.mjs"))).mode & 0o111,
     0,
@@ -127,15 +111,6 @@ try {
   );
   assert.equal(typeof resourceModule.parseResourceDiscovery, "function");
   assert.equal(typeof resourceModule.serializeResourceIdentity, "function");
-  const packedWidgetIds = await readFile(
-    join(extractedPackage, "dist", "widget", "host", "widget-id.js"),
-    "utf8",
-  );
-  assert.match(
-    packedWidgetIds,
-    /MAIN_SEQUENCE_FOUNDRY_CODE_REPOSITORY_INFRA_GRAPH_WIDGET_ID\s*=\s*"main-sequence-foundry__code-repository-infra-graph"/u,
-  );
-  assert.doesNotMatch(packedWidgetIds, /MAIN_SEQUENCE_FOUNDRY_PROJECT_INFRA_GRAPH_WIDGET_ID/u);
   await Promise.all([
     "index.js",
     "index.d.ts",
@@ -170,8 +145,6 @@ try {
     "getting-started.md",
     "navigation.md",
     "resources.md",
-    "table-and-pro-table.md",
-    "widgets-and-workspaces.md",
     "themes-and-embeds.md",
     "extending-and-releasing.md",
   ].map((name) => readFile(join(extractedPackage, "docs", name), "utf8")));
@@ -237,42 +210,15 @@ try {
     await readFile(join(extractedPackage, "contracts", "manifest.json"), "utf8"),
   );
   const packedRequire = createRequire(join(extractedPackage, "package.json"));
-  const tableEntry = join(
-    extractedPackage,
-    packageJson.exports["./widget/built-ins/table"].import.slice(2),
-  );
-  const proTableEntry = join(
-    extractedPackage,
-    packageJson.exports["./widget/built-ins/pro-table"].import.slice(2),
-  );
-  const appComponentEntry = join(
-    extractedPackage,
-    packageJson.exports["./widget/built-ins/app-component"].import.slice(2),
-  );
-  const tabularTransformEntry = join(
-    extractedPackage,
-    packageJson.exports["./widget/built-ins/tabular-transform"].import.slice(2),
-  );
-  await readFile(tableEntry, "utf8");
-  await readFile(proTableEntry, "utf8");
-  await readFile(appComponentEntry, "utf8");
-  await readFile(tabularTransformEntry, "utf8");
-  await readFile(join(extractedPackage, "dist", "widget", "built-ins", "table", "table", "index.d.ts"), "utf8");
-  await readFile(join(extractedPackage, "dist", "widget", "built-ins", "table", "pro-table", "index.d.ts"), "utf8");
-  await readFile(join(extractedPackage, "dist", "widget", "built-ins", "app-component", "index.d.ts"), "utf8");
-  await readFile(join(extractedPackage, "dist", "widget", "built-ins", "tabular-transform", "index.d.ts"), "utf8");
   assert.equal(
     await realpath(packedRequire.resolve(`${packageJson.name}/contracts/manifest.json`)),
     await realpath(join(extractedPackage, "contracts", "manifest.json")),
   );
   assert.equal(contractManifest.format, "command-center-contract-manifest@v1");
-  assert.equal(contractManifest.schemas.length, 15);
+  assert.equal(contractManifest.schemas.length, 6);
   const contractIds = new Set(contractManifest.schemas.map((contract) => contract.contract));
   for (const contractId of [
     "command-center.resource_discovery@v1",
-    "command-center.app_component_authoring@v1",
-    "command-center.tabular_transform_authoring@v1",
-    "command-center.workspace_document@v1",
     "command-center.static_site_iframe@v1",
   ]) {
     assert.equal(contractIds.has(contractId), true, `${contractId} should be packaged`);
@@ -308,7 +254,7 @@ try {
     (await readdir(managedRoot, { withFileTypes: true })).filter(
       (entry) => entry.isDirectory() && !entry.name.startsWith("."),
     ).length,
-    11,
+    9,
   );
   const documentationSkillRoot = join(
     managedRoot,

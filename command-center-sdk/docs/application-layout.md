@@ -80,7 +80,7 @@ cards. Do not add margins to each child to recreate those relationships.
 
 Place `ResourceListPage` and `ResourceDetailShell` directly in `ApplicationPageStack`. Do not wrap
 them in `ApplicationCard`; those high-level views already own their internal surfaces and padding.
-Specialized chart, form, split-pane, map, editor, canvas, widget, and workspace internals remain
+Specialized chart, form, split-pane, map, editor, and canvas internals remain
 application-owned unless their public module says otherwise.
 
 The SDK does not own section order, routing, authentication, permissions, API transport,

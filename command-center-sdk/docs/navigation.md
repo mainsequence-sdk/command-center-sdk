@@ -151,20 +151,20 @@ import {
 } from "@dev-mainsequence/command-center-sdk/navigation";
 
 const contribution = defineNavigationContribution({
-  id: "connections.workspace-navigation",
-  targetApplicationId: "workspaces",
+  id: "reports.operations-navigation",
+  targetApplicationId: "operations",
   subApplication: {
-    id: "connections",
-    label: "Connections",
+    id: "reports",
+    label: "Reports",
     destinations: [
-      { id: "data-sources", label: "Data Sources" },
-      { id: "explore", label: "Explore" },
+      { id: "daily", label: "Daily" },
+      { id: "monthly", label: "Monthly" },
     ],
   },
 });
 
 const applications = composeNavigationApplications(
-  [workspacesApplication],
+  [operationsApplication],
   [contribution],
 );
 ```

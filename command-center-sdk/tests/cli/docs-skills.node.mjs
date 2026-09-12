@@ -28,7 +28,7 @@ test("human documentation maps every packaged agent skill", async () => {
   for (const skillPath of skillPaths) {
     assert.equal(docsIndex.includes(`\`${skillPath}\``), true, `${skillPath} is not documented`);
   }
-  assert.equal(skillPaths.length, 24);
+  assert.equal(skillPaths.length, 16);
 });
 
 test("application documentation guidance stays aligned with the official scaffold", async () => {
@@ -134,7 +134,7 @@ test("contract skills point to the canonical manifest without bundling contract 
   const contractSkills = (await listSkillPaths()).filter((skillPath) =>
     skillPath.startsWith("contracts/"),
   );
-  assert.equal(contractSkills.length, 4);
+  assert.equal(contractSkills.length, 3);
   for (const skillPath of contractSkills) {
     const skill = await readFile(join(skillsRoot, ...skillPath.split("/"), "SKILL.md"), "utf8");
     assert.match(skill, /contracts\/manifest\.json/u);

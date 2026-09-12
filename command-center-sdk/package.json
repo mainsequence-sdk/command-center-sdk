@@ -1,8 +1,8 @@
 {
   "name": "@dev-mainsequence/command-center-sdk",
-  "version": "0.1.21",
+  "version": "0.2.0",
   "private": false,
-  "description": "The unified framework for building Command Center-compatible resource applications, widgets, workspaces, connections, themes, and embeds.",
+  "description": "The framework-neutral SDK for building Command Center-compatible resource applications, navigation, layouts, themes, feedback, and embeds.",
   "type": "module",
   "license": "Apache-2.0",
   "repository": {
@@ -12,8 +12,7 @@
   },
   "sideEffects": [
     "*.css",
-    "theme/*.css",
-    "widget/*.css"
+    "theme/*.css"
   ],
   "files": [
     "agent_scaffold",
@@ -23,7 +22,6 @@
     "docs",
     "styles.css",
     "theme",
-    "widget",
     "README.md",
     "CHANGELOG.md",
     "LICENSE"
@@ -83,54 +81,6 @@
       "types": "./dist/views/index.d.ts",
       "import": "./dist/views/index.js"
     },
-    "./widget": {
-      "types": "./dist/widget/index.d.ts",
-      "import": "./dist/widget/index.js"
-    },
-    "./widget/host": {
-      "types": "./dist/widget/host/index.d.ts",
-      "import": "./dist/widget/host/index.js"
-    },
-    "./widget/built-ins": {
-      "types": "./dist/widget/built-ins/index.d.ts",
-      "import": "./dist/widget/built-ins/index.js"
-    },
-    "./widget/built-ins/table": {
-      "types": "./dist/widget/built-ins/table/table/index.d.ts",
-      "import": "./dist/widget/built-ins/table/table/index.js"
-    },
-    "./widget/built-ins/pro-table": {
-      "types": "./dist/widget/built-ins/table/pro-table/index.d.ts",
-      "import": "./dist/widget/built-ins/table/pro-table/index.js"
-    },
-    "./widget/built-ins/app-component": {
-      "types": "./dist/widget/built-ins/app-component/index.d.ts",
-      "import": "./dist/widget/built-ins/app-component/index.js"
-    },
-    "./widget/built-ins/tabular-transform": {
-      "types": "./dist/widget/built-ins/tabular-transform/index.d.ts",
-      "import": "./dist/widget/built-ins/tabular-transform/index.js"
-    },
-    "./widget/testing": {
-      "types": "./dist/widget/testing/index.d.ts",
-      "import": "./dist/widget/testing/index.js"
-    },
-    "./testing": {
-      "types": "./dist/widget/testing/index.d.ts",
-      "import": "./dist/widget/testing/index.js"
-    },
-    "./widget/ui": {
-      "types": "./dist/widget/ui/index.d.ts",
-      "import": "./dist/widget/ui/index.js"
-    },
-    "./workspace": {
-      "types": "./dist/workspace/index.d.ts",
-      "import": "./dist/workspace/index.js"
-    },
-    "./workspace/react": {
-      "types": "./dist/workspace/react/index.d.ts",
-      "import": "./dist/workspace/react/index.js"
-    },
     "./theme": {
       "types": "./dist/theme/index.d.ts",
       "import": "./dist/theme/index.js"
@@ -146,12 +96,9 @@
     "./theme/ag-grid.css": "./theme/ag-grid.css",
     "./theme/fonts.css": "./theme/fonts.css",
     "./theme/markdown.css": "./theme/markdown.css",
-    "./theme/react-flow.css": "./theme/react-flow.css",
-    "./theme/react-grid-layout.css": "./theme/react-grid-layout.css",
     "./theme/styles.css": "./theme/styles.css",
     "./theme/tailwind.css": "./theme/tailwind.css",
     "./theme/utilities.css": "./theme/utilities.css",
-    "./widget/built-ins.css": "./widget/built-ins.css",
     "./tailwind.css": "./theme/tailwind.css",
     "./styles.css": "./styles.css",
     "./package.json": "./package.json"
@@ -176,11 +123,7 @@
     "react-dom": ">=18 <20"
   },
   "dependencies": {
-    "lucide-react": "^0.500.0",
-    "react-markdown": "^10.1.0",
-    "rehype-raw": "^7.0.0",
-    "rehype-sanitize": "^6.0.0",
-    "remark-gfm": "^4.0.1"
+    "lucide-react": "^0.500.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

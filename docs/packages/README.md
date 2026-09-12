@@ -17,8 +17,7 @@ release policy.
 1. [Architecture and dependency rules](./architecture.md)
 2. [Compatibility policy](./compatibility.md)
 3. [Publishing and releases](./publishing.md)
-4. [Migrating from legacy packages](./migrating-from-legacy-packages.md)
-5. [Packed consumer fixture](./sdk-consumer-fixture.md)
+4. [Packed consumer fixture](./sdk-consumer-fixture.md)
 
 New reusable capabilities become deliberate SDK subpath exports. Command Center application code,
 product policy, routes, authentication, persistence, and deployment configuration do not belong in

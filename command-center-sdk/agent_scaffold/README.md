@@ -2,8 +2,8 @@
 
 This directory is the versioned agent skill bundle shipped with
 `@dev-mainsequence/command-center-sdk`. Its `skills/` children teach agents to select, use, extend,
-evolve, and verify only the SDK package and its published layout, resource, widget, workspace,
-theme, and embed contracts, including the language-neutral schema manifest and fixtures. They do
+evolve, and verify only the SDK package and its published layout, resource, theme, and embed
+contracts, including the language-neutral schema manifest and fixtures. They do
 not describe or own surrounding product applications, routes, backend implementations, or
 repository-specific application modules.
 
@@ -30,7 +30,7 @@ The bundle is organized into SDK-only lanes:
 - application documentation authoring, validation, same-artifact builds, and browser verification;
 - application page/card composition and real-browser layout verification;
 - resource lists, details, pickers, actions, and backend adapter normalization;
-- widget, widget-host, workspace, theme, and embed authoring; and
+- theme and embed authoring; and
 - SDK extension, serialized-contract evolution, and package verification.
 
 ## Human documentation parity

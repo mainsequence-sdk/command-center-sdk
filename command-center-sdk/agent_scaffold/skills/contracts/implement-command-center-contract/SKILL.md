@@ -27,11 +27,9 @@ The manifest, referenced JSON Schema, and indexed fixtures are the only canonica
 Human documentation explains intent but does not redefine fields. Never copy a schema or fixture
 into this skill.
 
-Use a more specific implementation skill when available: `$implement-table-widget`,
-`$implement-app-component`, `$implement-tabular-transform`,
-`$implement-adapter-from-api-contract`, `$implement-resource-collection-contract`,
-`$implement-bulk-actions-contract`, `$adapt-resource-backend`, or
-`$build-command-center-workspace`.
+Use a more specific implementation skill when available:
+`$implement-resource-collection-contract`, `$implement-bulk-actions-contract`, or
+`$adapt-resource-backend`.
 
 ## Implement The Existing Wire Shape
 

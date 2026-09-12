@@ -51,9 +51,9 @@ npm run docs:dev
 
 ### Preserve the SDK boundary
 
-- Keep reusable contracts, views, widgets, workspaces, themes, embeds, and navigation in the SDK.
+- Keep reusable contracts, views, themes, embeds, and navigation in the SDK.
 - Keep product routes, authentication, backend transports, permissions, and deployment outside.
-- Treat schema IDs, protocol IDs, widget IDs, and persisted fields as compatibility boundaries.
+- Treat schema IDs, protocol IDs, theme IDs, and persisted fields as compatibility boundaries.
 
 ### Document compatibility impact
 

@@ -422,7 +422,7 @@ Credentials must not enter:
 - cookies;
 - URLs, fragments, history, or referrers;
 - service-worker persistent caches;
-- workspace/widget persistence;
+- application persistence;
 - build variables;
 - logs, analytics, monitoring, or error serialization; or
 - React Query persistence or development-state snapshots.
@@ -652,7 +652,7 @@ broader credential.
 There is no persisted frontend storage change.
 
 The credential, pending requests, expiry metadata, and cache live only in the
-SDK client/host instance. Workspace documents, widget state, application
+SDK client/host instance. Application state and
 settings, URL state, browser auth storage, and backend persistence remain
 unchanged.
 

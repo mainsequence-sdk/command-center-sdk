@@ -1,6 +1,6 @@
 ---
 name: compose-command-center-page
-description: Compose, migrate, review, or verify a complete responsive application page with the public @dev-mainsequence/command-center-sdk/layout primitives and browser geometry verifier. Use for page gutters and maximum width, title and action headers, top-level section rhythm, padded or full-bleed cards, responsive sibling-card grids, or layout conformance across supported phone, tablet, and desktop viewports. Do not use for internal layout already owned by ResourceListPage, ResourceDetailShell, widgets, or specialized editors and canvases.
+description: Compose, migrate, review, or verify a complete responsive application page with the public @dev-mainsequence/command-center-sdk/layout primitives and browser geometry verifier. Use for page gutters and maximum width, title and action headers, top-level section rhythm, padded or full-bleed cards, responsive sibling-card grids, or layout conformance across supported phone, tablet, and desktop viewports. Do not use for internal layout already owned by ResourceListPage, ResourceDetailShell, or specialized editors and canvases.
 ---
 
 # Compose A Command Center Page
@@ -79,7 +79,7 @@ owned surface.
 
 Place `ResourceListPage` and `ResourceDetailShell` directly in `ApplicationPageStack`. Do not wrap
 them in `ApplicationCard`; those views already own their internal surface, padding, and lifecycle.
-Do the same for a widget or workspace renderer whose public documentation says it owns its frame.
+Do the same for any specialized renderer whose public documentation says it owns its frame.
 
 Keep domain-specific charts, forms, split panes, maps, editors, and canvases application-owned.
 The layout primitives do not own routing, authentication, permissions, persistence, API transport,

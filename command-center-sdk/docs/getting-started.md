@@ -25,8 +25,7 @@ Load the shared styles once:
 import "@dev-mainsequence/command-center-sdk/styles.css";
 ```
 
-React and React DOM are peer dependencies. Keep one compatible React runtime in the host and in
-any separately distributed widget packages.
+React and React DOM are peer dependencies. Keep one compatible React runtime in the host.
 
 ## Install current agent guidance
 
@@ -172,16 +171,12 @@ Start with the composition that already owns the interaction lifecycle:
 | Paginated/searchable collection | `ResourceListPage` from `/views` |
 | One object with summary, actions, and tabs | `ResourceDetailShell` from `/views` |
 | Single, multiple, or action selection | `ResourcePicker` from `/views` |
-| Reusable dashboard panel | `defineWidgetModule` from `/widget` |
-| Persisted multi-widget document | `/workspace` and `/workspace/react` |
 | Theme preset or CSS variables | `/theme` and the theme CSS exports |
-| External widget with props, inputs, and outputs | Generic `/embed` protocol |
 | Application-owned static site with theme/user context | Static-site `/embed` protocol |
 
 Treat complete-application embedding and SDK theming as cross-cutting requirements. Inside that
-boundary, select the composition whose contract owns the required lifecycle: resource views for
-domain objects, widgets for portable panels and data, and workspaces for persisted multi-widget
-compositions.
+boundary, select the composition whose contract owns the required lifecycle. Resource views own
+domain-object interaction; product-specific composition remains application-owned.
 
 ## Render a first resource list
 

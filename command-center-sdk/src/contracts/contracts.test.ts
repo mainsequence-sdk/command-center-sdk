@@ -1,47 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  COMMAND_CENTER_WIDGET_API_VERSION,
-  assertJsonSerializable,
-  runOrderedMigrations,
-  type WidgetManifest,
-} from "./index.js";
+import { runOrderedMigrations } from "./index.js";
 
 describe("public contracts", () => {
-  it("keeps widget manifests JSON-safe", () => {
-    const manifest: WidgetManifest = {
-      apiVersion: COMMAND_CENTER_WIDGET_API_VERSION,
-      id: "example__status",
-      widgetVersion: "1.0.0",
-      title: "Status",
-      description: "Shows one status.",
-      category: "Example",
-      kind: "kpi",
-      source: "example",
-      defaultSize: { w: 4, h: 3 },
-      propsVersion: 1,
-      userStateVersion: 1,
-      registryContract: {
-        usageGuidance: {
-          buildPurpose: "Show status.",
-          whenToUse: ["Use for status."],
-          whenNotToUse: [],
-          authoringSteps: ["Add the widget."],
-        },
-      },
-    };
-
-    expect(() => assertJsonSerializable(manifest, "manifest")).not.toThrow();
-    expect(JSON.parse(JSON.stringify(manifest))).toEqual(manifest);
-  });
-
-  it("rejects functions and cycles from serializable contracts", () => {
-    expect(() => assertJsonSerializable({ render: () => null })).toThrow(/JSON-safe/);
-    const cyclic: Record<string, unknown> = {};
-    cyclic.self = cyclic;
-    expect(() => assertJsonSerializable(cyclic)).toThrow(/JSON-safe/);
-  });
-
   it("runs migrations in deterministic consecutive order", () => {
     const result = runOrderedMigrations({
       value: { labels: [] as string[] },

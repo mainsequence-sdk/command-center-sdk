@@ -1,4 +1,4 @@
-# Command Center SDK Workspace Instructions
+# Command Center SDK Repository Instructions
 
 ## Repository Boundary
 
@@ -26,7 +26,7 @@
 
 ## Compatibility And Storage
 
-- Treat exported identifiers, contract IDs, schema IDs, widget IDs, protocol versions, theme IDs,
-  and persisted workspace fields as compatibility boundaries.
-- Any serialized workspace, widget, binding, runtime-state, connection, or iframe contract change
+- Treat exported identifiers, contract IDs, schema IDs, protocol versions, theme IDs, and persisted
+  fields as compatibility boundaries.
+- Any serialized resource or iframe contract change
   requires explicit migration coverage and a backend/storage impact assessment.

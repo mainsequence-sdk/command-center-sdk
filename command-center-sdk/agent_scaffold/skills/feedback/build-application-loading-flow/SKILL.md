@@ -1,6 +1,6 @@
 ---
 name: build-application-loading-flow
-description: Build or migrate truthful application-level loading, startup, retry, reconnection, and terminal failure feedback with the controlled @dev-mainsequence/command-center-sdk/feedback primitives. Use when a prerequisite blocks a complete application or large consumer-owned region and meaningful stages or recovery information exist. Do not use for loading already owned by resource views, pickers, widgets, or action dialogs.
+description: Build or migrate truthful application-level loading, startup, retry, reconnection, and terminal failure feedback with the controlled @dev-mainsequence/command-center-sdk/feedback primitives. Use when a prerequisite blocks a complete application or large consumer-owned region and meaningful stages or recovery information exist. Do not use for loading already owned by resource views, pickers, or action dialogs.
 ---
 
 # Build An Application Loading Flow
@@ -11,7 +11,7 @@ Use `ApplicationStatusScreen` when an application prerequisite blocks the router
 consumer-owned region. Use `ProgressStageList` inside an existing owned surface when only the
 ordered timeline is needed, and `ActivityIndicator` for a small indeterminate operation.
 
-Keep loading inside `ResourceListPage`, `ResourceDetailShell`, `ResourcePicker`, widget surfaces,
+Keep loading inside `ResourceListPage`, `ResourceDetailShell`, `ResourcePicker`, specialized surfaces,
 and action dialogs when those components already own it. Use `ResourceTransitionShell` for an
 asynchronous resource-to-resource handoff. Do not replace a higher-level SDK lifecycle with a
 global status screen merely because both display activity.

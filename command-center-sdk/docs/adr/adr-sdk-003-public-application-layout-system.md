@@ -220,7 +220,7 @@ The SDK owns repeated complete-application chrome:
 The application continues to own:
 
 - domain-specific chart, form, canvas, and table layout;
-- split panes, editors, maps, and other specialized workspaces;
+- split panes, editors, maps, and other specialized application surfaces;
 - the order and conditional visibility of sections;
 - route, permission, authentication, persistence, and transport policy; and
 - explicit full-bleed regions where standard card padding is inappropriate.
@@ -386,7 +386,7 @@ production dependency graph.
 - Theme conformance and layout conformance become distinct, complementary checks.
 - Standard pages will carry consistent spacing, padding, and responsive behavior across products
   and themes.
-- Applications retain freedom for specialized workspaces and can opt into explicit full-bleed
+- Applications retain freedom for specialized surfaces and can opt into explicit full-bleed
   content.
 - The SDK assumes long-term compatibility responsibility for another public React/CSS surface.
 - Existing custom applications require deliberate migration; the SDK will not globally rewrite

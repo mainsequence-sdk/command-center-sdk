@@ -5,12 +5,9 @@ published export map rather than repository source aliases. Release CI rewrites 
 to a freshly produced tarball, installs it in a temporary directory, and compiles
 `src/consumer.tsx`.
 
-`src/consumer.tsx` defines a resource application, renders an SDK-owned view, and resolves every
-foundational SDK module absorbed from the removed packages: navigation, layout and layout testing,
-contracts, embeds, widgets, widget host/built-ins/testing/UI, workspaces, workspace React, themes,
-presets, palettes, and packaged styles. It also compiles the narrow AppComponent, Tabular Transform, Community Table, and Pro Table
-entrypoints plus the public Table, AppComponent/Mock JSON, and Tabular Transform authoring contracts
-and the workspace-document contract constants.
+`src/consumer.tsx` defines a resource application, renders SDK-owned views, and resolves navigation,
+layout and layout testing, feedback, resource, contracts, embeds, themes, presets, palettes, and
+packaged styles.
 It also compiles a `StaticSiteIframe` host with the public
 `ResolveStaticSiteFastApiCredential` callback, proving that an external application can inject a
 trusted resolver without importing product auth, endpoint, or iframe-protocol internals. It also
