@@ -5,8 +5,8 @@ handshake. It provides a framework-neutral host/client protocol and a React host
 
 ## Entry points
 
-- `/embed`: message types, parsers, host/client creation, origin resolution, and delegated FastAPI
-  credential helpers.
+- `/embed`: message types, parsers, host/client creation, origin resolution, delegated FastAPI
+  HTTP helpers, and native WebSocket ticket construction.
 - `/embed/react`: `StaticSiteIframe`.
 
 ## Required controls
@@ -16,8 +16,132 @@ handshake. It provides a framework-neutral host/client protocol and a React host
 - Validate channel, version, message type, request IDs, payload size, and message source.
 - Expose only the public user UID and theme context.
 - Resolve runtime credentials through a trusted host callback.
+- Resolve one-time WebSocket tickets through a separate trusted host callback; never reuse the
+  HTTP credential.
 - Enforce authorization, target scope, expiry, CORS, and origin policy in the backend.
 - Dispose listeners and reject late or duplicate responses.
 
 The SDK does not own authentication or credential minting. The host application injects those
 capabilities and remains responsible for policy and audit behavior.
+
+## Protocol lifecycle
+
+The child installs a message listener and sends `ready`. The host accepts it only from the exact
+configured origin and target window, records the version-one channel, and sends current theme and
+public-user context. Later context updates reuse that channel. Both sides reject malformed,
+oversized, wrong-origin, wrong-window, wrong-channel, and out-of-order messages.
+
+```text
+child                         host
+  ── ready ───────────────────→
+  ←──────────── initialize ────
+  ── credential request ──────→
+  ← credential response/error ─
+  ── WebSocket ticket request →
+  ← ticket response/error ─────
+  ── native WebSocket ─────────────────────────→ FastAPI gateway
+```
+
+Request IDs are correlated and replay-protected. Handshake and credential work have bounded
+timeouts. Disposing either endpoint removes its ability to accept later work; active host resolver
+calls receive an aborted signal.
+
+## React host
+
+```tsx
+import { StaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed/react";
+
+<StaticSiteIframe
+  src={launchUrl}
+  allowedOrigin="https://reports.example.com"
+  themeId={activeTheme.id}
+  themeMode={activeTheme.mode}
+  userUid={session?.user.publicUid ?? null}
+  resolveFastApiCredential={resolveFastApiCredential}
+  resolveFastApiWebSocketTicket={resolveFastApiWebSocketTicket}
+  onProtocolError={reportProtocolError}
+/>;
+```
+
+`StaticSiteIframe` owns listener setup, exact source-window validation, context updates, and
+teardown. Its default sandbox is `allow-forms allow-same-origin allow-scripts`. Additional popup,
+download, modal, or navigation permissions require a deployment security review.
+
+The host's resolver closes over trusted source identity and the approved child origin. It validates
+the backend result's target UID, RPC origin/path, and expiry before returning the narrow public
+credential. Raw backend response bodies and the host session never cross the iframe boundary.
+
+## Framework-neutral child
+
+```ts
+import { createStaticSiteIframeClient } from "@dev-mainsequence/command-center-sdk/embed";
+
+const client = createStaticSiteIframeClient({
+  channel: "mainsequence.report",
+  hostOrigin: "https://command-center.example.com",
+  parentWindow: window.parent,
+  onContext: applyPublicContext,
+  onFastApiStateChange: renderTransportState,
+});
+
+const onMessage = (event: MessageEvent<unknown>) => client.handleMessage(event);
+window.addEventListener("message", onMessage);
+client.announceReady();
+
+const response = await client.fetchFastApi(
+  { resourceReleaseUid, path: "/api/report" },
+  { method: "GET", signal },
+);
+
+const socket = await client.createFastApiWebSocket({
+  resourceReleaseUid,
+  path: "/ws/orders",
+  protocols: ["orders.v2"],
+});
+
+window.removeEventListener("message", onMessage);
+client.dispose();
+```
+
+Install the listener before `announceReady`. The child applies every context update and keeps
+delegated credentials only in memory. `fetchFastApi` requires a relative path, injects the
+credential and canonical release header, refreshes before expiry, and applies the documented
+abortable bounded retry policy. Direct-link mode has no trusted host and fails as `unsupported`
+without a credential fallback.
+
+`createFastApiWebSocket` accepts one absolute WebSocket path and optional application protocols.
+It requests a fresh one-time ticket, validates the response, and calls the native constructor with
+the reserved ticket first and `mainsequence.ws-bridge.v1` second. It returns the socket without
+exposing a raw ticket. The gateway removes both platform protocols; `socket.protocol` is the
+application-selected protocol or the fixed acknowledgement. Reconnects require a new method call.
+
+## Failure model
+
+Credential resolver failures are reduced to `StaticSiteFastApiCredentialError` codes. Transport
+state distinguishes authorization, runtime start, ready, expiry, authentication failure,
+forbidden, missing route, transient, cancelled, unavailable, unsupported, and invalid. Do not
+serialize raw credentials or backend diagnostic bodies into errors.
+
+Only `502`, `503`, and `504` mean the runtime is starting. `401` permits one credential
+reacquisition, `403` is forbidden, `404` is a missing route, and opaque fetch failure remains
+transient/CORS-or-network. Unsafe methods are not retried unless explicitly enabled under an
+application/backend idempotency contract.
+
+## Compatibility and maintenance
+
+- `command-center.static_site_iframe@v1`, schema ID, message fields, channel grammar, and error
+  meanings are compatibility boundaries.
+- Keep TypeScript types, strict parsers/builders, JSON Schema, fixtures, docs, tests, and host/child
+  mixed-version behavior synchronized for any wire change.
+- Authentication, target authorization, CORS, Origin policy, expiry, and audit remain backend/host
+  responsibilities.
+- WebSocket tickets are one-time transient secrets: do not put them in URLs, storage, application
+  state, logs, analytics, errors, or FastAPI-visible headers.
+- Test this module with unit fixtures and a real cross-origin browser deployment covering CSP,
+  sandbox, CORS, context updates, request replay, cancellation, user/navigation transitions, and
+  disposal.
+- ADR SDK-005 defines the implemented WebSocket contract. Its message fields, reserved protocol
+  constants, ordering, cancellation, and no-retry behavior are compatibility boundaries.
+
+See `docs/static-site-embeds.md` for the complete integration guide and `THREAT_MODEL.md` for the
+assets, adversaries, and required controls.

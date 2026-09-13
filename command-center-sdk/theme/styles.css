@@ -277,6 +277,19 @@ html[data-theme="graphite"],
 
 html[data-theme="quartz-light"],
 [data-command-center-theme-root][data-theme="quartz-light"] {
+  /* Flat, like the dark sibling: no tinted glow, no lifted panels. The root
+     defaults are tuned for a dark ground and read heavy on white. */
+  --ms-bg-gradient: none;
+  --shadow-panel: none;
+  --shadow-dialog: 0 16px 48px -24px rgb(40 42 48 / 24%);
+  --shadow-picker: 0 8px 24px -16px rgb(40 42 48 / 22%);
+}
+
+/* Solid indigo tint rather than the shared 30% alpha of --primary. */
+html[data-theme="quartz-light"] ::selection,
+[data-command-center-theme-root][data-theme="quartz-light"] ::selection {
+  background: #dddefb;
+  color: #282a30;
 }
 
 html[data-theme="sakura"],

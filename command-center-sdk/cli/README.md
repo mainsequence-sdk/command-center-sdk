@@ -68,12 +68,13 @@ public `/docs/` route. It copies the versioned template from the packaged
 and never overwrites different existing files or manifest values. Re-running an unchanged
 initialization is idempotent.
 
-The scaffold keeps `documentation/navigation.json` as the canonical ordered source for generated
-`docs/SUMMARY.md` and `documentation/sidebars.mjs`. Its checks enforce the one-root npm/Node
-toolchain, audience-classified documentation, navigation coverage, local links, and generated-file
-freshness. The consuming frontend remains responsible for its authored content, Vite development
-proxy when desired, and browser tests against the combined production artifact. Deployment
-configuration remains platform-owned.
+The scaffold keeps `documentation/navigation.json` as the canonical ordered projection of the
+visible application menu. Schema version 2 derives each navigation folder and `index.md` path from
+stable menu IDs, then generates `docs/SUMMARY.md` and `documentation/sidebars.mjs`. Its checks
+enforce the one-root npm/Node toolchain, end-user-only page metadata and structure,
+navigation-to-folder parity, local links, and generated-file freshness. The consuming frontend
+remains responsible for verified task content, its optional Vite development proxy, and browser
+tests against the combined production artifact. Deployment configuration remains platform-owned.
 
 ## Application SDK Status And Update
 

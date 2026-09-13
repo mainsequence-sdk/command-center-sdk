@@ -15,7 +15,6 @@ export const DOCUMENTATION_DEV_DEPENDENCIES = Object.freeze({
   "@docusaurus/core": "3.10.2",
   "@docusaurus/preset-classic": "3.10.2",
   "@mdx-js/react": "3.1.1",
-  "prism-react-renderer": "2.4.1",
 });
 
 export const DOCUMENTATION_SCRIPTS = Object.freeze({
@@ -43,7 +42,7 @@ const ignoredDirectories = new Set([".git", "node_modules"]);
 const generatedTemplateMarkers = new Map([
   [
     "docs/SUMMARY.md",
-    "# Documentation\n\nThis map and the Docusaurus sidebar are generated from `documentation/navigation.json`.",
+    "# User guide\n\nThis map and the Docusaurus sidebar are generated from `documentation/navigation.json`.",
   ],
   [
     "documentation/sidebars.mjs",

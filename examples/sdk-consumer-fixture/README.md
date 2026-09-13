@@ -9,8 +9,9 @@ to a freshly produced tarball, installs it in a temporary directory, and compile
 layout and layout testing, feedback, resource, contracts, embeds, themes, presets, palettes, and
 packaged styles.
 It also compiles a `StaticSiteIframe` host with the public
-`ResolveStaticSiteFastApiCredential` callback, proving that an external application can inject a
-trusted resolver without importing product auth, endpoint, or iframe-protocol internals. It also
+`ResolveStaticSiteFastApiCredential` and `ResolveStaticSiteFastApiWebSocketTicket` callbacks,
+proving that an external application can inject trusted HTTP and one-time WebSocket resolvers
+without importing product auth, endpoint, or iframe-protocol internals. It also
 renders a controlled application rail and grouped sub-application panel through the public
 `/navigation` export.
 It renders the public page/header/stack/card/grid composition and imports the browser-verifier

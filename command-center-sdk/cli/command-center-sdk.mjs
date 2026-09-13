@@ -41,9 +41,10 @@ The SDK status and update commands compare and refresh only the application's de
 SDK dependency. Updates respect its existing npm semver policy and do not commit, tag, push, or
 call the backend.
 
-The application docs init command safely adds the official same-artifact Docusaurus scaffold. It keeps
-one root npm lockfile, generates SUMMARY and sidebar navigation from one manifest, and emits the
-documentation site at /docs/ inside dist/docs.
+The application docs init command safely adds the official same-artifact end-user Docusaurus
+scaffold. It keeps one root npm lockfile, derives the user-guide folders and generated navigation
+from a schema-version-2 projection of the application menu, and emits the site at /docs/ inside
+dist/docs.
 
 The theme audit rejects unknown variables, literal fallbacks, and hardcoded semantic visual values.
 `;

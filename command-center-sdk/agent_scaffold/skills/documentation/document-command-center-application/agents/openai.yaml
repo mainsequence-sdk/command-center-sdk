@@ -1,4 +1,4 @@
 interface:
   display_name: "Document Command Center Application"
-  short_description: "Build and verify same-artifact application docs"
-  default_prompt: "Use $document-command-center-application to create or review this frontend's versioned /docs/ site, toolchain, navigation, validation, and browser checks."
+  short_description: "Build navigation-matched end-user application help"
+  default_prompt: "Use $document-command-center-application to inspect this frontend, write its task-focused end-user guide in a folder tree matching the visible application navigation, build it at /docs/, and verify the combined artifact."

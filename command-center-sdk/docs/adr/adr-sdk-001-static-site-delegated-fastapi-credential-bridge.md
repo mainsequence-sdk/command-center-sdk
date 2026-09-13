@@ -10,6 +10,7 @@
   - [tdag-django issue 383](https://github.com/Main-Sequence-Server-Side/tdag-django/issues/383)
   - [Command Center ADR 075: Foundry Static-Site FastAPI Credential Bridge Integration](https://github.com/Main-Sequence-Server-Side/CommandCenter/blob/main/docs/adr/main_sequence/adr-075-foundry-static-site-fastapi-credential-bridge-integration.md)
   - [Backend ADR-0034: Static-Site-Delegated FastAPI Release Credentials](https://github.com/Main-Sequence-Server-Side/tdag-django/blob/development/docs/platform/adr/adr-0034-static-site-delegated-fastapi-release-access.md)
+  - [SDK ADR 005: Static-Site FastAPI WebSocket Ticket Bridge](./adr-sdk-005-static-site-fastapi-websocket-ticket-bridge.md)
 
 ## Decision Summary
 
@@ -337,6 +338,11 @@ path, uses the backend-issued RPC URL, and injects the delegated bearer credenti
 `X-Resource-Release-UID`. `requestFastApiCredential` is the advanced escape hatch for transports
 that cannot use `fetch`; it exposes the narrow token and therefore requires the caller to preserve
 the same in-memory-only boundary.
+
+This delegated Bearer credential bridge does not authenticate browser WebSocket handshakes. The
+browser `WebSocket` constructor cannot attach the required `Authorization` header, and the
+credential must not be placed in the URL or offered as an application subprotocol. Browser
+WebSockets use the separate one-time ticket bridge defined by SDK ADR 005.
 
 The client owns:
 

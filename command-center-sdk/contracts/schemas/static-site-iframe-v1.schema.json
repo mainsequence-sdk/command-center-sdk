@@ -9,7 +9,11 @@
     { "$ref": "#/$defs/initialize" },
     { "$ref": "#/$defs/fastApiCredentialRequest" },
     { "$ref": "#/$defs/fastApiCredentialResponse" },
-    { "$ref": "#/$defs/fastApiCredentialError" }
+    { "$ref": "#/$defs/fastApiCredentialError" },
+    { "$ref": "#/$defs/fastApiWebSocketTicketRequest" },
+    { "$ref": "#/$defs/fastApiWebSocketTicketCancel" },
+    { "$ref": "#/$defs/fastApiWebSocketTicketResponse" },
+    { "$ref": "#/$defs/fastApiWebSocketTicketError" }
   ],
   "$defs": {
     "channel": {
@@ -23,6 +27,11 @@
     "requestId": {
       "type": "string",
       "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    },
+    "webSocketPath": {
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^(?=.{1,2048}$)/(?!_healthz$)(?!logos/)(?!.*//)(?!.*(?:/\\.\\.?)(?:/|$))[A-Za-z0-9._~!$&'()*+,;=:@/-]*$"
     },
     "messageBase": {
       "type": "object",
@@ -162,6 +171,123 @@
                         "origin_not_allowed",
                         "release_unavailable",
                         "runtime_starting",
+                        "temporarily_unavailable",
+                        "unsupported"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "webSocketBinding": {
+      "type": "object",
+      "required": ["requestId", "resourceReleaseUid", "path"],
+      "properties": {
+        "requestId": { "$ref": "#/$defs/requestId" },
+        "resourceReleaseUid": { "$ref": "#/$defs/canonicalUuid" },
+        "path": { "$ref": "#/$defs/webSocketPath" }
+      }
+    },
+    "fastApiWebSocketTicketRequest": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-websocket-ticket-request" },
+            "payload": {
+              "type": "object",
+              "allOf": [{ "$ref": "#/$defs/webSocketBinding" }],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "fastApiWebSocketTicketCancel": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-websocket-ticket-cancel" },
+            "payload": {
+              "type": "object",
+              "allOf": [{ "$ref": "#/$defs/webSocketBinding" }],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "fastApiWebSocketTicketResponse": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-websocket-ticket-response" },
+            "payload": {
+              "type": "object",
+              "allOf": [
+                { "$ref": "#/$defs/webSocketBinding" },
+                {
+                  "type": "object",
+                  "required": ["websocketUrl", "subprotocol", "expiresAt"],
+                  "properties": {
+                    "websocketUrl": {
+                      "type": "string",
+                      "pattern": "^wss?://[^/?#@]+(?:/[^?#]*)?$",
+                      "maxLength": 4096
+                    },
+                    "subprotocol": {
+                      "type": "string",
+                      "pattern": "^mainsequence\\.ws-ticket\\.[A-Za-z0-9_-]{32,256}$"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+                    }
+                  }
+                }
+              ],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "fastApiWebSocketTicketError": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-websocket-ticket-error" },
+            "payload": {
+              "type": "object",
+              "allOf": [
+                { "$ref": "#/$defs/webSocketBinding" },
+                {
+                  "type": "object",
+                  "required": ["code"],
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_request",
+                        "access_denied",
+                        "origin_not_allowed",
+                        "release_unavailable",
                         "temporarily_unavailable",
                         "unsupported"
                       ]

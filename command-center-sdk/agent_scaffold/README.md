@@ -27,7 +27,8 @@ the packed-consumer smoke test after changing the bundle or installer.
 The bundle is organized into SDK-only lanes:
 
 - surface selection and installed-package usage;
-- application documentation authoring, validation, same-artifact builds, and browser verification;
+- end-user application documentation organized by visible navigation, same-artifact builds,
+  validation, and browser verification;
 - application page/card composition and real-browser layout verification;
 - resource lists, details, pickers, actions, and backend adapter normalization;
 - theme and embed authoring; and
@@ -36,7 +37,7 @@ The bundle is organized into SDK-only lanes:
 ## Human documentation parity
 
 Every shipped skill has a matching task in the public
-[documentation map](../docs/README.md#choose-what-you-are-building). The linked guides use the same
+[documentation map](../docs/README.md#task-and-agent-skill-map). The linked guides use the same
 published entrypoints, ownership boundaries, compatibility rules, and verification requirements,
 with copyable examples for people who are not running an agent.
 

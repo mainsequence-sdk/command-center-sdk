@@ -41,6 +41,16 @@ retryable cold start maps to `runtime_starting`; permission and origin denials m
 code. HTTP `401`, `403`, `404`, `502`, `503`, and `504` from the target runtime remain HTTP
 responses classified by the SDK child transport and are not credential-error messages.
 
+The same v1 schema additively includes FastAPI WebSocket ticket request, cancellation, response,
+and sanitized error messages. The request carries only a correlation ID, canonical release UID,
+and normalized absolute path. The response carries the correlated binding, WebSocket URL,
+canonical reserved ticket subprotocol, and expiry; it never carries a separate raw `ticket`, user,
+Origin, session, or application protocol list. Runtime checks additionally enforce exact
+request/response correlation, child Origin binding, secure scheme, future expiry, protocol-list
+limits, and one native constructor attempt. Django's ticket response, serializer, storage, routes,
+and schema version are unchanged; the Command Center host adapter maps that existing response into
+the SDK resolver result.
+
 The normalized collection is not automatically a requirement for every raw product endpoint. An
 existing `{count, results}` API can keep that envelope when its frontend adapter maps it to
 `ResourceListResult<T>`. An endpoint claiming a schema contract must validate directly against it.

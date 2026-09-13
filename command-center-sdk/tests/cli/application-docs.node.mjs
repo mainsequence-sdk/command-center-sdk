@@ -50,6 +50,71 @@ function runNode(applicationRoot, script, args = []) {
   });
 }
 
+function featurePage(title) {
+  return `---
+title: ${title}
+description: Learn how to use ${title} and complete its common application tasks.
+audience: end-user
+pageType: feature
+---
+
+# ${title}
+
+Use this page to complete work in ${title} and understand the result shown by the application.
+
+## Open this page
+
+From the application menu, choose **${title}**.
+
+## What you can do
+
+Review the available records and choose the action needed for your work.
+
+## Common tasks
+
+Choose an available action, complete the visible fields, and confirm the change.
+
+## Understand what you see
+
+The page shows the current status and an empty state when no records are available.
+
+## If something goes wrong
+
+Review the message shown by the application, correct the highlighted input, and try again.
+`;
+}
+
+function taskPage(title) {
+  return `---
+title: ${title}
+description: Complete ${title} and verify the visible application result.
+audience: end-user
+pageType: task
+---
+
+# ${title}
+
+Follow this procedure when you need to complete ${title}.
+
+## Before you start
+
+Open the owning feature and confirm that the required action is available.
+
+## Steps
+
+1. Choose the action labeled **${title}**.
+2. Complete the required fields and confirm the action.
+
+## Expected result
+
+The application confirms the change and shows the updated item.
+
+## If something goes wrong
+
+Correct any highlighted field and try the action again.
+`;
+}
+
 test("initializes, validates, generates, and re-runs the documentation scaffold", async () => {
   const applicationRoot = await fixture("complete");
   try {
@@ -59,7 +124,7 @@ test("initializes, validates, generates, and re-runs the documentation scaffold"
     assert.equal(result.created.includes("documentation/docusaurus.config.mjs"), true);
     assert.equal(result.created.includes("scripts/validate-docs.mjs"), true);
     assert.match(
-      await readFile(join(applicationRoot, "docs", "surfaces", "index.md"), "utf8"),
+      await readFile(join(applicationRoot, "docs", "index.md"), "utf8"),
       /slug: \/$/mu,
     );
     assert.equal(
@@ -101,19 +166,31 @@ test("initializes, validates, generates, and re-runs the documentation scaffold"
 
     const navigationPath = join(applicationRoot, "documentation", "navigation.json");
     const navigation = JSON.parse(await readFile(navigationPath, "utf8"));
-    navigation.sections[0].items.push({
+    navigation.navigation.push({
+      id: "services",
       label: "Services",
-      doc: "surfaces/services",
+      kind: "feature",
+      applicationRoute: "/services",
+      pages: [{ id: "create-a-service", label: "Create a service" }],
       items: [],
     });
     await writeFile(navigationPath, `${JSON.stringify(navigation, null, 2)}\n`, "utf8");
-    await writeFile(join(applicationRoot, "docs", "surfaces", "services.md"), "# Services\n", "utf8");
+    await mkdir(join(applicationRoot, "docs", "services"), { recursive: true });
+    await writeFile(join(applicationRoot, "docs", "services", "index.md"), featurePage("Services"), "utf8");
+    await writeFile(
+      join(applicationRoot, "docs", "services", "create-a-service.md"),
+      taskPage("Create a service"),
+      "utf8",
+    );
     const sync = runNode(applicationRoot, "scripts/sync-docs-navigation.mjs");
     assert.equal(sync.status, 0, sync.stderr);
-    assert.match(await readFile(join(applicationRoot, "docs", "SUMMARY.md"), "utf8"), /surfaces\/services\.md/u);
+    assert.match(
+      await readFile(join(applicationRoot, "docs", "SUMMARY.md"), "utf8"),
+      /services\/index\.md[\s\S]*services\/create-a-service\.md/u,
+    );
     assert.match(
       await readFile(join(applicationRoot, "documentation", "sidebars.mjs"), "utf8"),
-      /surfaces\/services/u,
+      /services\/index[\s\S]*services\/create-a-service/u,
     );
     const validation = runNode(applicationRoot, "scripts/validate-docs.mjs");
     assert.equal(validation.status, 0, validation.stderr);
@@ -127,13 +204,69 @@ test("initializes, validates, generates, and re-runs the documentation scaffold"
   }
 });
 
+test("documentation validation enforces navigation-derived user pages", async () => {
+  const applicationRoot = await fixture("user-pages");
+  try {
+    await initializeApplicationDocumentation({ applicationDir: applicationRoot, install: false });
+    const navigationPath = join(applicationRoot, "documentation", "navigation.json");
+    const navigation = JSON.parse(await readFile(navigationPath, "utf8"));
+    navigation.navigation.push({
+      id: "services",
+      label: "Services",
+      kind: "feature",
+      applicationRoute: "/services",
+      pages: [],
+      items: [],
+    });
+    await writeFile(navigationPath, `${JSON.stringify(navigation, null, 2)}\n`, "utf8");
+    await mkdir(join(applicationRoot, "docs", "services"), { recursive: true });
+    await writeFile(join(applicationRoot, "docs", "services", "index.md"), featurePage("Services"), "utf8");
+    assert.equal(runNode(applicationRoot, "scripts/sync-docs-navigation.mjs").status, 0);
+    assert.equal(runNode(applicationRoot, "scripts/validate-docs.mjs").status, 0);
+
+    await mkdir(join(applicationRoot, "docs", "technical"), { recursive: true });
+    await writeFile(
+      join(applicationRoot, "docs", "technical", "index.md"),
+      `${featurePage("Technical")}\n## Architecture\n\nInternal modules.\n`,
+      "utf8",
+    );
+    const invalid = runNode(applicationRoot, "scripts/validate-docs.mjs");
+    assert.notEqual(invalid.status, 0);
+    assert.match(invalid.stderr, /Legacy docs\/technical|not represented by the application navigation/u);
+  } finally {
+    await rm(applicationRoot, { recursive: true, force: true });
+  }
+});
+
+test("schema version 1 reports the user-guide migration", async () => {
+  const applicationRoot = await fixture("schema-v1");
+  try {
+    await initializeApplicationDocumentation({ applicationDir: applicationRoot, install: false });
+    const navigationPath = join(applicationRoot, "documentation", "navigation.json");
+    await writeFile(
+      navigationPath,
+      `${JSON.stringify({
+        schemaVersion: 1,
+        sidebarId: "documentationSidebar",
+        sections: [],
+      }, null, 2)}\n`,
+      "utf8",
+    );
+    const validation = runNode(applicationRoot, "scripts/sync-docs-navigation.mjs", ["--check"]);
+    assert.notEqual(validation.status, 0);
+    assert.match(validation.stderr, /schemaVersion 1 is obsolete[\s\S]*application menu/u);
+  } finally {
+    await rm(applicationRoot, { recursive: true, force: true });
+  }
+});
+
 test("dry-run reports the scaffold without writing", async () => {
   const applicationRoot = await fixture("dry-run");
   try {
     const originalManifest = await readFile(join(applicationRoot, "package.json"), "utf8");
     const result = await initializeApplicationDocumentation({ applicationDir: applicationRoot, dryRun: true });
     assert.equal(result.dryRun, true);
-    assert.equal(result.created.includes("docs/surfaces/index.md"), true);
+    assert.equal(result.created.includes("docs/index.md"), true);
     assert.deepEqual(result.commands, ["npm install"]);
     assert.equal(await readFile(join(applicationRoot, "package.json"), "utf8"), originalManifest);
     await assert.rejects(readFile(join(applicationRoot, "documentation", "navigation.json"), "utf8"), {

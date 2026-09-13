@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { themes as prismThemes } from "prism-react-renderer";
 
 const applicationPackage = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -9,8 +8,8 @@ const url = exactSiteOrigin(process.env.DOCS_SITE_URL || "http://localhost");
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: `${title} Documentation`,
-  tagline: "Application surfaces and technical reference",
+  title: `${title} User Guide`,
+  tagline: `Learn how to use ${title}`,
   url,
   baseUrl: "/docs/",
   trailingSlash: true,
@@ -46,9 +45,9 @@ const config = {
       items: [
         {
           type: "docSidebar",
-          sidebarId: "documentationSidebar",
+          sidebarId: "userGuideSidebar",
           position: "left",
-          label: "Documentation",
+          label: "User guide",
         },
         {
           type: "html",
@@ -56,10 +55,6 @@ const config = {
           value: '<a class="navbar__link menu__link" href="/">Back to application</a>',
         },
       ],
-    },
-    prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
     },
   },
 };

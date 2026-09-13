@@ -22,3 +22,82 @@ dependency. Keep the stable `data-cc-*` attributes intact: the public browser ve
 measure final geometry.
 
 See `docs/application-layout.md` for the complete workflow and copyable examples.
+
+## Composition model
+
+Use one `ApplicationPage` as the page geometry owner. Put the title and page-level actions in
+`ApplicationPageHeader`, then group sibling sections with `ApplicationPageStack`. Use
+`ApplicationCard` for an ordinary surface and `ApplicationCardGrid` for responsive peer cards.
+
+```tsx
+import {
+  ApplicationCard,
+  ApplicationCardGrid,
+  ApplicationPage,
+  ApplicationPageHeader,
+  ApplicationPageStack,
+} from "@dev-mainsequence/command-center-sdk/layout";
+
+<ApplicationPage maxWidth="wide">
+  <ApplicationPageHeader
+    eyebrow="Operations"
+    title="Runtime overview"
+    description="Current service health and capacity."
+    actions={<button type="button">Refresh</button>}
+  />
+  <ApplicationPageStack>
+    <ApplicationCardGrid>
+      <ApplicationCard header="Healthy services">18</ApplicationCard>
+      <ApplicationCard header="Attention required">2</ApplicationCard>
+    </ApplicationCardGrid>
+    <ApplicationCard contentPadding="none">{table}</ApplicationCard>
+  </ApplicationPageStack>
+</ApplicationPage>;
+```
+
+`maxWidth` supports `content`, `wide`, and `full`. Components accept a narrow semantic `as` prop
+and standard element attributes. `ApplicationCard` supports `default` and `nested` surfaces plus
+`standard` or `none` content padding. Use `contentPadding="none"` when a child such as a table or
+canvas already owns edge geometry; do not double-wrap or add a second inset.
+
+## Responsive behavior
+
+Theme density controls gutters, section gaps, card insets, and grid minimums through public CSS
+variables. Do not copy their resolved values into application CSS. Specialized editors, split
+panes, maps, and full-bleed canvases may own internal geometry, but should still participate in one
+page-level spacing system.
+
+Header copy and actions wrap without overlap. Card grids collapse according to available width
+rather than a product-specific breakpoint. Preserve `min-width: 0` behavior in custom children so
+long content cannot force horizontal overflow.
+
+## Browser verification
+
+The testing entrypoint accepts a Playwright-compatible page or another adapter implementing
+`setViewportSize` and `evaluate`:
+
+```ts
+import {
+  assertCommandCenterPageLayout,
+  COMMAND_CENTER_LAYOUT_VIEWPORTS,
+} from "@dev-mainsequence/command-center-sdk/layout/testing";
+
+await assertCommandCenterPageLayout(page, {
+  viewports: COMMAND_CENTER_LAYOUT_VIEWPORTS,
+});
+```
+
+The standard matrix includes 375×812, 768×900, and 1280×800. Reports cover root count, page and
+header overflow, header overlap, stack gaps, card insets, grid collapse/overlap, and interactive
+clipping/size. Keep the stable `data-cc-*` attributes because the verifier measures them in the
+rendered document.
+
+## Maintenance constraints
+
+- Keep this module free of routers, transports, authentication, permissions, and persistence.
+- Add a primitive only for geometry repeated across complete applications; domain geometry stays
+  in the consumer.
+- Coordinate component markup, component CSS, theme metrics, browser verification, examples, and
+  package exports for any public behavior change.
+- Verify at least one dark and one light theme in addition to the viewport matrix.
+- Prefer composition and semantic props to whole-surface renderer overrides.

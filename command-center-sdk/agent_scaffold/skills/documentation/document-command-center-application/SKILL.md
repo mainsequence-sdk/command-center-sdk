@@ -1,134 +1,130 @@
 ---
 name: document-command-center-application
-description: Create, migrate, validate, build, and review documentation shipped with a Command Center frontend. Use when a Vite application needs human application and technical documentation, an official Docusaurus site at /docs/, one npm toolchain and lockfile, generated SUMMARY and sidebar navigation, browser verification, or the command-center-sdk application docs init scaffold.
+description: Create, migrate, validate, build, and review the end-user help site shipped with a Command Center frontend. Use when an application needs task-focused documentation at /docs/, a documentation tree that mirrors its visible navigation, the command-center-sdk application docs init scaffold, or browser verification of the combined application and user-guide artifact. Do not use this skill to publish architecture, source-code, API-contract, deployment, or maintainer documentation.
 ---
 
 # Document A Command Center Application
 
-## Establish The Documentation Boundary
+## Publish A User Guide, Not An Engineering Manual
 
-Treat documentation as part of the frontend product. Keep its source, dependencies, validation,
-build, and browser checks in the same repository and root npm dependency graph as the application.
-Build the application first and emit Docusaurus into `dist/docs` so one static artifact contains
-both the application and `/docs/`.
+Treat `/docs/` as part of the application experience. Every served page must help an application
+user understand a feature, find it, complete a task, interpret a visible state, or recover from a
+problem they can act on.
 
-Do not copy a product-specific deployment workflow into another frontend. The SDK owns the
-portable source and artifact recipe; the platform deployment workflow owns how `dist/` is uploaded
-and served. Do not add private routes, authentication, environment files, or backend configuration
-while documenting an application.
+Do not publish architecture, source paths, components, package entrypoints, APIs, schemas, backend
+transport, authentication implementation, build instructions, tests, deployment, ADRs, or
+maintainer notes in the application user guide. Repository engineering documentation may exist
+outside the served `docs/` tree, but creating or reorganizing it is outside this skill.
 
-## Initialize The Official Scaffold
+Code, tests, routes, and contracts may be inspected as evidence. Translate that evidence into
+verified user-visible behavior; never expose the implementation as the subject of a page.
 
-Run this command at the consuming frontend's Git and npm root:
+## Discover The Application Before Writing
+
+1. Inspect the rendered application and its complete visible navigation. Use the supported-role
+   superset when menu items vary by permission, and record access requirements on affected pages.
+2. Record menu IDs, exact labels, ordering, nesting, and application routes. Prefer stable
+   application-owned IDs for folder names; derive a stable kebab-case ID only when none exists.
+3. Exercise each destination and record its purpose, entry conditions, primary tasks, controls,
+   empty/loading/success/error states, visible limitations, and user-recoverable failures.
+4. Reconcile source evidence with the running UI. Use current UI labels and observed behavior when
+   old documentation or implementation comments disagree.
+5. Identify gaps instead of inventing behavior. A page is not complete merely because it exists.
+
+Read [the user-documentation standard](references/user-documentation-standard.md) before authoring
+or reviewing pages.
+
+## Initialize Or Migrate The Site
+
+At the consuming frontend's Git and npm root, preview and apply the official scaffold:
 
 ```bash
 npx command-center-sdk application docs init --path . --dry-run
 npx command-center-sdk application docs init --path .
 ```
 
-The initializer requires `package.json` and `package-lock.json`, rejects competing package-manager
-lockfiles, aligns `.node-version` or `.nvmrc` with `engines.node` and the active Node runtime,
-preserves existing files, and installs exact Docusaurus development dependencies with npm. Use
-`--skip-install` only when dependency installation must be performed separately. Never introduce a
-second documentation lockfile or a Yarn, pnpm, or Bun command into the generated workflow.
+The initializer preserves existing authored files and adds the `/docs/` Docusaurus site to the
+application's root npm dependency graph and production artifact. Use `--skip-install` only when
+dependency installation must be performed separately.
 
-Keep `documentation/package.json` without a `type` field. The application may remain
-`"type": "module"`, while the documentation boundary stays in Docusaurus's required ambiguous
-module mode; `.mjs` keeps the generated configuration and sidebar explicitly ESM. Setting the
-nested site to pure ESM can leave `require.resolveWeak` calls uncompiled in the server bundle and
-fail static generation.
+For initialization, migration, toolchain failures, or output-layout changes, read
+[the build and toolchain reference](references/build-and-toolchain.md). Never overwrite existing
+documentation or delete legacy content automatically.
 
-If documentation files or scripts already exist with different content, stop and integrate them
-deliberately. Do not overwrite authored documentation or silently replace another Docusaurus
-configuration.
+## Mirror The Application Navigation
 
-## Use One Canonical Navigation Manifest
+Maintain `documentation/navigation.json` as the ordered projection of the visible application
+menu. Schema version 2 derives document paths from navigation IDs:
 
-Maintain `documentation/navigation.json` as the ordered navigation source. Generate both
-`docs/SUMMARY.md` and `documentation/sidebars.mjs` with:
+```text
+application menu                          user-guide source
+Build                                     docs/build/index.md
+  Services                                docs/build/services/index.md
+    Create a service (documentation task) docs/build/services/create-a-service.md
+```
+
+Apply these rules:
+
+- `docs/index.md` is the only authored Markdown page at the root and is the global help landing.
+- Every application-menu node is one folder with an `index.md` page.
+- Folder nesting and sibling order match the application menu.
+- Documentation-only task pages live inside the closest owning navigation folder.
+- Dialogs, create/edit flows, and contextual actions never create unrelated top-level folders.
+- Truly global guidance belongs on the help landing; do not invent generic technical categories.
+- Labels in the manifest and page titles match the UI exactly.
+
+Do not provide an arbitrary document path for a navigation node. Run `npm run docs:sync` to derive
+`docs/SUMMARY.md` and `documentation/sidebars.mjs`; never edit those generated files by hand.
+
+When upgrading a schema-version-1 site, move useful `surfaces/` content into its matching menu
+folders and move engineering material outside the served `docs/` tree. Preserve already-published
+user-guide URLs with deliberate aliases or redirects when consumers may rely on them.
+
+## Write Complete Task-Focused Pages
+
+Use the prescribed `home`, `section`, `feature`, and `task` page types from the writing standard.
+Every page declares `audience: end-user`, uses the exact visible UI vocabulary, starts with the
+user outcome, and contains the required behavioral sections for its page type.
+
+Prefer a complete parent page over several thin pages. A feature page should explain how to open
+the feature, what the user can do, its common tasks, what important states mean, and what the user
+can do when something goes wrong. A task page should state prerequisites, numbered steps, the
+expected visible result, and recovery guidance.
+
+Do not add code fences, implementation diagrams, repository links, or developer terminology to
+served pages. Screenshots must come from the current application, omit sensitive data, and add
+information that stable prose cannot communicate as clearly.
+
+## Build And Verify The Combined Artifact
+
+Run from the application root:
 
 ```bash
 npm run docs:sync
-```
-
-Commit all three files. `npm run docs:check` runs the generator in check mode and fails when a
-generated file is stale, a navigation ID is unsafe or duplicated, or an authored page is omitted.
-Do not edit generated navigation files by hand.
-
-Keep two required top-level audiences:
-
-- `docs/surfaces/` explains application behavior, workflows, visible states, and user-facing
-  limitations without exposing secrets or unstable implementation trivia.
-- `docs/technical/` explains architecture, public SDK entrypoints, API boundaries, runtime and
-  build assumptions, testing, maintenance constraints, and operational ownership.
-
-Use repository-relative links for source files and stable public links for external contracts.
-Never place credentials, access tokens, private endpoint values, customer data, or copied private
-API responses in the documentation.
-
-## Preserve The Same-Artifact Contract
-
-Keep these build invariants:
-
-```text
-npm run build
-  -> npm run build:app
-  -> npm run build:docs
-  -> dist/index.html
-  -> dist/docs/index.html
-```
-
-The Docusaurus `baseUrl` is `/docs/`. The generated configuration disables pages and blog routes,
-uses the repository's `docs/` directory, and fails on broken links. If the application dev server
-needs a `/docs/` proxy, configure it to the generated Docusaurus dev server without changing the
-production output contract.
-
-Keep the root `build` command as the release artifact gate. A standalone documentation build is
-useful for diagnosis but does not prove that the deployable artifact contains both surfaces.
-
-## Enforce The Toolchain
-
-Run all documentation commands with one even-numbered Node.js LTS major at or above 20, declared by
-`engines.node` and one root pin in `.node-version` or `.nvmrc`. Keep `package-lock.json`
-authoritative and run npm from the repository root.
-
-The toolchain check rejects mismatched Node declarations, a mismatched active runtime, competing
-lockfiles, and a non-npm `packageManager`. It also detects the known combination of a lockfile
-containing `postman-code-generators` and a root `packageManager`, because that dependency can invoke
-a globally available Yarn during postinstall and conflict with Corepack. If OpenAPI generation is
-added later, pin and review that plugin separately and verify its install lifecycle in a clean
-environment; it is intentionally absent from the base scaffold.
-
-## Validate Content And Behavior
-
-Run:
-
-```bash
 npm run docs:check
 npm run build
 ```
 
-The documentation validator requires both audience roots, checks local Markdown links, verifies
-navigation coverage, and forbids unclassified root pages. The Docusaurus build supplies the final
-MDX, route, and broken-link validation.
+The release build must produce both `dist/index.html` and `dist/docs/index.html`. A standalone
+documentation build is useful for diagnosis, but it does not prove the deployed artifact contains
+the application and its help site together.
 
-Add or extend the consuming application's browser suite to verify all of these against the built
-artifact or a production-equivalent static server:
+Against the built artifact or a production-equivalent static server, verify:
 
-1. the application's normal route still loads;
+1. the application still loads;
 2. `/docs/` loads without a redirect loop;
-3. one nested documentation deep link loads directly;
-4. the application-to-documentation link opens `/docs/`;
-5. the documentation back link returns to `/`; and
-6. no same-origin asset request under `/docs/` returns an error.
+3. every generated user-guide navigation entry resolves;
+4. one nested documentation deep link loads directly;
+5. documentation labels, ordering, and nesting match the application menu;
+6. the application-to-help and help-to-application links work; and
+7. no same-origin `/docs/` asset request fails.
 
-Exercise at least the application's supported desktop browser and one narrow viewport. When the
-application has light and dark modes, verify documentation in both. Do not treat a source-level
-test or Docusaurus build alone as browser proof of the integrated artifact.
+Exercise a supported desktop browser and a narrow viewport. Verify light and dark modes when the
+application supports both.
 
 ## Report The Result
 
-Report the Node and npm versions used, changed navigation entries, validation command results,
-application build result, documentation output location, and browser routes exercised. Call out
-any platform-owned deployment change separately instead of implying that the SDK scaffold changed
-deployment infrastructure.
+Report the application navigation branches documented, user tasks and states covered, deliberate
+content gaps, migrated or retired pages, validation and build results, output location, and browser
+routes exercised. Report toolchain or deployment concerns separately; they do not belong in the
+served user guide.

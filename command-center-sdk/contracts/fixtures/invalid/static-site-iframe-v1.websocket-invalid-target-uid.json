@@ -1,0 +1,10 @@
+{
+  "channel": "mainsequence.portfolio-dashboard",
+  "version": 1,
+  "type": "fastapi-websocket-ticket-request",
+  "payload": {
+    "requestId": "ws-request-invalid-target",
+    "resourceReleaseUid": "NOT-A-CANONICAL-UUID",
+    "path": "/ws/orders"
+  }
+}

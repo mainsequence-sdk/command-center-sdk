@@ -1,46 +1,112 @@
 ---
 sidebar_position: 1
 title: Command Center SDK
+slug: /
 ---
 
 # Build with the Command Center SDK
 
-`@dev-mainsequence/command-center-sdk` gives you the reusable parts of a Command Center
-application: navigation, responsive page layout, staged application feedback, resource lists and
-details, pickers and actions, themes, backend contracts, and secure static-site iframe bridges. Your
-application keeps control of authentication, API clients, routes, persistence, permissions, and
-product-specific behavior.
+`@dev-mainsequence/command-center-sdk` supplies the reusable contracts, lifecycle, and interface
+primitives needed by Command Center-compatible applications. It standardizes resource workflows,
+navigation, responsive layout, application feedback, themes, backend contracts, and secure
+static-site embedding.
 
-If you are new to the SDK, start with [Getting started](./getting-started.md). It installs the
-package and renders a real resource list in a few minutes.
+Your application remains in control of authentication, API clients, routes, permissions, query
+caching, persistence, notifications, and product-specific behavior.
 
-## Choose what you are building
+## Start with the mental model
 
-| I want to… | Human guide | Installed skill path |
-| --- | --- | --- |
-| Install the SDK | [Getting started](./getting-started.md) | `general/use-command-center-sdk` |
-| Version, commit, and trigger automatic code repository deployment | [Getting started](./getting-started.md#sync-a-code-repository-for-automatic-deployment) | `general/maintain-command-center-code-repository` |
-| Design, route, and add application navigation | [Application navigation](./navigation.md) | `general/build-command-center-application` |
-| Create, validate, and ship application documentation at `/docs/` | [Application documentation](./application-documentation.md) | `documentation/document-command-center-application` |
-| Compose and verify a complete responsive page | [Application layout](./application-layout.md) | `layout/compose-command-center-page` |
-| Build staged application startup or reconnection feedback | [Application feedback](./application-feedback.md) | `feedback/build-application-loading-flow` |
-| Build a paginated list | [Resources](./resources.md#build-a-resource-list) | `views/build-resource-list` |
-| Build a detail page | [Resources](./resources.md#build-a-resource-detail) | `views/build-resource-detail` |
-| Add a searchable selector | [Resources](./resources.md#build-a-resource-picker) | `views/build-resource-picker` |
-| Add list, row, detail, or bulk action UI | [Resources](./resources.md#add-actions) | `views/add-resource-actions` |
-| Adapt an HTTP or custom backend in a frontend | [Resources](./resources.md#adapt-a-backend) | `resource/adapt-resource-backend` |
-| Implement any existing language-neutral contract | [Backend contracts](./backend-contracts.md) | `contracts/implement-command-center-contract` |
-| Implement canonical resource-list discovery | [Backend contracts](./backend-contracts.md#resource-list-discovery-and-bulk-action-lifecycle) | `contracts/implement-command-center-contract` |
-| Implement the normalized resource collection | [Backend contracts](./backend-contracts.md) | `contracts/implement-resource-collection-contract` |
-| Implement bulk-action discovery and execution | [Backend contracts](./backend-contracts.md) | `contracts/implement-bulk-actions-contract` |
-| Apply a theme | [Themes and embeds](./themes-and-embeds.md#theme-an-application) | `theme/theme-command-center-app` |
-| Embed an application-owned static site | [Themes and embeds](./themes-and-embeds.md#embed-an-application-owned-static-site) | `embed/integrate-static-site-iframe` |
+The SDK is organized in layers:
 
-The table is intentionally kept in one-to-one alignment with the consumer skills shipped in the
-npm package. SDK-maintainer workflows are package-local and are not installed into applications.
-The `implement-*` skills operate only in the consuming application. When an installed contract is
-insufficient, they report the exact gap and stop; SDK functionality or serialized contracts change
-only in a separate source-maintenance task.
+```text
+definition → adapter → reusable lifecycle → controlled view → host-owned effect
+```
+
+- A **definition** gives stable meaning to a resource, destination, column, stage, or action.
+- An **adapter** converts an external system into an SDK-owned model.
+- A **lifecycle** coordinates loading, cancellation, selection, preflight, or handshake state.
+- A **view** renders normalized state with consistent interaction and accessibility.
+- A **host effect** commits a route, mutation, notification, credential decision, or persistence
+  change under application policy.
+
+Read [SDK architecture](./concepts/sdk-architecture.md) for the complete model and
+[State and ownership](./concepts/state-and-ownership.md) before designing a cross-surface workflow.
+
+## Choose a learning path
+
+### Build your first screen
+
+Use [Getting started](./getting-started.md) to install the package, define a resource, render a
+working list, compose an application page, and verify it. The tutorial uses only declared package
+exports and makes every application-owned dependency visible.
+
+### Understand resource applications
+
+Read [Resource applications](./concepts/resource-applications.md) for the definition/adapter/view
+model, collection versus discovery, UI versus action identity, selection, activation, and the
+bulk-action lifecycle. Then use [Resources](./resources.md) for complete list, detail, picker, and
+action examples.
+
+### Compose application chrome
+
+- [Navigation](./navigation.md) covers hierarchy, contributions, native link behavior, controlled
+  selection, and router ownership.
+- [Application layout](./application-layout.md) covers page geometry, cards, responsive grids, and
+  browser verification.
+- [Application feedback](./application-feedback.md) covers staged startup, reconnect, retry, and
+  terminal failure presentation.
+
+### Theme or embed an application
+
+- [Themes](./themes.md) covers CSS ordering, presets, the closed token contract, density, surface
+  hierarchy, data visualization, persistence, and visual verification.
+- [Static-site embeds](./static-site-embeds.md) covers exact-origin messaging, sandbox policy,
+  context synchronization, delegated FastAPI HTTP and WebSocket access, cancellation, and security
+  testing.
+- [Backend contracts](./backend-contracts.md) explains the manifest, schemas, fixtures, roles, and
+  compatibility rules for non-TypeScript implementations.
+
+### Operate or extend
+
+- [Application operations](./application-operations.md) separates SDK updates, skill refresh,
+  deployment synchronization, mutation boundaries, and recovery.
+- [Application documentation](./application-documentation.md) builds a task-focused end-user guide
+  whose folder hierarchy mirrors the application menu and ships at `/docs/` in the same artifact.
+- [Extending and releasing](./extending-and-releasing.md) covers SDK-source changes, public
+  boundaries, contracts, packaging, and release verification.
+- [Architecture decisions](./adr/README.md) records why compatibility-sensitive designs were
+  chosen. A `Proposed` ADR is not a released API.
+
+## The ownership boundary
+
+| SDK owns | Consuming application owns |
+| --- | --- |
+| Normalized resource and discovery models | Raw endpoints, authentication, and response adaptation |
+| List/detail/picker interaction lifecycle | Routes, query cache, mutation policy, and notifications |
+| Controlled navigation chrome and semantic intents | Permission filtering and route commitment |
+| Page gutters, section rhythm, cards, and geometry checks | Domain section ordering and specialized layouts |
+| Status/progress presentation and accessibility | Readiness APIs, polling, retry, and timeout policy |
+| Theme presets, variables, and helper functions | Persisting and restoring the selected theme ID |
+| Iframe protocol validation and request correlation | Origin allowlists, CSP, backend authorization, and audit |
+| Versioned schema/fixture bundle | Backend implementation and coordinated rollout |
+
+If code needs a product route, access token, private endpoint, permission store, or persistence
+decision, it belongs in the consuming application or backend—not in a reusable SDK definition or
+view.
+
+## Public entrypoint families
+
+| Concept | Entry points |
+| --- | --- |
+| Resource model | `/resource`, `/resource/react`, `/views` |
+| Application chrome | `/navigation`, `/layout`, `/layout/testing`, `/feedback` |
+| Visual language | `/theme`, `/theme/presets`, `/theme/data-viz`, theme CSS exports |
+| Static-site integration | `/embed`, `/embed/react` |
+| Language-neutral contracts | `/contracts`, `/contracts/manifest.json`, schemas and fixtures |
+
+The package root is a compatibility re-export of the resource surface. Prefer explicit subpaths in
+new code. See the [public API map](./public-api.md) for symbols, runtime assumptions, CSS exports,
+and compatibility rules.
 
 ## Install
 
@@ -48,92 +114,53 @@ only in a separate source-maintenance task.
 npm install @dev-mainsequence/command-center-sdk react react-dom
 ```
 
-Import the browser styles once near your application entrypoint:
+Load browser styles once:
 
 ```ts
 import "@dev-mainsequence/command-center-sdk/theme/styles.css";
 import "@dev-mainsequence/command-center-sdk/styles.css";
 ```
 
-The SDK ships standard ESM and TypeScript declarations. It does not require Vite; any compatible
-bundler can consume the public exports.
+The SDK ships ESM and TypeScript declarations and does not require Vite. Use only declared package
+exports; `dist`, `src`, and another application's internal modules are not consumer contracts.
 
-## The boundary in plain language
+## Task and agent-skill map
 
-The SDK owns reusable UI and lifecycle. Your application owns product policy.
+The npm package installs version-matched task guidance under `.agents/skills/command-center/`.
+Human guides explain the concepts and tradeoffs; skills give an agent an execution checklist for a
+specific consuming-application task.
 
-| SDK owns | Your application owns |
-| --- | --- |
-| List/detail/picker composition and async states | URLs, routing, query caching, and notifications |
-| Normalized adapter interfaces | Authentication, base URLs, headers, and product-specific adaptation |
-| Theme presets, variables, and CSS | Persisting the user's theme preference |
-| Iframe message validation and lifecycle | Origin allowlists, CSP, launch tokens, and backend authorization |
-| Navigation hierarchy, composition, and controlled React chrome | Routes, permission filtering, favorites, branding, and product actions |
-| Page gutters, section rhythm, cards, grids, and layout verification | Domain-specific layouts, section ordering, and product state |
-| Status/progress presentation, responsive behavior, and accessible announcements | Readiness APIs, polling, retry/timeout policy, cancellation, and reconnection |
+| Task | Guide | Installed skill path |
+| --- | --- | --- |
+| Install and use the SDK | [Getting started](./getting-started.md) | `general/use-command-center-sdk` |
+| Compose an application | [SDK architecture](./concepts/sdk-architecture.md) | `general/build-command-center-application` |
+| Inspect, version, and deploy an application | [Application operations](./application-operations.md) | `general/maintain-command-center-code-repository` |
+| Build and ship an application user guide | [Application documentation](./application-documentation.md) | `documentation/document-command-center-application` |
+| Compose a responsive page | [Application layout](./application-layout.md) | `layout/compose-command-center-page` |
+| Present startup or reconnect progress | [Application feedback](./application-feedback.md) | `feedback/build-application-loading-flow` |
+| Adapt an external backend | [Resources](./resources.md#adapt-a-backend) | `resource/adapt-resource-backend` |
+| Build a resource list | [Resources](./resources.md#build-a-resource-list) | `views/build-resource-list` |
+| Build a resource detail | [Resources](./resources.md#build-a-resource-detail) | `views/build-resource-detail` |
+| Build a resource picker | [Resources](./resources.md#build-a-resource-picker) | `views/build-resource-picker` |
+| Add resource actions | [Resources](./resources.md#add-actions) | `views/add-resource-actions` |
+| Implement the contract catalog | [Backend contracts](./backend-contracts.md) | `contracts/implement-command-center-contract` |
+| Implement resource collections | [Backend contracts](./backend-contracts.md) | `contracts/implement-resource-collection-contract` |
+| Implement bulk actions | [Backend contracts](./backend-contracts.md) | `contracts/implement-bulk-actions-contract` |
+| Theme an application | [Themes](./themes.md) | `theme/theme-command-center-app` |
+| Integrate a static site | [Static-site embeds](./static-site-embeds.md) | `embed/integrate-static-site-iframe` |
 
-Do not import from `dist`, repository source paths, or another application's private modules. If a
-public surface is missing, keep one-off behavior in the consumer or follow
-[Extending and releasing](./extending-and-releasing.md) for genuinely reusable SDK behavior.
-
-## Public entrypoints
-
-- `/navigation`: controlled application rail, grouped sub-application panel, composed shell,
-  definitions, validation, and contribution composition.
-- `/layout` and `/layout/testing`: complete-application page, header, stack, card, and grid
-  primitives plus real-browser geometry verification.
-- `/feedback`: controlled application status, ordered progress-stage, and activity-indicator
-  primitives.
-- `/resource` and `/resource/react`: framework-neutral resource definitions/adapters and React
-  selection state.
-- `/views`: `ResourceListPage`, `ResourceDetailShell`, `ResourcePicker`, summaries, tables, cards,
-  pagination, and action UI.
-- `/contracts`: ordered migration helpers.
-- `/contracts/manifest.json`, `/contracts/schemas/*`, and `/contracts/fixtures/*`: draft-2020-12
-  JSON Schemas and conformance fixtures for backend teams.
-- `/theme`, `/theme/presets`, and `/theme/data-viz`: presets, variables, density, surfaces, and
-  chart palettes.
-- `/embed` and `/embed/react`: application-owned static-site iframe APIs.
-- `/styles.css` and `/theme/*.css`: browser-ready styles.
-
-Read the installed package's `package.json` export map when working against a specific version. An
-ADR or a newer checkout may describe an API that your installed version does not have.
-
-## Agent skills
-
-Installing the package copies version-matched skills to
-`.agents/skills/command-center/` while preserving the nested SDK-surface hierarchy. Category
-directories organize discoverable skill leaves and do not contain their own `SKILL.md`. To refresh
-them after an upgrade or when lifecycle scripts were disabled, run:
+Refresh packaged guidance after an upgrade or when lifecycle scripts were disabled:
 
 ```bash
 npx command-center-sdk skills install --path .
 ```
 
-Use `--dry-run` to inspect changes and `--json` for machine-readable output. The packaged-skill
-lane manages only the `command-center` namespace; keep application-specific skills in another
-directory.
+Use `skills sync` only when the backend-owned MCP catalog must also be refreshed and validated.
+See [Application operations](./application-operations.md) for authentication and ownership rules.
 
-The package also understands the backend-owned MCP platform catalog. When the npm lifecycle has an
-MCP URL plus `MAINSEQUENCE_ACCESS_TOKEN`, postinstall makes a nonblocking refresh under
-`.agents/skills/mainsequence/`. Use the explicit strict workflow when platform guidance must be
-current:
+## Current release versus design work
 
-```bash
-npx command-center-sdk skills sync --path .
-npx command-center-sdk skills sync --path . --dry-run --json
-```
-
-`skills sync` refreshes both namespaces and exits nonzero on authentication, transport, manifest,
-or ownership failure. `MCP_PINNED_FROM.txt` records only the MCP folders managed in the
-`mainsequence` namespace; application-owned siblings and the Python SDK's `PINNED_FROM.txt` are
-preserved.
-
-Contract skills always resolve the installed `contracts/manifest.json`. The manifest is the
-canonical JSON catalog and indexes the authoritative schemas and fixtures; skills and Markdown
-guides must not reproduce those definitions.
-
-## Current scope
-
-The docs describe only exports available in this package version. Authentication, transport
-execution, persistence, routes, and product-domain behavior remain consumer-owned.
+These guides describe exports in the current package unless a section explicitly says otherwise.
+ADRs explain decisions and may be marked `Proposed`. Do not treat a proposed identifier, message,
+or code sample as a released capability. For the version actually installed in an application,
+inspect its `package.json` exports, declarations, README, contract manifest, and changelog.

@@ -16,6 +16,7 @@ repositories.
 - [SDK ADR 002: Controlled Application Navigation](./adr-sdk-002-controlled-application-navigation.md) — Accepted
 - [SDK ADR 003: Public Application Layout System](./adr-sdk-003-public-application-layout-system.md) — Accepted
 - [SDK ADR 004: Public Application Feedback System](./adr-sdk-004-public-application-feedback-system.md) — Accepted
+- [SDK ADR 005: Static-Site FastAPI WebSocket Ticket Bridge](./adr-sdk-005-static-site-fastapi-websocket-ticket-bridge.md) — Accepted
 
 ## Rules
 

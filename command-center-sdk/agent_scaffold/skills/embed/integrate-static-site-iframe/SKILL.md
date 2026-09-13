@@ -1,6 +1,6 @@
 ---
 name: integrate-static-site-iframe
-description: Build, migrate, review, or secure an application-owned static site embedded in Command Center with @dev-mainsequence/command-center-sdk/embed or /embed/react. Use for the mainsequence.* version-one handshake, StaticSiteIframe hosts, createStaticSiteIframeClient children, delegated FastAPI release calls, parent-origin configuration, theme propagation, public user UID context, iframe sandboxing, CSP, or static-site embed lifecycle and tests.
+description: Build, migrate, review, or secure an application-owned static site embedded in Command Center with @dev-mainsequence/command-center-sdk/embed or /embed/react. Use for the mainsequence.* version-one handshake, StaticSiteIframe hosts, createStaticSiteIframeClient children, delegated FastAPI HTTP or WebSocket release calls, parent-origin configuration, theme propagation, public user UID context, iframe sandboxing, CSP, or static-site embed lifecycle and tests.
 ---
 
 # Integrate A Static-Site Iframe
@@ -72,6 +72,24 @@ Handle `StaticSiteFastApiCredentialError.code` as a small UI-safe category: `acc
 `invalid_request`, or `unsupported`. A direct-link static site has no trusted parent bridge and
 returns `unsupported`; never fall back to a normal user credential.
 
+### Open a FastAPI WebSocket
+
+Use only `client.createFastApiWebSocket({ resourceReleaseUid, path, protocols }, { signal })`.
+Supply an absolute normalized ASCII path and optional application subprotocol tokens. The SDK
+obtains one fresh ticket, validates it, and invokes the native constructor with the reserved ticket
+first and `mainsequence.ws-bridge.v1` second. It deliberately exposes no raw-ticket method.
+
+Treat the returned socket as a native browser WebSocket. It may still be connecting, so install
+`open`, `message`, `error`, and `close` listeners. `socket.protocol` is either the
+application-selected protocol or the fixed acknowledgement; it is never the ticket. Reconnect by
+calling `createFastApiWebSocket` again. Do not cache, deduplicate, replay, log, decode, or
+automatically retry tickets, and do not reconstruct the ticket request with raw `postMessage`.
+
+Reject application protocol values beginning with the reserved `mainsequence.ws-ticket.` or
+`mainsequence.ws-bridge.` prefix. Keep the child CSP `connect-src` aligned with approved `wss:`
+targets. A direct-link or old-host timeout is `unsupported`; a CSP or native handshake failure is
+reported through WebSocket events after construction.
+
 ## Build The Host
 
 Prefer `StaticSiteIframe` from `/embed/react`. Supply the authorized launch URL, current theme ID
@@ -89,6 +107,15 @@ target, origin, RPC URL, and expiry, then map it to `StaticSiteFastApiCredential
 host session to the callback result or let the iframe supply source identity, origin, user, or
 organization. If the capability is unavailable, omit the resolver and let the SDK return
 `unsupported`.
+
+When the child needs WebSockets, separately inject `resolveFastApiWebSocketTicket`. Accept only
+`{ resourceReleaseUid, path }` from the SDK, derive Origin from the exact pinned iframe URL, and
+call the authenticated ResourceRelease WebSocket-ticket action exactly once without caching or
+retry. Validate the returned UID, Origin, path, WebSocket URL, RFC 3339 expiry, and canonical
+`mainsequence.ws-ticket.<opaque>` subprotocol before returning
+`StaticSiteFastApiWebSocketTicket`. Map failures only to `StaticSiteFastApiWebSocketError` codes;
+never return raw backend bodies. Do not reuse the HTTP credential or the separate Command Center
+WebSocket-ticket audience.
 
 Review any change to the component's default sandbox. Add popups, downloads, modals, or navigation
 only when required and security-reviewed. Keep production origins on exact HTTPS values and align
@@ -118,3 +145,11 @@ opaque CORS/transport failure, cancellation, user/navigation/disposal clearing, 
 failure, and target CORS. Use a real cross-origin browser test, not only mocked `postMessage`.
 Confirm no host session or delegated token appears in DOM, URLs, browser storage, logs, analytics,
 or serialized application state.
+
+For WebSockets, additionally test request/cancel correlation, resolver abort/timeout/replacement,
+repeated-ready document generations, user/disposal socket closure, exact UID/Origin/path/URL/expiry
+binding, ticket-first and acknowledgement-second ordering, zero/one/multiple application
+protocols, acknowledgement fallback, application selection, omitted/duplicate response selection
+failure, bidirectional messages, close handling, and reconnect with a fresh ticket. Use a real
+browser and confirm the ticket never appears in URLs, storage, DOM, logs, analytics, errors, or the
+FastAPI-visible protocol list.

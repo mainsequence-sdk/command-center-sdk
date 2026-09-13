@@ -4,15 +4,25 @@ import {
   buildStaticSiteFastApiCredentialErrorMessage,
   buildStaticSiteFastApiCredentialRequestMessage,
   buildStaticSiteFastApiCredentialResponseMessage,
+  buildStaticSiteFastApiWebSocketTicketCancelMessage,
+  buildStaticSiteFastApiWebSocketTicketErrorMessage,
+  buildStaticSiteFastApiWebSocketTicketRequestMessage,
+  buildStaticSiteFastApiWebSocketTicketResponseMessage,
   buildStaticSiteIframeInitializeMessage,
   buildStaticSiteIframeReadyMessage,
   createStaticSiteIframeClient,
   createStaticSiteIframeHost,
   StaticSiteFastApiCredentialError,
+  StaticSiteFastApiWebSocketError,
+  STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL,
   readStaticSiteIframeContext,
   readStaticSiteFastApiCredentialRequestMessage,
   readStaticSiteFastApiCredentialErrorMessage,
   readStaticSiteFastApiCredentialResponseMessage,
+  readStaticSiteFastApiWebSocketTicketCancelMessage,
+  readStaticSiteFastApiWebSocketTicketErrorMessage,
+  readStaticSiteFastApiWebSocketTicketRequestMessage,
+  readStaticSiteFastApiWebSocketTicketResponseMessage,
   readStaticSiteIframeInitializeMessage,
   readStaticSiteIframeReadyMessage,
   resolveStaticSiteIframeOrigin,
@@ -25,6 +35,14 @@ const credential = {
   rpcUrl: "https://fastapi.example.com/",
   token: "delegated-token",
   expiresAt: "2099-08-18T12:05:00Z",
+};
+const webSocketTicket = {
+  resourceReleaseUid: targetUid,
+  origin: "https://site.example.com",
+  path: "/ws/orders",
+  websocketUrl: "wss://fastapi.example.com/ws/orders",
+  subprotocol: `mainsequence.ws-ticket.${"a".repeat(32)}`,
+  expiresAt: "2099-09-13T12:02:00Z",
 };
 
 describe("static-site iframe protocol", () => {
@@ -898,5 +916,474 @@ describe("static-site iframe client", () => {
       "Rejected unmatched static-site FastAPI credential response.",
     );
     client.dispose();
+  });
+});
+
+describe("static-site FastAPI WebSocket protocol", () => {
+  it("builds and strictly parses all four additive version-one messages", () => {
+    const binding = {
+      channel,
+      requestId: "ws-request-1",
+      resourceReleaseUid: targetUid,
+      path: "/ws/orders",
+    };
+    const request = buildStaticSiteFastApiWebSocketTicketRequestMessage(binding);
+    const cancel = buildStaticSiteFastApiWebSocketTicketCancelMessage(binding);
+    const response = buildStaticSiteFastApiWebSocketTicketResponseMessage({
+      channel,
+      requestId: binding.requestId,
+      ticket: webSocketTicket,
+    });
+    const error = buildStaticSiteFastApiWebSocketTicketErrorMessage({
+      ...binding,
+      code: "origin_not_allowed",
+    });
+
+    expect(readStaticSiteFastApiWebSocketTicketRequestMessage(request, channel)).toEqual(request);
+    expect(readStaticSiteFastApiWebSocketTicketCancelMessage(cancel, channel)).toEqual(cancel);
+    expect(readStaticSiteFastApiWebSocketTicketResponseMessage(response, channel)).toEqual(response);
+    expect(
+      readStaticSiteFastApiWebSocketTicketResponseMessage(
+        { ...response, payload: { ...response.payload, expiresAt: "2000-01-01T00:00:00Z" } },
+        channel,
+      ),
+    ).toBeNull();
+    expect(readStaticSiteFastApiWebSocketTicketErrorMessage(error, channel)).toEqual(error);
+    expect(
+      buildStaticSiteFastApiWebSocketTicketRequestMessage({ ...binding, path: "/" }).payload.path,
+    ).toBe("/");
+    expect(
+      buildStaticSiteFastApiWebSocketTicketRequestMessage({
+        ...binding,
+        path: "/ws/orders/",
+      }).payload.path,
+    ).toBe("/ws/orders/");
+    expect(
+      readStaticSiteFastApiWebSocketTicketRequestMessage(
+        { ...request, payload: { ...request.payload, origin: "https://site.example.com" } },
+        channel,
+      ),
+    ).toBeNull();
+    for (const path of [
+      "ws/orders",
+      "/ws//orders",
+      "/ws/../orders",
+      "/ws?ticket=value",
+      "/_healthz",
+      "/logos/app.svg",
+      "/ws/%6frders",
+      "/ws\\orders",
+      "/ws/[orders]",
+      `/${"a".repeat(2_048)}`,
+    ]) {
+      expect(() => buildStaticSiteFastApiWebSocketTicketRequestMessage({ ...binding, path })).toThrow();
+    }
+  });
+
+  it("validates the resolver result binding and sanitizes resolver failures", async () => {
+    const targetWindow = { postMessage: vi.fn() };
+    const source = targetWindow as unknown as MessageEventSource;
+    const resolver = vi.fn(async () => webSocketTicket);
+    const host = createStaticSiteIframeHost({
+      targetOrigin: "https://site.example.com",
+      targetWindow,
+      context: { themeId: "graphite", themeMode: "dark", userUid: "user-1" },
+      resolveFastApiWebSocketTicket: resolver,
+    });
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteIframeReadyMessage(channel),
+    });
+    const request = buildStaticSiteFastApiWebSocketTicketRequestMessage({
+      channel,
+      requestId: "ws-host-1",
+      resourceReleaseUid: targetUid,
+      path: "/ws/orders",
+    });
+    expect(host.handleMessage({ origin: "https://site.example.com", source, data: request })).toBe(true);
+    await vi.waitFor(() => expect(resolver).toHaveBeenCalledOnce());
+    await vi.waitFor(() =>
+      expect(
+        readStaticSiteFastApiWebSocketTicketResponseMessage(
+          targetWindow.postMessage.mock.calls.at(-1)?.[0],
+          channel,
+        ),
+      ).not.toBeNull(),
+    );
+    expect(resolver).toHaveBeenCalledWith(
+      { resourceReleaseUid: targetUid, path: "/ws/orders" },
+      { signal: expect.any(AbortSignal) },
+    );
+
+    host.updateFastApiWebSocketTicketResolver(async () => ({
+      ...webSocketTicket,
+      origin: "https://attacker.example.com",
+    }));
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteFastApiWebSocketTicketRequestMessage({
+        channel,
+        requestId: "ws-host-2",
+        resourceReleaseUid: targetUid,
+        path: "/ws/orders",
+      }),
+    });
+    await vi.waitFor(() =>
+      expect(
+        readStaticSiteFastApiWebSocketTicketErrorMessage(
+          targetWindow.postMessage.mock.calls.at(-1)?.[0],
+          channel,
+        )?.payload.code,
+      ).toBe("invalid_request"),
+    );
+
+    host.updateFastApiWebSocketTicketResolver(async () => {
+      throw new Error("secret backend response");
+    });
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteFastApiWebSocketTicketRequestMessage({
+        channel,
+        requestId: "ws-host-3",
+        resourceReleaseUid: targetUid,
+        path: "/ws/orders",
+      }),
+    });
+    await vi.waitFor(() =>
+      expect(
+        readStaticSiteFastApiWebSocketTicketErrorMessage(
+          targetWindow.postMessage.mock.calls.at(-1)?.[0],
+          channel,
+        )?.payload.code,
+      ).toBe("temporarily_unavailable"),
+    );
+    expect(JSON.stringify(targetWindow.postMessage.mock.calls)).not.toContain("secret backend response");
+
+    host.updateFastApiWebSocketTicketResolver(async () => {
+      throw new StaticSiteFastApiWebSocketError("access_denied", "sensitive adapter detail");
+    });
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteFastApiWebSocketTicketRequestMessage({
+        channel,
+        requestId: "ws-host-4",
+        resourceReleaseUid: targetUid,
+        path: "/ws/orders",
+      }),
+    });
+    await vi.waitFor(() =>
+      expect(
+        readStaticSiteFastApiWebSocketTicketErrorMessage(
+          targetWindow.postMessage.mock.calls.at(-1)?.[0],
+          channel,
+        )?.payload.code,
+      ).toBe("access_denied"),
+    );
+    expect(JSON.stringify(targetWindow.postMessage.mock.calls)).not.toContain("sensitive adapter detail");
+    host.dispose();
+  });
+
+  it("correlates cancellation and aborts prior-document and replaced-resolver work", async () => {
+    const targetWindow = { postMessage: vi.fn() };
+    const source = targetWindow as unknown as MessageEventSource;
+    const signals: AbortSignal[] = [];
+    const resolver = vi.fn(
+      (_request, { signal }: { signal: AbortSignal }) =>
+        new Promise<typeof webSocketTicket>(() => signals.push(signal)),
+    );
+    const host = createStaticSiteIframeHost({
+      targetOrigin: "https://site.example.com",
+      targetWindow,
+      context: { themeId: "graphite", themeMode: "dark", userUid: "user-1" },
+      resolveFastApiWebSocketTicket: resolver,
+    });
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteIframeReadyMessage(channel),
+    });
+    const binding = {
+      channel,
+      requestId: "ws-cancel-1",
+      resourceReleaseUid: targetUid,
+      path: "/ws/orders",
+    };
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteFastApiWebSocketTicketRequestMessage(binding),
+    });
+    await vi.waitFor(() => expect(signals).toHaveLength(1));
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteFastApiWebSocketTicketCancelMessage(binding),
+    });
+    expect(signals[0]?.aborted).toBe(true);
+
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteFastApiWebSocketTicketRequestMessage({
+        ...binding,
+        requestId: "ws-generation-1",
+      }),
+    });
+    await vi.waitFor(() => expect(signals).toHaveLength(2));
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteIframeReadyMessage(channel),
+    });
+    expect(signals[1]?.aborted).toBe(true);
+    expect(host.ready).toBe(true);
+
+    host.handleMessage({
+      origin: "https://site.example.com",
+      source,
+      data: buildStaticSiteFastApiWebSocketTicketRequestMessage({
+        ...binding,
+        requestId: "ws-resolver-replacement-1",
+      }),
+    });
+    await vi.waitFor(() => expect(signals).toHaveLength(3));
+    host.updateFastApiWebSocketTicketResolver(async () => webSocketTicket);
+    expect(signals[2]?.aborted).toBe(true);
+    expect(host.ready).toBe(true);
+    host.dispose();
+  });
+});
+
+describe("static-site FastAPI WebSocket client", () => {
+  class MockWebSocket {
+    static calls: Array<{ url: string; protocols: string[]; socket: MockWebSocket }> = [];
+    readyState = 0;
+    private closeListener?: () => void;
+    readonly close = vi.fn(() => {
+      this.readyState = 3;
+      this.closeListener?.();
+    });
+
+    constructor(readonly url: string, readonly protocols: string[]) {
+      MockWebSocket.calls.push({ url, protocols, socket: this });
+    }
+
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
+      if (type !== "close") return;
+      this.closeListener = () => {
+        if (typeof listener === "function") listener(new Event("close"));
+        else listener.handleEvent(new Event("close"));
+      };
+    }
+  }
+
+  function createInitializedWebSocketClient(parentWindow: { postMessage: ReturnType<typeof vi.fn> }) {
+    const client = createStaticSiteIframeClient({
+      channel,
+      hostOrigin: "https://command-center.example.com",
+      parentWindow,
+      onContext: vi.fn(),
+      webSocketTicketRequestTimeoutMs: 100,
+    });
+    const source = parentWindow as unknown as MessageEventSource;
+    client.handleMessage({
+      origin: "https://command-center.example.com",
+      source,
+      data: buildStaticSiteIframeInitializeMessage({
+        channel,
+        context: { themeId: "graphite", themeMode: "dark", userUid: "user-1" },
+      }),
+    });
+    return { client, source };
+  }
+
+  it("constructs one native socket with ticket first and acknowledgement second", async () => {
+    vi.stubGlobal("WebSocket", MockWebSocket);
+    MockWebSocket.calls = [];
+    const parentWindow = { postMessage: vi.fn() };
+    const { client, source } = createInitializedWebSocketClient(parentWindow);
+    try {
+      const connection = client.createFastApiWebSocket({
+        resourceReleaseUid: targetUid,
+        path: "/ws/orders",
+        protocols: ["orders.v2", "json"],
+      });
+      const request = readStaticSiteFastApiWebSocketTicketRequestMessage(
+        parentWindow.postMessage.mock.calls.at(-1)?.[0],
+        channel,
+      )!;
+      expect(request.payload).toMatchObject({ resourceReleaseUid: targetUid, path: "/ws/orders" });
+      client.handleMessage({
+        origin: "https://command-center.example.com",
+        source,
+        data: buildStaticSiteFastApiWebSocketTicketResponseMessage({
+          channel,
+          requestId: request.payload.requestId,
+          ticket: webSocketTicket,
+        }),
+      });
+      const socket = await connection;
+      expect(socket).toBe(MockWebSocket.calls[0]?.socket);
+      expect(MockWebSocket.calls[0]).toMatchObject({
+        url: webSocketTicket.websocketUrl,
+        protocols: [
+          webSocketTicket.subprotocol,
+          STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL,
+          "orders.v2",
+          "json",
+        ],
+      });
+      expect("requestFastApiWebSocketTicket" in client).toBe(false);
+    } finally {
+      client.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("posts correlated cancellation and never constructs after abort", async () => {
+    vi.stubGlobal("WebSocket", MockWebSocket);
+    MockWebSocket.calls = [];
+    const parentWindow = { postMessage: vi.fn() };
+    const { client } = createInitializedWebSocketClient(parentWindow);
+    const controller = new AbortController();
+    try {
+      const connection = client.createFastApiWebSocket(
+        { resourceReleaseUid: targetUid, path: "/ws/orders" },
+        { signal: controller.signal },
+      );
+      const request = readStaticSiteFastApiWebSocketTicketRequestMessage(
+        parentWindow.postMessage.mock.calls.at(-1)?.[0],
+        channel,
+      )!;
+      controller.abort();
+      await expect(connection).rejects.toMatchObject({ name: "AbortError" });
+      expect(
+        readStaticSiteFastApiWebSocketTicketCancelMessage(
+          parentWindow.postMessage.mock.calls.at(-1)?.[0],
+          channel,
+        )?.payload,
+      ).toEqual(request.payload);
+      expect(MockWebSocket.calls).toHaveLength(0);
+    } finally {
+      client.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("maps an initialized old-host timeout to unsupported without a fallback", async () => {
+    vi.stubGlobal("WebSocket", MockWebSocket);
+    MockWebSocket.calls = [];
+    const parentWindow = { postMessage: vi.fn() };
+    const client = createStaticSiteIframeClient({
+      channel,
+      hostOrigin: "https://command-center.example.com",
+      parentWindow,
+      onContext: vi.fn(),
+      webSocketTicketRequestTimeoutMs: 5,
+    });
+    const source = parentWindow as unknown as MessageEventSource;
+    client.handleMessage({
+      origin: "https://command-center.example.com",
+      source,
+      data: buildStaticSiteIframeInitializeMessage({
+        channel,
+        context: { themeId: "graphite", themeMode: "dark", userUid: "user-1" },
+      }),
+    });
+    try {
+      await expect(
+        client.createFastApiWebSocket({ resourceReleaseUid: targetUid, path: "/ws/orders" }),
+      ).rejects.toMatchObject({ code: "unsupported" });
+      expect(MockWebSocket.calls).toHaveLength(0);
+      expect(
+        parentWindow.postMessage.mock.calls.some(
+          ([message]) =>
+            readStaticSiteFastApiWebSocketTicketRequestMessage(message, channel) !== null,
+        ),
+      ).toBe(true);
+    } finally {
+      client.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("rejects invalid application protocols before requesting a ticket", async () => {
+    vi.stubGlobal("WebSocket", MockWebSocket);
+    const parentWindow = { postMessage: vi.fn() };
+    const { client } = createInitializedWebSocketClient(parentWindow);
+    const initialCalls = parentWindow.postMessage.mock.calls.length;
+    try {
+      for (const protocols of [
+        ["json", "json"],
+        [STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL],
+        ["mainsequence.ws-bridge.v2"],
+        [`MAINSEQUENCE.WS-TICKET.${"a".repeat(32)}`],
+        ["contains space"],
+        ["x".repeat(129)],
+        Array.from({ length: 17 }, (_, index) => `protocol-${index}`),
+      ]) {
+        await expect(
+          client.createFastApiWebSocket({
+            resourceReleaseUid: targetUid,
+            path: "/ws/orders",
+            protocols,
+          }),
+        ).rejects.toBeInstanceOf(StaticSiteFastApiWebSocketError);
+      }
+      expect(parentWindow.postMessage).toHaveBeenCalledTimes(initialCalls);
+    } finally {
+      client.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("gets a fresh ticket per connection and closes owned sockets on user change", async () => {
+    vi.stubGlobal("WebSocket", MockWebSocket);
+    MockWebSocket.calls = [];
+    const parentWindow = { postMessage: vi.fn() };
+    const { client, source } = createInitializedWebSocketClient(parentWindow);
+    try {
+      for (let index = 0; index < 2; index += 1) {
+        const connection = client.createFastApiWebSocket({
+          resourceReleaseUid: targetUid,
+          path: "/ws/orders",
+        });
+        const request = readStaticSiteFastApiWebSocketTicketRequestMessage(
+          parentWindow.postMessage.mock.calls.at(-1)?.[0],
+          channel,
+        )!;
+        client.handleMessage({
+          origin: "https://command-center.example.com",
+          source,
+          data: buildStaticSiteFastApiWebSocketTicketResponseMessage({
+            channel,
+            requestId: request.payload.requestId,
+            ticket: {
+              ...webSocketTicket,
+              subprotocol: `mainsequence.ws-ticket.${String(index).repeat(32)}`,
+            },
+          }),
+        });
+        await connection;
+      }
+      expect(MockWebSocket.calls).toHaveLength(2);
+      expect(MockWebSocket.calls[0]?.protocols[0]).not.toBe(MockWebSocket.calls[1]?.protocols[0]);
+      client.handleMessage({
+        origin: "https://command-center.example.com",
+        source,
+        data: buildStaticSiteIframeInitializeMessage({
+          channel,
+          context: { themeId: "graphite", themeMode: "dark", userUid: "user-2" },
+        }),
+      });
+      expect(MockWebSocket.calls.every(({ socket }) => socket.close.mock.calls.length === 1)).toBe(true);
+    } finally {
+      client.dispose();
+      vi.unstubAllGlobals();
+    }
   });
 });

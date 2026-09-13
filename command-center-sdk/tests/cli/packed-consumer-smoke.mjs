@@ -101,10 +101,19 @@ try {
   assert.equal(typeof embedModule.createStaticSiteIframeHost, "function");
   assert.equal(typeof embedModule.createStaticSiteIframeClient, "function");
   assert.equal(typeof embedModule.StaticSiteFastApiCredentialError, "function");
+  assert.equal(typeof embedModule.StaticSiteFastApiWebSocketError, "function");
+  assert.equal(
+    embedModule.STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL,
+    "mainsequence.ws-bridge.v1",
+  );
   assert.equal(embedModule.STATIC_SITE_IFRAME_PROTOCOL_VERSION, 1);
   assert.equal(
     embedModule.STATIC_SITE_IFRAME_CONTRACT,
     "command-center.static_site_iframe@v1",
+  );
+  assert.match(
+    await readFile(join(extractedPackage, "dist", "embed", "static-site.d.ts"), "utf8"),
+    /createFastApiWebSocket/u,
   );
   const resourceModule = await import(
     pathToFileURL(join(extractedPackage, "dist", "resource", "index.js")).href
@@ -138,13 +147,20 @@ try {
   const docsIndex = await readFile(join(extractedPackage, "docs", "README.md"), "utf8");
   assert.match(docsIndex, /build-command-center-application/u);
   await Promise.all([
+    "application-operations.md",
     "backend-contracts.md",
     "application-feedback.md",
     "application-layout.md",
     "application-documentation.md",
+    "concepts/resource-applications.md",
+    "concepts/sdk-architecture.md",
+    "concepts/state-and-ownership.md",
     "getting-started.md",
     "navigation.md",
+    "public-api.md",
     "resources.md",
+    "static-site-embeds.md",
+    "themes.md",
     "themes-and-embeds.md",
     "extending-and-releasing.md",
   ].map((name) => readFile(join(extractedPackage, "docs", name), "utf8")));
@@ -267,6 +283,14 @@ try {
   );
   await readFile(join(documentationSkillRoot, "agents", "openai.yaml"), "utf8");
   await readFile(
+    join(documentationSkillRoot, "references", "user-documentation-standard.md"),
+    "utf8",
+  );
+  await readFile(
+    join(documentationSkillRoot, "references", "build-and-toolchain.md"),
+    "utf8",
+  );
+  await readFile(
     join(documentationSkillRoot, "assets", "application", "scripts", "validate-docs.mjs"),
     "utf8",
   );
@@ -346,6 +370,13 @@ try {
       "utf8",
     ),
     /getFastApiState/u,
+  );
+  assert.match(
+    await readFile(
+      join(managedRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
+      "utf8",
+    ),
+    /createFastApiWebSocket/u,
   );
   await readFile(
     join(managedRoot, "contracts", "implement-resource-collection-contract", "SKILL.md"),

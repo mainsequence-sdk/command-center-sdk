@@ -34,9 +34,11 @@ Make these cross-cutting decisions first:
    the semantic theme audit.
 4. Route application-wide startup, prerequisite, reconnection, and terminal recovery feedback to
    `$build-application-loading-flow`. Keep readiness transport and retry policy in the application.
-5. Create and maintain human and technical application documentation through
-   `$document-command-center-application`. Ship it at `/docs/` inside the same static artifact and
-   verify its deep links in the application's real-browser suite.
+5. Create and maintain task-focused end-user application documentation through
+   `$document-command-center-application`. Mirror the visible application navigation in its folder
+   tree, ship it at `/docs/` inside the same static artifact, and verify its deep links in the
+   application's real-browser suite. Keep architecture and implementation material out of the
+   served user guide.
 6. Keep authentication, API clients, routing, permissions, notifications, persistence, and domain
    rules in the application or its backend. Inject them through published SDK extension points.
 7. Inspect the installed package version, exports, and declarations through

@@ -29,25 +29,29 @@ require Vite.
 
 ## Start here
 
-- [Getting started](./docs/getting-started.md): install, choose a surface, and build a first list.
-- [Application navigation](./docs/navigation.md): build a controlled app rail with sub-applications.
-- [Application layout](./docs/application-layout.md): compose and verify responsive pages and
-  standard card surfaces.
-- [Application feedback](./docs/application-feedback.md): show truthful staged startup,
-  reconnection, retry, and terminal failure feedback.
-- [Application documentation](./docs/application-documentation.md): scaffold, validate, and ship
-  human and technical documentation at `/docs/` in the application artifact.
-- [Resources](./docs/resources.md): lists, details, pickers, actions, and backend adapters.
-- [Themes and embeds](./docs/themes-and-embeds.md): apply themes and integrate application-owned
-  static sites safely.
+- [Documentation home](./docs/README.md): concept-based learning paths, ownership boundaries, and
+  the complete human-guide/agent-skill map.
+- [Getting started](./docs/getting-started.md): install the package and render a complete resource
+  screen through public entrypoints.
+- [SDK architecture](./docs/concepts/sdk-architecture.md): definitions, adapters, reusable
+  lifecycle, controlled views, and host effects.
+- [Resource applications](./docs/concepts/resource-applications.md): collection/discovery,
+  identity, selection, activation, and bulk-action concepts.
+- [State and ownership](./docs/concepts/state-and-ownership.md): controlled state, cancellation,
+  errors, routing, sessions, and persistence boundaries.
+- [Public API map](./docs/public-api.md): every supported entrypoint, CSS export, runtime boundary,
+  and compatibility rule.
+- [Build guides](./docs/navigation.md): navigation, [layout](./docs/application-layout.md),
+  [feedback](./docs/application-feedback.md), and [resources](./docs/resources.md).
+- [Integration guides](./docs/themes.md): themes, [static-site embeds](./docs/static-site-embeds.md),
+  [backend contracts](./docs/backend-contracts.md), and
+  [application documentation](./docs/application-documentation.md).
+- [Application operations](./docs/application-operations.md): inspect and update the SDK, refresh
+  guidance, synchronize a release, and recover safely.
 - [Extending and releasing](./docs/extending-and-releasing.md): add SDK capabilities, evolve
-  contracts, and verify a release.
+  contracts, and verify a package release.
 - [Backend contract schemas](./contracts/README.md): JSON Schemas, manifest, and valid/invalid
-  fixtures for language-neutral backend design.
-- [Backend contract guide](./docs/backend-contracts.md): payload roles, lifecycle examples, package
-  resolution, and versioning rules.
-- [Documentation home and skill map](./docs/README.md): every human workflow mapped to the matching
-  packaged agent skill.
+  fixtures for language-neutral implementations.
 
 ## A first resource list
 
@@ -114,7 +118,8 @@ error normalization stay outside the resource definition.
   backend-facing JSON Schema bundle and conformance fixtures.
 - `/theme`, `/theme/presets`, and `/theme/data-viz`: presets, CSS variables, density, surfaces, and
   chart palettes.
-- `/embed` and `/embed/react`: application-owned static-site iframe APIs.
+- `/embed` and `/embed/react`: application-owned static-site iframe APIs for public context,
+  delegated FastAPI HTTP access, and native one-time-ticket WebSocket connections.
 - `/styles.css` and `/theme/*.css`: browser-ready styles.
 
 Import only declared package exports. Do not import `dist` files or repository source paths.
@@ -152,7 +157,7 @@ npx command-center-sdk skills install --path . --dry-run
 The SDK recursively discovers skill leaves and preserves this nested hierarchy. Contract skills
 resolve `contracts/manifest.json` and its indexed schemas and fixtures instead of bundling a second
 contract definition. The packaged-skill lane manages only that namespace and preserves unrelated
-skills. See the [human-doc/skill map](./docs/README.md#choose-what-you-are-building) for the exact
+skills. See the [human-doc/skill map](./docs/README.md#task-and-agent-skill-map) for the exact
 workflow parity.
 
 When `MAINSEQUENCE_ACCESS_TOKEN` and an MCP URL are available, package postinstall also makes a
@@ -182,11 +187,13 @@ npx command-center-sdk application docs init --path . --dry-run
 npx command-center-sdk application docs init --path .
 ```
 
-The initializer preserves the application build as `build:app`, adds the `/docs/` Docusaurus
-build to the same `dist/` artifact, installs exact dependencies through the root npm lockfile, and
-generates `SUMMARY.md` plus the Docusaurus sidebar from one canonical navigation manifest. It is
-idempotent and refuses to overwrite conflicting files or manifest entries. Use `--skip-install`
-only when npm installation will be performed separately. See the
+The initializer preserves the application build as `build:app`, adds the `/docs/` end-user guide
+to the same `dist/` artifact, installs exact dependencies through the root npm lockfile, and uses a
+schema-version-2 application-menu projection to derive the user-guide folder tree, `SUMMARY.md`,
+and Docusaurus sidebar. Served pages explain user tasks and visible behavior; architecture, code,
+APIs, and maintainer material stay outside the application `docs/` tree. The command is idempotent
+and refuses to overwrite conflicting files or manifest entries. Use `--skip-install` only when npm
+installation will be performed separately. See the
 [application-documentation guide](./docs/application-documentation.md) for the complete authoring
 and browser-verification contract.
 

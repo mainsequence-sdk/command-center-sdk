@@ -21,14 +21,30 @@
           "fixtures/valid/static-site-iframe-v1.fastapi-credential-request.json",
           "fixtures/valid/static-site-iframe-v1.fastapi-credential-response.json",
           "fixtures/valid/static-site-iframe-v1.fastapi-credential-error.json",
-          "fixtures/valid/static-site-iframe-v1.fastapi-runtime-starting.json"
+          "fixtures/valid/static-site-iframe-v1.fastapi-runtime-starting.json",
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-ticket-request.json",
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-ticket-cancel.json",
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-ticket-response.json",
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-invalid-request.json",
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-access-denied.json",
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-origin-not-allowed.json",
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-release-unavailable.json",
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-temporarily-unavailable.json",
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-unsupported.json"
         ],
         "invalid": [
           "fixtures/invalid/static-site-iframe-v1.wrong-version.json",
           "fixtures/invalid/static-site-iframe-v1.invalid-target-uid.json",
           "fixtures/invalid/static-site-iframe-v1.missing-token.json",
           "fixtures/invalid/static-site-iframe-v1.unrestricted-user-credential.json",
-          "fixtures/invalid/static-site-iframe-v1.unknown-credential-error.json"
+          "fixtures/invalid/static-site-iframe-v1.unknown-credential-error.json",
+          "fixtures/invalid/static-site-iframe-v1.websocket-extra-field.json",
+          "fixtures/invalid/static-site-iframe-v1.websocket-invalid-request-id.json",
+          "fixtures/invalid/static-site-iframe-v1.websocket-invalid-target-uid.json",
+          "fixtures/invalid/static-site-iframe-v1.websocket-invalid-path.json",
+          "fixtures/invalid/static-site-iframe-v1.websocket-invalid-url.json",
+          "fixtures/invalid/static-site-iframe-v1.websocket-invalid-expiry.json",
+          "fixtures/invalid/static-site-iframe-v1.websocket-invalid-subprotocol.json"
         ]
       }
     },

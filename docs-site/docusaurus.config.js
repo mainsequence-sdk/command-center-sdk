@@ -36,8 +36,10 @@ const config = {
           path: "../command-center-sdk/docs",
           routeBasePath: "/",
           sidebarPath: require.resolve("./sdk-sidebars.js"),
-          editUrl:
-            "https://github.com/mainsequence-sdk/command-center-sdk/tree/main/command-center-sdk/docs/",
+          // The docs source sits outside docs-site. Build the repository path explicitly instead
+          // of letting Docusaurus append its `../command-center-sdk/docs` source path.
+          editUrl: ({ docPath }) =>
+            `https://github.com/mainsequence-sdk/command-center-sdk/tree/main/command-center-sdk/docs/${docPath}`,
         },
         blog: false,
         pages: false,
@@ -79,8 +81,18 @@ const config = {
             title: "SDK",
             items: [
               { label: "Getting started", to: "/getting-started" },
+              { label: "Core concepts", to: "/concepts/sdk-architecture" },
               { label: "Resources", to: "/resources" },
+              { label: "Public API", to: "/public-api" },
+            ],
+          },
+          {
+            title: "Integrate and operate",
+            items: [
+              { label: "Themes", to: "/themes" },
+              { label: "Static-site embeds", to: "/static-site-embeds" },
               { label: "Backend contracts", to: "/backend-contracts" },
+              { label: "Application operations", to: "/application-operations" },
             ],
           },
           {

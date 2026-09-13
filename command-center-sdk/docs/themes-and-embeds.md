@@ -1,11 +1,17 @@
 ---
 sidebar_position: 6
-title: Themes and embeds
+title: Themes and embeds overview
 ---
 
 # Themes and embeds
 
 This guide matches the `theme-command-center-app` and `integrate-static-site-iframe` skills.
+
+Themes and static-site embedding are separate concepts that meet when a host synchronizes visual
+context into an iframe. This page remains at its original URL as a compact compatibility overview.
+Use [Themes](./themes.md) for the complete token, density, data-visualization, persistence, and CSS
+contract. Use [Static-site embeds](./static-site-embeds.md) for the complete trust boundary,
+lifecycle, delegated HTTP, failure model, and production test matrix.
 
 ## Theme an application
 
@@ -98,6 +104,7 @@ import { StaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed/rea
   themeMode={activeTheme.mode}
   userUid={session?.user.publicUid ?? null}
   resolveFastApiCredential={resolveFastApiCredential}
+  resolveFastApiWebSocketTicket={resolveFastApiWebSocketTicket}
   className="h-full w-full"
 />;
 ```
@@ -147,6 +154,12 @@ const response = await client.fetchFastApi(
   { method: "GET" },
 );
 
+const socket = await client.createFastApiWebSocket({
+  resourceReleaseUid: configuredFastApiReleaseUid,
+  path: "/ws/report-events",
+  protocols: ["report-events.v1"],
+});
+
 // On permanent disposal:
 window.removeEventListener("message", onMessage);
 client.dispose();
@@ -173,6 +186,14 @@ memory. A direct-link static site has no trusted parent bridge and receives `uns
 fallback to a normal user credential. Target CORS remains required but is not authentication, and
 the FastAPI application still owns route/object authorization.
 
+For WebSockets, `resolveFastApiWebSocketTicket` is a separate authenticated host adapter. It
+derives the pinned child Origin, calls the one-time ticket endpoint once, validates the exact
+release/path/origin/URL/expiry binding, and returns the SDK ticket shape. The child uses only
+`createFastApiWebSocket`; it never receives a raw-ticket API or reuses the HTTP credential. The SDK
+places the ticket first and `mainsequence.ws-bridge.v1` second in the native protocol list. The
+gateway strips both, so `socket.protocol` is the FastAPI-selected application protocol or the fixed
+non-secret acknowledgement. Reconnect by calling the method again for a fresh ticket.
+
 `StaticSiteIframe` defaults to `allow-forms allow-same-origin allow-scripts`. Any added popups,
 downloads, modals, or navigation require a security review. Production deployments must align the
 host's `frame-src`, the child's `frame-ancestors`, and an operator-controlled exact-origin allowlist.
@@ -190,3 +211,7 @@ host's `frame-src`, the child's `frame-ancestors`, and an operator-controlled ex
   user/navigation/disposal clearing, direct-link failure, and absence of tokens from DOM, URLs,
   storage, logs, analytics, or serialized state. Exercise this path in a real browser so CORS
   preflight, origin binding, and the canonical release header are covered.
+- Native WebSocket ticket cancellation, exact binding, platform-protocol ordering, application
+  negotiation, acknowledgement fallback, omitted/duplicate selection failure, bidirectional
+  frames, close behavior, fresh-ticket reconnect, `connect-src`, and absence of tickets from URLs,
+  storage, DOM, logs, analytics, and errors.

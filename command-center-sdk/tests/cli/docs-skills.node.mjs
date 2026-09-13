@@ -45,17 +45,36 @@ test("application documentation guidance stays aligned with the official scaffol
     join(docsRoot, "application-documentation.md"),
     "utf8",
   );
+  const documentationSkillRoot = join(
+    skillsRoot,
+    "documentation",
+    "document-command-center-application",
+  );
+  const writingStandard = await readFile(
+    join(documentationSkillRoot, "references", "user-documentation-standard.md"),
+    "utf8",
+  );
+  const buildReference = await readFile(
+    join(documentationSkillRoot, "references", "build-and-toolchain.md"),
+    "utf8",
+  );
 
   for (const value of [documentationSkill, documentationGuide]) {
     assert.match(value, /application docs init/u);
     assert.match(value, /documentation\/navigation\.json/u);
     assert.match(value, /dist\/docs/u);
-    assert.match(value, /package-lock\.json/u);
-    assert.match(value, /Node(?:\.js)? major|Node runtime/iu);
     assert.match(value, /deep link/iu);
-    assert.match(value, /same (?:static )?artifact|same-artifact|combined production artifact/iu);
+    assert.match(value, /application menu|visible navigation/iu);
+    assert.match(value, /end-user|application user/iu);
+    assert.match(value, /architecture/iu);
   }
-  assert.match(documentationSkill, /postman-code-generators/u);
+  for (const value of [documentationGuide, buildReference]) {
+    assert.match(value, /package-lock\.json/u);
+    assert.match(value, /Node(?:\.js)?(?: LTS)? major|Node runtime/iu);
+  }
+  assert.match(writingStandard, /home[\s\S]*section[\s\S]*feature[\s\S]*task/iu);
+  assert.match(writingStandard, /expected result/iu);
+  assert.match(buildReference, /postman-code-generators/u);
   assert.match(documentationGuide, /platform owns|deployment platform owns/iu);
 });
 

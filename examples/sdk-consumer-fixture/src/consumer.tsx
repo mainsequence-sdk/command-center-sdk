@@ -1,8 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
+  STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL,
   STATIC_SITE_IFRAME_CONTRACT,
+  StaticSiteFastApiWebSocketError,
   type ResolveStaticSiteFastApiCredential,
+  type ResolveStaticSiteFastApiWebSocketTicket,
   type StaticSiteFastApiTransportState,
 } from "@dev-mainsequence/command-center-sdk/embed";
 import { StaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed/react";
@@ -185,6 +188,17 @@ export const packedStaticSiteCredentialResolver: ResolveStaticSiteFastApiCredent
   expiresAt: "2099-01-01T00:00:00.000Z",
 });
 
+export const packedStaticSiteWebSocketResolver: ResolveStaticSiteFastApiWebSocketTicket = async (
+  { resourceReleaseUid, path },
+) => ({
+  resourceReleaseUid,
+  origin: "https://site.example.test",
+  path,
+  websocketUrl: `wss://api.example.test${path}`,
+  subprotocol: `mainsequence.ws-ticket.${"a".repeat(32)}`,
+  expiresAt: "2099-01-01T00:00:00.000Z",
+});
+
 export const packedStaticSiteTransportState: StaticSiteFastApiTransportState = {
   status: "runtime-starting",
   resourceReleaseUid: "11111111-1111-4111-8111-111111111111",
@@ -200,6 +214,7 @@ export const packedStaticSiteHostHtml = renderToStaticMarkup(
     themeMode="dark"
     userUid="11111111-1111-4111-8111-111111111111"
     resolveFastApiCredential={packedStaticSiteCredentialResolver}
+    resolveFastApiWebSocketTicket={packedStaticSiteWebSocketResolver}
   />,
 );
 
@@ -213,7 +228,9 @@ export const packedSdkSurfaceSmoke = {
   ApplicationPageHeader,
   ApplicationPageStack,
   ProgressStageList,
+  STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL,
   STATIC_SITE_IFRAME_CONTRACT,
+  StaticSiteFastApiWebSocketError,
   COMMAND_CENTER_LAYOUT_VIEWPORTS,
   defineNavigationApplication,
   getThemeCategoricalPalette,

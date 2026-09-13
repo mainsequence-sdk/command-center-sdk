@@ -8,6 +8,7 @@ import {
   type StaticSiteIframeReadyMessage,
   type StaticSiteIframeThemeMode,
   type ResolveStaticSiteFastApiCredential,
+  type ResolveStaticSiteFastApiWebSocketTicket,
 } from "./static-site.js";
 
 export const STATIC_SITE_IFRAME_DEFAULT_SANDBOX =
@@ -19,6 +20,7 @@ export interface StaticSiteIframeProps {
   themeMode: StaticSiteIframeThemeMode;
   userUid: string | null;
   resolveFastApiCredential?: ResolveStaticSiteFastApiCredential;
+  resolveFastApiWebSocketTicket?: ResolveStaticSiteFastApiWebSocketTicket;
   allowedOrigin?: string;
   title?: string;
   className?: string;
@@ -26,6 +28,7 @@ export interface StaticSiteIframeProps {
   referrerPolicy?: React.HTMLAttributeReferrerPolicy;
   handshakeTimeoutMs?: number;
   credentialRequestTimeoutMs?: number;
+  webSocketTicketRequestTimeoutMs?: number;
   maxPayloadBytes?: number;
   onReady?: (message: StaticSiteIframeReadyMessage) => void;
   onProtocolError?: (message: string) => void;
@@ -37,6 +40,7 @@ export function StaticSiteIframe({
   themeMode,
   userUid,
   resolveFastApiCredential,
+  resolveFastApiWebSocketTicket,
   allowedOrigin,
   title = "Static site",
   className,
@@ -44,6 +48,7 @@ export function StaticSiteIframe({
   referrerPolicy = "no-referrer",
   handshakeTimeoutMs,
   credentialRequestTimeoutMs,
+  webSocketTicketRequestTimeoutMs,
   maxPayloadBytes,
   onReady,
   onProtocolError,
@@ -52,8 +57,10 @@ export function StaticSiteIframe({
   const hostRef = useRef<StaticSiteIframeHost | null>(null);
   const contextRef = useRef<StaticSiteIframeContextInput>({ themeId, themeMode, userUid });
   const callbacksRef = useRef({ onReady, onProtocolError });
+  const resolversRef = useRef({ resolveFastApiCredential, resolveFastApiWebSocketTicket });
   contextRef.current = { themeId, themeMode, userUid };
   callbacksRef.current = { onReady, onProtocolError };
+  resolversRef.current = { resolveFastApiCredential, resolveFastApiWebSocketTicket };
 
   const targetOrigin = useMemo(
     () => resolveStaticSiteIframeOrigin(allowedOrigin ?? src),
@@ -77,9 +84,11 @@ export function StaticSiteIframe({
       targetOrigin,
       targetWindow,
       context: contextRef.current,
-      resolveFastApiCredential,
+      resolveFastApiCredential: resolversRef.current.resolveFastApiCredential,
+      resolveFastApiWebSocketTicket: resolversRef.current.resolveFastApiWebSocketTicket,
       handshakeTimeoutMs,
       credentialRequestTimeoutMs,
+      webSocketTicketRequestTimeoutMs,
       maxPayloadBytes,
       onReady: (message) => callbacksRef.current.onReady?.(message),
       onProtocolError: (message) => callbacksRef.current.onProtocolError?.(message),
@@ -99,10 +108,15 @@ export function StaticSiteIframe({
     credentialRequestTimeoutMs,
     handshakeTimeoutMs,
     maxPayloadBytes,
-    resolveFastApiCredential,
     src,
     targetOrigin,
+    webSocketTicketRequestTimeoutMs,
   ]);
+
+  useEffect(() => {
+    hostRef.current?.updateFastApiCredentialResolver(resolveFastApiCredential);
+    hostRef.current?.updateFastApiWebSocketTicketResolver(resolveFastApiWebSocketTicket);
+  }, [resolveFastApiCredential, resolveFastApiWebSocketTicket]);
 
   useEffect(() => {
     hostRef.current?.updateContext({ themeId, themeMode, userUid });
