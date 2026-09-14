@@ -57,6 +57,7 @@ const sdkSidebars = {
             "adr/adr-sdk-005-static-site-fastapi-websocket-ticket-bridge",
             "adr/adr-sdk-006-device-aware-primitives",
             "adr/adr-sdk-007-responsive-column-importance-and-stacked-tables",
+            "adr/adr-sdk-008-immersive-embedded-presentation",
           ],
         },
       ],

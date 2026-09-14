@@ -179,6 +179,46 @@ The document must carry `<meta name="viewport" content="width=device-width, init
 without it mobile browsers lay the page out at 980px and the breakpoint never applies. See
 [Mobile and touch](./concepts/mobile.md).
 
+## Frame an embedded site on a phone
+
+When a route shows an embedded static site, a phone should see only the site and one small bar to
+get back. Render `ApplicationImmersiveBar` above the iframe and nothing else below the `md`
+breakpoint; the host decides the route and the breakpoint through `useCommandCenterViewport`:
+
+```tsx
+import {
+  ApplicationImmersiveBar,
+  ApplicationNavigationTrigger,
+} from "@dev-mainsequence/command-center-sdk/navigation";
+import { useCommandCenterViewport } from "@dev-mainsequence/command-center-sdk/layout";
+
+export function EmbeddedSiteRoute({ link }: { link: { label: string; launchUrl: string } }) {
+  const { breakpoint } = useCommandCenterViewport();
+  const immersive = breakpoint === "xs" || breakpoint === "sm";
+
+  if (!immersive) return <FramedSite link={link} />;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden" }}>
+      <ApplicationImmersiveBar
+        backHref="/app/home"
+        backLabel="Command Center"
+        onBack={() => navigate(-1)}
+        title={link.label}
+        trailing={
+          <ApplicationNavigationTrigger controlsId="menu" open={menuOpen} onOpenChange={setMenuOpen} />
+        }
+      />
+      <StaticSiteIframe className="flex-1 min-h-0" src={link.launchUrl} {...context} />
+    </div>
+  );
+}
+```
+
+The bar is 44px tall on touch, pads the top and inline safe areas, and is styled as top-bar chrome.
+Do not pad the bottom safe area in the host: the site inside the iframe already does. See
+[Static-site embeds](./static-site-embeds.md) and [Mobile and touch](./concepts/mobile.md).
+
 ## Preserve native link behavior
 
 Routed applications and destinations render as real anchors when they have an `href`. An ordinary

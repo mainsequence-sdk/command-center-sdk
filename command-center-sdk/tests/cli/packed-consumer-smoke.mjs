@@ -127,6 +127,7 @@ try {
     "ApplicationNavigationPanel.js",
     "ApplicationNavigationShell.js",
     "ApplicationNavigationTrigger.js",
+    "ApplicationImmersiveBar.js",
     "definition.js",
   ].map((name) => readFile(join(extractedPackage, "dist", "navigation", name), "utf8")));
   await Promise.all([

@@ -19,6 +19,7 @@ repositories.
 - [SDK ADR 005: Static-Site FastAPI WebSocket Ticket Bridge](./adr-sdk-005-static-site-fastapi-websocket-ticket-bridge.md) — Accepted
 - [SDK ADR 006: Device-Aware Primitives](./adr-sdk-006-device-aware-primitives.md) — Accepted
 - [SDK ADR 007: Responsive Column Importance and Stacked Tables](./adr-sdk-007-responsive-column-importance-and-stacked-tables.md) — Accepted
+- [SDK ADR 008: Immersive Embedded Presentation](./adr-sdk-008-immersive-embedded-presentation.md) — Accepted
 
 ## Rules
 

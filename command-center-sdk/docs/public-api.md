@@ -36,7 +36,7 @@ framework integrations do not affect the application.
 | `/resource` | Framework-neutral | Definitions, adapters, discovery parsing, pagination, activation, and bulk-action helpers |
 | `/resource/react` | React | Loaded-page and explicit/all-matching selection hooks |
 | `/views` | React + DOM | Resource lists, details, pickers, tables, cards, summaries, pagination, and action UI |
-| `/navigation` | React + DOM | Navigation definitions, composition, rail, panel, controlled shell with docked or overlay presentation, and the menu trigger |
+| `/navigation` | React + DOM | Navigation definitions, composition, rail, panel, controlled shell with docked or overlay presentation, the menu trigger, and the immersive bar for embedded sites |
 | `/layout` | React + DOM | Page, header, stack, card, responsive card-grid primitives, and the viewport seam |
 | `/layout/testing` | Browser automation adapter | Real-browser geometry verification and conformance reports |
 | `/feedback` | React + DOM | Activity indicators, ordered progress stages, and application status screens |

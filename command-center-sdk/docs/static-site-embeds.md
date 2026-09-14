@@ -100,6 +100,15 @@ Adding popups, downloads, modals, or navigation expands what child code can do a
 security review. Keep the host's `frame-src`, the child's `frame-ancestors`, and the deployment
 allowlist aligned with the exact production origins.
 
+## Host: present the site on a phone
+
+Below the `md` breakpoint show only the iframe and `ApplicationImmersiveBar` from `/navigation`
+(a back control, the site's name, and optionally the host menu trigger) in a `100dvh` column with
+`overflow: hidden`. The site inside the iframe adapts to its own width on its own; the host does
+not send it a presentation hint and must not pad the bottom safe area a second time. Every
+embedded site must carry its own viewport meta tag. See
+[Application navigation](./navigation.md#frame-an-embedded-site-on-a-phone).
+
 ## Child: install the listener before announcing readiness
 
 ```ts

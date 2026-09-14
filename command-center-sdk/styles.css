@@ -2957,6 +2957,83 @@ h3),
   }
 }
 
+/* Immersive bar (SDK ADR 008): the one-row chrome above an embedded site on a small screen. */
+.cc-application-immersive-bar {
+  align-items: center;
+  background: var(--topbar);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  color: var(--topbar-foreground);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+  min-block-size: var(--application-control-min-size);
+  min-width: 0;
+  padding:
+    var(--application-safe-area-top)
+    calc(0.5rem + var(--application-safe-area-right))
+    0
+    calc(0.25rem + var(--application-safe-area-left));
+}
+
+.cc-application-immersive-bar__back {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: max(0.25rem, calc(var(--radius) - 6px));
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-medium);
+  gap: 0.125rem;
+  max-width: 45%;
+  min-block-size: var(--application-control-min-size);
+  min-width: 0;
+  padding: 0 0.5rem 0 0.25rem;
+  text-decoration: none;
+}
+
+.cc-application-immersive-bar__back svg {
+  flex: 0 0 auto;
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.cc-application-immersive-bar__back-label,
+.cc-application-immersive-bar__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cc-application-immersive-bar__title {
+  flex: 1 1 auto;
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.cc-application-immersive-bar__trailing {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.25rem;
+}
+
+.cc-application-immersive-bar__back:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ring) 65%, transparent);
+  outline-offset: 1px;
+}
+
+@media (hover: hover) {
+  .cc-application-immersive-bar__back:hover {
+    background: color-mix(in srgb, var(--topbar-foreground) 8%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .cc-application-navigation-shell__drawer {
     animation: cc-application-navigation-drawer-in 160ms ease-out;

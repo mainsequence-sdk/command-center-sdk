@@ -5,7 +5,9 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
+  ApplicationImmersiveBar,
   ApplicationNavigationShell,
+  ApplicationNavigationTrigger,
   defineNavigationApplication,
 } from "../../dist/navigation/index.js";
 
@@ -153,5 +155,64 @@ test.describe("overlay navigation on a touch phone", () => {
     await expect(page.getByRole("link", { name: "Foundry" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Services" })).toBeVisible();
     await expect(page.getByText("Consumer surface")).toBeAttached();
+  });
+});
+
+test.describe("immersive bar on a touch phone", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
+
+  test("spans the viewport with touch-sized controls above the embedded surface", async ({ page }) => {
+    const { readFile } = await import("node:fs/promises");
+    const [componentStyles, themeStyles] = await Promise.all([
+      readFile(new URL("../../styles.css", import.meta.url), "utf8"),
+      readFile(new URL("../../theme/styles.css", import.meta.url), "utf8"),
+    ]);
+    const markup = renderToStaticMarkup(
+      createElement(
+        "div",
+        { style: { display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden" } },
+        createElement(ApplicationImmersiveBar, {
+          backHref: `${origin}/app/home`,
+          backLabel: "Command Center",
+          title: "A deliberately long embedded site name that must truncate on a phone",
+          trailing: createElement(ApplicationNavigationTrigger, {
+            controlsId: "menu",
+            onOpenChange: () => undefined,
+            open: false,
+          }),
+        }),
+        createElement("iframe", { style: { border: 0, flex: "1 1 auto", minHeight: 0 }, title: "Site" }),
+      ),
+    );
+    await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>${themeStyles}${componentStyles}</style></head><body style="margin:0">${markup}</body></html>`);
+
+    const bar = page.locator("[data-cc-immersive-bar]");
+    await expect(bar).toBeVisible();
+    await expect(page.getByRole("link", { name: "Command Center" })).toBeVisible();
+    const geometry = await bar.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const back = element.querySelector<HTMLElement>("[data-cc-immersive-back]")!.getBoundingClientRect();
+      const trigger = element.querySelector<HTMLElement>("[data-cc-navigation-trigger]")!.getBoundingClientRect();
+      const iframe = document.querySelector("iframe")!.getBoundingClientRect();
+      return {
+        backHeight: back.height,
+        height: rect.height,
+        iframeBottom: iframe.bottom,
+        iframeTop: iframe.top,
+        scrollWidth: document.documentElement.scrollWidth,
+        triggerHeight: trigger.height,
+        triggerWidth: trigger.width,
+        viewportHeight: window.innerHeight,
+        width: rect.width,
+      };
+    });
+    expect(geometry.width).toBe(375);
+    expect(geometry.scrollWidth).toBe(375);
+    expect(geometry.height).toBeGreaterThanOrEqual(44);
+    expect(geometry.backHeight).toBeGreaterThanOrEqual(44);
+    expect(geometry.triggerHeight).toBeGreaterThanOrEqual(44);
+    expect(geometry.triggerWidth).toBeGreaterThanOrEqual(44);
+    expect(Math.abs(geometry.iframeTop - geometry.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.iframeBottom - geometry.viewportHeight)).toBeLessThanOrEqual(1);
   });
 });

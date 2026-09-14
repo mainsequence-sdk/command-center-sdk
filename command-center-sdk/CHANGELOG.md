@@ -38,6 +38,10 @@
   a bottom-anchored `sheet` form, traps focus, uses the iOS-safe scroll lock, and drops its
   backdrop blur under a coarse pointer. `ResourceBulkActionPicker` passes `presentation` through.
   Every picker and dialog the SDK renders itself uses `auto`.
+- Add `ApplicationImmersiveBar` to `/navigation` (SDK ADR 008): the one-row chrome a host shows
+  above an embedded static site on a phone, with a back control that keeps native link behavior,
+  a truncated title, and a trailing slot for the menu trigger. Immersive routes stay host-owned;
+  the iframe protocol is unchanged.
 - `EntitySummary` opens a field's `info` on tap through a disclosure button instead of a hover
   `title`, and on narrow screens shows facts in two columns with wrapping values.
   `ResourceDetailShell` scrolls the active tab into view and shades the scrolling tab strip's edges.

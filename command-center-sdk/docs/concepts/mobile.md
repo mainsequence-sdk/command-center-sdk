@@ -103,6 +103,8 @@ The SDK cannot supply these; the host must.
   the tag.
 - **A menu trigger and menu state.** In the overlay presentation the SDK renders the drawer, but
   the host places `ApplicationNavigationTrigger` in its own top bar and owns `menuOpen`.
+- **Immersive routes.** For an embedded static site the host shows only `ApplicationImmersiveBar`
+  and the iframe below `md`; which routes are immersive and what "back" means are host decisions.
 
 ## Verify with the declared pointer
 

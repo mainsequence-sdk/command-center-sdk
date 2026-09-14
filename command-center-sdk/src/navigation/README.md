@@ -15,6 +15,10 @@ application rails with grouped sub-applications and destinations.
   the `/layout` viewport seam). The resolved form is exposed as `data-cc-presentation`.
 - `ApplicationNavigationTrigger.tsx` is the menu button a host places in its own top bar; it
   carries `aria-controls`, `aria-expanded`, and the accessible label for the drawer.
+- `ApplicationImmersiveBar.tsx` (SDK ADR 008) is the one-row chrome a host shows above an embedded
+  static site on a small screen: a back control (an anchor when `backHref` is given, native
+  modified clicks preserved), a truncated title that names the bar, and a trailing slot for the
+  trigger. Which routes are immersive, and what "back" means, stay host-owned.
 
 The module deliberately does not import a router, authentication client, permission store, or
 application registry. Consumers filter definitions before rendering and translate
