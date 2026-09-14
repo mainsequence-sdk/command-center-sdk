@@ -197,6 +197,33 @@ is a host scope selector and must correspond to an explicitly accepted hidden di
 Do not add a second header, toolbar, pagination footer, selection bar, or confirmation flow around
 the page. Use supported columns, cells, actions, filters, and narrow contribution points.
 
+### Present the list on a phone
+
+Give columns an `importance` and let the table change shape from the same definitions:
+
+```tsx
+columns: [
+  { id: "name", header: "Name", getValue: (s) => s.name, importance: "primary" },
+  { id: "status", header: "Status", renderCell: (s) => <StatusCell status={s.status} /> },
+  { id: "owner", header: "Owner", getValue: (s) => s.owner, importance: "tertiary" },
+  { id: "region", header: "Region", getValue: (s) => s.region, hideBelow: "lg" },
+],
+```
+
+```tsx
+<ResourceListPage definition={serviceResource} tablePresentation="auto" />
+```
+
+`primary` is the row's identity: it stays visible at every width, stays sticky while the table
+scrolls sideways, and becomes the title when rows stack. Undeclared columns are `secondary`
+(visible from 640px); `tertiary` columns appear from 768px and sit behind a "More details"
+disclosure when stacked. `hideBelow` is a host-only override for one column. When discovery
+supplies `importance`, the backend value wins. With `tablePresentation="auto"` rows stack below
+640px, sort moves to a picker in the toolbar, host filters fold into a "Filters" disclosure, and
+pagination becomes previous, page summary, next. Row actions collapse into a menu when there are
+more than two or the pointer is coarse. Pass `"table"` or `"stacked"` to fix the form. See
+[Mobile and touch](./concepts/mobile.md).
+
 ## Build a resource detail
 
 Keep the selected UID, query, and tab state in the host. Pass normalized presentation into the
@@ -244,6 +271,10 @@ export function ServiceDetail({ service }: { service: Service }) {
 
 The shell owns breadcrumbs, summary placement, action placement, tabs, transitions, and errors.
 Tab contents remain domain-owned. Use an embedded `ResourceListPage` for a related collection.
+
+On a phone the tab strip scrolls sideways with edge shadows and keeps the active tab in view, the
+summary's facts fall into two columns with values allowed to wrap, and a field's `info` opens on
+tap instead of hover. Pass `tablePresentation="auto"` to an embedded list so it stacks too.
 
 ## Build a resource picker
 

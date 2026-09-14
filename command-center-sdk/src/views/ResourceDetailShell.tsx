@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import type { ResourceBreadcrumbDefinition, ResourceDetailTabDefinition } from "../resource/types.js";
 import { ResourceTransitionShell } from "./ResourceTransitionShell.js";
@@ -23,7 +23,13 @@ export interface ResourceDetailShellProps<T = unknown> {
 }
 
 function TabButton({ active, count, label, onClick, variant }: { active: boolean; count?: number; label: string; onClick: () => void; variant: "primary" | "secondary" }) {
-  return <button aria-selected={active} className={`cc-resource-detail-tabs__tab cc-resource-detail-tabs__tab--${variant}${active ? " cc-resource-detail-tabs__tab--active" : ""}`} onClick={onClick} role="tab" type="button"><span>{label}</span>{count !== undefined ? <span className="cc-resource-detail-tabs__count">{count}</span> : null}</button>;
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (active && typeof ref.current?.scrollIntoView === "function") {
+      ref.current.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+  }, [active]);
+  return <button aria-selected={active} className={`cc-resource-detail-tabs__tab cc-resource-detail-tabs__tab--${variant}${active ? " cc-resource-detail-tabs__tab--active" : ""}`} onClick={onClick} ref={ref} role="tab" type="button"><span>{label}</span>{count !== undefined ? <span className="cc-resource-detail-tabs__count">{count}</span> : null}</button>;
 }
 
 export function ResourceDetailShell<T = unknown>({

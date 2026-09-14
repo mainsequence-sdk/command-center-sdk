@@ -134,6 +134,7 @@ export function EntitySummary({
   const [labelInput, setLabelInput] = useState("");
   const [labelInputOpen, setLabelInputOpen] = useState(false);
   const [pendingLabel, setPendingLabel] = useState<string | null>(null);
+  const [openInfoKey, setOpenInfoKey] = useState<string | null>(null);
   const displayedLabels = useMemo(
     () => Array.from(new Set(labels.map((label) => label.trim()).filter(Boolean))),
     [labels],
@@ -243,7 +244,8 @@ export function EntitySummary({
         <div className="cc-entity-summary__facts">
           {summary.highlight_fields.map((field) => (
             <div className="cc-entity-summary__fact" key={field.key} title={field.meta || getValue(field.value)}>
-              <div className="cc-entity-summary__fact-label"><FieldLead field={field} renderFieldLead={renderFieldLead} /><span>{field.label}</span>{field.info ? <span className="cc-entity-summary__info" title={field.info}>i</span> : null}<EditButton item={field} onEdit={onEditItem} /></div>
+              <div className="cc-entity-summary__fact-label"><FieldLead field={field} renderFieldLead={renderFieldLead} /><span>{field.label}</span>{field.info ? <button aria-controls={`${field.key}-info`} aria-expanded={openInfoKey === field.key} aria-label={`About ${field.label}`} className="cc-entity-summary__info" onClick={(event) => { event.stopPropagation(); setOpenInfoKey((current) => current === field.key ? null : field.key); }} type="button">i</button> : null}<EditButton item={field} onEdit={onEditItem} /></div>
+              {field.info && openInfoKey === field.key ? <div className="cc-entity-summary__info-note" id={`${field.key}-info`}>{field.info}</div> : null}
               {field.kind === "badges" && Array.isArray(field.value) ? <div className="cc-entity-summary__badges">{field.value.length ? field.value.map((value, index) => <span className={`cc-entity-summary__badge${toneClass(field.tone)}`} key={`${field.key}-${index}`}>{String(value)}</span>) : <span>Not available</span>}</div> : <LinkedValue className={`cc-entity-summary__fact-value${toneClass(field.tone)}`} item={field} onLinkSelect={onLinkSelect}>{getValue(field.value)}</LinkedValue>}
               {field.meta ? <div className="cc-entity-summary__meta">{field.meta}</div> : null}
             </div>

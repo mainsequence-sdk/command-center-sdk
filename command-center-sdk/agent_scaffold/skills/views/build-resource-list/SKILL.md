@@ -37,7 +37,10 @@ The collection operation remains authoritative for rows and pagination.
 4. Add frontend primary actions through structured declarations in the page-header region.
 5. Add row actions through supported row-action contracts.
 6. Route selection and discovered bulk actions through `$add-resource-actions`.
-7. Use `renderCard` only to change collection presentation, not collection lifecycle.
+7. Use `renderCard` only to change collection presentation, not collection lifecycle. For phones,
+   give columns an `importance` (one `primary`, the rest `secondary` or `tertiary`, plus
+   `hideBelow` for one-off overrides) and pass `tablePresentation="auto"` so the same columns
+   stack below 640px with a sort picker, a filters disclosure, and compact pagination.
 8. Use a resource activation adapter to resolve semantic `{ resource, uid }` intents and inject
    host navigation separately. Let `ResourceListPage` use `ResourceTransitionShell` for the
    blocking handoff instead of inserting an opening row or spinner into the table.

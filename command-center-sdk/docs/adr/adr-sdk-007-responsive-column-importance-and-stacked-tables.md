@@ -1,7 +1,8 @@
 # SDK ADR 007: Responsive Column Importance and Stacked Tables
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-14
+- Implementation: `@dev-mainsequence/command-center-sdk` unreleased (planned 0.4.0)
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
 - Related:
@@ -12,10 +13,9 @@
 
 ## Publication status
 
-This decision is proposed. The column fields, table presentation, and list-page behavior below do
-not exist in a released package. The contract field `importance` already exists in
-`command-center.resource_discovery@v1` and may be emitted by backends today; until this ADR is
-implemented the SDK accepts it and ignores it.
+This decision is implemented in SDK source for the next package release. The contract field
+`importance` has existed in `command-center.resource_discovery@v1` since v1; released packages
+before the implementing version accept it and ignore it.
 
 ## Decision summary
 
@@ -84,7 +84,7 @@ wire. Resolution rules, in order:
 
 1. Exactly one column is primary. If none is declared, the first column is primary. If several are
    declared, the first declared primary wins and the rest are treated as secondary. This is
-   deterministic and logged in development builds.
+   deterministic; the SDK does not log it because the package has no development-build switch.
 2. `resolveResourceDiscoveryColumns` copies `importance` from the discovery column when present;
    otherwise the local definition's value applies. It continues to copy `header` and
    `sortable_key` as today.
@@ -141,9 +141,9 @@ In the `table` form:
 
 - `ResourcePagination` gains `presentation?: "auto" | "full" | "compact"`. Compact renders
   previous, next, and the "3 of 12" summary only. `auto` resolves to compact below `sm`.
-- Below `sm`, `ResourceListPage` renders search at full width, gathers host-authored
-  `filterDefinitions` into one "Filters" picker with an active count, and keeps the result count on
-  its own line. Discovery filter metadata still never renders inputs.
+- Below `sm`, `ResourceListPage` renders search at full width, folds host-authored
+  `filterDefinitions` and `filterControls` into one "Filters" disclosure with an active count, and
+  keeps the result count on its own line. Discovery filter metadata still never renders inputs.
 - `ResourceListPage` gains `tablePresentation` and passes it through. `renderCard` continues to
   take precedence when supplied; it is the host's explicit card presentation and is unaffected.
 
@@ -160,8 +160,9 @@ edge fades on the tab strip. These are CSS and small markup changes with no new 
   already defines `importance` with the same three values; its schema, `$id`, manifest entry, and
   runtime parser are unchanged. Serialized bytes and semantics do not change. A backend that emits
   `importance` today keeps working and starts to benefit; one that does not keeps today's output.
-- One valid fixture is added that exercises `importance` on every column so the packed bundle
-  proves the field round-trips; no invalid fixture changes.
+- The existing valid fixture `resource-discovery-v1.records.json` already exercises `importance`
+  on every column, so the packed bundle proves the field round-trips without a new fixture; no
+  invalid fixture changes.
 - `ResourceColumnDefinition` gains optional fields. Existing definitions compile and render
   identically.
 - `DataTable`, `ResourcePagination`, and `ResourceListPage` gain optional props with defaults that
@@ -194,8 +195,8 @@ This ADR moves to Accepted when:
 - `DataTable` with no new prop renders markup identical to 0.2.1;
 - the stacked form passes selection, activation, row-action, and sort browser tests at 375×812
   with touch, and the verifier reports no `touch-target` or `horizontal-overflow` violation on it;
-- the added valid fixture validates against the unchanged schema and is present in the packed
-  tarball; and
+- the existing valid fixture with `importance` validates against the unchanged schema and is
+  present in the packed tarball; and
 - the resources guide shows one list that renders as a table on desktop and stacked on a phone
   from a single definition.
 

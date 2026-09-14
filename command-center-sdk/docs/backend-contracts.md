@@ -130,6 +130,12 @@ Example:
 }
 ```
 
+A column's optional `importance` (`primary`, `secondary`, or `tertiary`) is the responsive
+signal the SDK uses on small screens: the primary column is the row's identity and the title of a
+stacked row, secondary columns stay visible from 640px, and tertiary columns from 768px. Annotate
+columns deliberately; exactly one should be primary. A backend that omits the field gets the
+SDK's default (the first visible column is primary, the rest secondary).
+
 Discovery query parameters contain semantic search, visible filters, and explicitly declared
 hidden host scope only. Pagination and current sort presentation are rejected. User-specific
 responses use private revalidation with `ETag`; browser transports can honor the backend's

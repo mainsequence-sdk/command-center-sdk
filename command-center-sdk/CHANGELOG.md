@@ -20,6 +20,21 @@
   gain `warnings`. Consumers that construct report objects by hand must add the new fields.
 - Add the "Mobile and touch" concept guide, update the navigation, layout, themes, and public API
   guides, and add a phone-presentation step to the list, detail, picker, and page skills.
+- Implement SDK ADR 007. `ResourceColumnDefinition` gains `importance` (the discovery contract's
+  existing vocabulary) and the host-only `hideBelow`; `resolveResourceDiscoveryColumns` now carries
+  the backend's `importance` instead of dropping it. `/resource` exports
+  `resolveResourceColumnImportance`, `isResourceColumnVisibleAt`, and `selectResourceColumnsAt`.
+  No contract, schema, fixture, or backend change.
+- `DataTable` gains `presentation` (`table`, `stacked`, `auto`), hides columns by importance band
+  in the table form, keeps the header and primary column sticky inside the scroller with a scroll
+  edge shadow, reads cell padding from the density variables (a visible density change at relaxed
+  and tight presets), and collapses row actions into a menu when there are more than two or the
+  pointer is coarse. `ResourcePagination` gains `presentation` with a compact form.
+  `ResourceListPage` gains `tablePresentation`, a sort picker while rows are stacked, a filters
+  disclosure and compact pagination below 640px.
+- `EntitySummary` opens a field's `info` on tap through a disclosure button instead of a hover
+  `title`, and on narrow screens shows facts in two columns with wrapping values.
+  `ResourceDetailShell` scrolls the active tab into view and shades the scrolling tab strip's edges.
 
 ## 0.2.1
 

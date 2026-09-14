@@ -99,7 +99,7 @@ therefore have separate requests and caches.
 | Rows | Resource and item labels |
 | Authoritative pagination | UI identity fields |
 | Current sort result | Available search/filter/sort vocabulary |
-| Query-specific values | Visible column order and headings |
+| Query-specific values | Visible column order, headings, and importance |
 | Read errors and refresh | Caller-authorized bulk actions |
 
 Page changes refetch the collection but not stable discovery. Search, filters, explicit host scope,
