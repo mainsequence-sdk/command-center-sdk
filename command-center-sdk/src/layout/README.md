@@ -96,10 +96,16 @@ await assertCommandCenterPageLayout(page, {
 });
 ```
 
-The standard matrix includes 375×812, 768×900, and 1280×800. Reports cover root count, page and
-header overflow, header overlap, stack gaps, card insets, grid collapse/overlap, and interactive
-clipping/size. Keep the stable `data-cc-*` attributes because the verifier measures them in the
-rendered document.
+The standard matrix is 320×568, 375×812, 812×375, and 768×1024 with a declared `coarse` pointer,
+then 1024×768 and 1280×800 with a `fine` pointer. Reports cover root count, page and header
+overflow, header overlap, stack gaps, card insets, grid collapse/overlap, and interactive
+clipping/size at every entry. Coarse entries add `touch-target` (an error below 24px, a warning
+below 44px; inline links are exempt) and `sticky-hover` (a warning for a hover rule with no
+`@media (hover: hover)` guard). Entries narrower than 768px add `input-zoom` (an error for a text
+input under 16px). Warnings are returned in `warnings` and never change `ok`. Rules apply by the
+declared pointer because the adapter cannot toggle a browser context's touch emulation; configure
+`hasTouch` and `isMobile` on the driver for coarse entries. Keep the stable `data-cc-*` attributes
+because the verifier measures them in the rendered document.
 
 ## Maintenance constraints
 

@@ -34,8 +34,11 @@ function selectorsWithContext(css: string) {
 }
 
 describe("SDK stylesheets device axis", () => {
-  it("guards every hover rule with a hover-capable media query", () => {
-    const unguarded = selectorsWithContext(componentCss)
+  it.each([
+    ["styles.css", componentCss],
+    ["theme/styles.css", themeCss],
+  ])("guards every hover rule in %s with a hover-capable media query", (_name, css) => {
+    const unguarded = selectorsWithContext(css)
       .filter(({ selector }) => selector.includes(":hover"))
       .filter(({ context }) => !context.some((prelude) => /\(hover:\s*hover\)/u.test(prelude)));
     expect(unguarded.map(({ selector }) => selector)).toEqual([]);

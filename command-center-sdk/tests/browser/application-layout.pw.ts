@@ -27,7 +27,7 @@ function card(title: string, body: string) {
     ApplicationCard,
     { header: createElement("h2", null, title) },
     createElement("p", null, body),
-    createElement("button", { type: "button" }, `Inspect ${title}`),
+    createElement("button", { className: "cc-resource-button", type: "button" }, `Inspect ${title}`),
   );
 }
 
@@ -59,8 +59,8 @@ function renderFixture() {
         actions: createElement(
           "div",
           null,
-          createElement("button", { type: "button" }, "Refresh data"),
-          createElement("button", { type: "button" }, "Rebalance portfolio"),
+          createElement("button", { className: "cc-resource-button", type: "button" }, "Refresh data"),
+          createElement("button", { className: "cc-resource-button", type: "button" }, "Rebalance portfolio"),
         ),
         description:
           "Monitor exposures, inspect current positions, and rebalance the active portfolio without losing responsive page rhythm.",
@@ -91,7 +91,7 @@ function renderFixture() {
           ApplicationCard,
           { surface: "nested" },
           createElement("div", { role: "alert" }, "One optional data source is unavailable."),
-          createElement("button", { disabled: true, type: "button" }, "Loading replacement"),
+          createElement("button", { className: "cc-resource-button", disabled: true, type: "button" }, "Loading replacement"),
         ),
       ),
     ),
@@ -116,7 +116,12 @@ test.describe("public application layout", () => {
         </html>`);
       const report = await verifyCommandCenterPageLayout(page);
       expect(report.violations, JSON.stringify(report.violations, null, 2)).toEqual([]);
-      expect(report.reports).toHaveLength(3);
+      expect(report.reports).toHaveLength(6);
+      expect(report.reports.map((entry) => entry.viewport.pointer)).toEqual([
+        "coarse", "coarse", "coarse", "coarse", "fine", "fine",
+      ]);
+      // The SDK's own hover rules are guarded, so nothing is reported as sticky.
+      expect(report.warnings.filter((warning) => warning.code === "sticky-hover")).toEqual([]);
     }
   });
 
@@ -220,5 +225,61 @@ test.describe("public application layout", () => {
     const codes = new Set(report.violations.map((violation) => violation.code));
     expect(report.ok).toBe(false);
     expect(codes.has("grid-collapse")).toBe(true);
+  });
+
+  test("reports touch-target, input-zoom, and sticky-hover findings at coarse-pointer viewports", async ({ page }) => {
+    const [componentStyles, themeStyles] = await Promise.all([
+      readFile(componentStylesPath, "utf8"),
+      readFile(themeStylesPath, "utf8"),
+    ]);
+    const markup = renderToStaticMarkup(
+      createElement(
+        ApplicationPage,
+        null,
+        createElement(ApplicationPageHeader, { title: "Touch" }),
+        createElement(
+          ApplicationPageStack,
+          null,
+          createElement(
+            ApplicationCard,
+            null,
+            createElement("button", { className: "tiny", type: "button" }, "x"),
+            createElement("button", { className: "cc-resource-button", type: "button" }, "Standard"),
+            createElement("input", { "aria-label": "Search", className: "small-input", type: "search" }),
+            createElement("p", null, "Read the ", createElement("a", { href: "#" }, "inline link"), " here."),
+          ),
+        ),
+      ),
+    );
+    await page.setContent(`<!doctype html>
+      <html>
+        <head>
+          <style>
+            ${themeStyles}
+            ${componentStyles}
+            .tiny { border: 0; height: 18px; padding: 0; width: 18px; }
+            .small-input { font-size: 12px; }
+            .cc-resource-button:hover { color: var(--primary); }
+          </style>
+        </head>
+        <body>${markup}</body>
+      </html>`);
+
+    const report = await verifyCommandCenterPageLayout(page, {
+      viewports: [
+        { width: 375, height: 812, pointer: "coarse" },
+        { width: 1280, height: 800, pointer: "fine" },
+      ],
+    });
+    const errorCodes = report.violations.map((violation) => `${violation.viewport.width}:${violation.code}`);
+    const warningCodes = report.warnings.map((warning) => `${warning.viewport.width}:${warning.code}`);
+    expect(errorCodes).toContain("375:touch-target");
+    expect(errorCodes).toContain("375:input-zoom");
+    expect(errorCodes).not.toContain("1280:touch-target");
+    expect(errorCodes).not.toContain("1280:input-zoom");
+    expect(warningCodes).toContain("375:touch-target");
+    expect(warningCodes).toContain("375:sticky-hover");
+    expect(warningCodes).not.toContain("1280:sticky-hover");
+    expect(report.violations.some((violation) => violation.element?.startsWith("a"))).toBe(false);
   });
 });

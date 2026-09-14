@@ -1,12 +1,26 @@
+export type CommandCenterLayoutPointer = "coarse" | "fine";
+
 export interface CommandCenterLayoutViewport {
   height: number;
+  /**
+   * The primary pointer the page will meet at this size. Touch rules run only for `coarse`
+   * entries. The verifier cannot switch a browser context's touch emulation; configure
+   * `hasTouch`/`isMobile` on the driver for coarse entries when emulation matters.
+   */
+  pointer?: CommandCenterLayoutPointer;
   width: number;
 }
 
+/** The mobile breakpoint below which text inputs must stay at the zoom-safe font size. */
+const MOBILE_BREAKPOINT_PX = 768;
+
 export const COMMAND_CENTER_LAYOUT_VIEWPORTS = [
-  { width: 375, height: 812 },
-  { width: 768, height: 900 },
-  { width: 1280, height: 800 },
+  { width: 320, height: 568, pointer: "coarse" },
+  { width: 375, height: 812, pointer: "coarse" },
+  { width: 812, height: 375, pointer: "coarse" },
+  { width: 768, height: 1024, pointer: "coarse" },
+  { width: 1024, height: 768, pointer: "fine" },
+  { width: 1280, height: 800, pointer: "fine" },
 ] as const satisfies readonly CommandCenterLayoutViewport[];
 
 export type CommandCenterPageLayoutViolationCode =
@@ -17,15 +31,22 @@ export type CommandCenterPageLayoutViolationCode =
   | "header-overflow"
   | "header-overlap"
   | "horizontal-overflow"
+  | "input-zoom"
   | "interactive-clipping"
   | "interactive-size"
   | "page-root-count"
-  | "stack-gap";
+  | "stack-gap"
+  | "sticky-hover"
+  | "touch-target";
+
+export type CommandCenterPageLayoutSeverity = "error" | "warning";
 
 export interface CommandCenterPageLayoutViolation {
   code: CommandCenterPageLayoutViolationCode;
   element?: string;
   message: string;
+  /** `error` fails the report; `warning` is reported but does not affect `ok`. */
+  severity: CommandCenterPageLayoutSeverity;
   viewport: CommandCenterLayoutViewport;
 }
 
@@ -43,7 +64,10 @@ export interface CommandCenterPageLayoutMeasurements {
 export interface CommandCenterPageLayoutViewportReport {
   measurements: CommandCenterPageLayoutMeasurements;
   ok: boolean;
+  /** Error-severity findings. */
   violations: CommandCenterPageLayoutViolation[];
+  /** Warning-severity findings; they never change `ok`. */
+  warnings: CommandCenterPageLayoutViolation[];
   viewport: CommandCenterLayoutViewport;
 }
 
@@ -51,13 +75,26 @@ export interface CommandCenterPageLayoutReport {
   ok: boolean;
   reports: CommandCenterPageLayoutViewportReport[];
   violations: CommandCenterPageLayoutViolation[];
+  warnings: CommandCenterPageLayoutViolation[];
 }
 
 export interface VerifyCommandCenterPageLayoutOptions {
+  /**
+   * Report hover rules that are not guarded by a hover-capable media query at coarse-pointer
+   * viewports. Reported as warnings because third-party stylesheets are outside the page author's
+   * control. Default true.
+   */
+  checkStickyHover?: boolean;
+  /** Minimum computed font size for text inputs below the mobile breakpoint. Default 16. */
+  inputFontSizeMinimumPx?: number;
   minimumCardInsetPx?: number;
   minimumSectionGapPx?: number;
   rootSelector?: string;
   tolerancePx?: number;
+  /** Touch targets below this size at a coarse-pointer viewport are errors. Default 24. */
+  touchTargetFloorPx?: number;
+  /** Touch targets below this size at a coarse-pointer viewport are warnings. Default 44. */
+  touchTargetMinimumPx?: number;
   viewports?: readonly CommandCenterLayoutViewport[];
 }
 
@@ -75,29 +112,42 @@ export interface CommandCenterLayoutBrowserPage {
 }
 
 interface ResolvedVerificationOptions {
+  checkStickyHover: boolean;
+  inputFontSizeMinimumPx: number;
   minimumCardInsetPx: number;
   minimumSectionGapPx: number;
+  mobileBreakpointPx: number;
   rootSelector: string;
   tolerancePx: number;
+  touchTargetFloorPx: number;
+  touchTargetMinimumPx: number;
 }
 
 function resolveOptions(
   options: VerifyCommandCenterPageLayoutOptions,
 ): ResolvedVerificationOptions {
   const resolved = {
+    checkStickyHover: options.checkStickyHover ?? true,
+    inputFontSizeMinimumPx: options.inputFontSizeMinimumPx ?? 16,
     minimumCardInsetPx: options.minimumCardInsetPx ?? 12,
     minimumSectionGapPx: options.minimumSectionGapPx ?? 12,
+    mobileBreakpointPx: MOBILE_BREAKPOINT_PX,
     rootSelector: options.rootSelector ?? "[data-cc-application-page]",
     tolerancePx: options.tolerancePx ?? 1,
+    touchTargetFloorPx: options.touchTargetFloorPx ?? 24,
+    touchTargetMinimumPx: options.touchTargetMinimumPx ?? 44,
   };
 
   if (!resolved.rootSelector.trim()) {
     throw new RangeError("rootSelector must not be empty.");
   }
   for (const [name, value] of [
+    ["inputFontSizeMinimumPx", resolved.inputFontSizeMinimumPx],
     ["minimumCardInsetPx", resolved.minimumCardInsetPx],
     ["minimumSectionGapPx", resolved.minimumSectionGapPx],
     ["tolerancePx", resolved.tolerancePx],
+    ["touchTargetFloorPx", resolved.touchTargetFloorPx],
+    ["touchTargetMinimumPx", resolved.touchTargetMinimumPx],
   ] as const) {
     if (!Number.isFinite(value) || value < 0) {
       throw new RangeError(`${name} must be a finite non-negative number.`);
@@ -114,7 +164,8 @@ export function formatCommandCenterPageLayoutViolations(
 
   return report.violations
     .map((violation) => {
-      const viewport = `${violation.viewport.width}x${violation.viewport.height}`;
+      const pointer = violation.viewport.pointer ? ` ${violation.viewport.pointer}` : "";
+      const viewport = `${violation.viewport.width}x${violation.viewport.height}${pointer}`;
       const element = violation.element ? ` (${violation.element})` : "";
       return `[${viewport}] ${violation.code}${element}: ${violation.message}`;
     })
@@ -151,6 +202,13 @@ export async function verifyCommandCenterPageLayout(
     ) {
       throw new RangeError("Layout verification viewports require positive finite dimensions.");
     }
+    if (
+      viewport.pointer !== undefined &&
+      viewport.pointer !== "coarse" &&
+      viewport.pointer !== "fine"
+    ) {
+      throw new RangeError("Layout verification viewport pointer must be \"coarse\" or \"fine\".");
+    }
   }
 
   const originalViewport = page.viewportSize?.() ?? null;
@@ -160,6 +218,8 @@ export async function verifyCommandCenterPageLayout(
       const report = await page.evaluate(
       (input: ResolvedVerificationOptions & { viewport: CommandCenterLayoutViewport }) => {
         const violations: CommandCenterPageLayoutViolation[] = [];
+        const warnings: CommandCenterPageLayoutViolation[] = [];
+        const coarsePointer = input.viewport.pointer === "coarse";
         const rootElements = Array.from(
           document.querySelectorAll<HTMLElement>(input.rootSelector),
         );
@@ -182,17 +242,30 @@ export async function verifyCommandCenterPageLayout(
           return `${element.tagName.toLowerCase()}${className ? `.${className}` : ""}`;
         }
 
+        function addFinding(
+          severity: CommandCenterPageLayoutSeverity,
+          code: CommandCenterPageLayoutViolationCode,
+          message: string,
+          element?: Element | string,
+        ) {
+          const described = typeof element === "string"
+            ? element
+            : element ? describeElement(element) : undefined;
+          (severity === "error" ? violations : warnings).push({
+            code,
+            ...(described ? { element: described } : {}),
+            message,
+            severity,
+            viewport: input.viewport,
+          });
+        }
+
         function addViolation(
           code: CommandCenterPageLayoutViolationCode,
           message: string,
           element?: Element,
         ) {
-          violations.push({
-            code,
-            ...(element ? { element: describeElement(element) } : {}),
-            message,
-            viewport: input.viewport,
-          });
+          addFinding("error", code, message, element);
         }
 
         function isRendered(element: HTMLElement) {
@@ -463,6 +536,26 @@ export async function verifyCommandCenterPageLayout(
               );
               continue;
             }
+            if (coarsePointer) {
+              const inlineLink =
+                interactive.tagName === "A" && getComputedStyle(interactive).display === "inline";
+              const smallest = Math.min(rect.width, rect.height);
+              if (!inlineLink && smallest + input.tolerancePx < input.touchTargetFloorPx) {
+                addFinding(
+                  "error",
+                  "touch-target",
+                  `A touch target is ${rect.width.toFixed(1)}×${rect.height.toFixed(1)}px; the floor is ${input.touchTargetFloorPx}px.`,
+                  interactive,
+                );
+              } else if (!inlineLink && smallest + input.tolerancePx < input.touchTargetMinimumPx) {
+                addFinding(
+                  "warning",
+                  "touch-target",
+                  `A touch target is ${rect.width.toFixed(1)}×${rect.height.toFixed(1)}px; ${input.touchTargetMinimumPx}px is recommended.`,
+                  interactive,
+                );
+              }
+            }
             const clipped =
               rect.left < rootRect.left - input.tolerancePx ||
               rect.right > rootRect.right + input.tolerancePx ||
@@ -475,6 +568,60 @@ export async function verifyCommandCenterPageLayout(
                 interactive,
               );
             }
+          }
+        }
+
+        if (root && input.viewport.width < input.mobileBreakpointPx) {
+          const textInputs = Array.from(
+            root.querySelectorAll<HTMLElement>(
+              "input:not([type='button']):not([type='checkbox']):not([type='color']):not([type='file']):not([type='hidden']):not([type='image']):not([type='radio']):not([type='range']):not([type='reset']):not([type='submit']), select, textarea",
+            ),
+          ).filter(isRendered);
+          for (const textInput of textInputs) {
+            const fontSize = Number.parseFloat(getComputedStyle(textInput).fontSize) || 0;
+            if (fontSize + input.tolerancePx < input.inputFontSizeMinimumPx) {
+              addViolation(
+                "input-zoom",
+                `A text input renders at ${fontSize.toFixed(1)}px; mobile browsers zoom the page on focus below ${input.inputFontSizeMinimumPx}px.`,
+                textInput,
+              );
+            }
+          }
+        }
+
+        if (coarsePointer && input.checkStickyHover) {
+          const hoverGuard = /hover:\s*hover/u;
+          const reported = new Set<string>();
+          function walkRules(rules: CSSRuleList, guarded: boolean) {
+            for (const rule of Array.from(rules)) {
+              if (rule instanceof CSSMediaRule) {
+                walkRules(rule.cssRules, guarded || hoverGuard.test(rule.conditionText));
+              } else if (
+                typeof CSSSupportsRule !== "undefined" && rule instanceof CSSSupportsRule
+              ) {
+                walkRules(rule.cssRules, guarded);
+              } else if (rule instanceof CSSStyleRule) {
+                if (!guarded && rule.selectorText.includes(":hover") && !reported.has(rule.selectorText)) {
+                  reported.add(rule.selectorText);
+                  addFinding(
+                    "warning",
+                    "sticky-hover",
+                    "A hover rule is not guarded by @media (hover: hover); touch leaves it applied after a tap.",
+                    rule.selectorText,
+                  );
+                }
+                if (rule.cssRules?.length) walkRules(rule.cssRules, guarded);
+              }
+            }
+          }
+          for (const sheet of Array.from(document.styleSheets)) {
+            let rules: CSSRuleList | null = null;
+            try {
+              rules = sheet.cssRules;
+            } catch {
+              rules = null;
+            }
+            if (rules) walkRules(rules, false);
           }
         }
 
@@ -493,10 +640,18 @@ export async function verifyCommandCenterPageLayout(
           measurements,
           ok: violations.length === 0,
           violations,
+          warnings,
           viewport: input.viewport,
         };
       },
-      { ...resolved, viewport: { width: viewport.width, height: viewport.height } },
+      {
+        ...resolved,
+        viewport: {
+          width: viewport.width,
+          height: viewport.height,
+          ...(viewport.pointer ? { pointer: viewport.pointer } : {}),
+        },
+      },
     );
       reports.push(report);
     }
@@ -505,7 +660,8 @@ export async function verifyCommandCenterPageLayout(
   }
 
   const violations = reports.flatMap((report) => report.violations);
-  return { ok: violations.length === 0, reports, violations };
+  const warnings = reports.flatMap((report) => report.warnings);
+  return { ok: violations.length === 0, reports, violations, warnings };
 }
 
 export async function assertCommandCenterPageLayout(
