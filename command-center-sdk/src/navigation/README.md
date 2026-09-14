@@ -9,7 +9,12 @@ application rails with grouped sub-applications and destinations.
   application's `href`, or its default destination's `href`, for native browser link behavior.
 - `ApplicationNavigationPanel.tsx` renders the selected application's grouped destinations as
   anchors when an `href` is available and as callback buttons otherwise.
-- `ApplicationNavigationShell.tsx` composes both around consumer-owned content.
+- `ApplicationNavigationShell.tsx` composes both around consumer-owned content. Its
+  `presentation` prop is `docked` (the layout row), `overlay` (an off-canvas drawer the host opens
+  through `menuOpen` and `onMenuOpenChange`), or `auto` (overlay below the `md` breakpoint through
+  the `/layout` viewport seam). The resolved form is exposed as `data-cc-presentation`.
+- `ApplicationNavigationTrigger.tsx` is the menu button a host places in its own top bar; it
+  carries `aria-controls`, `aria-expanded`, and the accessible label for the drawer.
 
 The module deliberately does not import a router, authentication client, permission store, or
 application registry. Consumers filter definitions before rendering and translate
@@ -94,7 +99,12 @@ silently convert forbidden destinations into working links.
 - Keep route objects and router APIs out of definitions. Translate semantic intents at the host.
 - Keep `data-cc-*` and theme-chrome attributes stable because CSS and browser checks consume them.
 - Test ordering, duplicate rejection, disabled behavior, Escape closing, native anchor semantics,
-  narrow viewport behavior, and controlled active/open state.
+  the overlay drawer (focus trap, scroll lock, scrim and Escape dismissal, close on navigate) at a
+  touch phone viewport, and controlled active/open/menu state.
+- The overlay drawer forces the rail expanded so labels are visible without hover tooltips, and
+  closes after `onNavigate`. The host still owns `menuOpen`; the shell only reports changes.
+- Standalone rail and panel compositions must set `--application-navigation-rail-width` on their
+  container; the shell does this for its own row and the panel's narrow-viewport offset reads it.
 - A released definition ID may be persisted or deep-linked by a consumer; renaming it requires a
   compatibility review even though the definition is TypeScript data.
 

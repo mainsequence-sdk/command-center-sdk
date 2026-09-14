@@ -307,6 +307,7 @@ export function ApplicationRail({
 
   const railWidth = collapsed ? collapsedWidth : expandedWidth;
   const railStyle = {
+    "--application-navigation-rail-width": railWidth,
     flexBasis: railWidth,
     width: railWidth,
   } as CSSProperties;

@@ -126,6 +126,7 @@ try {
     "ApplicationRail.js",
     "ApplicationNavigationPanel.js",
     "ApplicationNavigationShell.js",
+    "ApplicationNavigationTrigger.js",
     "definition.js",
   ].map((name) => readFile(join(extractedPackage, "dist", "navigation", name), "utf8")));
   await Promise.all([
@@ -133,6 +134,8 @@ try {
     "index.d.ts",
     "components.js",
     "components.d.ts",
+    "viewport.js",
+    "viewport.d.ts",
   ].map((name) => readFile(join(extractedPackage, "dist", "layout", name), "utf8")));
   await Promise.all([
     "index.js",

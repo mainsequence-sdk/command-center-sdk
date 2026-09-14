@@ -2585,9 +2585,102 @@ h3),
 @media (max-width: 767px) {
   .cc-application-navigation-panel {
     bottom: 0;
-    left: 52px;
+    left: var(--application-navigation-rail-width);
     position: absolute;
     top: 0;
+  }
+}
+
+/* Overlay presentation (SDK ADR 006 §4): the rail and panel become one off-canvas drawer the
+   host opens through `menuOpen`; the trigger lives in the host's own top bar. */
+.cc-application-navigation-shell--overlay {
+  position: relative;
+}
+
+.cc-application-navigation-shell__scrim {
+  background: color-mix(in srgb, var(--background) 62%, transparent);
+  inset: 0;
+  position: fixed;
+  z-index: 94;
+}
+
+.cc-application-navigation-shell__drawer {
+  box-shadow: var(--shadow-dialog);
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  inset-block: 0;
+  inset-inline-start: 0;
+  max-width: calc(100vw - 3rem);
+  min-width: 0;
+  outline: none;
+  overflow: hidden;
+  position: fixed;
+  z-index: 95;
+}
+
+.cc-application-navigation-shell__drawer .cc-application-rail,
+.cc-application-navigation-shell__drawer .cc-application-navigation-panel {
+  height: 100%;
+  max-height: none;
+  position: static;
+}
+
+.cc-application-navigation-shell__drawer .cc-application-navigation-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+
+.cc-application-navigation-shell__drawer .cc-application-rail {
+  padding-inline-start: var(--application-safe-area-left);
+}
+
+.cc-application-navigation-trigger {
+  align-items: center;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: max(0.25rem, calc(var(--radius) - 6px));
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.25rem;
+  justify-content: center;
+  min-block-size: var(--application-control-min-size);
+  min-inline-size: var(--application-control-min-size);
+  padding: 0;
+  width: 2.25rem;
+}
+
+.cc-application-navigation-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ring) 65%, transparent);
+  outline-offset: 1px;
+}
+
+.cc-application-navigation-trigger svg {
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
+@media (hover: hover) {
+  .cc-application-navigation-trigger:hover {
+    background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cc-application-navigation-shell__drawer {
+    animation: cc-application-navigation-drawer-in 160ms ease-out;
+  }
+}
+
+@keyframes cc-application-navigation-drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 

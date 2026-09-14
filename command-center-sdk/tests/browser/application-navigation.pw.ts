@@ -84,3 +84,74 @@ test.describe("public application navigation links", () => {
     }
   });
 });
+
+test.describe("overlay navigation on a touch phone", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
+
+  test("overlay presentation renders an off-canvas drawer that fits the viewport", async ({ page }) => {
+    const { readFile } = await import("node:fs/promises");
+    const [componentStyles, themeStyles] = await Promise.all([
+      readFile(new URL("../../styles.css", import.meta.url), "utf8"),
+      readFile(new URL("../../theme/styles.css", import.meta.url), "utf8"),
+    ]);
+    const application = defineNavigationApplication({
+      id: "foundry",
+      label: "Foundry",
+      defaultDestinationId: "services",
+      subApplications: [{
+        id: "build",
+        label: "Build",
+        destinations: [{ id: "services", label: "Services", href: `${origin}/app/foundry/services` }],
+      }],
+    });
+    const markup = renderToStaticMarkup(
+      createElement(
+        ApplicationNavigationShell,
+        {
+          applications: [application],
+          collapsed: true,
+          menuId: "primary-menu",
+          menuOpen: true,
+          onMenuOpenChange: () => undefined,
+          onNavigate: () => undefined,
+          onOpenApplicationChange: () => undefined,
+          openApplicationId: "foundry",
+          presentation: "overlay",
+        },
+        createElement("main", null, "Consumer surface"),
+      ),
+    );
+    await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>${themeStyles}${componentStyles}</style></head><body>${markup}</body></html>`);
+
+    const drawer = page.locator("[data-cc-navigation-drawer]");
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toHaveAttribute("role", "dialog");
+    await expect(page.locator("[data-cc-navigation-scrim]")).toBeVisible();
+    const geometry = await drawer.evaluate(async (element) => {
+      await Promise.all(element.getAnimations().map((animation) => animation.finished));
+      const rect = element.getBoundingClientRect();
+      const item = element.querySelector<HTMLElement>("[data-cc-navigation-application]")!;
+      const destination = element.querySelector<HTMLElement>("[data-cc-navigation-destination]")!;
+      return {
+        coarse: matchMedia("(pointer: coarse)").matches,
+        destinationHeight: destination.getBoundingClientRect().height,
+        height: rect.height,
+        itemHeight: item.getBoundingClientRect().height,
+        left: rect.left,
+        right: rect.right,
+        viewportHeight: window.innerHeight,
+        viewportWidth: window.innerWidth,
+      };
+    });
+    expect(geometry.coarse).toBe(true);
+    expect(geometry.viewportWidth).toBe(375);
+    expect(geometry.left).toBe(0);
+    expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth - 48);
+    expect(Math.abs(geometry.height - geometry.viewportHeight)).toBeLessThanOrEqual(1);
+    expect(geometry.itemHeight).toBeGreaterThanOrEqual(44);
+    expect(geometry.destinationHeight).toBeGreaterThanOrEqual(44);
+    await expect(page.getByRole("link", { name: "Foundry" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Services" })).toBeVisible();
+    await expect(page.getByText("Consumer surface")).toBeAttached();
+  });
+});
