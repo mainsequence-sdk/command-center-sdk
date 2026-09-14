@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+No unreleased changes.
+
+## 0.3.0
+
+Compatibility axes: npm public API 0.3.0 (additive). No backend contract, schema, fixture, iframe
+protocol, or theme ID changes. The CSS variables `--application-control-min-size`,
+`--application-safe-area-*`, and `--application-navigation-rail-width`, the `presentation` prop
+vocabulary, and the new `data-cc-*` attributes become stable with this release. Visible changes for
+existing consumers: the progress stage list stacks at 639px instead of 559px, table cell padding
+follows the density variables, and verifier reports carry `severity` and `warnings` with a
+six-entry default matrix.
+
 - Add the device axis from SDK ADR 006. `/theme` publishes the breakpoint scale (`sm` 640,
   `md` 768, `lg` 1024) and `/layout` publishes the viewport seam `useCommandCenterViewport`,
   `resolveCommandCenterViewport`, and `subscribeCommandCenterViewport`.

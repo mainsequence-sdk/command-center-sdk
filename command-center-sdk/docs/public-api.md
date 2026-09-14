@@ -15,7 +15,7 @@ npm install @dev-mainsequence/command-center-sdk react react-dom
 ```
 
 The package is ESM and ships TypeScript declarations. React and React DOM are peer dependencies in
-the supported range declared by the installed package (`>=18 <20` in version 0.2). Keep one React
+the supported range declared by the installed package (`>=18 <20` in version 0.3). Keep one React
 runtime in the consuming application.
 
 For browser UI, load theme variables before component styles once near the application entrypoint:
