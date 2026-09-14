@@ -1,5 +1,13 @@
 export { applyThemePresetToRoot, type ApplyThemePresetToRootInput } from "./apply-theme.js";
 export {
+  commandCenterBreakpointOrder,
+  commandCenterBreakpoints,
+  isCommandCenterBreakpointAtLeast,
+  resolveCommandCenterBreakpoint,
+  type CommandCenterBreakpoint,
+  type CommandCenterBreakpointName,
+} from "./breakpoints.js";
+export {
   getThemeCategoricalColor,
   getThemeCategoricalPalette,
   getThemeDivergingScale,

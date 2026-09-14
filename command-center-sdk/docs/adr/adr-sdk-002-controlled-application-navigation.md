@@ -5,6 +5,9 @@
 - Owners: Command Center SDK Navigation
 - Package: `@dev-mainsequence/command-center-sdk`
 - Related: [Application navigation](../navigation.md)
+- Amended by: [SDK ADR 006: Device-Aware Primitives](./adr-sdk-006-device-aware-primitives.md)
+  (Proposed) adds touch and overlay presentation to the SDK-owned navigation behavior listed in
+  this decision.
 
 ## Decision summary
 

@@ -15,6 +15,8 @@ External iframe applications install the SDK and resolve the active `themeId` se
 ## Main Entry Points
 
 - `src/types.ts`: stable `ThemePreset`, token, density, and data-viz palette contracts.
+- `src/breakpoints.ts`: the published viewport scale (`sm` 640, `md` 768, `lg` 1024 CSS pixels)
+  and pure band resolution used by every SDK stylesheet and the `/layout` viewport seam.
 - `src/presets/`: built-in theme presets exported by id-stable objects.
 - `src/chart-palettes.ts`: data-viz palette resolution and palette helper functions.
 - `src/tightness.ts`: density metrics used by complete application layouts, tables, and compact UI

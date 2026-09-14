@@ -54,6 +54,8 @@ const sdkSidebars = {
             "adr/adr-sdk-003-public-application-layout-system",
             "adr/adr-sdk-004-public-application-feedback-system",
             "adr/adr-sdk-005-static-site-fastapi-websocket-ticket-bridge",
+            "adr/adr-sdk-006-device-aware-primitives",
+            "adr/adr-sdk-007-responsive-column-importance-and-stacked-tables",
           ],
         },
       ],

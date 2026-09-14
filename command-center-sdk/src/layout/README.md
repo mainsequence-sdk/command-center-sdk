@@ -8,7 +8,9 @@ component and theme styles once, and use
 ## Public entrypoints
 
 - `/layout`: `ApplicationPage`, `ApplicationPageHeader`, `ApplicationPageStack`,
-  `ApplicationCard`, and `ApplicationCardGrid` plus their public prop types.
+  `ApplicationCard`, and `ApplicationCardGrid` plus their public prop types, and the viewport
+  seam `useCommandCenterViewport`, `resolveCommandCenterViewport`, and
+  `subscribeCommandCenterViewport`.
 - `/layout/testing`: framework-neutral browser-page types, the supported viewport matrix,
   `verifyCommandCenterPageLayout`, and `assertCommandCenterPageLayout`.
 
@@ -61,6 +63,13 @@ and standard element attributes. `ApplicationCard` supports `default` and `neste
 canvas already owns edge geometry; do not double-wrap or add a second inset.
 
 ## Responsive behavior
+
+`viewport.ts` is the one place SDK surfaces and hosts read device facts. `useCommandCenterViewport()`
+returns `{ breakpoint, coarsePointer, hoverCapable, reducedMotion }` from the published `/theme`
+breakpoint scale and the `pointer`, `hover`, and `prefers-reduced-motion` media queries. It uses
+`useSyncExternalStore`, so server rendering and environments without `matchMedia` resolve to the
+desktop, fine-pointer, hover-capable default and hydrate without a mismatch. Do not write
+`matchMedia` logic in a consumer when this seam answers the question.
 
 Theme density controls gutters, section gaps, card insets, and grid minimums through public CSS
 variables. Do not copy their resolved values into application CSS. Specialized editors, split
