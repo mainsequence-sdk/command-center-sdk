@@ -159,6 +159,7 @@ function createFilterControls(definitions: readonly ResourceSelectFilterDefiniti
         mode="single"
         ariaLabel={filter.label}
         fitContent
+        presentation="auto"
         options={filter.options}
         searchable={filter.options.length > 8}
         value={filter.value}
@@ -710,6 +711,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
           mode="single"
           ariaLabel="Sort"
           fitContent
+          presentation="auto"
           options={[
             { value: "", label: "Default order" },
             ...sortableColumns.flatMap((column) => [
@@ -981,6 +983,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
           error={bulkFeedback?.tone === "error" ? bulkFeedback.text : undefined}
           pending={bulkPending}
           preflight={bulkPreflight}
+          presentation="auto"
           selectionLabel={
             allMatching
               ? `Matching ${itemLabel}: ${selectionCount}`

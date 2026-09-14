@@ -1993,8 +1993,42 @@ h3),
   width: 0.9rem;
 }
 
-@media (max-width: 639px) {
+.cc-resource-dialog-backdrop--sheet {
+  align-items: flex-end;
+  padding: 0;
+}
+
+.cc-resource-dialog--sheet {
+  border-end-end-radius: 0;
+  border-end-start-radius: 0;
+  border-inline: 0;
+  border-block-end: 0;
+  max-height: calc(100dvh - var(--application-safe-area-top) - 2rem);
+  max-width: none;
+  padding-bottom: var(--application-safe-area-bottom);
+}
+
+.cc-resource-dialog--sheet .cc-resource-dialog__body {
+  max-height: calc(100dvh - var(--application-safe-area-top) - 6rem);
+}
+
+.cc-resource-dialog--sheet .cc-resource-dialog__actions {
+  flex-direction: column-reverse;
+}
+
+.cc-resource-dialog--sheet .cc-resource-dialog__actions button {
+  justify-content: center;
+  width: 100%;
+}
+
+@media (pointer: coarse) {
   .cc-resource-dialog-backdrop {
+    backdrop-filter: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .cc-resource-dialog-backdrop:not(.cc-resource-dialog-backdrop--sheet) {
     align-items: flex-start;
     padding: 0.75rem;
   }
@@ -2184,6 +2218,51 @@ h3),
 .cc-resource-picker__popup--top {
   bottom: calc(100% + 0.4rem);
   top: auto;
+}
+
+/* Sheet presentation (SDK ADR 006 §5): bottom-anchored on small touch screens. */
+.cc-resource-picker__scrim {
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+  inset: 0;
+  position: fixed;
+  z-index: 99;
+}
+
+.cc-resource-picker__popup--sheet {
+  border-end-end-radius: 0;
+  border-end-start-radius: 0;
+  border-inline: 0;
+  border-start-end-radius: var(--radius);
+  border-start-start-radius: var(--radius);
+  box-shadow: var(--shadow-dialog);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  inline-size: auto;
+  max-inline-size: none;
+  padding:
+    0.5rem
+    calc(0.5rem + var(--application-safe-area-right))
+    calc(0.5rem + var(--application-safe-area-bottom))
+    calc(0.5rem + var(--application-safe-area-left));
+}
+
+.cc-resource-picker__popup--sheet::before {
+  background: color-mix(in srgb, var(--muted-foreground) 45%, transparent);
+  block-size: 0.25rem;
+  border-radius: var(--radius-pill);
+  content: "";
+  inline-size: 2.5rem;
+  justify-self: center;
+  margin-block: 0.125rem 0.5rem;
+}
+
+.cc-resource-picker__popup--sheet .cc-resource-picker__options {
+  max-block-size: none;
+  min-block-size: 0;
+}
+
+.cc-resource-picker__popup--sheet .cc-resource-picker__option {
+  min-block-size: var(--application-control-min-size);
 }
 
 .cc-resource-picker__options {

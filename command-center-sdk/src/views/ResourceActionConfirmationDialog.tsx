@@ -1,10 +1,16 @@
-import { useEffect, useId, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 import { AlertTriangle, LoaderCircle, ShieldAlert, Siren, X } from "lucide-react";
 import { createPortal } from "react-dom";
+
+import { useOverlayBehavior } from "../layout/overlay.js";
+import { useCommandCenterViewport } from "../layout/viewport.js";
 
 import type { ResourceActionTone } from "../resource/types.js";
 import type { ResourceBulkActionPreflightState } from "../resource/types.js";
 import { ResourceBulkActionPreflightPanel } from "./ResourceBulkActionPreflightPanel.js";
+
+/** `dialog` is centered; `sheet` is bottom-anchored with stacked actions. `auto` sheets below `sm`. */
+export type ResourceActionConfirmationPresentation = "auto" | "dialog" | "sheet";
 
 export interface ResourceActionConfirmationDialogProps {
   actionLabel: string;
@@ -18,6 +24,7 @@ export interface ResourceActionConfirmationDialogProps {
   open?: boolean;
   pending?: boolean;
   preflight?: ResourceBulkActionPreflightState;
+  presentation?: ResourceActionConfirmationPresentation;
   selectionLabel?: ReactNode;
   title: string;
   tone?: ResourceActionTone;
@@ -49,6 +56,7 @@ export function ResourceActionConfirmationDialog({
   open = true,
   pending = false,
   preflight,
+  presentation = "dialog",
   selectionLabel,
   title,
   tone = "default",
@@ -72,31 +80,33 @@ export function ResourceActionConfirmationDialog({
     preflightAllowsConfirmation &&
     (!confirmationWord || confirmationValue === confirmationWord);
 
-  useEffect(() => {
-    if (!open || typeof document === "undefined") return undefined;
+  const viewport = useCommandCenterViewport();
+  const sheet = presentation === "sheet" || (presentation === "auto" && viewport.breakpoint === "xs");
+  const containerRef = useRef<HTMLElement>(null);
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !pending) onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose, open, pending]);
+  useOverlayBehavior({
+    containerRef,
+    dismissOnOutsidePointer: false,
+    onDismiss: () => {
+      if (!pending) onClose();
+    },
+    open,
+  });
 
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="cc-resource-dialog-backdrop" role="presentation">
+    <div
+      className={`cc-resource-dialog-backdrop${sheet ? " cc-resource-dialog-backdrop--sheet" : ""}`}
+      role="presentation"
+    >
       <section
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`cc-resource-dialog cc-resource-dialog--${tone}`}
+        className={`cc-resource-dialog cc-resource-dialog--${tone}${sheet ? " cc-resource-dialog--sheet" : ""}`}
+        data-cc-presentation={sheet ? "sheet" : "dialog"}
         data-tone={tone}
+        ref={containerRef}
         role="dialog"
       >
         <header className="cc-resource-dialog__header">

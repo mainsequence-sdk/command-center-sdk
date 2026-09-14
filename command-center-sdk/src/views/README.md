@@ -41,7 +41,12 @@ Selection actions are presented through the `ResourceBulkActionPicker` adapter, 
 and placed beside the selection count on the left; resource screens must not add one button per
 discovered bulk action. The adapter and `ResourceSearch` use `ResourcePicker` action mode, while
 `ResourceListPage` filter definitions use single mode, so selection menus and list filters have one
-interaction and accessibility contract across SDK surfaces.
+interaction and accessibility contract across SDK surfaces. `ResourcePicker` has two
+presentations (SDK ADR 006): `popover` anchors to the trigger and now flips above it when there is
+no room below; `sheet` anchors to the bottom of the visual viewport with a scrim, a focus trap, a
+scroll lock, and 44px rows, so the on-screen keyboard pushes it up instead of covering it. `auto`
+resolves to `sheet` below `sm` and on `sm` with a coarse pointer; every picker the SDK renders
+itself uses `auto`.
 Hosts can provide `renderBulkActionConfirmation` when their application owns the canonical modal
 system. The SDK retains discovery, selection, preflight, execution, error, and refresh behavior;
 the host renderer supplies only the established confirmation presentation.
@@ -49,7 +54,10 @@ Without a host renderer, `ResourceListPage` uses the exported
 `ResourceActionConfirmationDialog`. This is the canonical SDK confirmation surface: it portals
 above list overflow, locks background scrolling, handles Escape, requires exact confirmation text,
 and applies the discovered `default`, `primary`, `warning`, or `danger` tone to the full modal
-header, border, icon, notice, and confirmation action. Consumers must pass the backend-discovered
+header, border, icon, notice, and confirmation action. Its `presentation` prop selects the
+centered `dialog`, a bottom-anchored `sheet` with stacked full-width actions and safe-area
+padding, or `auto` (sheet below `sm`), and both forms trap focus and lock scrolling through the
+same internal overlay utility as the navigation drawer and picker sheet. Consumers must pass the backend-discovered
 tone through instead of restyling only the submit button or creating another modal.
 Advertised preflight runs as soon as confirmation opens and reruns whenever the canonical selection
 or an advertised option changes. Stale requests are aborted and ignored. The confirmation action

@@ -278,7 +278,9 @@ tap instead of hover. Pass `tablePresentation="auto"` to an embedded list so it 
 
 ## Build a resource picker
 
-`ResourcePicker` is controlled and has distinct single, multiple, and action modes:
+`ResourcePicker` is controlled and has distinct single, multiple, and action modes. Pass
+`presentation="auto"` so it opens as a bottom sheet on phones and as a popover elsewhere; the sheet
+follows the on-screen keyboard and keeps 44px rows. The SDK's own pickers already do this.
 
 ```tsx
 import { ResourcePicker } from "@dev-mainsequence/command-center-sdk/views";

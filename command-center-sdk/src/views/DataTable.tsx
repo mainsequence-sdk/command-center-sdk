@@ -109,6 +109,7 @@ function RowActionMenu<T>({
       mode="action"
       ariaLabel={label}
       fitContent
+      presentation="auto"
       options={actions.map((action) => ({
         value: action.id,
         label: action.label,

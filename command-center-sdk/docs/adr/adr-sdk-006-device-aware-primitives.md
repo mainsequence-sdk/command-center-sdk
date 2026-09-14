@@ -2,8 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-14
-- Implementation: sections 1, 2, 4, 6, and 7 in `@dev-mainsequence/command-center-sdk` unreleased
-  (planned 0.3.0); section 5 planned for 0.5.0
+- Implementation: `@dev-mainsequence/command-center-sdk` unreleased (all sections)
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
 - Related:
@@ -15,10 +14,9 @@
 
 ## Publication status
 
-Sections 1, 2, 4, 6, and 7 are implemented in SDK source for the next package release. Section 5
-(picker and dialog sheets) is planned for a later release. A consumer may use the constants,
-variables, props, hook, and verifier rules only when its installed package export map and
-declarations contain them.
+This decision is implemented in SDK source for the next package release. A consumer may use the
+constants, variables, props, hook, and verifier rules only when its installed package export map
+and declarations contain them.
 
 ## Decision summary
 
@@ -181,8 +179,10 @@ overlay mode has been adopted by at least one host.
 `ResourcePicker` gains `presentation?: "auto" | "popover" | "sheet"`. The sheet is
 bottom-anchored, full width, padded by the safe-area variables, positioned from
 `window.visualViewport` so the keyboard pushes it up rather than covering it, and uses
-`--application-control-min-size` rows. Popover mode also gains a vertical flip when the space
-below the trigger is insufficient. `ResourceBulkActionPicker` inherits the prop.
+`--application-control-min-size` rows. `auto` resolves to the sheet below `sm` and on `sm` with a
+coarse pointer. Popover mode also gains a vertical flip when the space below the trigger is
+insufficient. `ResourceBulkActionPicker` inherits the prop, and every picker the SDK renders
+itself passes `auto`.
 
 `ResourceActionConfirmationDialog` gains the same prop with `"dialog" | "sheet"` forms. The sheet
 is bottom-anchored with stacked full-width actions and safe-area padding. Both forms gain a focus
@@ -247,12 +247,10 @@ max-width media query outside the published scale.
 
 ## Rollout plan
 
-1. `0.3.0`: sections 1, 2, 4, 6, and the section 7 documentation for those parts. After this
-   release the host can adopt overlay navigation, and every existing SDK page stops zooming on
+1. All sections are implemented in SDK source together with ADR 007 and ship in the next release.
+   After it, the host can adopt overlay navigation, and every existing SDK page stops zooming on
    input focus and stops holding hover state after a tap.
-2. `0.5.0`: section 5, the shared overlay utility, and the remaining browser tests. ADR 007 ships
-   between them as `0.4.0`.
-3. Host adoption is recorded in the Command Center application's own decision catalog and linked
+2. Host adoption is recorded in the Command Center application's own decision catalog and linked
    from here; this ADR does not carry the host's implementation plan.
 
 ## Acceptance criteria

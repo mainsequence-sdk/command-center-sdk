@@ -71,8 +71,10 @@ presentation?: "auto" | <desktop form> | <small-screen form>;
 
 The desktop form is always the 0.2.1 behavior and the default. `auto` resolves through the
 viewport seam. The resolved form appears as `data-cc-presentation` on the surface's root so CSS,
-tests, and the verifier can read it. `ApplicationNavigationShell` applies this today with
-`docked` and `overlay`; see [Application navigation](../navigation.md).
+tests, and the verifier can read it. `ApplicationNavigationShell` applies it with `docked` and
+`overlay`, `DataTable` with `table` and `stacked`, `ResourcePagination` with `full` and `compact`,
+`ResourcePicker` with `popover` and `sheet`, and `ResourceActionConfirmationDialog` with `dialog`
+and `sheet`. See [Application navigation](../navigation.md) and [Resources](../resources.md).
 
 ## What the stylesheets do on touch
 

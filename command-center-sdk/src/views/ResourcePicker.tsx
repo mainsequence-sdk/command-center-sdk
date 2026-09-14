@@ -11,6 +11,16 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { useOverlayBehavior } from "../layout/overlay.js";
+import { useCommandCenterViewport } from "../layout/viewport.js";
+
+/**
+ * `popover` anchors the option list to the trigger. `sheet` anchors it to the bottom of the
+ * viewport with a scrim, sized to the visual viewport so the on-screen keyboard pushes it up.
+ * `auto` resolves to `sheet` below `sm`, and on `sm` when the pointer is coarse.
+ */
+export type ResourcePickerPresentation = "auto" | "popover" | "sheet";
+
 export interface ResourcePickerOption {
   value: string;
   label: string;
@@ -50,6 +60,7 @@ interface ResourcePickerBaseProps {
   options: readonly ResourcePickerOption[];
   placeholder?: string;
   placement?: "bottom" | "top";
+  presentation?: ResourcePickerPresentation;
   renderOption?: (
     option: ResourcePickerOption,
     state: ResourcePickerRenderOptionState,
@@ -136,6 +147,7 @@ export function ResourcePicker(props: ResourcePickerProps) {
     options,
     placement = "bottom",
     placeholder = "Select an option",
+    presentation = "popover",
     renderOption,
     renderValue,
     searchable = false,
@@ -156,6 +168,11 @@ export function ResourcePicker(props: ResourcePickerProps) {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [popupStyle, setPopupStyle] = useState<CSSProperties>({ visibility: "hidden" });
   const query = searchValue ?? internalSearchValue;
+  const viewport = useCommandCenterViewport();
+  const sheet = presentation === "sheet" || (
+    presentation === "auto" &&
+    (viewport.breakpoint === "xs" || (viewport.breakpoint === "sm" && viewport.coarsePointer))
+  );
 
   const selectedValues = useMemo(() => {
     if (isActionPicker(props)) return new Set<string>();
@@ -183,9 +200,33 @@ export function ResourcePicker(props: ResourcePickerProps) {
     const trigger = triggerRef.current;
     if (!trigger || typeof window === "undefined") return;
 
+    const visual = window.visualViewport;
+    const viewportPadding = 8;
+    if (sheet) {
+      // Anchor to the visual viewport so the on-screen keyboard pushes the sheet up.
+      const visualHeight = visual?.height ?? window.innerHeight;
+      const visualBottom = (visual?.offsetTop ?? 0) + visualHeight;
+      setPopupStyle({
+        bottom: Math.max(0, window.innerHeight - visualBottom),
+        left: 0,
+        maxHeight: Math.max(0, visualHeight - viewportPadding),
+        position: "fixed",
+        right: 0,
+        top: "auto",
+        visibility: "visible",
+      });
+      return;
+    }
+
     const triggerRect = trigger.getBoundingClientRect();
     const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-    const viewportPadding = 8;
+    const viewportHeight = visual?.height ?? window.innerHeight;
+    const popupHeight = popupRef.current?.getBoundingClientRect().height ?? 0;
+    const spaceBelow = viewportHeight - triggerRect.bottom - viewportPadding;
+    const spaceAbove = triggerRect.top - viewportPadding;
+    const resolvedPlacement = placement === "top"
+      ? (spaceAbove < popupHeight && spaceBelow > spaceAbove ? "bottom" : "top")
+      : (spaceBelow < popupHeight && spaceAbove > spaceBelow ? "top" : "bottom");
     const measuredPopupWidth = popupRef.current?.getBoundingClientRect().width ?? 0;
     const desiredWidth = fitContent
       ? Math.max(triggerRect.width, measuredPopupWidth, 224)
@@ -208,16 +249,27 @@ export function ResourcePicker(props: ResourcePickerProps) {
       width: fitContent ? "max-content" : resolvedWidth,
     };
 
-    if (placement === "top") {
+    if (resolvedPlacement === "top") {
       nextStyle.bottom = Math.max(viewportPadding, window.innerHeight - triggerRect.top + 6);
       nextStyle.top = "auto";
+      nextStyle.maxHeight = Math.max(0, spaceAbove);
     } else {
       nextStyle.bottom = "auto";
-      nextStyle.top = Math.min(window.innerHeight - viewportPadding, triggerRect.bottom + 6);
+      nextStyle.top = Math.min(viewportHeight - viewportPadding, triggerRect.bottom + 6);
+      nextStyle.maxHeight = Math.max(0, spaceBelow);
     }
 
     setPopupStyle(nextStyle);
   };
+
+  useOverlayBehavior({
+    containerRef: popupRef,
+    dismissOnOutsidePointer: false,
+    lockScroll: sheet,
+    manageFocus: sheet,
+    onDismiss: () => close(true),
+    open: open && sheet,
+  });
 
   const close = (restoreFocus = false) => {
     setOpen(false);
@@ -236,7 +288,7 @@ export function ResourcePicker(props: ResourcePickerProps) {
   };
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || sheet) return undefined;
 
     const closeOnOutsidePointer = (event: PointerEvent) => {
       const target = event.target as Node;
@@ -254,14 +306,17 @@ export function ResourcePicker(props: ResourcePickerProps) {
       window.removeEventListener("pointerdown", closeOnOutsidePointer);
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [open]);
+  }, [open, sheet]);
 
   useEffect(() => {
     if (!open) return undefined;
 
     updatePopupPosition();
+    const visual = window.visualViewport;
     window.addEventListener("resize", updatePopupPosition);
     window.addEventListener("scroll", updatePopupPosition, true);
+    visual?.addEventListener("resize", updatePopupPosition);
+    visual?.addEventListener("scroll", updatePopupPosition);
     const resizeObserver = typeof ResizeObserver === "undefined"
       ? null
       : new ResizeObserver(updatePopupPosition);
@@ -270,9 +325,11 @@ export function ResourcePicker(props: ResourcePickerProps) {
     return () => {
       window.removeEventListener("resize", updatePopupPosition);
       window.removeEventListener("scroll", updatePopupPosition, true);
+      visual?.removeEventListener("resize", updatePopupPosition);
+      visual?.removeEventListener("scroll", updatePopupPosition);
       resizeObserver?.disconnect();
     };
-  }, [fitContent, open, placement]);
+  }, [fitContent, open, placement, sheet]);
 
   useEffect(() => {
     if (!open) return;
@@ -367,10 +424,15 @@ export function ResourcePicker(props: ResourcePickerProps) {
       ref={popupRef}
       className={joinClassNames(
         "cc-resource-picker__popup",
-        placement === "top" && "cc-resource-picker__popup--top",
+        placement === "top" && !sheet && "cc-resource-picker__popup--top",
+        sheet && "cc-resource-picker__popup--sheet",
       )}
-      data-fit-content={fitContent || undefined}
+      data-cc-presentation={sheet ? "sheet" : "popover"}
+      data-fit-content={(fitContent && !sheet) || undefined}
       data-resource-picker-popup={mode}
+      role={sheet ? "dialog" : undefined}
+      aria-modal={sheet ? "true" : undefined}
+      aria-label={sheet ? ariaLabel ?? placeholder : undefined}
       style={popupStyle}
       onKeyDown={handlePopupKeyDown}
     >
@@ -518,7 +580,22 @@ export function ResourcePicker(props: ResourcePickerProps) {
           </svg>
         )}
       </button>
-      {popup && typeof document !== "undefined" ? createPortal(popup, document.body) : null}
+      {popup && typeof document !== "undefined"
+        ? createPortal(
+            <>
+              {sheet ? (
+                <div
+                  aria-hidden="true"
+                  className="cc-resource-picker__scrim"
+                  data-cc-resource-picker-scrim=""
+                  onClick={() => close(true)}
+                />
+              ) : null}
+              {popup}
+            </>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

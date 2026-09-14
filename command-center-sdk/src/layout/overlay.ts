@@ -105,7 +105,7 @@ export function useOverlayBehavior({
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const release = lockScroll ? lockDocumentScroll(document) : null;
 
-    if (manageFocus && container) {
+    if (manageFocus && container && !container.contains(document.activeElement)) {
       const [first] = focusableElements(container);
       const target = first ?? container;
       if (!container.hasAttribute("tabindex") && !first) container.setAttribute("tabindex", "-1");

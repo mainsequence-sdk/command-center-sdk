@@ -32,6 +32,12 @@
   pointer is coarse. `ResourcePagination` gains `presentation` with a compact form.
   `ResourceListPage` gains `tablePresentation`, a sort picker while rows are stacked, a filters
   disclosure and compact pagination below 640px.
+- `ResourcePicker` gains `presentation` (`popover`, `sheet`, `auto`). The sheet is bottom-anchored
+  to the visual viewport with a scrim, focus trap, and scroll lock; the popover flips above the
+  trigger when there is no room below. `ResourceActionConfirmationDialog` gains the same prop with
+  a bottom-anchored `sheet` form, traps focus, uses the iOS-safe scroll lock, and drops its
+  backdrop blur under a coarse pointer. `ResourceBulkActionPicker` passes `presentation` through.
+  Every picker and dialog the SDK renders itself uses `auto`.
 - `EntitySummary` opens a field's `info` on tap through a disclosure button instead of a hover
   `title`, and on narrow screens shows facts in two columns with wrapping values.
   `ResourceDetailShell` scrolls the active tab into view and shades the scrolling tab strip's edges.

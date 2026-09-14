@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 
-import { ResourcePicker } from "./ResourcePicker.js";
+import { ResourcePicker, type ResourcePickerPresentation } from "./ResourcePicker.js";
 
 export interface ResourceBulkActionPickerAction {
   id: string;
@@ -15,12 +15,14 @@ export interface ResourceBulkActionPickerProps {
   actions: readonly ResourceBulkActionPickerAction[];
   disabled?: boolean;
   label?: string;
+  presentation?: ResourcePickerPresentation;
 }
 
 export function ResourceBulkActionPicker({
   actions,
   disabled = false,
   label = "Actions",
+  presentation = "auto",
 }: ResourceBulkActionPickerProps) {
   if (actions.length === 0) return null;
 
@@ -30,6 +32,7 @@ export function ResourceBulkActionPicker({
       ariaLabel={label}
       disabled={disabled}
       fitContent
+      presentation={presentation}
       options={actions.map((action) => ({
         value: action.id,
         label: action.label,
