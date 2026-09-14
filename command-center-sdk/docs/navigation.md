@@ -5,13 +5,11 @@ title: Application navigation
 
 # Build application navigation
 
-The `/navigation` entrypoint provides the same reusable structure used by Command Center: an
-expandable application rail with icons, a selected-application panel, grouped sub-applications,
-and destination links. The components are controlled and router-neutral.
-
-Use this surface for navigation owned by your product or standalone shell. When your application
-is embedded in the main Command Center, do not mirror the host's global applications; use the
-primitives only for navigation that belongs inside your application.
+The `/navigation` entrypoint provides canonical zero-, one-, and two-level application composition.
+Its components are controlled and router-neutral. A production Command Center application is
+embedded: the host already owns global navigation, app switching, account/settings controls, and
+branding. The child owns only durable routes inside its application and never renders a top
+navigation bar. Standalone rendering is a local development or test harness only.
 
 ## Ownership boundary
 
@@ -21,6 +19,25 @@ primitives only for navigation that belongs inside your application.
 | Rail, panel, collapsed tooltips, focus states, and keyboard movement | Filtering inaccessible definitions before render |
 | Open, active, disabled, and unavailable rendering | Router integration and URL persistence |
 | Deterministic composition and ordering | Favorites, badges, user menu, branding, and product actions |
+
+## Choose exactly one navigation depth
+
+Choose from information architecture before writing layout code:
+
+| Depth | Durable route shape | Composition |
+| --- | --- | --- |
+| 0 | One destination | No sidebar; render the route in `ApplicationPage` |
+| 1 | One cohesive work area with multiple destinations | `ApplicationNavigationPanelShell` |
+| 2 | Multiple independent work areas, each with multiple destinations | `ApplicationNavigationShell` rail + panel |
+
+Tabs subdivide the current page and do not increase sidebar depth. Never create a third sidebar
+level. Do not add a one-route sidebar, one-item application rail, disabled planned destinations,
+or filler section labels such as “Explore”, “Manage”, or a repeated application name.
+
+Both shells expose `data-cc-navigation-depth` for browser conformance. Their `auto` presentation
+becomes an accessible drawer below 768px. `ApplicationNavigationPanelShell` owns its floating
+trigger automatically; a depth-two `ApplicationNavigationShell` opts into the same behavior with
+`overlayTrigger="floating"`. No child top bar is needed.
 
 Navigation definitions are runtime TypeScript values, not a backend wire contract. Icons are
 React components and callbacks are consumer functions, so the model is intentionally not JSON
@@ -80,21 +97,18 @@ An optional `href` must be a non-empty relative or absolute URL. Give every rout
 `href`; an application rail item uses its own `href`, or the `href` of its enabled
 `defaultDestinationId` when the application URL is omitted.
 
-## Render a controlled shell
+## Render the canonical one-level shell
 
 ```tsx
 import { useState } from "react";
 import {
-  ApplicationNavigationShell,
+  ApplicationNavigationPanelShell,
   type NavigationIntent,
 } from "@dev-mainsequence/command-center-sdk/navigation";
 import "@dev-mainsequence/command-center-sdk/styles.css";
 
 export function ProductShell() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [openApplicationId, setOpenApplicationId] = useState<string | null>(
-    "foundry",
-  );
+  const [menuOpen, setMenuOpen] = useState(false);
   const [activeDestinationId, setActiveDestinationId] = useState("services");
 
   function navigate(intent: NavigationIntent) {
@@ -107,37 +121,40 @@ export function ProductShell() {
   }
 
   return (
-    <ApplicationNavigationShell
-      activeApplicationId="foundry"
+    <ApplicationNavigationPanelShell
       activeDestinationId={activeDestinationId}
-      applications={[foundry]}
-      collapsed={collapsed}
-      onCollapsedChange={setCollapsed}
+      application={foundry}
+      menuOpen={menuOpen}
+      onMenuOpenChange={setMenuOpen}
       onNavigate={navigate}
-      onOpenApplicationChange={setOpenApplicationId}
-      openApplicationId={openApplicationId}
+      presentation="auto"
     >
       <main>Your routed application content</main>
-    </ApplicationNavigationShell>
+    </ApplicationNavigationPanelShell>
   );
 }
 ```
 
-You can render `ApplicationRail` and `ApplicationNavigationPanel` separately when your layout
-already owns positioning. `ApplicationRailItem` is public for hosts that need SDK-consistent app
-items inside existing chrome.
+The panel shell hides a redundant section label by default when the application has one
+sub-application. It preserves that section's accessible name. Set `showSectionLabels` explicitly
+only when multiple meaningful groups need visible labels.
+
+Use `ApplicationNavigationShell` only for genuine depth-two navigation. Supply multiple
+application definitions, controlled `openApplicationId`, `presentation="auto"`, and
+`overlayTrigger="floating"`. You can render `ApplicationRail` and
+`ApplicationNavigationPanel` separately only when an existing host already owns their placement;
+do not use the low-level pieces to recreate the standard child shell.
 
 ## Present the shell on a small screen
 
-`presentation="auto"` keeps the docked row on wide screens and switches to an off-canvas drawer
-below the `md` breakpoint (768px). The host owns whether the drawer is open and places the SDK
-trigger in its own top bar:
+`presentation="auto"` keeps navigation docked on wide screens and switches to an off-canvas drawer
+below the `md` breakpoint (768px). The application owns controlled `menuOpen` state while the SDK
+owns the floating trigger, drawer, scrim, focus handling, and scroll lock:
 
 ```tsx
 import { useState } from "react";
 import {
   ApplicationNavigationShell,
-  ApplicationNavigationTrigger,
 } from "@dev-mainsequence/command-center-sdk/navigation";
 
 export function ProductShell() {
@@ -153,37 +170,66 @@ export function ProductShell() {
       onNavigate={navigate}
       onOpenApplicationChange={setOpenApplicationId}
       openApplicationId={openApplicationId}
+      overlayTrigger="floating"
       presentation="auto"
     >
-      <header>
-        <ApplicationNavigationTrigger
-          controlsId="product-menu"
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-        />
-      </header>
       <main>Your routed application content</main>
     </ApplicationNavigationShell>
   );
 }
 ```
 
-In the overlay presentation the rail is forced expanded so every label is visible without a hover
+In the depth-two overlay presentation the rail is forced expanded so every label is visible without a hover
 tooltip, the rail and panel render together inside one `role="dialog"` with a scrim, focus stays
 inside the drawer, document scrolling is locked with a technique iOS honors, and Escape, a tap on
 the scrim, or a chosen destination closes it through `onMenuOpenChange(false)`. Pass
 `presentation="overlay"` or `"docked"` to fix the form regardless of width. The resolved form is
 exposed as `data-cc-presentation`.
 
+`overlayTrigger="external"` remains available for a real host that already owns chrome. It is the
+backward-compatible default, but it is not the complete embedded-child pattern.
+
 The document must carry `<meta name="viewport" content="width=device-width, initial-scale=1">`;
 without it mobile browsers lay the page out at 980px and the breakpoint never applies. See
 [Mobile and touch](./concepts/mobile.md).
 
-## Frame an embedded site on a phone
+## Gate and verify the complete shell
 
-When a route shows an embedded static site, a phone should see only the site and one small bar to
-get back. Render `ApplicationImmersiveBar` above the iframe and nothing else below the `md`
-breakpoint; the host decides the route and the breakpoint through `useCommandCenterViewport`:
+From the first frame, render one `ApplicationStatusScreen variant="viewport"` while the child
+initializes host context/theme, delegated API transport/authentication, and the critical
+application readiness endpoint. Navigation and `ApplicationPage` route content remain unmounted
+until all three succeed. A reconnect returns to the same gate. See
+[Application feedback](./application-feedback.md) for retry, cancellation, and terminal failure.
+
+Assert both phases in the application's Playwright suite:
+
+```ts
+import { assertCommandCenterApplicationShell } from
+  "@dev-mainsequence/command-center-sdk/navigation/testing";
+
+await assertCommandCenterApplicationShell(page, {
+  navigationDepth: 1,
+  phase: "startup",
+});
+
+await waitForApplicationReady(page);
+
+await assertCommandCenterApplicationShell(page, {
+  navigationDepth: 1,
+  phase: "ready",
+});
+```
+
+The verifier rejects child top-bar chrome, startup content mounted behind the gate, missing or
+duplicate viewport status screens, and a ready shell that differs from the declared depth.
+
+## Frame an embedded site from host chrome on a phone
+
+This is a host-side composition, not permission for an embedded child to add top navigation. When
+a Command Center host route shows another embedded static site, a phone should see only the site
+and one small bar to get back. The host may render `ApplicationImmersiveBar` above the iframe and
+nothing else below the `md` breakpoint; the host decides the route and breakpoint through
+`useCommandCenterViewport`:
 
 ```tsx
 import {

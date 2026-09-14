@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   ApplicationNavigationPanel,
+  ApplicationNavigationPanelShell,
   ApplicationNavigationShell,
   ApplicationRail,
   type NavigationApplicationDefinition,
@@ -214,6 +215,39 @@ describe("application navigation", () => {
 
     expect(container.querySelector("[data-cc-navigation-rail]")).toBeTruthy();
     expect(container.querySelector("[data-app-navigation-panel]")).toBeTruthy();
+    expect(container.querySelector("[data-cc-navigation-depth='2']")).toBeTruthy();
     expect(container.textContent).toContain("Consumer surface");
+  });
+
+  it("uses a panel-only depth-one shell and suppresses a redundant single section label", async () => {
+    const application = {
+      ...applications[0]!,
+      subApplications: [applications[0]!.subApplications[0]!],
+    };
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    roots.push(root);
+
+    await act(async () => {
+      root.render(
+        <ApplicationNavigationPanelShell
+          activeDestinationId="services"
+          application={application}
+          menuOpen={false}
+          onMenuOpenChange={() => undefined}
+          onNavigate={() => undefined}
+          presentation="docked"
+        >
+          <main>Panel-only content</main>
+        </ApplicationNavigationPanelShell>,
+      );
+    });
+
+    expect(container.querySelector("[data-cc-navigation-depth='1']")).toBeTruthy();
+    expect(container.querySelector("[data-cc-navigation-rail]")).toBeNull();
+    expect(container.querySelector("[data-app-navigation-panel]")).toBeTruthy();
+    expect(container.querySelector(".cc-application-navigation-panel__section-label")).toBeNull();
+    expect(container.querySelector("section")?.getAttribute("aria-label")).toBe("Build");
   });
 });

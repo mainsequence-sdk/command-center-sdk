@@ -7,10 +7,12 @@ contracts, including the language-neutral schema manifest and fixtures. They do
 not describe or own surrounding product applications, routes, backend implementations, or
 repository-specific application modules.
 
-The npm postinstall hook and the explicit `command-center-sdk skills install` command copy each
-immediate skill directory into `<repository-root>/.agents/skills/command-center`. Matching folders are
-SDK-managed and refreshed from the installed package version; unrelated folders and other
-namespaces are preserved. `PINNED_FROM.txt` records the supplying package version and source.
+The npm postinstall hook and the explicit `command-center-sdk skills install` command recursively
+copy every skill leaf into `<repository-root>/.agents/skills/command-center`. That complete namespace
+is SDK-owned and authoritative: every entry not present in the installed package's
+`agent_scaffold/skills` catalog is pruned on install, update, and explicit synchronization. Other
+namespaces under `.agents/skills` are preserved. `PINNED_FROM.txt` records the supplying package
+version, source, authorized relative paths, and authoritative ownership mode.
 
 Postinstall also makes a nonblocking authenticated attempt to synchronize the backend-owned MCP
 catalog into `<repository-root>/.agents/skills/mainsequence` when its URL and access token are available.
@@ -30,6 +32,7 @@ The bundle is organized into SDK-only lanes:
 - end-user application documentation organized by visible navigation, same-artifact builds,
   validation, and browser verification;
 - application page/card composition and real-browser layout verification;
+- embedded application-shell composition, zero/one/two-level navigation, and startup conformance;
 - resource lists, details, pickers, actions, and backend adapter normalization;
 - theme and embed authoring; and
 - SDK extension, serialized-contract evolution, and package verification.

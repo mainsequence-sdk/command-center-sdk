@@ -28,7 +28,7 @@ test("human documentation maps every packaged agent skill", async () => {
   for (const skillPath of skillPaths) {
     assert.equal(docsIndex.includes(`\`${skillPath}\``), true, `${skillPath} is not documented`);
   }
-  assert.equal(skillPaths.length, 16);
+  assert.equal(skillPaths.length, 17);
 });
 
 test("application documentation guidance stays aligned with the official scaffold", async () => {
@@ -222,6 +222,42 @@ test("layout guidance uses public primitives and real-browser geometry verificat
   assert.match(applicationSkill, /\$compose-command-center-page/u);
   assert.match(themeSkill, /\$compose-command-center-page/u);
   assert.match(themeSkill, /theme audit as proof/iu);
+});
+
+test("application-shell guidance enforces one embedded root pattern", async () => {
+  const shellSkill = await readFile(
+    join(
+      skillsRoot,
+      "navigation",
+      "compose-command-center-application-shell",
+      "SKILL.md",
+    ),
+    "utf8",
+  );
+  const applicationSkill = await readFile(
+    join(skillsRoot, "general", "build-command-center-application", "SKILL.md"),
+    "utf8",
+  );
+  const loadingSkill = await readFile(
+    join(skillsRoot, "feedback", "build-application-loading-flow", "SKILL.md"),
+    "utf8",
+  );
+  const navigationGuide = await readFile(join(docsRoot, "navigation.md"), "utf8");
+
+  for (const value of [shellSkill, applicationSkill, navigationGuide]) {
+    assert.match(value, /production[^.]*embedded|production applications are embedded/iu);
+    assert.match(value, /no child top|never renders? a top navigation|must not render a top navigation/iu);
+    assert.match(value, /zero.*one.*two|0.*1.*2/isu);
+    assert.match(value, /ApplicationNavigationPanelShell/u);
+  }
+  for (const value of [shellSkill, loadingSkill, navigationGuide]) {
+    assert.match(value, /host context.*delegated[^.]*transport.*critical[^.]*readiness/isu);
+    assert.match(value, /unmount|unmounted/iu);
+    assert.match(value, /reconnect/iu);
+  }
+  assert.match(shellSkill, /assertCommandCenterApplicationShell/u);
+  assert.match(shellSkill, /overlayTrigger="floating"/u);
+  assert.match(applicationSkill, /\$compose-command-center-application-shell/u);
 });
 
 test("application feedback guidance keeps presentation controlled and lifecycle application-owned", async () => {

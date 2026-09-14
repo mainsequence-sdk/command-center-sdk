@@ -50,6 +50,10 @@ try {
     types: "./dist/navigation/index.d.ts",
     import: "./dist/navigation/index.js",
   });
+  assert.deepEqual(packageJson.exports["./navigation/testing"], {
+    types: "./dist/navigation/testing/index.d.ts",
+    import: "./dist/navigation/testing/index.js",
+  });
   assert.deepEqual(packageJson.exports["./layout"], {
     types: "./dist/layout/index.d.ts",
     import: "./dist/layout/index.js",
@@ -125,11 +129,16 @@ try {
     "index.d.ts",
     "ApplicationRail.js",
     "ApplicationNavigationPanel.js",
+    "ApplicationNavigationPanelShell.js",
     "ApplicationNavigationShell.js",
     "ApplicationNavigationTrigger.js",
     "ApplicationImmersiveBar.js",
     "definition.js",
   ].map((name) => readFile(join(extractedPackage, "dist", "navigation", name), "utf8")));
+  await Promise.all([
+    "index.js",
+    "index.d.ts",
+  ].map((name) => readFile(join(extractedPackage, "dist", "navigation", "testing", name), "utf8")));
   await Promise.all([
     "index.js",
     "index.d.ts",
@@ -274,7 +283,22 @@ try {
     (await readdir(managedRoot, { withFileTypes: true })).filter(
       (entry) => entry.isDirectory() && !entry.name.startsWith("."),
     ).length,
-    9,
+    10,
+  );
+  const navigationSkillRoot = join(
+    managedRoot,
+    "navigation",
+    "compose-command-center-application-shell",
+  );
+  assert.match(
+    await readFile(join(navigationSkillRoot, "SKILL.md"), "utf8"),
+    /assertCommandCenterApplicationShell/u,
+  );
+  await readFile(join(navigationSkillRoot, "agents", "openai.yaml"), "utf8");
+  await readFile(join(navigationSkillRoot, "assets", "embedded-application-shell.tsx"), "utf8");
+  await readFile(
+    join(navigationSkillRoot, "references", "application-shell-standard.md"),
+    "utf8",
   );
   const documentationSkillRoot = join(
     managedRoot,

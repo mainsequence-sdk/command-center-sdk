@@ -8,10 +8,12 @@ and rollback.
 
 The installer recursively discovers skill leaves under `../agent_scaffold/skills` and preserves
 their relative hierarchy below `<repository-root>/.agents/skills/command-center`. Parent category
-folders do not need a `SKILL.md`. It preserves other skill namespaces and unrelated folders in the
-managed namespace. Every successful write records package provenance and managed relative paths in
-`PINNED_FROM.txt`; upgrades remove only paths recorded as SDK-managed, including the legacy flat
-layout.
+folders do not need a `SKILL.md`. The installed package catalog is authoritative for the complete
+`command-center` namespace: install, postinstall, update, and sync replace current skill leaves and
+prune every file or folder outside their authorized paths, including unrecorded legacy `widget`,
+`workspace`, flat-layout, and obsolete embed guidance. Other `.agents/skills` namespaces remain
+untouched. Every successful write records package provenance, authoritative ownership mode, and
+authorized relative paths in `PINNED_FROM.txt`.
 
 Automatic installation resolves the consumer from npm's `INIT_CWD`. It deliberately refuses to
 fall back to the lifecycle package directory because that could mutate `node_modules`. Global npm

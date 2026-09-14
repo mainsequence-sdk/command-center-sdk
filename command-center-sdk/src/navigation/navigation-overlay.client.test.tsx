@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  ApplicationNavigationPanelShell,
   ApplicationNavigationShell,
   ApplicationNavigationTrigger,
   type NavigationApplicationDefinition,
@@ -85,6 +86,58 @@ describe("application navigation overlay presentation", () => {
     expect(html).not.toContain("data-cc-navigation-rail");
     expect(html).not.toContain("data-cc-navigation-scrim");
     expect(html).toContain("Content action");
+  });
+
+  it("can own the phone trigger without requiring a child top bar", async () => {
+    const onMenuOpenChange = vi.fn();
+    const { container } = await mount(shell({
+      menuOpen: false,
+      onMenuOpenChange,
+      overlayTrigger: "floating",
+      presentation: "overlay",
+    }));
+
+    const trigger = container.querySelector<HTMLButtonElement>(
+      ".cc-application-navigation-floating-trigger",
+    )!;
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector('[data-theme-chrome="topbar"]')).toBeNull();
+    await act(async () => trigger.click());
+    expect(onMenuOpenChange).toHaveBeenCalledWith(true);
+  });
+
+  it("gives the panel-only shell the same accessible overlay behavior", async () => {
+    const onMenuOpenChange = vi.fn();
+    const onNavigate = vi.fn();
+    const { container } = await mount(
+      <ApplicationNavigationPanelShell
+        activeDestinationId="services"
+        application={applications[0]!}
+        menuId="panel-menu"
+        menuOpen
+        onMenuOpenChange={onMenuOpenChange}
+        onNavigate={onNavigate}
+        presentation="overlay"
+      >
+        <main>Panel content</main>
+      </ApplicationNavigationPanelShell>,
+    );
+
+    const drawer = container.querySelector<HTMLElement>("[data-cc-navigation-drawer]")!;
+    expect(container.querySelector("[data-cc-navigation-depth='1']")).toBeTruthy();
+    expect(container.querySelector("[data-cc-navigation-rail]")).toBeNull();
+    expect(drawer.id).toBe("panel-menu");
+    expect(drawer.contains(document.activeElement)).toBe(true);
+
+    const clusters = Array.from(container.querySelectorAll("a"))
+      .find((link) => link.textContent === "Clusters")!;
+    await act(async () => clusters.click());
+    expect(onNavigate).toHaveBeenCalledWith({
+      applicationId: "foundry",
+      destinationId: "clusters",
+      subApplicationId: "build",
+    });
+    expect(onMenuOpenChange).toHaveBeenCalledWith(false);
   });
 
   it("opens an accessible drawer with the rail expanded, traps focus, and locks scroll", async () => {

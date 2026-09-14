@@ -66,12 +66,17 @@ Use `--dry-run` before writing and `--json` for machine-readable evidence. Resol
 `--mcp-url`, `COMMAND_CENTER_SDK_MCP_URL`, or `MAINSEQUENCE_ENDPOINT`; keep
 `MAINSEQUENCE_ACCESS_TOKEN` in the process environment and never put it in a command argument.
 Inspect `.agents/skills/command-center/PINNED_FROM.txt` for the package version and
-`.agents/skills/mainsequence/MCP_PINNED_FROM.txt` for the backend manifest. The installer owns only
-the recorded paths in each namespace and preserves unrelated application-owned guidance.
+`.agents/skills/mainsequence/MCP_PINNED_FROM.txt` for the backend manifest. Treat the installed SDK
+catalog as authoritative for the complete `command-center` namespace: install, postinstall, update,
+and sync prune every entry not authorized by the current package, including unrecorded legacy
+skills. Put application-owned guidance in another namespace. The `mainsequence` installer retains
+its narrower backend-proven path ownership, and all other namespaces remain untouched.
 
 ## Choose Public Entrypoints
 
-- Use `/navigation` for controlled application navigation definitions and chrome.
+- Use `/navigation` for canonical zero/one/two-level embedded application shells and controlled
+  navigation definitions. Use `/navigation/testing` to assert startup gating, declared depth, and
+  absence of child top navigation.
 - Use `/layout` for complete page, header, stack, card, and card-grid composition. Use
   `/layout/testing` for real-browser geometry verification, and route the workflow to
   `$compose-command-center-page`.

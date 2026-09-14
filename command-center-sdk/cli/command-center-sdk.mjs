@@ -292,8 +292,12 @@ export function parseApplicationDocsArguments(args) {
 
 function printHumanSyncResult(result) {
   const action = result.dryRun ? "Would synchronize" : "Synchronized";
+  const pruneAction = result.dryRun ? "Would prune" : "Pruned";
   console.log(
     `${action} ${result.sdk.copied.length} SDK skill(s) in ${result.sdk.destinationRoot}.`,
+  );
+  console.log(
+    `${pruneAction} ${result.sdk.removed.length} unauthorized Command Center namespace entr${result.sdk.removed.length === 1 ? "y" : "ies"}.`,
   );
   console.log(
     `${action} ${result.platform.installed.length} MCP skill(s) in ${result.platform.destinationRoot}.`,
@@ -308,8 +312,12 @@ function printHumanSyncResult(result) {
 
 function printHumanResult(result) {
   const action = result.dryRun ? "Would install" : "Installed";
+  const pruneAction = result.dryRun ? "Would prune" : "Pruned";
   console.log(
     `${action} ${result.copied.length} Command Center SDK skill(s) in ${result.destinationRoot}.`,
+  );
+  console.log(
+    `${pruneAction} ${result.removed.length} unauthorized namespace entr${result.removed.length === 1 ? "y" : "ies"}.`,
   );
   console.log(`Pinned SDK version: ${result.pinnedVersion}`);
   if (!result.dryRun) {

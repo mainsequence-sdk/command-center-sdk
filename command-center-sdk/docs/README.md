@@ -99,7 +99,7 @@ view.
 | Concept | Entry points |
 | --- | --- |
 | Resource model | `/resource`, `/resource/react`, `/views` |
-| Application chrome | `/navigation`, `/layout`, `/layout/testing`, `/feedback` |
+| Application chrome | `/navigation`, `/navigation/testing`, `/layout`, `/layout/testing`, `/feedback` |
 | Visual language | `/theme`, `/theme/presets`, `/theme/data-viz`, theme CSS exports |
 | Static-site integration | `/embed`, `/embed/react` |
 | Language-neutral contracts | `/contracts`, `/contracts/manifest.json`, schemas and fixtures |
@@ -134,6 +134,7 @@ specific consuming-application task.
 | --- | --- | --- |
 | Install and use the SDK | [Getting started](./getting-started.md) | `general/use-command-center-sdk` |
 | Compose an application | [SDK architecture](./concepts/sdk-architecture.md) | `general/build-command-center-application` |
+| Compose the embedded shell and navigation | [Navigation](./navigation.md) | `navigation/compose-command-center-application-shell` |
 | Inspect, version, and deploy an application | [Application operations](./application-operations.md) | `general/maintain-command-center-code-repository` |
 | Build and ship an application user guide | [Application documentation](./application-documentation.md) | `documentation/document-command-center-application` |
 | Compose a responsive page | [Application layout](./application-layout.md) | `layout/compose-command-center-page` |

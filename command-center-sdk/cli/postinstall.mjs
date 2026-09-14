@@ -58,6 +58,11 @@ export async function runPostinstall({
   logger.log(
     `[command-center-sdk] Installed ${result.copied.length} agent skill(s) in ${result.destinationRoot}.`,
   );
+  if (result.removed.length > 0) {
+    logger.log(
+      `[command-center-sdk] Pruned ${result.removed.length} unauthorized command-center namespace entr${result.removed.length === 1 ? "y" : "ies"}.`,
+    );
+  }
 
   if (env.COMMAND_CENTER_SDK_MCP_POSTINSTALL === "0") {
     logger.log("[command-center-sdk] MCP skill synchronization disabled for postinstall.");

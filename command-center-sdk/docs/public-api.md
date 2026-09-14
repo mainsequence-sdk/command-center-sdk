@@ -15,7 +15,7 @@ npm install @dev-mainsequence/command-center-sdk react react-dom
 ```
 
 The package is ESM and ships TypeScript declarations. React and React DOM are peer dependencies in
-the supported range declared by the installed package (`>=18 <20` in version 0.3). Keep one React
+the supported range declared by the installed package (`>=18 <20` in version 0.4). Keep one React
 runtime in the consuming application.
 
 For browser UI, load theme variables before component styles once near the application entrypoint:
@@ -36,7 +36,8 @@ framework integrations do not affect the application.
 | `/resource` | Framework-neutral | Definitions, adapters, discovery parsing, pagination, activation, and bulk-action helpers |
 | `/resource/react` | React | Loaded-page and explicit/all-matching selection hooks |
 | `/views` | React + DOM | Resource lists, details, pickers, tables, cards, summaries, pagination, and action UI |
-| `/navigation` | React + DOM | Navigation definitions, composition, rail, panel, controlled shell with docked or overlay presentation, the menu trigger, and the immersive bar for embedded sites |
+| `/navigation` | React + DOM | Navigation definitions, depth-one panel shell, depth-two rail + panel shell, responsive drawers/triggers, and host-side immersive bar |
+| `/navigation/testing` | Browser automation adapter | Embedded shell startup, navigation-depth, and no-child-topbar conformance |
 | `/layout` | React + DOM | Page, header, stack, card, responsive card-grid primitives, and the viewport seam |
 | `/layout/testing` | Browser automation adapter | Real-browser geometry verification and conformance reports |
 | `/feedback` | React + DOM | Activity indicators, ordered progress stages, and application status screens |
@@ -101,11 +102,25 @@ Navigation is controlled and router-neutral:
 
 ```ts
 import {
+  ApplicationNavigationPanelShell,
   ApplicationNavigationShell,
   composeNavigationApplications,
   defineNavigationApplication,
   type NavigationIntent,
 } from "@dev-mainsequence/command-center-sdk/navigation";
+```
+
+Use no navigation shell for one destination, `ApplicationNavigationPanelShell` for one work area
+with multiple destinations, and `ApplicationNavigationShell` only for multiple independent work
+areas. Complete embedded children use `presentation="auto"`; depth-two shells add
+`overlayTrigger="floating"`. They never render child top navigation.
+
+Browser tests assert the selected depth and startup gate through the framework-neutral testing
+entrypoint:
+
+```ts
+import { assertCommandCenterApplicationShell } from
+  "@dev-mainsequence/command-center-sdk/navigation/testing";
 ```
 
 Layout primitives own standard page geometry:

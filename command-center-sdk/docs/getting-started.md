@@ -235,6 +235,10 @@ npx command-center-sdk skills install --path . --dry-run
 npx command-center-sdk skills install --path .
 ```
 
+This namespace is an authoritative mirror of the installed SDK catalog. Refreshing it removes
+obsolete or locally added entries inside `command-center`; keep application-specific guidance in a
+different `.agents/skills` namespace. Other namespaces are not changed.
+
 Use `skills sync` when backend-owned platform guidance must also be refreshed. Credential and
 ownership details are in [Application operations](./application-operations.md).
 

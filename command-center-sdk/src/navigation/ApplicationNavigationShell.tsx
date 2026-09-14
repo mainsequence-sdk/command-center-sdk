@@ -11,6 +11,7 @@ import {
   ApplicationRail,
   type ApplicationRailProps,
 } from "./ApplicationRail.js";
+import { ApplicationNavigationTrigger } from "./ApplicationNavigationTrigger.js";
 import type { NavigationIntent } from "./types.js";
 
 function joinClassNames(...values: Array<string | false | null | undefined>) {
@@ -22,6 +23,7 @@ export type ResolvedApplicationNavigationPresentation = Exclude<
   ApplicationNavigationPresentation,
   "auto"
 >;
+export type ApplicationNavigationOverlayTrigger = "external" | "floating";
 
 export interface ApplicationNavigationShellProps extends Omit<
   ApplicationRailProps,
@@ -41,6 +43,8 @@ export interface ApplicationNavigationShellProps extends Omit<
   onNavigate: (intent: NavigationIntent) => void;
   onOpenApplicationChange: (applicationId: string | null) => void;
   openApplicationId?: string | null;
+  /** Where the phone overlay trigger lives. `external` preserves the legacy host-owned behavior. */
+  overlayTrigger?: ApplicationNavigationOverlayTrigger;
   panelClassName?: string;
   panelWidth?: string;
   /**
@@ -72,6 +76,7 @@ export function ApplicationNavigationShell({
   onNavigate,
   onOpenApplicationChange,
   openApplicationId,
+  overlayTrigger = "external",
   panelClassName,
   panelWidth,
   presentation = "docked",
@@ -149,32 +154,44 @@ export function ApplicationNavigationShell({
         overlay && "cc-application-navigation-shell--overlay",
         className,
       )}
+      data-cc-navigation-depth="2"
       data-cc-presentation={resolvedPresentation}
       style={shellStyle}
     >
       {overlay ? (
-        drawerOpen ? (
-          <>
-            <div
-              aria-hidden="true"
-              className="cc-application-navigation-shell__scrim"
-              data-cc-navigation-scrim=""
-              onClick={() => onMenuOpenChange?.(false)}
+        <>
+          {!drawerOpen && overlayTrigger === "floating" ? (
+            <ApplicationNavigationTrigger
+              className="cc-application-navigation-floating-trigger"
+              controlsId={resolvedMenuId}
+              label="Open application navigation"
+              onOpenChange={(open) => onMenuOpenChange?.(open)}
+              open={false}
             />
-            <div
-              aria-label={menuLabel}
-              aria-modal="true"
-              className="cc-application-navigation-shell__drawer"
-              data-cc-navigation-drawer=""
-              id={resolvedMenuId}
-              ref={drawerRef}
-              role="dialog"
-            >
-              {rail}
-              {panel}
-            </div>
-          </>
-        ) : null
+          ) : null}
+          {drawerOpen ? (
+            <>
+              <div
+                aria-hidden="true"
+                className="cc-application-navigation-shell__scrim"
+                data-cc-navigation-scrim=""
+                onClick={() => onMenuOpenChange?.(false)}
+              />
+              <div
+                aria-label={menuLabel}
+                aria-modal="true"
+                className="cc-application-navigation-shell__drawer"
+                data-cc-navigation-drawer=""
+                id={resolvedMenuId}
+                ref={drawerRef}
+                role="dialog"
+              >
+                {rail}
+                {panel}
+              </div>
+            </>
+          ) : null}
+        </>
       ) : (
         <>
           {rail}

@@ -304,7 +304,7 @@ explicit opt-in resolved through a public seam that tests can drive.
 - The SDK takes on long-term compatibility responsibility for a device axis: a breakpoint scale,
   new CSS variables, and a presentation vocabulary.
 - The verifier becomes the mandatory automated baseline for touch usability, not only geometry.
-- Hosts must still place the trigger and own menu state; the SDK will not infer where navigation
-  opens from.
+- Consumers still own menu state. SDK ADR 009 adds an SDK-owned floating trigger for complete
+  embedded children while preserving this external-trigger pattern for real hosts.
 - The progress stage list stacks 80px later than before; consumers with pixel snapshots between
   560px and 639px will see a diff.

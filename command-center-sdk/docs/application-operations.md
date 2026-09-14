@@ -88,8 +88,12 @@ nonzero on authentication, transport, manifest, or ownership failure. A normal n
 attempt is intentionally nonblocking and preserves the previous backend-owned installation when
 refresh fails.
 
-The installer manages only folders it can prove it owns. It preserves unrelated application skills
-and uses sentinel metadata to avoid deleting consumer-authored content.
+The installed package catalog is authoritative for the complete `command-center` namespace. Each
+install, package postinstall, SDK update, or sync removes entries that are absent from the current
+catalog, even when an older sentinel did not record them. Dry-run JSON exposes those paths in
+`sdk.removed` (or `removed` for `skills install`). Keep application-authored skills in another
+namespace; every other namespace under `.agents/skills` is preserved. The separately managed
+`mainsequence` namespace continues to remove only backend-proven MCP paths.
 
 ## Preview automatic deployment synchronization
 

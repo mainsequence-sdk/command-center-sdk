@@ -101,8 +101,8 @@ error normalization stay outside the resource definition.
 
 ## Choose a public entrypoint
 
-- `/navigation`: controlled application rail, grouped sub-application panel, composed shell with
-  docked or overlay presentation and a menu trigger,
+- `/navigation` and `/navigation/testing`: canonical depth-one panel and depth-two rail + panel
+  shells with responsive drawers and floating triggers, plus startup/depth/no-topbar verification;
   runtime definitions, validation, contribution composition, and native anchor behavior for
   routed applications and destinations with `href`.
 - `/layout` and `/layout/testing`: responsive page, header, stack, card, and card-grid primitives,
@@ -142,6 +142,7 @@ The npm package installs version-matched skills into:
   documentation/
   feedback/
   layout/
+  navigation/
   resource/
   views/
   contracts/
@@ -158,8 +159,11 @@ npx command-center-sdk skills install --path . --dry-run
 
 The SDK recursively discovers skill leaves and preserves this nested hierarchy. Contract skills
 resolve `contracts/manifest.json` and its indexed schemas and fixtures instead of bundling a second
-contract definition. The packaged-skill lane manages only that namespace and preserves unrelated
-skills. See the [human-doc/skill map](./docs/README.md#task-and-agent-skill-map) for the exact
+contract definition. The installed package catalog authoritatively owns the complete
+`.agents/skills/command-center` namespace. Every install or update prunes entries absent from that
+catalog—including obsolete `widget`, `workspace`, and embed skills—while preserving every other
+namespace under `.agents/skills`. Use `--dry-run --json` to inspect the `removed` paths before
+writing. See the [human-doc/skill map](./docs/README.md#task-and-agent-skill-map) for the exact
 workflow parity.
 
 When `MAINSEQUENCE_ACCESS_TOKEN` and an MCP URL are available, package postinstall also makes a

@@ -75,6 +75,8 @@ export interface ApplicationNavigationPanelProps {
     props: DestinationTrailingRenderProps,
   ) => ReactNode;
   showDestinationDescriptions?: boolean;
+  /** Whether section labels render. Existing direct panel usage defaults to true. */
+  showSectionLabels?: boolean;
 }
 
 export function ApplicationNavigationPanel({
@@ -87,6 +89,7 @@ export function ApplicationNavigationPanel({
   panelWidth = "208px",
   renderDestinationTrailing,
   showDestinationDescriptions = false,
+  showSectionLabels = true,
 }: ApplicationNavigationPanelProps) {
   const ApplicationIcon = application.icon;
   const panelStyle = {
@@ -132,19 +135,24 @@ export function ApplicationNavigationPanel({
 
           return (
             <section
-              aria-labelledby={`${application.id}-${subApplication.id}-navigation-label`}
+              aria-label={showSectionLabels ? undefined : subApplication.label}
+              aria-labelledby={showSectionLabels
+                ? `${application.id}-${subApplication.id}-navigation-label`
+                : undefined}
               className="cc-application-navigation-panel__section"
               key={subApplication.id}
             >
-              <div
-                className="cc-application-navigation-panel__section-label"
-                id={`${application.id}-${subApplication.id}-navigation-label`}
-              >
-                {SubApplicationIcon ? (
-                  <SubApplicationIcon className="cc-application-navigation-panel__section-icon" />
-                ) : null}
-                <span>{subApplication.label}</span>
-              </div>
+              {showSectionLabels ? (
+                <div
+                  className="cc-application-navigation-panel__section-label"
+                  id={`${application.id}-${subApplication.id}-navigation-label`}
+                >
+                  {SubApplicationIcon ? (
+                    <SubApplicationIcon className="cc-application-navigation-panel__section-icon" />
+                  ) : null}
+                  <span>{subApplication.label}</span>
+                </div>
+              ) : null}
               <div className="cc-application-navigation-panel__destinations">
                 {subApplication.destinations.map((destination) => {
                   const Icon = destination.icon;

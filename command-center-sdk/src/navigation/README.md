@@ -9,12 +9,18 @@ application rails with grouped sub-applications and destinations.
   application's `href`, or its default destination's `href`, for native browser link behavior.
 - `ApplicationNavigationPanel.tsx` renders the selected application's grouped destinations as
   anchors when an `href` is available and as callback buttons otherwise.
-- `ApplicationNavigationShell.tsx` composes both around consumer-owned content. Its
+- `ApplicationNavigationPanelShell.tsx` is the canonical depth-one embedded shell. It composes a
+  single destination panel around content, hides a redundant one-section label by default, and
+  owns its floating mobile trigger and accessible drawer.
+- `ApplicationNavigationShell.tsx` is the depth-two rail + panel shell. Its
   `presentation` prop is `docked` (the layout row), `overlay` (an off-canvas drawer the host opens
   through `menuOpen` and `onMenuOpenChange`), or `auto` (overlay below the `md` breakpoint through
-  the `/layout` viewport seam). The resolved form is exposed as `data-cc-presentation`.
-- `ApplicationNavigationTrigger.tsx` is the menu button a host places in its own top bar; it
-  carries `aria-controls`, `aria-expanded`, and the accessible label for the drawer.
+  the `/layout` viewport seam). `overlayTrigger="floating"` gives a complete embedded child an
+  SDK-owned mobile trigger. The resolved form and depth are exposed as data attributes.
+- `ApplicationNavigationTrigger.tsx` is the low-level menu button for real hosts that already own
+  chrome; it carries `aria-controls`, `aria-expanded`, and the accessible label for a drawer.
+- `testing/index.ts` verifies startup gating, the declared navigation depth, and absence of child
+  top navigation through a Playwright-compatible driver.
 - `ApplicationImmersiveBar.tsx` (SDK ADR 008) is the one-row chrome a host shows above an embedded
   static site on a small screen: a back control (an anchor when `backHref` is given, native
   modified clicks preserved), a truncated title that names the bar, and a trailing slot for the
@@ -32,7 +38,7 @@ Import the complete surface from the declared subpath:
 
 ```ts
 import {
-  ApplicationNavigationShell,
+  ApplicationNavigationPanelShell,
   composeNavigationApplications,
   defineNavigationApplication,
   defineNavigationContribution,
@@ -66,22 +72,20 @@ const applications = composeNavigationApplications([
   }),
 ]);
 
-<ApplicationNavigationShell
-  applications={applications}
-  activeApplicationId="operations"
+<ApplicationNavigationPanelShell
+  application={applications[0]}
   activeDestinationId="services"
-  collapsed={collapsed}
-  onCollapsedChange={setCollapsed}
-  openApplicationId={openApplicationId}
-  onOpenApplicationChange={setOpenApplicationId}
+  menuOpen={menuOpen}
+  onMenuOpenChange={setMenuOpen}
   onNavigate={(intent) => navigateIntent(intent)}
+  presentation="auto"
 >
   {routeContent}
-</ApplicationNavigationShell>;
+</ApplicationNavigationPanelShell>;
 ```
 
-The host controls active route identity, rail collapse, the open application panel, and route
-commit. The shell owns composition and interaction presentation. A destination `href` preserves
+The consumer controls active route identity, menu state, and route commit. The shell owns
+composition and interaction presentation. A destination `href` preserves
 native new-tab, modified-click, context-menu, and copy-link behavior; only a plain activation is
 delivered as `NavigationIntent` to the host.
 
@@ -101,12 +105,15 @@ silently convert forbidden destinations into working links.
 - Use contributions to add a sub-application to a known application; do not mutate a shared
   registry after composition.
 - Keep route objects and router APIs out of definitions. Translate semantic intents at the host.
+- A complete embedded child chooses exactly depth 0 (no shell), depth 1 (panel shell), or depth 2
+  (rail + panel shell). It never adds top navigation or a third sidebar level.
 - Keep `data-cc-*` and theme-chrome attributes stable because CSS and browser checks consume them.
 - Test ordering, duplicate rejection, disabled behavior, Escape closing, native anchor semantics,
   the overlay drawer (focus trap, scroll lock, scrim and Escape dismissal, close on navigate) at a
   touch phone viewport, and controlled active/open/menu state.
-- The overlay drawer forces the rail expanded so labels are visible without hover tooltips, and
-  closes after `onNavigate`. The host still owns `menuOpen`; the shell only reports changes.
+- The depth-two overlay drawer forces the rail expanded so labels are visible without hover
+  tooltips, and closes after `onNavigate`. The consumer still owns `menuOpen`; the shell only
+  reports changes.
 - Standalone rail and panel compositions must set `--application-navigation-rail-width` on their
   container; the shell does this for its own row and the panel's narrow-viewport offset reads it.
 - A released definition ID may be persisted or deep-linked by a consumer; renaming it requires a

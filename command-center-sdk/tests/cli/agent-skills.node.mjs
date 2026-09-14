@@ -36,12 +36,13 @@ async function writeSkill(skillsRoot, relativePath, content = "skill") {
   );
 }
 
-test("installs packaged skill folders, preserves unrelated skills, and writes provenance", async () => {
+test("installs the authoritative namespace, prunes unauthorized entries, and writes provenance", async () => {
   const fixtureRoot = await temporaryDirectory("copy");
   try {
     const skillsRoot = join(fixtureRoot, "package", "skills");
     const projectRoot = join(fixtureRoot, "project");
     await writeSkill(skillsRoot, "contracts/alpha-skill", "new alpha");
+    await writeSkill(skillsRoot, "embed/integrate-static-site-iframe", "current embed");
     await writeSkill(skillsRoot, "views/beta-skill", "new beta");
     await writeSkill(skillsRoot, ".hidden-skill", "hidden");
     await writeSkill(skillsRoot, "__cache", "cache");
@@ -51,8 +52,23 @@ test("installs packaged skill folders, preserves unrelated skills, and writes pr
     const managedRoot = join(projectRoot, ".agents", "skills", AGENT_SKILL_NAMESPACE);
     await mkdir(join(managedRoot, "contracts", "alpha-skill"), { recursive: true });
     await writeFile(join(managedRoot, "contracts", "alpha-skill", "stale.txt"), "stale", "utf8");
+    await writeSkill(managedRoot, "embed/embed-command-center-app", "obsolete embed");
+    await writeSkill(managedRoot, "widget/build-command-center-widget", "obsolete widget");
+    await writeSkill(managedRoot, "workspace/build-command-center-workspace", "obsolete workspace");
     await mkdir(join(managedRoot, "consumer-owned"), { recursive: true });
-    await writeFile(join(managedRoot, "consumer-owned", "keep.txt"), "keep", "utf8");
+    await writeFile(join(managedRoot, "consumer-owned", "keep.txt"), "remove", "utf8");
+    await writeFile(
+      join(managedRoot, "PINNED_FROM.txt"),
+      [
+        "schema=2",
+        "library_name=@dev-mainsequence/command-center-sdk",
+        "namespace=command-center",
+        "pinned_version=0.1.21",
+        "skill_path=embed/embed-command-center-app",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
     const siblingSkill = join(projectRoot, ".agents", "skills", "project-skill");
     await mkdir(siblingSkill, { recursive: true });
     await writeFile(join(siblingSkill, "keep.txt"), "keep", "utf8");
@@ -69,18 +85,48 @@ test("installs packaged skill folders, preserves unrelated skills, and writes pr
 
     assert.deepEqual(
       result.copied.map((item) => item.relativePath),
-      ["contracts/alpha-skill", "views/beta-skill"],
+      [
+        "contracts/alpha-skill",
+        "embed/integrate-static-site-iframe",
+        "views/beta-skill",
+      ],
     );
     assert.match(await readFile(join(managedRoot, "contracts", "alpha-skill", "SKILL.md"), "utf8"), /new alpha/u);
     await assert.rejects(readFile(join(managedRoot, "contracts", "alpha-skill", "stale.txt"), "utf8"), {
       code: "ENOENT",
     });
-    assert.equal(await readFile(join(managedRoot, "consumer-owned", "keep.txt"), "utf8"), "keep");
+    assert.deepEqual(
+      result.removed.map((item) => item.relativePath),
+      ["consumer-owned", "embed/embed-command-center-app", "widget", "workspace"],
+    );
+    await assert.rejects(readFile(join(managedRoot, "consumer-owned", "keep.txt"), "utf8"), {
+      code: "ENOENT",
+    });
+    await assert.rejects(
+      readFile(join(managedRoot, "embed", "embed-command-center-app", "SKILL.md"), "utf8"),
+      { code: "ENOENT" },
+    );
+    await assert.rejects(
+      readFile(join(managedRoot, "widget", "build-command-center-widget", "SKILL.md"), "utf8"),
+      { code: "ENOENT" },
+    );
+    await assert.rejects(
+      readFile(
+        join(managedRoot, "workspace", "build-command-center-workspace", "SKILL.md"),
+        "utf8",
+      ),
+      { code: "ENOENT" },
+    );
+    assert.match(
+      await readFile(join(managedRoot, "embed", "integrate-static-site-iframe", "SKILL.md"), "utf8"),
+      /current embed/u,
+    );
     assert.equal(await readFile(join(siblingSkill, "keep.txt"), "utf8"), "keep");
 
     const sentinel = await readFile(join(managedRoot, "PINNED_FROM.txt"), "utf8");
-    assert.match(sentinel, /schema=2/u);
+    assert.match(sentinel, /schema=3/u);
     assert.match(sentinel, /namespace=command-center/u);
+    assert.match(sentinel, /ownership=authoritative_namespace/u);
     assert.match(sentinel, /pinned_version=9\.8\.7/u);
     assert.match(sentinel, /command=test install/u);
     assert.match(sentinel, /skill_path=contracts\/alpha-skill/u);
@@ -97,6 +143,8 @@ test("dry-run validates and reports without writing", async () => {
     const projectRoot = join(fixtureRoot, "project");
     await writeSkill(skillsRoot, "views/alpha-skill");
     await mkdir(projectRoot, { recursive: true });
+    const managedRoot = join(projectRoot, ".agents", "skills", AGENT_SKILL_NAMESPACE);
+    await writeSkill(managedRoot, "widget/obsolete-widget");
 
     const result = await installAgentSkills({
       projectDir: projectRoot,
@@ -106,6 +154,8 @@ test("dry-run validates and reports without writing", async () => {
     });
 
     assert.equal(result.dryRun, true);
+    assert.deepEqual(result.removed.map((item) => item.relativePath), ["widget"]);
+    await readFile(join(managedRoot, "widget", "obsolete-widget", "SKILL.md"), "utf8");
     await assert.rejects(readFile(result.sentinelPath, "utf8"), { code: "ENOENT" });
   } finally {
     await rm(fixtureRoot, { recursive: true, force: true });
@@ -179,7 +229,7 @@ test("rejects duplicate skill names in different categories", async () => {
   }
 });
 
-test("migrates the legacy flat managed layout without removing consumer-owned skills", async () => {
+test("migrates the legacy flat layout and prunes every unauthorized namespace entry", async () => {
   const fixtureRoot = await temporaryDirectory("legacy-layout");
   try {
     const skillsRoot = join(fixtureRoot, "package", "skills");
@@ -206,7 +256,9 @@ test("migrates the legacy flat managed layout without removing consumer-owned sk
       code: "ENOENT",
     });
     await readFile(join(managedRoot, "general", "use-command-center-sdk", "SKILL.md"), "utf8");
-    assert.equal(await readFile(join(managedRoot, "consumer-owned", "keep.txt"), "utf8"), "keep");
+    await assert.rejects(readFile(join(managedRoot, "consumer-owned", "keep.txt"), "utf8"), {
+      code: "ENOENT",
+    });
   } finally {
     await rm(fixtureRoot, { recursive: true, force: true });
   }
@@ -223,7 +275,7 @@ test("explicit CLI installs the packaged skills and emits JSON", async () => {
     assert.equal(result.status, 0, result.stderr);
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.namespace, AGENT_SKILL_NAMESPACE);
-    assert.equal(payload.copied.length, 16);
+    assert.equal(payload.copied.length, 17);
     assert.equal(
       await readFile(
         join(payload.destinationRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
@@ -239,6 +291,15 @@ test("explicit CLI installs the packaged skills and emits JSON", async () => {
     );
     await readFile(
       join(payload.destinationRoot, "contracts", "implement-bulk-actions-contract", "SKILL.md"),
+      "utf8",
+    );
+    await readFile(
+      join(
+        payload.destinationRoot,
+        "navigation",
+        "compose-command-center-application-shell",
+        "SKILL.md",
+      ),
       "utf8",
     );
   } finally {
@@ -259,7 +320,7 @@ test("postinstall resolves and installs into INIT_CWD", async () => {
       },
     });
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /Installed 16 agent skill/u);
+    assert.match(result.stdout, /Installed 17 agent skill/u);
     const sentinel = await readFile(
       join(projectRoot, ".agents", "skills", AGENT_SKILL_NAMESPACE, "PINNED_FROM.txt"),
       "utf8",

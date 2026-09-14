@@ -9,7 +9,7 @@ export interface ApplicationNavigationTriggerProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   "aria-controls" | "aria-expanded" | "children" | "onClick" | "type"
 > {
-  /** The `menuId` given to `ApplicationNavigationShell`. */
+  /** The `menuId` given to a navigation shell. */
   controlsId?: string;
   /** Accessible label when the menu is closed. */
   label?: string;
@@ -20,8 +20,8 @@ export interface ApplicationNavigationTriggerProps extends Omit<
 }
 
 /**
- * The menu button a host places in its own top bar to open the overlay navigation drawer. The
- * host owns `open`; the SDK owns the accessible wiring and iconography.
+ * A controlled menu button for an externally placed navigation trigger. Embedded applications
+ * should prefer a shell's SDK-owned floating trigger instead of creating a top navigation bar.
  */
 export function ApplicationNavigationTrigger({
   className,

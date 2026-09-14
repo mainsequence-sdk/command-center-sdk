@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 export const AGENT_SKILL_NAMESPACE = "command-center";
 export const PINNED_FROM_FILENAME = "PINNED_FROM.txt";
-export const PINNED_FROM_SCHEMA = "2";
+export const PINNED_FROM_SCHEMA = "3";
 
 const LEGACY_FLAT_SKILL_NAMES = [
   "adapt-resource-backend",
@@ -229,7 +229,7 @@ async function assertSafeDestinationPath(destinationRoot, destination) {
   }
 }
 
-async function validateDestination(destinationRoot, managedItems) {
+async function validateDestination(destinationRoot, copied, stale) {
   const destinationState = await pathState(destinationRoot);
   if (destinationState?.isSymbolicLink()) {
     throw new AgentSkillInstallBlocked(
@@ -242,8 +242,11 @@ async function validateDestination(destinationRoot, managedItems) {
     );
   }
 
-  for (const item of managedItems) {
+  for (const item of copied) {
     await assertSafeDestinationPath(destinationRoot, item.destination);
+  }
+  for (const item of stale) {
+    await assertSafeDestinationPath(destinationRoot, dirname(item.destination));
   }
 }
 
@@ -252,6 +255,7 @@ function sentinelContent({ metadata, skillsPath, copiedAtUtc, command, copied })
     `schema=${PINNED_FROM_SCHEMA}`,
     `library_name=${metadata.name}`,
     `namespace=${AGENT_SKILL_NAMESPACE}`,
+    "ownership=authoritative_namespace",
     `pinned_version=${metadata.version}`,
     `skills_path=${skillsPath}`,
     `copied_at_utc=${copiedAtUtc}`,
@@ -292,6 +296,49 @@ async function previousManagedSkillPaths(sentinelPath, metadata) {
   const schema = fields.get("schema")?.[0];
   const paths = schema === "1" ? LEGACY_FLAT_SKILL_NAMES : fields.get("skill_path") ?? [];
   return [...new Set(paths.map((path) => portablePath(validateRelativeSkillPath(path, "Managed skill path"))))];
+}
+
+async function listUnauthorizedNamespaceEntries(destinationRoot, authorizedDestinations) {
+  const destinationState = await pathState(destinationRoot);
+  if (!destinationState) {
+    return [];
+  }
+
+  const unauthorized = [];
+  async function inspect(directory) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (directory === destinationRoot && entry.name === PINNED_FROM_FILENAME) {
+        continue;
+      }
+
+      const destination = join(directory, entry.name);
+      const isAuthorizedRoot = authorizedDestinations.some(
+        (authorizedDestination) => authorizedDestination === destination,
+      );
+      if (isAuthorizedRoot) {
+        continue;
+      }
+
+      const isAuthorizedAncestor = authorizedDestinations.some((authorizedDestination) =>
+        sameOrInside(authorizedDestination, destination),
+      );
+      if (isAuthorizedAncestor) {
+        if (entry.isDirectory()) {
+          await inspect(destination);
+        }
+        continue;
+      }
+
+      unauthorized.push({
+        relativePath: portablePath(relative(destinationRoot, destination)),
+        destination,
+      });
+    }
+  }
+
+  await inspect(destinationRoot);
+  unauthorized.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
+  return unauthorized;
 }
 
 async function rollbackInstall({ destinationRoot, backupRoot, installed, backedUp, previousSentinel }) {
@@ -354,15 +401,13 @@ export async function installAgentSkills({
   for (const item of copied) {
     assertNoOverlap(item.source, item.destination, `source skill ${item.name}`, `destination skill ${item.name}`);
   }
-  const previousManagedPaths = await previousManagedSkillPaths(sentinelPath, metadata);
-  const currentManagedPaths = new Set(copied.map((item) => item.relativePath));
-  const stale = previousManagedPaths
-    .filter((relativePath) => !currentManagedPaths.has(relativePath))
-    .map((relativePath) => ({
-      relativePath,
-      destination: join(destinationRoot, ...relativePath.split("/")),
-    }));
-  await validateDestination(destinationRoot, [...copied, ...stale]);
+  await validateDestination(destinationRoot, copied, []);
+  await previousManagedSkillPaths(sentinelPath, metadata);
+  const stale = await listUnauthorizedNamespaceEntries(
+    destinationRoot,
+    copied.map((item) => item.destination),
+  );
+  await validateDestination(destinationRoot, copied, stale);
 
   const result = {
     libraryName: metadata.name,

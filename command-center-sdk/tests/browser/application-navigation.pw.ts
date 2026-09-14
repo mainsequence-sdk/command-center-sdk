@@ -6,10 +6,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import {
   ApplicationImmersiveBar,
+  ApplicationNavigationPanelShell,
   ApplicationNavigationShell,
   ApplicationNavigationTrigger,
   defineNavigationApplication,
 } from "../../dist/navigation/index.js";
+import { assertCommandCenterApplicationShell } from "../../dist/navigation/testing/index.js";
+import { ApplicationStatusScreen } from "../../dist/feedback/index.js";
+import { ApplicationPage } from "../../dist/layout/index.js";
 
 let server: Server;
 let origin: string;
@@ -87,6 +91,60 @@ test.describe("public application navigation links", () => {
   });
 });
 
+test.describe("embedded application-shell conformance", () => {
+  test("accepts the gated startup phase and canonical one-level ready phase", async ({ page }) => {
+    const application = defineNavigationApplication({
+      id: "connectors",
+      label: "Connectors",
+      defaultDestinationId: "overview",
+      subApplications: [{
+        id: "connectors",
+        label: "Connectors",
+        destinations: [
+          { id: "overview", label: "Overview", href: "/overview" },
+          { id: "activity", label: "Activity", href: "/activity" },
+        ],
+      }],
+    });
+    const startupMarkup = renderToStaticMarkup(
+      createElement(ApplicationStatusScreen, {
+        message: "Connecting delegated API transport.",
+        title: "Preparing application",
+        variant: "viewport",
+      }),
+    );
+    await page.setContent(`<!doctype html><body>${startupMarkup}</body>`);
+    const startupReport = await assertCommandCenterApplicationShell(page, {
+      navigationDepth: 1,
+      phase: "startup",
+    });
+    expect(startupReport.ok).toBe(true);
+
+    const readyMarkup = renderToStaticMarkup(
+      createElement(
+        ApplicationNavigationPanelShell,
+        {
+          activeDestinationId: "overview",
+          application,
+          menuOpen: false,
+          onMenuOpenChange: () => undefined,
+          onNavigate: () => undefined,
+          presentation: "docked",
+        },
+        createElement(ApplicationPage, null, "Ready application"),
+      ),
+    );
+    await page.setContent(`<!doctype html><body>${readyMarkup}</body>`);
+    const readyReport = await assertCommandCenterApplicationShell(page, {
+      navigationDepth: 1,
+      phase: "ready",
+    });
+    expect(readyReport.ok).toBe(true);
+    await expect(page.locator('[data-theme-chrome="topbar"]')).toHaveCount(0);
+    await expect(page.locator(".cc-application-navigation-panel__section-label")).toHaveCount(0);
+  });
+});
+
 test.describe("overlay navigation on a touch phone", () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
 
@@ -155,6 +213,56 @@ test.describe("overlay navigation on a touch phone", () => {
     await expect(page.getByRole("link", { name: "Foundry" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Services" })).toBeVisible();
     await expect(page.getByText("Consumer surface")).toBeAttached();
+  });
+
+  test("panel-only navigation uses the full drawer without a rail or top bar", async ({ page }) => {
+    const { readFile } = await import("node:fs/promises");
+    const [componentStyles, themeStyles] = await Promise.all([
+      readFile(new URL("../../styles.css", import.meta.url), "utf8"),
+      readFile(new URL("../../theme/styles.css", import.meta.url), "utf8"),
+    ]);
+    const application = defineNavigationApplication({
+      id: "connectors",
+      label: "Connectors",
+      defaultDestinationId: "overview",
+      subApplications: [{
+        id: "connectors",
+        label: "Connectors",
+        destinations: [
+          { id: "overview", label: "Overview", href: "/overview" },
+          { id: "activity", label: "Activity", href: "/activity" },
+        ],
+      }],
+    });
+    const markup = renderToStaticMarkup(
+      createElement(
+        ApplicationNavigationPanelShell,
+        {
+          activeDestinationId: "overview",
+          application,
+          menuOpen: true,
+          onMenuOpenChange: () => undefined,
+          onNavigate: () => undefined,
+          presentation: "overlay",
+        },
+        createElement(ApplicationPage, null, "Connector monitor"),
+      ),
+    );
+    await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>${themeStyles}${componentStyles}</style></head><body>${markup}</body></html>`);
+
+    await assertCommandCenterApplicationShell(page, { navigationDepth: 1, phase: "ready" });
+    await expect(page.locator("[data-cc-navigation-rail]")).toHaveCount(0);
+    await expect(page.locator('[data-theme-chrome="topbar"]')).toHaveCount(0);
+    const drawer = page.locator("[data-cc-navigation-drawer]");
+    const geometry = await drawer.evaluate(async (element) => {
+      await Promise.all(element.getAnimations().map((animation) => animation.finished));
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, viewportWidth: window.innerWidth };
+    });
+    expect(geometry.left).toBe(0);
+    expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth - 48);
+    await expect(page.getByRole("link", { name: "Overview" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Activity" })).toBeVisible();
   });
 });
 

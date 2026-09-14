@@ -1,23 +1,17 @@
 ---
 name: build-command-center-application
-description: Design, build, migrate, or review a Command Center-compatible application and select the correct @dev-mainsequence/command-center-sdk surfaces before implementation. Use when deciding how a standalone or embedded application should compose application navigation, resource lists, custom and discovered actions, resource details, themes, backend contracts, and iframe integration. Route each selected surface to its focused implementation skill without redefining SDK contracts.
+description: Design, build, migrate, or review a complete Command Center-compatible application and select the correct @dev-mainsequence/command-center-sdk surfaces before implementation. Use when deciding production embedding, application-shell and navigation depth, startup readiness, resource lists, actions, details, themes, backend contracts, and iframe integration. Route each selected surface to its focused implementation skill without redefining SDK contracts.
 ---
 
 # Build A Command Center Application
 
 ## Establish The Application Boundary
 
-Treat a Command Center application as application-owned routes rendered inside the main Command
-Center. The main Command Center owns global navigation, application selection, account and global
-settings UI, session chrome, and global branding. Do not reproduce its left navigation, top
-navigation, settings module, account controls, or application switcher inside the child
-application.
-
-For a standalone product shell, or for navigation genuinely owned inside the child application,
-use the public `/navigation` hierarchy and controlled React primitives. They provide an expandable
-application rail, grouped sub-applications, and destinations without owning routes or access
-policy. When embedded in the main Command Center, do not mirror the host's applications in a
-second rail; model only the child's own internal hierarchy.
+Treat a production Command Center application as application-owned routes embedded inside the main
+Command Center. The main Command Center owns global navigation, application selection, account and
+global settings UI, session chrome, and global branding. The child never reproduces the host's
+navigation, settings module, account controls, or application switcher. The child must not render a top navigation bar. Standalone mode is an
+explicit local development or test harness only, never an alternative production architecture.
 
 Make these cross-cutting decisions first:
 
@@ -29,19 +23,23 @@ Make these cross-cutting decisions first:
 2. Apply SDK tokens, presets, typography, density, surface hierarchy, data visualization, and
    packaged styles through `$theme-command-center-app`. Treat its closed-token audit as a required
    build gate whenever the base theme stylesheet is imported.
-3. Compose complete route gutters, headers, top-level section rhythm, cards, and responsive card
+3. Select exactly zero, one, or two levels of application-owned left navigation and compose the
+   root shell through `$compose-command-center-application-shell`. This focused workflow owns the
+   embedded/no-topbar rule, responsive drawer, and mandatory readiness gate.
+4. Compose complete route gutters, headers, top-level section rhythm, cards, and responsive card
    grids through `$compose-command-center-page`. Keep its browser geometry verifier separate from
    the semantic theme audit.
-4. Route application-wide startup, prerequisite, reconnection, and terminal recovery feedback to
-   `$build-application-loading-flow`. Keep readiness transport and retry policy in the application.
-5. Create and maintain task-focused end-user application documentation through
+5. Route application-wide startup, prerequisite, reconnection, and terminal recovery feedback to
+   `$build-application-loading-flow`. Every complete application gates host context, delegated
+   transport/authentication, and critical API readiness before mounting navigation or routes.
+6. Create and maintain task-focused end-user application documentation through
    `$document-command-center-application`. Mirror the visible application navigation in its folder
    tree, ship it at `/docs/` inside the same static artifact, and verify its deep links in the
    application's real-browser suite. Keep architecture and implementation material out of the
    served user guide.
-6. Keep authentication, API clients, routing, permissions, notifications, persistence, and domain
+7. Keep authentication, API clients, routing, permissions, notifications, persistence, and domain
    rules in the application or its backend. Inject them through published SDK extension points.
-7. Inspect the installed package version, exports, and declarations through
+8. Inspect the installed package version, exports, and declarations through
    `$use-command-center-sdk` before selecting an implementation.
 
 ## Choose The Internal Surface
@@ -50,7 +48,7 @@ Choose the highest-level composition that owns the required lifecycle:
 
 | Requirement | SDK surface | Focused skill |
 | --- | --- | --- |
-| Application rail with grouped sub-applications | `/navigation` controlled primitives | This skill |
+| Embedded root shell with zero/one/two-level navigation | `/navigation` shells and `/navigation/testing` | `$compose-command-center-application-shell` |
 | Complete route gutters, header, section rhythm, cards, and card grids | `/layout` primitives | `$compose-command-center-page` |
 | Blocking application startup, reconnection, or prerequisite progress | `/feedback` controlled primitives | `$build-application-loading-flow` |
 | Domain-object collection | `ResourceListPage` | `$build-resource-list` |
@@ -61,26 +59,20 @@ Choose the highest-level composition that owns the required lifecycle:
 Do not select a primitive because it can display similar pixels. Select the composition whose
 contract owns the behavior, state, and reuse boundary.
 
-## Design Application Navigation
+## Design The Root Before Its Pages
 
-Use `NavigationApplicationDefinition` for a top-level product application,
-`NavigationSubApplicationDefinition` for a labeled section or contributed sub-application, and
-`NavigationDestinationDefinition` for the actual routed surface. Keep IDs stable and unique.
+Route root composition to `$compose-command-center-application-shell`. Base navigation depth on
+durable destinations: no sidebar for one destination, `ApplicationNavigationPanelShell` for one
+cohesive work area with multiple destinations, and rail + panel only for multiple independent work areas that
+each contain multiple destinations. Page subdivisions use tabs; never create a third sidebar
+level. Do not add filler group labels, a one-item rail, planned disabled primary navigation, or a
+top bar to hold the mobile menu button.
 
-Use `ApplicationNavigationShell` when the SDK can own the rail/panel layout. Give it
-`presentation="auto"` and place `ApplicationNavigationTrigger` in the host top bar so the rail
-becomes an off-canvas drawer below 768px; the host owns `menuOpen`. Use
-`ApplicationRail` and `ApplicationNavigationPanel` separately when the consumer already owns
-positioning. `ApplicationRailItem` is the narrow primitive for an existing host rail.
-
-Keep state controlled. Filter inaccessible definitions before render, pass active and open IDs from
-the consumer, give every routed application and destination a stable `href`, and translate ordinary
-unmodified `NavigationIntent` clicks into the consumer router. The SDK renders routed items as
-anchors so Command/Control-click, middle-click, context menus, and copy-link remain browser-native;
-do not recreate routed items as callback-only buttons. Use
-`defineNavigationContribution` plus `composeNavigationApplications` when one package contributes
-a complete sub-application to another package owned application. Do not import another application
-registry, router, auth store, or private sidebar components.
+The application shell is absent until iframe context/theme, delegated transport/authentication,
+and the critical application readiness endpoint all succeed. A host handshake is not sufficient.
+On reconnect, return to the viewport status gate. After startup, keep route-local operations in
+their owning resource view. The focused shell and feedback skills contain the required component
+mapping and browser assertions.
 
 ## Design Resource Collections
 
@@ -146,7 +138,13 @@ Before implementation, write a compact decision using this structure:
 
 ```text
 Application purpose:
-Main Command Center embedding:
+Production embedding and local-only standalone policy:
+Navigation depth and durable destinations:
+Page-local tabs:
+Host-context readiness signal:
+Delegated-transport readiness signal:
+Critical API readiness endpoint:
+Retry, timeout, and reconnect policy:
 Theme integration:
 Application documentation:
 Application-owned routes:
@@ -166,6 +164,10 @@ contracts or rebuild their owned behavior in this general skill.
 - Do not rebuild the SDK list or detail shells.
 - Do not ship an undocumented application or a separately versioned documentation artifact.
 - Do not treat complete-application iframe integration as optional.
+- Do not render production applications standalone or reproduce the host top navigation.
+- Do not mount application navigation or routes before all three readiness stages succeed.
+- Do not use a sidebar for one destination, a rail for one work area, filler navigation groups, or
+  a third sidebar level.
 - Do not add an `Open` action column when identity-cell activation exists.
 - Do not convert current-page selection into all-matching selection automatically.
 - Do not reproduce the main Command Center's global navigation or settings UI.

@@ -20,6 +20,7 @@ repositories.
 - [SDK ADR 006: Device-Aware Primitives](./adr-sdk-006-device-aware-primitives.md) — Accepted
 - [SDK ADR 007: Responsive Column Importance and Stacked Tables](./adr-sdk-007-responsive-column-importance-and-stacked-tables.md) — Accepted
 - [SDK ADR 008: Immersive Embedded Presentation](./adr-sdk-008-immersive-embedded-presentation.md) — Accepted
+- [SDK ADR 009: Opinionated Embedded Application Shell](./adr-sdk-009-opinionated-embedded-application-shell.md) — Accepted
 
 ## Rules
 

@@ -94,26 +94,41 @@ The consuming application supplies the decisions that cannot be safely generaliz
 
 The SDK may validate or present the result of those decisions, but it does not replace them.
 
-## Compose an application vertically
+## Compose the embedded root before its routes
 
-A normal application uses several SDK surfaces together:
+A production application is embedded in the main Command Center. The host owns top/global chrome;
+the child never adds a top navigation bar. From its first frame the child gates host context,
+delegated transport, and critical API readiness. Only then does it mount exactly one selected
+navigation depth and route content:
 
 ```tsx
-import { ApplicationNavigationShell } from "@dev-mainsequence/command-center-sdk/navigation";
+import { ApplicationStatusScreen } from "@dev-mainsequence/command-center-sdk/feedback";
+import { ApplicationNavigationPanelShell } from "@dev-mainsequence/command-center-sdk/navigation";
 import { ApplicationPage, ApplicationPageStack } from "@dev-mainsequence/command-center-sdk/layout";
 import { ResourceListPage } from "@dev-mainsequence/command-center-sdk/views";
 
-export function ServicesScreen() {
+export function ApplicationRoot() {
+  if (!readiness.ready) {
+    return (
+      <ApplicationStatusScreen
+        action={readiness.failure ? { label: "Retry startup", onSelect: retry } : undefined}
+        message={readiness.message}
+        stages={readiness.stages}
+        state={readiness.failure ? "error" : "loading"}
+        title={readiness.failure ? "Application could not start" : "Preparing application"}
+        variant="viewport"
+      />
+    );
+  }
+
   return (
-    <ApplicationNavigationShell
-      applications={navigationApplications}
-      activeApplicationId="operations"
+    <ApplicationNavigationPanelShell
+      application={operationsNavigation}
       activeDestinationId="services"
-      collapsed={navigationCollapsed}
-      onCollapsedChange={setNavigationCollapsed}
-      openApplicationId={openApplicationId}
-      onOpenApplicationChange={setOpenApplicationId}
+      menuOpen={menuOpen}
+      onMenuOpenChange={setMenuOpen}
       onNavigate={openNavigationIntent}
+      presentation="auto"
     >
       <ApplicationPage>
         <ApplicationPageStack>
@@ -125,13 +140,20 @@ export function ServicesScreen() {
           />
         </ApplicationPageStack>
       </ApplicationPage>
-    </ApplicationNavigationShell>
+    </ApplicationNavigationPanelShell>
   );
 }
 ```
 
+This example selected navigation depth one: one cohesive operations area with several durable
+destinations. Use no shell for one destination. Use the rail + panel
+`ApplicationNavigationShell` only when multiple independent work areas each contain several
+destinations; set `presentation="auto"` and `overlayTrigger="floating"`. Page subdivisions use
+tabs, never a third sidebar level.
+
 In this composition:
 
+- the shell and routes do not exist until real application readiness succeeds;
 - navigation definitions describe the hierarchy;
 - the host converts navigation intents to routes;
 - layout primitives own page geometry;

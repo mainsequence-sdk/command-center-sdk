@@ -4,6 +4,33 @@
 
 No unreleased changes.
 
+## 0.4.0
+
+Compatibility axes: npm public API 0.4.0 (additive); local agent-skill provenance sentinel schema
+3 (migrated automatically with rollback coverage). No backend contract, JSON Schema, fixture,
+iframe protocol, theme ID, or remote storage change. Existing depth-two navigation remains docked
+with an external trigger unless new props are selected, and direct panel section labels remain
+visible by default.
+
+- Standardize complete production applications as embedded children with no child top navigation,
+  one explicit zero/one/two-level left-navigation decision, and a mandatory viewport startup gate
+  covering host context/theme, delegated API transport/authentication, and critical API readiness.
+- Add the public depth-one `ApplicationNavigationPanelShell`, including automatic responsive
+  docked/overlay presentation, an SDK-owned floating phone trigger, accessible drawer behavior,
+  and suppression of redundant single-section labels. Add depth markers to both navigation shells
+  and the opt-in `overlayTrigger="floating"` mode to the existing depth-two shell.
+- Add `/navigation/testing` with Playwright-compatible verification for startup gating, declared
+  navigation depth, and absence of child topbar chrome. Cover the API with declaration, unit,
+  real-browser, package-boundary, package-size, and packed-consumer checks.
+- Ship `navigation/compose-command-center-application-shell`, a focused agent skill with a golden
+  embedded-root TSX asset and migration checklist. Strengthen the general application and loading
+  skills so navigation/routes stay unmounted until true application readiness and reconnect uses
+  the same gate.
+- Make the packaged agent-skill catalog authoritative for the complete
+  `.agents/skills/command-center` namespace. Install, postinstall, SDK update, and skill sync now
+  prune unrecorded or obsolete entries such as retired `widget`, `workspace`, and embed skills,
+  while preserving all other skill namespaces; dry-run and JSON results report the pruned paths.
+
 ## 0.3.0
 
 Compatibility axes: npm public API 0.3.0 (additive). No backend contract, schema, fixture, iframe

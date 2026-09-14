@@ -107,7 +107,7 @@ Below the `md` breakpoint show only the iframe and `ApplicationImmersiveBar` fro
 `overflow: hidden`. The site inside the iframe adapts to its own width on its own; the host does
 not send it a presentation hint and must not pad the bottom safe area a second time. Every
 embedded site must carry its own viewport meta tag. See
-[Application navigation](./navigation.md#frame-an-embedded-site-on-a-phone).
+[Application navigation](./navigation.md#frame-an-embedded-site-from-host-chrome-on-a-phone).
 
 ## Child: install the listener before announcing readiness
 

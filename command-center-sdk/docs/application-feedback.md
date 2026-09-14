@@ -27,6 +27,22 @@ import "@dev-mainsequence/command-center-sdk/theme/styles.css";
 import "@dev-mainsequence/command-center-sdk/styles.css";
 ```
 
+## Gate every complete application through real readiness
+
+A complete embedded application renders `ApplicationStatusScreen variant="viewport"` from the
+first frame and advances through three application-owned gates:
+
+1. iframe host context and theme initialization;
+2. delegated API transport and authentication; and
+3. a critical readiness endpoint that confirms the APIs, configuration, and models the routes
+   require.
+
+Keep navigation and route content unmounted until all three succeed. The iframe handshake alone is
+not readiness. On transport loss or session replacement, return to the same gate. Abort obsolete
+attempts, automatically retry only transient failures with a bounded policy, and give terminal
+failures a manual retry. Once the root is ready, list/detail/picker/action loading stays inside the
+surface that owns it.
+
 ## Map application state into the public model
 
 Keep the readiness client, polling, cancellation, and retry policy in the application. Map only
@@ -105,7 +121,8 @@ export function ApplicationBootstrap({
 
 Do not pass the readiness promise, endpoint, token, API client, or `AbortController` into the
 feedback component. The SDK does not decide which errors are retryable, how long startup may take,
-or whether reconnection should unmount existing routes.
+or when reconnection invalidates readiness; the application does. The standard shell unmounts
+existing routes while readiness is invalid.
 
 ## Use real stages rather than a synthetic percentage
 

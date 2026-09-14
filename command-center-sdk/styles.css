@@ -2484,7 +2484,8 @@ h3),
   }
 }
 
-.cc-application-navigation-shell {
+.cc-application-navigation-shell,
+.cc-application-navigation-panel-shell {
   display: flex;
   height: 100%;
   min-height: 0;
@@ -2493,7 +2494,8 @@ h3),
   width: 100%;
 }
 
-.cc-application-navigation-shell__content {
+.cc-application-navigation-shell__content,
+.cc-application-navigation-panel-shell__content {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
@@ -2877,22 +2879,33 @@ h3),
     position: absolute;
     top: 0;
   }
+
+  .cc-application-navigation-panel-shell:not(.cc-application-navigation-panel-shell--overlay)
+    > .cc-application-navigation-panel {
+    bottom: auto;
+    left: auto;
+    position: relative;
+    top: auto;
+  }
 }
 
-/* Overlay presentation (SDK ADR 006 §4): the rail and panel become one off-canvas drawer the
-   host opens through `menuOpen`; the trigger lives in the host's own top bar. */
-.cc-application-navigation-shell--overlay {
+/* Overlay presentation (SDK ADR 006 §4): navigation becomes an off-canvas drawer. Complete
+   embedded applications use the SDK-owned floating trigger instead of inventing a child top bar. */
+.cc-application-navigation-shell--overlay,
+.cc-application-navigation-panel-shell--overlay {
   position: relative;
 }
 
-.cc-application-navigation-shell__scrim {
+.cc-application-navigation-shell__scrim,
+.cc-application-navigation-panel-shell__scrim {
   background: color-mix(in srgb, var(--background) 62%, transparent);
   inset: 0;
   position: fixed;
   z-index: 94;
 }
 
-.cc-application-navigation-shell__drawer {
+.cc-application-navigation-shell__drawer,
+.cc-application-navigation-panel-shell__drawer {
   box-shadow: var(--shadow-dialog);
   display: flex;
   height: 100vh;
@@ -2908,14 +2921,17 @@ h3),
 }
 
 .cc-application-navigation-shell__drawer .cc-application-rail,
-.cc-application-navigation-shell__drawer .cc-application-navigation-panel {
+.cc-application-navigation-shell__drawer .cc-application-navigation-panel,
+.cc-application-navigation-panel-shell__drawer .cc-application-navigation-panel {
   height: 100%;
   max-height: none;
   position: static;
 }
 
-.cc-application-navigation-shell__drawer .cc-application-navigation-panel {
+.cc-application-navigation-shell__drawer .cc-application-navigation-panel,
+.cc-application-navigation-panel-shell__drawer .cc-application-navigation-panel {
   flex: 1 1 auto;
+  max-width: 100%;
   min-width: 0;
   width: auto;
 }
@@ -2949,6 +2965,16 @@ h3),
 .cc-application-navigation-trigger svg {
   height: 1.125rem;
   width: 1.125rem;
+}
+
+.cc-application-navigation-floating-trigger {
+  background: var(--popover);
+  box-shadow: var(--shadow-dialog);
+  color: var(--popover-foreground);
+  inset-block-end: max(1rem, var(--application-safe-area-bottom));
+  inset-inline-start: max(1rem, var(--application-safe-area-left));
+  position: fixed;
+  z-index: 93;
 }
 
 @media (hover: hover) {
@@ -3035,7 +3061,8 @@ h3),
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .cc-application-navigation-shell__drawer {
+  .cc-application-navigation-shell__drawer,
+  .cc-application-navigation-panel-shell__drawer {
     animation: cc-application-navigation-drawer-in 160ms ease-out;
   }
 }

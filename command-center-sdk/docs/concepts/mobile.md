@@ -102,7 +102,8 @@ The SDK cannot supply these; the host must.
   breakpoint or touch rule will fire. Every host document and every embedded static site needs
   the tag.
 - **A menu trigger and menu state.** In the overlay presentation the SDK renders the drawer, but
-  the host places `ApplicationNavigationTrigger` in its own top bar and owns `menuOpen`.
+  the depth-one shell supplies its floating trigger automatically; a depth-two embedded child sets
+  `overlayTrigger="floating"`. The consumer owns `menuOpen` without inventing a child top bar.
 - **Immersive routes.** For an embedded static site the host shows only `ApplicationImmersiveBar`
   and the iframe below `md`; which routes are immersive and what "back" means are host decisions.
 

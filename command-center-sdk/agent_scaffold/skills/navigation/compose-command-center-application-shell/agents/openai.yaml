@@ -1,0 +1,4 @@
+interface:
+  display_name: "Compose Application Shell"
+  short_description: "Standardize embedded shell, sidebar, and startup"
+  default_prompt: "Use $compose-command-center-application-shell to build or review this app root with the canonical embedded chrome, navigation depth, responsive drawer, and readiness gate."
