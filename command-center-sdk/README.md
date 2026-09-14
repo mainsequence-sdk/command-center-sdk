@@ -101,10 +101,12 @@ error normalization stay outside the resource definition.
 
 ## Choose a public entrypoint
 
-- `/navigation`: controlled application rail, grouped sub-application panel, composed shell,
+- `/navigation`: controlled application rail, grouped sub-application panel, composed shell with
+  docked or overlay presentation and a menu trigger,
   runtime definitions, validation, contribution composition, and native anchor behavior for
   routed applications and destinations with `href`.
-- `/layout` and `/layout/testing`: responsive page, header, stack, card, and card-grid primitives
+- `/layout` and `/layout/testing`: responsive page, header, stack, card, and card-grid primitives,
+  the viewport seam,
   plus real-browser geometry verification.
 - `/feedback`: controlled activity indicator, ordered progress stages, and application-level
   loading, retrying, and error surfaces.

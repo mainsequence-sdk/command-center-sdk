@@ -67,7 +67,9 @@ Use `NavigationApplicationDefinition` for a top-level product application,
 `NavigationSubApplicationDefinition` for a labeled section or contributed sub-application, and
 `NavigationDestinationDefinition` for the actual routed surface. Keep IDs stable and unique.
 
-Use `ApplicationNavigationShell` when the SDK can own the rail/panel layout. Use
+Use `ApplicationNavigationShell` when the SDK can own the rail/panel layout. Give it
+`presentation="auto"` and place `ApplicationNavigationTrigger` in the host top bar so the rail
+becomes an off-canvas drawer below 768px; the host owns `menuOpen`. Use
 `ApplicationRail` and `ApplicationNavigationPanel` separately when the consumer already owns
 positioning. `ApplicationRailItem` is the narrow primitive for an existing host rail.
 

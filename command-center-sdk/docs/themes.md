@@ -136,6 +136,16 @@ configureNestedPanel({ borderColor: surfaces.nestedCardBorderColor });
 For standard application pages and cards, prefer the `/layout` components. The helpers are for
 external libraries and specialized surfaces, not a reason to recreate SDK layout primitives.
 
+## Device variables
+
+The theme sheet also publishes device-axis variables that do not depend on the preset:
+`--application-control-min-size` (36px, raised to 44px under a coarse pointer),
+`--application-safe-area-top`, `-right`, `-bottom`, `-left` (the `env(safe-area-inset-*)`
+values with a 0px fallback), and `--application-navigation-rail-width` (set by the navigation
+shell). Consume them for adjacent custom controls and full-bleed surfaces; do not redeclare them.
+Under a coarse pointer the sheet also drops `background-attachment: fixed`. See
+[Mobile and touch](./concepts/mobile.md).
+
 ## Use semantic chart palettes
 
 Charts should follow the active preset rather than borrowing arbitrary interface colors:

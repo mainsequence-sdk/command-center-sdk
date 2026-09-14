@@ -56,6 +56,14 @@ a native select or bespoke dropdown for SDK-owned list filters.
 Use narrow cell renderers and supported contribution points for domain presentation. Keep endpoint
 paths, route state, authentication, and query caching outside the SDK definition.
 
+## Check The Phone Presentation
+
+Render the screen at 375×812 with a coarse pointer and confirm no horizontal overflow, no control
+under 24px, no text input under 16px, and no hover-only affordance. Run the `/layout/testing`
+verifier at its default matrix when the screen sits in an `ApplicationPage`. Use
+`useCommandCenterViewport` from `/layout` for any width- or pointer-dependent host logic instead
+of `matchMedia`.
+
 ## Verify
 
 Test loading, error, empty, no-results, pagination, search, filters, sort, refresh, selection,

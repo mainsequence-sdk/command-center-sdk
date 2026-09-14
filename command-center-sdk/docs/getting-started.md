@@ -190,7 +190,8 @@ consumers.
 
 At minimum, run the consuming application's typecheck, unit tests, and production build. Exercise
 the screen at narrow and wide viewports and cover loading, error, empty, populated, search, paging,
-refresh, and row activation states.
+refresh, and row activation states. Include a touch phone viewport; see
+[Mobile and touch](./concepts/mobile.md).
 
 For standard page geometry, use the real-browser verifier:
 

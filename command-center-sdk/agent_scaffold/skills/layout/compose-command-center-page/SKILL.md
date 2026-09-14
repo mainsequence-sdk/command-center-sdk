@@ -108,8 +108,11 @@ test("portfolio layout conforms", async ({ page }) => {
 });
 ```
 
-The default matrix verifies 375×812, 768×900, and 1280×800. Exercise at least one dark and one
-light preset and representative loaded, loading, error, empty, long-title, dense-table, and
+The default matrix verifies 320×568, 375×812, 812×375, and 768×1024 with a declared coarse pointer
+and 1024×768 and 1280×800 with a fine pointer. Coarse entries report `touch-target` and
+`sticky-hover`; entries narrower than 768px report `input-zoom`. Configure `hasTouch` and
+`isMobile` on the Playwright context for coarse entries and keep a viewport meta tag in the
+document. Exercise at least one dark and one light preset and representative loaded, loading, error, empty, long-title, dense-table, and
 variable-card-count states. Treat every reported overflow, missing stack gap, missing standard card
 inset, card overlap/collapse failure, header collision, or clipped interactive element as a failure.
 Use screenshots for review when layout changes, but do not replace geometry assertions with visual
@@ -131,3 +134,5 @@ npx command-center-sdk theme audit --path src
 - Do not override SDK layout variables or stable geometry and still claim conformance.
 - Do not mistake a passing theme audit or absence of horizontal overflow for complete layout
   verification.
+- Read the viewport through `useCommandCenterViewport` from `/layout` instead of `matchMedia`, and
+  use the published breakpoint scale (640, 768, 1024) in application CSS.

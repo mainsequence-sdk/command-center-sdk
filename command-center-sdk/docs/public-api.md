@@ -36,11 +36,11 @@ framework integrations do not affect the application.
 | `/resource` | Framework-neutral | Definitions, adapters, discovery parsing, pagination, activation, and bulk-action helpers |
 | `/resource/react` | React | Loaded-page and explicit/all-matching selection hooks |
 | `/views` | React + DOM | Resource lists, details, pickers, tables, cards, summaries, pagination, and action UI |
-| `/navigation` | React + DOM | Navigation definitions, composition, rail, panel, and controlled shell |
-| `/layout` | React + DOM | Page, header, stack, card, and responsive card-grid primitives |
+| `/navigation` | React + DOM | Navigation definitions, composition, rail, panel, controlled shell with docked or overlay presentation, and the menu trigger |
+| `/layout` | React + DOM | Page, header, stack, card, responsive card-grid primitives, and the viewport seam |
 | `/layout/testing` | Browser automation adapter | Real-browser geometry verification and conformance reports |
 | `/feedback` | React + DOM | Activity indicators, ordered progress stages, and application status screens |
-| `/theme` | Framework-neutral; one DOM helper | Presets, tokens, CSS-variable generation/application, density, surfaces, and chart palettes |
+| `/theme` | Framework-neutral; one DOM helper | Presets, tokens, CSS-variable generation/application, density, surfaces, breakpoints, and chart palettes |
 | `/theme/presets` | Framework-neutral | Individual built-in preset objects |
 | `/theme/data-viz` | Framework-neutral | Data-visualization palette types and resolvers |
 | `/embed` | Browser | Static-site message contracts, host/client lifecycle, delegated HTTP access, and native FastAPI WebSockets |

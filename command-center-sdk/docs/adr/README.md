@@ -17,7 +17,7 @@ repositories.
 - [SDK ADR 003: Public Application Layout System](./adr-sdk-003-public-application-layout-system.md) — Accepted
 - [SDK ADR 004: Public Application Feedback System](./adr-sdk-004-public-application-feedback-system.md) — Accepted
 - [SDK ADR 005: Static-Site FastAPI WebSocket Ticket Bridge](./adr-sdk-005-static-site-fastapi-websocket-ticket-bridge.md) — Accepted
-- [SDK ADR 006: Device-Aware Primitives](./adr-sdk-006-device-aware-primitives.md) — Proposed
+- [SDK ADR 006: Device-Aware Primitives](./adr-sdk-006-device-aware-primitives.md) — Accepted (section 5 pending)
 - [SDK ADR 007: Responsive Column Importance and Stacked Tables](./adr-sdk-007-responsive-column-importance-and-stacked-tables.md) — Proposed
 
 ## Rules

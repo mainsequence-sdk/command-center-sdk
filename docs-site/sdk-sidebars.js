@@ -16,6 +16,7 @@ const sdkSidebars = {
         "concepts/sdk-architecture",
         "concepts/resource-applications",
         "concepts/state-and-ownership",
+        "concepts/mobile",
       ],
     },
     {

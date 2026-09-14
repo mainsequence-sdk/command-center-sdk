@@ -2,7 +2,24 @@
 
 ## Unreleased
 
-No unreleased changes.
+- Add the device axis from SDK ADR 006. `/theme` publishes the breakpoint scale (`sm` 640,
+  `md` 768, `lg` 1024) and `/layout` publishes the viewport seam `useCommandCenterViewport`,
+  `resolveCommandCenterViewport`, and `subscribeCommandCenterViewport`.
+- Publish `--application-control-min-size`, `--application-safe-area-*`, and
+  `--application-navigation-rail-width`. Guard every SDK hover rule with `@media (hover: hover)`,
+  add `100dvh` fallbacks, safe-area padding, and a coarse-pointer block that sizes controls to
+  44px, keeps text inputs at 16px, floors table density, and drops `background-attachment: fixed`.
+  The progress stage list now stacks at 639px instead of 559px; fine-pointer output is otherwise
+  unchanged.
+- `ApplicationNavigationShell` gains `presentation` (`docked`, `overlay`, `auto`), `menuOpen`,
+  `onMenuOpenChange`, `menuId`, and `menuLabel`, and exposes `data-cc-presentation`. Add the
+  exported `ApplicationNavigationTrigger`. The panel's narrow-viewport offset reads the published
+  rail width variable instead of a literal 52px.
+- The layout verifier's default matrix becomes six entries with a declared pointer and adds the
+  `touch-target`, `input-zoom`, and `sticky-hover` rules. Findings carry a `severity`, and reports
+  gain `warnings`. Consumers that construct report objects by hand must add the new fields.
+- Add the "Mobile and touch" concept guide, update the navigation, layout, themes, and public API
+  guides, and add a phone-presentation step to the list, detail, picker, and page skills.
 
 ## 0.2.1
 

@@ -127,6 +127,58 @@ You can render `ApplicationRail` and `ApplicationNavigationPanel` separately whe
 already owns positioning. `ApplicationRailItem` is public for hosts that need SDK-consistent app
 items inside existing chrome.
 
+## Present the shell on a small screen
+
+`presentation="auto"` keeps the docked row on wide screens and switches to an off-canvas drawer
+below the `md` breakpoint (768px). The host owns whether the drawer is open and places the SDK
+trigger in its own top bar:
+
+```tsx
+import { useState } from "react";
+import {
+  ApplicationNavigationShell,
+  ApplicationNavigationTrigger,
+} from "@dev-mainsequence/command-center-sdk/navigation";
+
+export function ProductShell() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <ApplicationNavigationShell
+      applications={[foundry]}
+      collapsed={false}
+      menuId="product-menu"
+      menuOpen={menuOpen}
+      onMenuOpenChange={setMenuOpen}
+      onNavigate={navigate}
+      onOpenApplicationChange={setOpenApplicationId}
+      openApplicationId={openApplicationId}
+      presentation="auto"
+    >
+      <header>
+        <ApplicationNavigationTrigger
+          controlsId="product-menu"
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+        />
+      </header>
+      <main>Your routed application content</main>
+    </ApplicationNavigationShell>
+  );
+}
+```
+
+In the overlay presentation the rail is forced expanded so every label is visible without a hover
+tooltip, the rail and panel render together inside one `role="dialog"` with a scrim, focus stays
+inside the drawer, document scrolling is locked with a technique iOS honors, and Escape, a tap on
+the scrim, or a chosen destination closes it through `onMenuOpenChange(false)`. Pass
+`presentation="overlay"` or `"docked"` to fix the form regardless of width. The resolved form is
+exposed as `data-cc-presentation`.
+
+The document must carry `<meta name="viewport" content="width=device-width, initial-scale=1">`;
+without it mobile browsers lay the page out at 980px and the breakpoint never applies. See
+[Mobile and touch](./concepts/mobile.md).
+
 ## Preserve native link behavior
 
 Routed applications and destinations render as real anchors when they have an `href`. An ordinary

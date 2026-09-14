@@ -111,6 +111,20 @@ SDK-looking aliases. The standard-density baseline uses 16px mobile/24px regular
 20px mobile/24px regular section gaps, 16px grid gaps, and 16px mobile/20px regular card padding.
 Relaxed and tight themes resolve their own coherent values.
 
+## Read the viewport from one seam
+
+When application code needs the current band or pointer type, use the `/layout` seam instead of
+`matchMedia`:
+
+```tsx
+import { useCommandCenterViewport } from "@dev-mainsequence/command-center-sdk/layout";
+
+const { breakpoint, coarsePointer } = useCommandCenterViewport();
+```
+
+It resolves to the desktop, fine-pointer default during server rendering. The breakpoint scale it
+reports is the same one SDK stylesheets use; see [Mobile and touch](./concepts/mobile.md).
+
 ## Verify in a real browser
 
 Theme and layout conformance are separate. Continue to run the semantic CSS audit:
@@ -134,12 +148,21 @@ test("portfolio page layout conforms", async ({ page }) => {
 });
 ```
 
-The default verifier matrix is 375×812, 768×900, and 1280×800. It detects missing or duplicate
+The default verifier matrix is 320×568, 375×812, 812×375, and 768×1024 with a declared `coarse`
+pointer, then 1024×768 and 1280×800 with a `fine` pointer. Every entry detects missing or duplicate
 page roots, horizontal overflow, missing parent-owned section gaps, unpadded standard cards, card
 grid overflow/overlap/collapse failures, page-header collisions, and unusable interactive geometry.
+Coarse entries add `touch-target` (an error below 24px and a warning below 44px; inline links are
+exempt) and `sticky-hover` (a warning for any hover rule with no `@media (hover: hover)` guard).
+Entries narrower than 768px add `input-zoom` (an error for a text input under 16px). Findings carry
+a `severity`; `warnings` are returned separately and never change `ok`.
 `verifyCommandCenterPageLayout` returns a structured report when a test runner needs custom
 assertions; `assertCommandCenterPageLayout` throws `CommandCenterPageLayoutError` with the same
 report.
+
+Rules apply by the declared pointer because the verifier cannot switch a browser context's touch
+emulation. Configure `hasTouch: true` and `isMobile: true` on the Playwright context for coarse
+entries so `(pointer: coarse)` CSS applies, and make sure the page carries a viewport meta tag.
 
 Run the matrix against representative loaded, loading, error, empty, long-title, dense-table, and
 variable-card-count states in at least one dark and one light preset. Review screenshots whenever

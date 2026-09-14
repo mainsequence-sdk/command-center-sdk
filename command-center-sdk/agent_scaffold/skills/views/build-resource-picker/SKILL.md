@@ -33,6 +33,14 @@ Do not introduce a browser-native select, one-off combobox, menu popover, or dro
 `ResourcePicker` expresses the interaction. Do not place non-searchable buttons into action mode
 just to bypass structured action APIs.
 
+## Check The Phone Presentation
+
+Render the screen at 375×812 with a coarse pointer and confirm no horizontal overflow, no control
+under 24px, no text input under 16px, and no hover-only affordance. Run the `/layout/testing`
+verifier at its default matrix when the screen sits in an `ApplicationPage`. Use
+`useCommandCenterViewport` from `/layout` for any width- or pointer-dependent host logic instead
+of `matchMedia`.
+
 ## Verify
 
 Test keyboard navigation, focus return, search, loading, empty options, disabled options, controlled

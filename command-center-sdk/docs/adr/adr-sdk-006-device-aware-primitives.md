@@ -1,7 +1,9 @@
 # SDK ADR 006: Device-Aware Primitives
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-09-14
+- Implementation: sections 1, 2, 4, 6, and 7 in `@dev-mainsequence/command-center-sdk` unreleased
+  (planned 0.3.0); section 5 planned for 0.5.0
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
 - Related:
@@ -13,10 +15,10 @@
 
 ## Publication status
 
-This decision is proposed. None of the constants, variables, props, hook, verifier rules, or
-skill steps named below exist in a released package. A consumer may use them only when its
-installed package export map and declarations contain them. Until then, a host that needs
-narrow-screen navigation must own that behavior itself.
+Sections 1, 2, 4, 6, and 7 are implemented in SDK source for the next package release. Section 5
+(picker and dialog sheets) is planned for a later release. A consumer may use the constants,
+variables, props, hook, and verifier rules only when its installed package export map and
+declarations contain them.
 
 ## Decision summary
 
@@ -87,9 +89,9 @@ export const commandCenterBreakpoints = { sm: 640, md: 768, lg: 1024 } as const;
 export type CommandCenterBreakpoint = "xs" | "sm" | "md" | "lg";
 ```
 
-SDK stylesheets use only these three widths. The 559px and 767px rules migrate to 640px and 768px.
-Because CSS media queries cannot read custom properties, the scale is a documented constant set,
-not a variable.
+SDK stylesheets use only these three widths, expressed as `max-width: 639px` and
+`max-width: 767px`. The one off-scale rule (559px) migrates to the `sm` boundary. Because CSS media
+queries cannot read custom properties, the scale is a documented constant set, not a variable.
 
 `/layout` exports the browser seam:
 
@@ -210,9 +212,10 @@ setting the verifier cannot toggle through its adapter interface. Three rule cod
   is a warning and smaller than 24×24px is a violation, matching WCAG 2.5.5 and 2.5.8.
 - `input-zoom`: at a viewport narrower than `md`, a text input whose computed font size is under
   16px.
-- `sticky-hover`: a rendered element whose computed style changes under a forced hover state
-  without a hover-capable guard. This rule is opt-in because it requires the adapter to force
-  pseudo-state.
+- `sticky-hover`: a style rule whose selector contains `:hover` and is not enclosed by a
+  `(hover: hover)` media rule, read from the page's CSSOM. Reported as a warning because
+  third-party stylesheets are outside the page author's control; `checkStickyHover: false`
+  disables it.
 
 Consumers running Playwright configure `hasTouch: true` and `isMobile: true` for the coarse
 entries. SDK CI adds browser tests for the navigation drawer, the picker sheet, and the dialog
@@ -232,8 +235,10 @@ max-width media query outside the published scale.
 - Every prop, export, constant, and verifier field is additive. Defaults reproduce 0.2.1 output.
 - The new CSS variable names become part of the consumer theme contract on release. They are
   named once here and must not be renamed afterwards.
-- Migrating the 559px and 767px rules to 640px and 768px changes when two SDK surfaces stack. It is
+- Migrating the 559px rule to the `sm` boundary changes when the progress stage list stacks. It is
   a visible change and is recorded in the changelog; it is not a contract change.
+- Mobile browsers lay a page out at 980px unless the document carries a viewport meta tag. The SDK
+  cannot supply it; the concept guide names it as a host responsibility.
 - No backend, storage, iframe protocol, contract schema, fixture, or persisted field changes.
   `contracts/manifest.json` is unchanged. This statement is required by the extending guide and
   is made deliberately.
@@ -255,9 +260,10 @@ max-width media query outside the published scale.
 This ADR moves to Accepted when:
 
 - the breakpoint constants, viewport seam, and CSS variables are exported and documented;
-- `ApplicationNavigationShell` renders `docked` output byte-identical to 0.2.1 when no new prop is
-  passed, and `overlay` passes the focus-trap, dismissal, and scroll-lock browser tests at 375×812
-  with touch;
+- `ApplicationNavigationShell` renders `docked` output identical to 0.2.1 apart from the
+  `data-cc-presentation` attribute and the published rail-width variable when no new prop is
+  passed, and `overlay` passes the focus-trap, dismissal, and scroll-lock tests plus a 375×812
+  touch browser test;
 - the picker and dialog sheets pass their browser tests, including keyboard-visible positioning;
 - the verifier reports `touch-target` and `input-zoom` violations on deliberately broken fixtures
   and none on the SDK's own primitives at every matrix entry;
@@ -302,5 +308,5 @@ explicit opt-in resolved through a public seam that tests can drive.
 - The verifier becomes the mandatory automated baseline for touch usability, not only geometry.
 - Hosts must still place the trigger and own menu state; the SDK will not infer where navigation
   opens from.
-- Two SDK surfaces change their stacking width by one pixel; consumers with pixel snapshots at
-  exactly 639px or 767px will see a diff.
+- The progress stage list stacks 80px later than before; consumers with pixel snapshots between
+  560px and 639px will see a diff.

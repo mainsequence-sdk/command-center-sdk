@@ -38,6 +38,14 @@ summary models, and tests. Treat the installed version as authoritative.
 Do not create a separate breadcrumb header, summary card system, tab styling, blocking transition,
 or detail error shell. Do not encode routes or backend endpoints in reusable SDK models.
 
+## Check The Phone Presentation
+
+Render the screen at 375×812 with a coarse pointer and confirm no horizontal overflow, no control
+under 24px, no text input under 16px, and no hover-only affordance. Run the `/layout/testing`
+verifier at its default matrix when the screen sits in an `ApplicationPage`. Use
+`useCommandCenterViewport` from `/layout` for any width- or pointer-dependent host logic instead
+of `matchMedia`.
+
 ## Verify
 
 Test loading, each consumer-provided error state, summary, header actions, flat tabs, nested tabs,
