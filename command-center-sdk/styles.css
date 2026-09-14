@@ -2033,7 +2033,7 @@ h3),
     padding: 0.75rem;
   }
 
-  .cc-resource-dialog {
+  .cc-resource-dialog:not(.cc-resource-dialog--sheet) {
     max-height: calc(100dvh - 1.5rem);
     max-width: calc(100vw - 1.5rem);
   }
