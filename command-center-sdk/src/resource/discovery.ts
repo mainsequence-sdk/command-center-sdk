@@ -293,11 +293,13 @@ export function resolveResourceDiscoveryColumns<T, Cell = unknown>(
     .filter((column) => column.default_visible)
     .map((column) => {
       const local = localById.get(column.id);
+      const importance = column.importance ?? local?.importance;
       if (local) {
         return {
           ...local,
           header: column.header,
           sortableKey: column.sortable_key,
+          ...(importance ? { importance } : {}),
         };
       }
       if (!column.value_path || !column.data_type) {
@@ -313,6 +315,7 @@ export function resolveResourceDiscoveryColumns<T, Cell = unknown>(
           column,
         ),
         sortableKey: column.sortable_key,
+        ...(importance ? { importance } : {}),
       };
     });
 }

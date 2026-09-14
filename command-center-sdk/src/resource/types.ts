@@ -144,6 +144,17 @@ export interface ResourceDiscoveryResource {
   extensions?: Readonly<Record<string, unknown>>;
 }
 
+/**
+ * Column importance shared by the discovery contract and host-authored definitions. `primary` is
+ * the row's identity and the title of a stacked row; `secondary` columns stay visible from the
+ * `sm` breakpoint; `tertiary` columns stay visible from `md` and sit behind a disclosure when
+ * rows are stacked.
+ */
+export type ResourceColumnImportance = "primary" | "secondary" | "tertiary";
+
+/** Host-only override hiding a column in the table form below the named breakpoint. */
+export type ResourceColumnHideBelow = "sm" | "md" | "lg";
+
 export interface ResourceDiscoveryColumn {
   id: string;
   header: string;
@@ -153,7 +164,7 @@ export interface ResourceDiscoveryColumn {
   hideable: boolean;
   sortable_key?: string;
   filter_key?: string;
-  importance?: "primary" | "secondary" | "tertiary";
+  importance?: ResourceColumnImportance;
   align?: "start" | "center" | "end";
   extensions?: Readonly<Record<string, unknown>>;
 }
@@ -256,6 +267,10 @@ export interface ResourceColumnDefinition<T, Cell = unknown> {
   getValue?: (resource: T) => unknown;
   renderCell?: (resource: T) => Cell;
   sortableKey?: string;
+  /** Responsive weight; discovery's value wins when the backend supplies one. */
+  importance?: ResourceColumnImportance;
+  /** Hide this column in the table form below the named breakpoint. Never sent on the wire. */
+  hideBelow?: ResourceColumnHideBelow;
 }
 
 export type ResourceActionTone = "default" | "primary" | "warning" | "danger";

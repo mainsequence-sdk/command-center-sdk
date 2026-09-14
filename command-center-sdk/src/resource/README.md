@@ -22,6 +22,11 @@ Applications retain trusted local columns for rich cells. `resolveResourceDiscov
 uses backend order and headings, preserves matching local `getValue`/`renderCell` functions, and
 allows an unmatched column only when discovery supplies both a safe `value_path` and `data_type`.
 Endpoint construction and product-specific formatting remain in the consuming application.
+It also carries the contract's `importance` onto the resolved column, preferring the backend value
+over the local one. `column-presentation.ts` resolves importance deterministically (exactly one
+primary, the first declared or the first column) and answers which columns the table form shows at
+a breakpoint band; the host-only `hideBelow` override never travels on the wire. Views consume
+these helpers for the stacked presentation described in SDK ADR 007.
 
 The module has no React dependency and is safe to import from non-UI code. Authentication, routing,
 query caches, notifications, and product-specific endpoint semantics must be supplied by the
