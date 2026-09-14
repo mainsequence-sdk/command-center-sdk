@@ -114,8 +114,9 @@ silently convert forbidden destinations into working links.
 - The depth-two overlay drawer forces the rail expanded so labels are visible without hover
   tooltips, and closes after `onNavigate`. The consumer still owns `menuOpen`; the shell only
   reports changes.
-- Standalone rail and panel compositions must set `--application-navigation-rail-width` on their
-  container; the shell does this for its own row and the panel's narrow-viewport offset reads it.
+- Below `md` a standalone `ApplicationNavigationPanel` is absolutely positioned at the left edge
+  of whatever container the host positions it in; only the SDK shell offsets it by
+  `--application-navigation-rail-width`, because only the shell owns the rail beside it.
 - A released definition ID may be persisted or deep-linked by a consumer; renaming it requires a
   compatibility review even though the definition is TypeScript data.
 

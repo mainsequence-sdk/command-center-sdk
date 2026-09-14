@@ -2873,11 +2873,17 @@ h3),
 }
 
 @media (max-width: 767px) {
+  /* A standalone panel sits at the edge of whatever wrapper the host positions it in; only the
+     SDK shell, which owns the rail beside it, offsets it by the rail width. */
   .cc-application-navigation-panel {
     bottom: 0;
-    left: var(--application-navigation-rail-width);
+    left: 0;
     position: absolute;
     top: 0;
+  }
+
+  .cc-application-navigation-shell > .cc-application-navigation-panel {
+    left: var(--application-navigation-rail-width);
   }
 
   .cc-application-navigation-panel-shell:not(.cc-application-navigation-panel-shell--overlay)

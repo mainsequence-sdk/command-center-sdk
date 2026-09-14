@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-No unreleased changes.
+- Fix a standalone `ApplicationNavigationPanel` below 768px: 0.3.0 offset it by
+  `--application-navigation-rail-width` (248px by default) even outside the SDK shell, so a host
+  that positions the panel itself saw it pushed off a phone screen. The panel now sits at the edge
+  of its container and only the SDK shell applies the rail-width offset.
 
 ## 0.4.0
 

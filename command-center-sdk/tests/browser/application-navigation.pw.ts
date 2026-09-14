@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import {
   ApplicationImmersiveBar,
+  ApplicationNavigationPanel,
   ApplicationNavigationPanelShell,
   ApplicationNavigationShell,
   ApplicationNavigationTrigger,
@@ -322,5 +323,43 @@ test.describe("immersive bar on a touch phone", () => {
     expect(geometry.triggerWidth).toBeGreaterThanOrEqual(44);
     expect(Math.abs(geometry.iframeTop - geometry.height)).toBeLessThanOrEqual(1);
     expect(Math.abs(geometry.iframeBottom - geometry.viewportHeight)).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe("standalone navigation panel on a touch phone", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
+
+  test("stays at the edge of the host's own wrapper instead of a rail-width offset", async ({ page }) => {
+    const { readFile } = await import("node:fs/promises");
+    const [componentStyles, themeStyles] = await Promise.all([
+      readFile(new URL("../../styles.css", import.meta.url), "utf8"),
+      readFile(new URL("../../theme/styles.css", import.meta.url), "utf8"),
+    ]);
+    const panel = renderToStaticMarkup(
+      createElement(ApplicationNavigationPanel, {
+        application: defineNavigationApplication({
+          id: "foundry",
+          label: "Foundry",
+          subApplications: [{
+            id: "build",
+            label: "Build",
+            destinations: [{ id: "services", label: "Services", href: `${origin}/app/foundry/services` }],
+          }],
+        }),
+        onNavigate: () => undefined,
+      }),
+    );
+    await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>${themeStyles}${componentStyles}</style></head>
+      <body style="margin:0">
+        <aside style="position:fixed;inset-block:0;left:0;width:52px"></aside>
+        <div style="position:fixed;top:0;bottom:0;left:52px;z-index:90">${panel}</div>
+      </body></html>`);
+    const rect = await page.locator("[data-app-navigation-panel]").evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return { left: bounds.left, right: bounds.right, viewportWidth: window.innerWidth };
+    });
+    expect(rect.left).toBe(52);
+    expect(rect.right).toBeLessThanOrEqual(rect.viewportWidth);
+    await expect(page.getByRole("link", { name: "Services" })).toBeVisible();
   });
 });
