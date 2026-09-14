@@ -30,7 +30,13 @@ import type {
   ResourceNavigationAdapter,
   ResourceSort,
 } from "../resource/types.js";
-import { DataTable, type ResourceRowAction } from "./DataTable.js";
+import { useCommandCenterViewport } from "../layout/viewport.js";
+import {
+  DataTable,
+  resolveDataTablePresentation,
+  type DataTablePresentation,
+  type ResourceRowAction,
+} from "./DataTable.js";
 import { ResourceCardGrid } from "./ResourceCardGrid.js";
 import { ResourceActionConfirmationDialog } from "./ResourceActionConfirmationDialog.js";
 import { ResourceBulkActionPicker } from "./ResourceBulkActionPicker.js";
@@ -97,6 +103,8 @@ export interface ResourceListPageProps<T, Id extends ResourceId> {
   discoveredRowActions?: readonly ResourceDiscoveredRowAction<T>[];
   searchPlaceholder?: string;
   searchable?: boolean;
+  /** Table form; `auto` stacks rows below the `sm` breakpoint. Ignored when `renderCard` is set. */
+  tablePresentation?: DataTablePresentation;
   toolbarLeading?: ReactNode;
   toolbarTrailing?: ReactNode;
   onBulkActionSuccess?: (action: ResourceBulkActionDefinition, response: unknown) => void;
@@ -188,9 +196,13 @@ export function ResourceListPage<T, Id extends ResourceId>({
   rowActions = [],
   searchPlaceholder,
   searchable = true,
+  tablePresentation = "table",
   toolbarLeading,
   toolbarTrailing,
 }: ResourceListPageProps<T, Id>) {
+  const viewport = useCommandCenterViewport();
+  const resolvedTablePresentation = resolveDataTablePresentation(tablePresentation, viewport);
+  const narrowToolbar = viewport.breakpoint === "xs";
   const [searchInput, setSearchInput] = useState(initialSearch);
   const [search, setSearch] = useState(initialSearch.trim());
   const [pageIndex, setPageIndex] = useState(initialResult?.pageInfo.pageIndex ?? 0);
@@ -683,18 +695,61 @@ export function ResourceListPage<T, Id extends ResourceId>({
     return <ResourceTransitionShell embedded={embedded} />;
   }
 
-  const renderedFilterControls = (
-    <>
-      {createFilterControls(filterDefinitions)}
-      {filterControls}
-    </>
-  );
   const columns = (discovery
     ? resolveResourceDiscoveryColumns<T, ReactNode>(
         discovery,
         definition.columns as readonly ResourceColumnDefinition<T, ReactNode>[],
       )
     : definition.columns) as readonly ResourceColumnDefinition<T, ReactNode>[];
+  const sortableColumns = columns.filter((column) => column.sortableKey);
+  const sortControl = !renderCard && resolvedTablePresentation === "stacked" && sortableColumns.length > 0
+    ? (
+      <div className="cc-resource-filter" key="cc-resource-sort">
+        <span className="cc-resource-visually-hidden">Sort</span>
+        <ResourcePicker
+          mode="single"
+          ariaLabel="Sort"
+          fitContent
+          options={[
+            { value: "", label: "Default order" },
+            ...sortableColumns.flatMap((column) => [
+              { value: `${column.sortableKey}:ascending`, label: `${column.header} ↑` },
+              { value: `${column.sortableKey}:descending`, label: `${column.header} ↓` },
+            ]),
+          ]}
+          value={sort ? `${sort.key}:${sort.direction}` : ""}
+          onValueChange={(value) => {
+            const [key, direction] = value.split(":");
+            setSort(key && (direction === "ascending" || direction === "descending")
+              ? { key, direction }
+              : null);
+            setPageIndex(0);
+            clearSelection();
+          }}
+        />
+      </div>
+    )
+    : null;
+  const hostFilterControls = (
+    <>
+      {createFilterControls(filterDefinitions)}
+      {filterControls}
+    </>
+  );
+  const activeFilterCount = filterDefinitions.filter((filter) => filter.value !== "").length;
+  const renderedFilterControls = (
+    <>
+      {sortControl}
+      {narrowToolbar && (filterDefinitions.length > 0 || filterControls) ? (
+        <details className="cc-resource-toolbar__filters-disclosure" data-cc-resource-filters="">
+          <summary>
+            Filters{activeFilterCount > 0 ? ` (${activeFilterCount} active)` : ""}
+          </summary>
+          <div className="cc-resource-toolbar__filters-body">{hostFilterControls}</div>
+        </details>
+      ) : hostFilterControls}
+    </>
+  );
   const itemLabel = discovery?.resource.item_label
     ?? definition.itemLabel
     ?? definition.label.toLocaleLowerCase();
@@ -772,7 +827,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
         <ResourceToolbar
           count={result.pageInfo.totalItems}
           filterControls={
-            filterDefinitions.length > 0 || filterControls
+            filterDefinitions.length > 0 || filterControls || sortControl
               ? renderedFilterControls
               : undefined
           }
@@ -860,6 +915,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
             getId={getPresentationId}
             isSelected={hasBulkSelection ? (id) => allMatching || selection.isSelected(id) : undefined}
             items={result.items}
+            presentation={tablePresentation}
             rowActions={renderedRowActions}
             someSelected={!allMatching && selection.someSelected}
             sort={sort}
@@ -882,6 +938,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
           itemLabel={itemLabel}
           pageIndex={result.pageInfo.pageIndex}
           pageSize={result.pageInfo.pageSize}
+          presentation="auto"
           onPageChange={(nextPage) => {
             setPageIndex(nextPage);
             if (!allMatching) {

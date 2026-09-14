@@ -71,6 +71,19 @@ the list with the SDK-owned `ResourceTransitionShell` until navigation completes
 an opening-feedback row into the collection. Failures restore the list and render the normal error
 feedback.
 
+`DataTable` has two forms (SDK ADR 007). `table` is the desktop default; it hides columns by
+resolved importance and breakpoint band (secondary from `sm`, tertiary from `md`, or the host's
+`hideBelow`), keeps the header and the primary column sticky inside the scroller, shows a scroll
+edge shadow, reads cell padding from the density variables, and collapses row actions into a
+`ResourcePicker` menu when there are more than two or the pointer is coarse. `stacked` renders
+each row as a card from the same columns: the primary column as the title, secondary columns as
+label/value pairs, tertiary columns behind a disclosure, selection in the leading position, and
+row actions in the overflow menu. `presentation="auto"` stacks below `sm`. `ResourceListPage`
+passes `tablePresentation` through, renders a sort picker in the toolbar when rows are stacked
+(there are no headers to click), folds host filter definitions into a "Filters" disclosure below
+`sm`, and uses compact pagination there. `ResourcePagination` exposes the same `presentation`
+prop with `full`, `compact`, and `auto`.
+
 `DataTable`, `ResourceCardGrid`, `ResourceToolbar`, `ResourceSelectionCheckbox`, and
 `ResourcePagination` are also exported for workflow screens that need a smaller SDK-owned building
 block. `DataTable.isRowSelectable` lets a registry omit bulk-selection controls for rows that lack

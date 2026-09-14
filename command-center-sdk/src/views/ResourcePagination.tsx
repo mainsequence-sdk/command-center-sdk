@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 
+import { useCommandCenterViewport } from "../layout/viewport.js";
 import { createResourcePaginationModel } from "../resource/pagination.js";
+
+/** `full` renders page tokens; `compact` renders previous, next, and a page summary only. */
+export type ResourcePaginationPresentation = "auto" | "compact" | "full";
 
 export interface ResourcePaginationProps {
   count: number;
@@ -9,6 +13,8 @@ export interface ResourcePaginationProps {
   itemLabel?: string;
   pageIndex: number;
   pageSize: number;
+  /** `auto` resolves to `compact` below the `sm` breakpoint. */
+  presentation?: ResourcePaginationPresentation;
   onPageChange: (pageIndex: number) => void;
 }
 
@@ -38,8 +44,12 @@ export function ResourcePagination({
   itemLabel = "results",
   pageIndex,
   pageSize,
+  presentation = "full",
   onPageChange,
 }: ResourcePaginationProps) {
+  const viewport = useCommandCenterViewport();
+  const compact = presentation === "compact" ||
+    (presentation === "auto" && viewport.breakpoint === "xs");
   const model = createResourcePaginationModel({
     count,
     hasNextPage,
@@ -66,9 +76,16 @@ export function ResourcePagination({
       : `${model.start}-${model.end} of ${
           model.hasOpenEndedNext ? `at least ${model.minimumTotalCount}` : count
         } ${itemLabel}`;
+  const pageSummary = model.hasOpenEndedNext
+    ? `Page ${model.pageIndex + 1}`
+    : `Page ${model.pageIndex + 1} of ${Math.max(model.totalPages, 1)}`;
 
   return (
-    <nav aria-label={`${itemLabel} pagination`} className="cc-resource-pagination">
+    <nav
+      aria-label={`${itemLabel} pagination`}
+      className={`cc-resource-pagination${compact ? " cc-resource-pagination--compact" : ""}`}
+      data-cc-presentation={compact ? "compact" : "full"}
+    >
       <div className="cc-resource-pagination__summary">{summary}</div>
       <div className="cc-resource-pagination__controls">
         <button
@@ -80,7 +97,11 @@ export function ResourcePagination({
           <PaginationArrow direction="left" />
           Previous
         </button>
-        {model.tokens.map((token, index) => {
+        {compact ? (
+          <span aria-current="page" className="cc-resource-pagination__page-summary">
+            {pageSummary}
+          </span>
+        ) : model.tokens.map((token, index) => {
           if (token.kind !== "page") {
             return (
               <span

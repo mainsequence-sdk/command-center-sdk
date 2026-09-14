@@ -1113,11 +1113,17 @@ h3),
 }
 
 .cc-data-table__scroller {
+  background:
+    linear-gradient(to right, var(--card) 30%, transparent) left / 2.5rem 100% no-repeat local,
+    linear-gradient(to left, var(--card) 30%, transparent) right / 2.5rem 100% no-repeat local,
+    linear-gradient(to right, color-mix(in srgb, var(--foreground) 14%, transparent), transparent) left / 0.875rem 100% no-repeat scroll,
+    linear-gradient(to left, color-mix(in srgb, var(--foreground) 14%, transparent), transparent) right / 0.875rem 100% no-repeat scroll;
   overflow-x: auto;
 }
 
 .cc-data-table {
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   min-width: 100%;
   width: 100%;
 }
@@ -1125,9 +1131,169 @@ h3),
 .cc-data-table th,
 .cc-data-table td {
   border-bottom: 1px solid var(--border);
-  padding: 0.75rem 1rem;
+  padding: var(--table-standard-cell-padding-y) 1rem;
   text-align: left;
   vertical-align: middle;
+}
+
+.cc-data-table thead th {
+  background: var(--card);
+  padding-block: var(--table-standard-header-padding-y);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+@media (max-width: 767px) {
+  .cc-data-table td[data-cc-column-importance="primary"],
+  .cc-data-table th[data-cc-column-importance="primary"] {
+    background: var(--card);
+    left: 0;
+    position: sticky;
+    z-index: 1;
+  }
+
+  .cc-data-table thead th[data-cc-column-importance="primary"] {
+    z-index: 3;
+  }
+}
+
+/* Stacked presentation (SDK ADR 007): one card per row from the same column definitions. */
+.cc-data-table--stacked {
+  display: grid;
+  min-width: 0;
+}
+
+.cc-data-table__stacked-toolbar {
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 1rem;
+}
+
+.cc-data-table__stacked-select-all {
+  align-items: center;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  font-size: var(--font-size-body-sm);
+  gap: 0.5rem;
+  min-block-size: var(--application-control-min-size);
+}
+
+.cc-data-table__stack {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cc-data-table__stacked-row {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+}
+
+.cc-data-table__stacked-row:focus-visible {
+  background: color-mix(in srgb, var(--muted) 55%, transparent);
+  outline: none;
+}
+
+.cc-data-table__stacked-select {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  min-block-size: var(--application-control-min-size);
+}
+
+.cc-data-table__stacked-body {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.cc-data-table__stacked-title {
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.cc-data-table__stacked-fields {
+  display: grid;
+  gap: 0.25rem 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  margin: 0;
+}
+
+.cc-data-table__stacked-field {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.cc-data-table__stacked-field dt {
+  color: var(--muted-foreground);
+  font-size: var(--font-size-body-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: var(--text-transform-label);
+}
+
+.cc-data-table__stacked-field dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cc-data-table__stacked-more > summary {
+  color: var(--primary);
+  cursor: pointer;
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  min-block-size: var(--application-control-min-size);
+  display: flex;
+  align-items: center;
+}
+
+.cc-data-table__stacked-more[open] > summary {
+  margin-bottom: 0.25rem;
+}
+
+.cc-data-table__stacked-actions {
+  flex: 0 0 auto;
+}
+
+.cc-resource-toolbar__filters-disclosure {
+  min-width: 0;
+  width: 100%;
+}
+
+.cc-resource-toolbar__filters-disclosure > summary {
+  align-items: center;
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  font-weight: var(--font-weight-medium);
+  min-block-size: var(--application-control-min-size);
+}
+
+.cc-resource-toolbar__filters-body {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.cc-resource-pagination__page-summary {
+  color: var(--muted-foreground);
+  font-size: var(--font-size-body-lg);
+  padding: 0 0.5rem;
+  white-space: nowrap;
+}
+
+.cc-resource-pagination--compact .cc-resource-pagination__controls {
+  flex-wrap: nowrap;
+  justify-content: space-between;
 }
 
 .cc-data-table th {
