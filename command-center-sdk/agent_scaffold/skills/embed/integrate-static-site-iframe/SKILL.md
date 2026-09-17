@@ -67,6 +67,16 @@ retry loop around `fetchFastApi`. The default policy makes no more than three at
 only `GET`, `HEAD`, `OPTIONS`, `PUT`, and `DELETE`. Keep `POST` and `PATCH` non-retryable unless the
 API has an idempotency contract and the request explicitly opts into `retryUnsafeMethods`.
 
+## Wait For The API In The Right Environment
+
+For a deployed FastAPI release, call `client.fetchFastApi(...)`. The host's
+`resolveFastApiCredential` asks Django for runtime access. While Django is starting the release,
+present the SDK's `runtime-starting` state. When Django returns ready access, the resolver supplies
+the RPC URL and delegated credential, and `fetchFastApi` sends the application request.
+
+During local development, start the FastAPI process with the local development harness, wait for
+that process's startup signal, and connect the local Static Site to the local API.
+
 Handle `StaticSiteFastApiCredentialError.code` as a small UI-safe category: `access_denied`,
 `origin_not_allowed`, `release_unavailable`, `runtime_starting`, `temporarily_unavailable`,
 `invalid_request`, or `unsupported`. A direct-link static site has no trusted parent bridge and
