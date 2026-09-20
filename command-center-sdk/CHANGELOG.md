@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.1
+
+Compatibility axes: npm public API 0.4.1 (additive). No backend contract, JSON Schema, fixture,
+iframe protocol, theme ID, agent-skill, or remote storage change. The class names
+`cc-application-navigation-drawer` and `cc-application-navigation-drawer__scrim` and the CSS
+variable `--application-navigation-drawer-width` become stable with this release. The navigation
+shells' drawers, class names, and output are unchanged.
+
 - Add `ApplicationNavigationDrawer` to `/navigation` (SDK ADR 010): the controlled off-canvas
   drawer for a real host that renders its own sidebar. The SDK owns the scrim, the named modal
   dialog, the focus trap and restoration, the scroll lock, and Escape, scrim, and outside-pointer
