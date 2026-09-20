@@ -63,6 +63,7 @@ describe("SDK stylesheets device axis", () => {
       "--application-safe-area-bottom",
       "--application-safe-area-left",
       "--application-navigation-rail-width",
+      "--application-navigation-drawer-width",
     ]) {
       expect(themeCss).toContain(`${variable}:`);
     }

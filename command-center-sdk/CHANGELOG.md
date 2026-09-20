@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Add `ApplicationNavigationDrawer` to `/navigation` (SDK ADR 010): the controlled off-canvas
+  drawer for a real host that renders its own sidebar. The SDK owns the scrim, the named modal
+  dialog, the focus trap and restoration, the scroll lock, and Escape, scrim, and outside-pointer
+  dismissal, and renders nothing inside. Its width is `--application-navigation-drawer-width`
+  (default `20rem`), capped at `calc(100vw - 3rem)`. Hosts no longer need the shells' unpublished
+  drawer class names, and `useOverlayBehavior` stays internal.
+- Record the wide-screen host frame (SDK ADR 010, amending SDK ADR 008 section 2): from `md` up a
+  host keeps only its top bar around an embedded site, renders no sidebar column beside it, and
+  opens its navigation in the drawer, so the child's left navigation is the only one on screen and
+  host and child resolve the same breakpoint. The navigation, static-site embed, and mobile guides
+  show the composition; the iframe protocol is untouched.
 - Fix a standalone `ApplicationNavigationPanel` below 768px: 0.3.0 offset it by
   `--application-navigation-rail-width` (248px by default) even outside the SDK shell, so a host
   that positions the panel itself saw it pushed off a phone screen. The panel now sits at the edge

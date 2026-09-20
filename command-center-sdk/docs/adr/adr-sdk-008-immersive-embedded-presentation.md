@@ -2,21 +2,23 @@
 
 - Status: Accepted
 - Date: 2026-09-14
-- Implementation: `@dev-mainsequence/command-center-sdk` unreleased (bar and documentation); host
+- Implementation: `@dev-mainsequence/command-center-sdk` 0.3.0 (bar and documentation); host
   adoption tracked in the Command Center application catalog
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
 - Related:
   - [SDK ADR 006: Device-Aware Primitives](./adr-sdk-006-device-aware-primitives.md)
   - [SDK ADR 001: Static-Site Delegated FastAPI Credential Bridge](./adr-sdk-001-static-site-delegated-fastapi-credential-bridge.md)
+  - [SDK ADR 010: Host Navigation Drawer and the Wide-Screen Embedded Frame](./adr-sdk-010-host-navigation-drawer-and-wide-screen-embedded-frame.md)
+    (the same routes from `md` up)
   - [Static-site embeds](../static-site-embeds.md), [Application navigation](../navigation.md)
 
 ## Publication status
 
-The `ApplicationImmersiveBar` primitive is implemented in SDK source for the next package release.
-The immersive route behavior itself is host-owned and is not part of the package; the Command
-Center application records its own decision for it. A consumer may use the bar only when its
-installed package export map and declarations contain it.
+The `ApplicationImmersiveBar` primitive shipped in 0.3.0. The immersive route behavior itself is
+host-owned and is not part of the package; the Command Center application records its own
+decision for it. A consumer may use the bar only when its installed package export map and
+declarations contain it.
 
 ## Decision summary
 
@@ -96,9 +98,13 @@ import { ApplicationImmersiveBar } from "@dev-mainsequence/command-center-sdk/na
 The host decides which routes are immersive and below which breakpoint using the ADR 006 viewport
 seam. For the Command Center host the recommended rule is: the navigation-link static-site route
 below `md` renders only the bar and the iframe in a `100dvh` column with `overflow: hidden`, no
-sidebar, no top bar, no docked rails; tablets and desktops keep today's chrome. "Back" goes to the
-previous in-app history entry when there is one, otherwise the default application. The title is
-the navigation link's label. That plan belongs in the application's decision catalog, not here.
+sidebar, no top bar, no docked rails. "Back" goes to the previous in-app history entry when there
+is one, otherwise the default application. The title is the navigation link's label. That plan
+belongs in the application's decision catalog, not here.
+
+From `md` up the same routes are not immersive, and they do not keep the host's whole chrome
+either. SDK ADR 010 amends this section: the host keeps its top bar, renders no sidebar column
+beside the embedded site, and opens its own navigation in `ApplicationNavigationDrawer`.
 
 ### 3. Iframe details
 

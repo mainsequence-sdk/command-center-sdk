@@ -132,6 +132,7 @@ try {
     "ApplicationNavigationPanelShell.js",
     "ApplicationNavigationShell.js",
     "ApplicationNavigationTrigger.js",
+    "ApplicationNavigationDrawer.js",
     "ApplicationImmersiveBar.js",
     "definition.js",
   ].map((name) => readFile(join(extractedPackage, "dist", "navigation", name), "utf8")));

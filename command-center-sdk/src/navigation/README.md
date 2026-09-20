@@ -19,6 +19,12 @@ application rails with grouped sub-applications and destinations.
   SDK-owned mobile trigger. The resolved form and depth are exposed as data attributes.
 - `ApplicationNavigationTrigger.tsx` is the low-level menu button for real hosts that already own
   chrome; it carries `aria-controls`, `aria-expanded`, and the accessible label for a drawer.
+- `ApplicationNavigationDrawer.tsx` (SDK ADR 010) is the controlled off-canvas drawer for a real
+  host that renders its own sidebar. From `md` up such a host keeps only its top bar around an
+  embedded site and opens its navigation here. The SDK owns the scrim, the named modal dialog, the
+  focus trap and restoration, the scroll lock, and dismissal; it renders nothing inside. The width
+  is `--application-navigation-drawer-width`. An embedded child uses a shell's overlay
+  presentation instead.
 - `testing/index.ts` verifies startup gating, the declared navigation depth, and absence of child
   top navigation through a Playwright-compatible driver.
 - `ApplicationImmersiveBar.tsx` (SDK ADR 008) is the one-row chrome a host shows above an embedded
@@ -111,6 +117,10 @@ silently convert forbidden destinations into working links.
 - Test ordering, duplicate rejection, disabled behavior, Escape closing, native anchor semantics,
   the overlay drawer (focus trap, scroll lock, scrim and Escape dismissal, close on navigate) at a
   touch phone viewport, and controlled active/open/menu state.
+- All three drawers share the internal `useOverlayBehavior` from `../layout/overlay.ts`. It is
+  deliberately not exported: each surface exposes its own controlled props. The shells' drawer
+  class names and the host drawer's `cc-application-navigation-drawer` are stable; keep their
+  shared rules in one selector list in `styles.css`.
 - The depth-two overlay drawer forces the rail expanded so labels are visible without hover
   tooltips, and closes after `onNavigate`. The consumer still owns `menuOpen`; the shell only
   reports changes.

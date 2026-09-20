@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import {
   ApplicationImmersiveBar,
+  ApplicationNavigationDrawer,
   ApplicationNavigationPanel,
   ApplicationNavigationPanelShell,
   ApplicationNavigationShell,
@@ -361,5 +362,114 @@ test.describe("standalone navigation panel on a touch phone", () => {
     expect(rect.left).toBe(52);
     expect(rect.right).toBeLessThanOrEqual(rect.viewportWidth);
     await expect(page.getByRole("link", { name: "Services" })).toBeVisible();
+  });
+});
+
+function hostFrameMarkup() {
+  // SDK ADR 010: from `md` up a host keeps only its top bar around an embedded site and opens its
+  // own navigation in the drawer.
+  return renderToStaticMarkup(
+    createElement(
+      "div",
+      { style: { display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden" } },
+      createElement(
+        "header",
+        { "data-theme-chrome": "topbar", style: { alignItems: "center", display: "flex", flex: "0 0 56px" } },
+        createElement(ApplicationNavigationTrigger, {
+          controlsId: "host-menu",
+          onOpenChange: () => undefined,
+          open: true,
+        }),
+      ),
+      createElement("iframe", { style: { border: 0, flex: "1 1 auto", minHeight: 0 }, title: "Site" }),
+      createElement(
+        ApplicationNavigationDrawer,
+        { id: "host-menu", label: "Host navigation", onOpenChange: () => undefined, open: true },
+        createElement(
+          "nav",
+          { "aria-label": "Host applications", style: { display: "grid", gap: "0.5rem", padding: "1rem" } },
+          createElement("a", { href: `${origin}/app/foundry` }, "Foundry"),
+          createElement("a", { href: `${origin}/app/marketplace` }, "Marketplace"),
+        ),
+      ),
+    ),
+  );
+}
+
+async function hostFramePage(page: import("@playwright/test").Page) {
+  const { readFile } = await import("node:fs/promises");
+  const [componentStyles, themeStyles] = await Promise.all([
+    readFile(new URL("../../styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../../theme/styles.css", import.meta.url), "utf8"),
+  ]);
+  await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>${themeStyles}${componentStyles}</style></head><body style="margin:0">${hostFrameMarkup()}</body></html>`);
+}
+
+function hostDrawerGeometry(page: import("@playwright/test").Page) {
+  return page.evaluate(async () => {
+    const drawer = document.querySelector<HTMLElement>("[data-cc-navigation-drawer]")!;
+    const scrim = document.querySelector<HTMLElement>("[data-cc-navigation-scrim]")!;
+    await Promise.all(drawer.getAnimations().map((animation) => animation.finished));
+    const iframe = document.querySelector("iframe")!.getBoundingClientRect();
+    const drawerRect = drawer.getBoundingClientRect();
+    const scrimRect = scrim.getBoundingClientRect();
+    const over = (x: number, y: number) => document.elementFromPoint(x, y);
+    return {
+      drawer: { height: drawerRect.height, left: drawerRect.left, top: drawerRect.top, width: drawerRect.width },
+      iframe: { left: iframe.left, top: iframe.top, width: iframe.width },
+      scrim: { height: scrimRect.height, left: scrimRect.left, top: scrimRect.top, width: scrimRect.width },
+      // What a pointer press reaches: the drawer at its own area, the scrim everywhere else,
+      // and never the embedded site or the host top bar while the drawer is open.
+      overDrawer: drawer.contains(over(drawerRect.left + 8, drawerRect.height / 2)),
+      overSite: over(window.innerWidth - 8, window.innerHeight / 2) === scrim,
+      overTopBar: over(window.innerWidth - 8, 8) === scrim,
+      scrollWidth: document.documentElement.scrollWidth,
+      viewport: { height: window.innerHeight, width: window.innerWidth },
+    };
+  });
+}
+
+test.describe("host navigation drawer around an embedded site on a wide screen", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("opens over the full-width site from the host top bar", async ({ page }) => {
+    await hostFramePage(page);
+
+    await expect(page.getByRole("dialog", { name: "Host navigation" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Foundry" })).toBeVisible();
+    const geometry = await hostDrawerGeometry(page);
+
+    // The site spans the viewport: the host keeps no sidebar column beside it.
+    expect(geometry.iframe.left).toBe(0);
+    expect(geometry.iframe.width).toBe(1280);
+    expect(geometry.iframe.top).toBe(56);
+    expect(geometry.drawer).toEqual({ height: 800, left: 0, top: 0, width: 320 });
+    expect(geometry.scrim).toEqual({ height: 800, left: 0, top: 0, width: 1280 });
+    expect(geometry.overDrawer).toBe(true);
+    expect(geometry.overSite).toBe(true);
+    expect(geometry.overTopBar).toBe(true);
+    expect(geometry.scrollWidth).toBe(1280);
+  });
+
+  test("takes the width the host publishes", async ({ page }) => {
+    await hostFramePage(page);
+    await page.addStyleTag({ content: ":root { --application-navigation-drawer-width: 24rem; }" });
+
+    expect((await hostDrawerGeometry(page)).drawer.width).toBe(384);
+  });
+});
+
+test.describe("host navigation drawer on a touch phone", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 812 } });
+
+  test("leaves a strip of scrim to dismiss from", async ({ page }) => {
+    await hostFramePage(page);
+
+    const geometry = await hostDrawerGeometry(page);
+    expect(geometry.drawer.left).toBe(0);
+    expect(geometry.drawer.width).toBeLessThanOrEqual(geometry.viewport.width - 48);
+    expect(geometry.drawer.height).toBe(geometry.viewport.height);
+    expect(geometry.overSite).toBe(true);
+    expect(geometry.scrollWidth).toBe(375);
   });
 });

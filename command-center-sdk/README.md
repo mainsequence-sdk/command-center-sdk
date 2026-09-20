@@ -104,7 +104,9 @@ error normalization stay outside the resource definition.
 - `/navigation` and `/navigation/testing`: canonical depth-one panel and depth-two rail + panel
   shells with responsive drawers and floating triggers, plus startup/depth/no-topbar verification;
   runtime definitions, validation, contribution composition, and native anchor behavior for
-  routed applications and destinations with `href`.
+  routed applications and destinations with `href`. For a real host that frames embedded sites:
+  the phone `ApplicationImmersiveBar` and the controlled `ApplicationNavigationDrawer` that holds
+  the host's own sidebar from `md` up.
 - `/layout` and `/layout/testing`: responsive page, header, stack, card, and card-grid primitives,
   the viewport seam,
   plus real-browser geometry verification.

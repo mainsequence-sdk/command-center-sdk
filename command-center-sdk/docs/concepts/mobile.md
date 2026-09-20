@@ -106,6 +106,8 @@ The SDK cannot supply these; the host must.
   `overlayTrigger="floating"`. The consumer owns `menuOpen` without inventing a child top bar.
 - **Immersive routes.** For an embedded static site the host shows only `ApplicationImmersiveBar`
   and the iframe below `md`; which routes are immersive and what "back" means are host decisions.
+  From `md` up the host keeps its top bar, drops its sidebar column, and opens its navigation in
+  `ApplicationNavigationDrawer` (SDK ADR 010), so the site's width is the screen's width.
 
 ## Verify with the declared pointer
 

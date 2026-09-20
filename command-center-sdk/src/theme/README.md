@@ -27,9 +27,10 @@ External iframe applications install the SDK and resolve the active `themeId` se
 - `styles.css`: browser-ready base stylesheet, theme chrome variables, body typography, and reusable
   Command Center chrome selectors.
   It also publishes the device-axis variables `--application-control-min-size` (36px, 44px under
-  a coarse pointer), `--application-safe-area-top/right/bottom/left`, and
-  `--application-navigation-rail-width`, and drops `background-attachment: fixed` on coarse-pointer
-  devices.
+  a coarse pointer), `--application-safe-area-top/right/bottom/left`,
+  `--application-navigation-rail-width`, and the host-settable
+  `--application-navigation-drawer-width` (20rem), and drops `background-attachment: fixed` on
+  coarse-pointer devices.
 - `utilities.css`: optional text-size, line-clamp, token-swatch, and positive/negative utility
   classes.
 - `tailwind.css`: Tailwind v4 theme-variable mapping for apps that use Tailwind utilities.

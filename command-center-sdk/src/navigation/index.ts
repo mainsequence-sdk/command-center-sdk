@@ -1,4 +1,5 @@
 export * from "./ApplicationImmersiveBar.js";
+export * from "./ApplicationNavigationDrawer.js";
 export * from "./ApplicationNavigationPanel.js";
 export * from "./ApplicationNavigationPanelShell.js";
 export * from "./ApplicationNavigationShell.js";

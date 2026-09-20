@@ -143,6 +143,8 @@ The theme sheet also publishes device-axis variables that do not depend on the p
 `--application-safe-area-top`, `-right`, `-bottom`, `-left` (the `env(safe-area-inset-*)`
 values with a 0px fallback), and `--application-navigation-rail-width` (set by the navigation
 shell). Consume them for adjacent custom controls and full-bleed surfaces; do not redeclare them.
+The one a host may set is `--application-navigation-drawer-width` (20rem), the width of its
+`ApplicationNavigationDrawer`.
 Under a coarse pointer the sheet also drops `background-attachment: fixed`. See
 [Mobile and touch](./concepts/mobile.md).
 

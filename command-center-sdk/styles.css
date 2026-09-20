@@ -2903,7 +2903,8 @@ h3),
 }
 
 .cc-application-navigation-shell__scrim,
-.cc-application-navigation-panel-shell__scrim {
+.cc-application-navigation-panel-shell__scrim,
+.cc-application-navigation-drawer__scrim {
   background: color-mix(in srgb, var(--background) 62%, transparent);
   inset: 0;
   position: fixed;
@@ -2911,7 +2912,8 @@ h3),
 }
 
 .cc-application-navigation-shell__drawer,
-.cc-application-navigation-panel-shell__drawer {
+.cc-application-navigation-panel-shell__drawer,
+.cc-application-navigation-drawer {
   box-shadow: var(--shadow-dialog);
   display: flex;
   height: 100vh;
@@ -2943,6 +2945,18 @@ h3),
 }
 
 .cc-application-navigation-shell__drawer .cc-application-rail {
+  padding-inline-start: var(--application-safe-area-left);
+}
+
+/* Host navigation drawer (SDK ADR 010). The host renders its own navigation inside, so the drawer
+   owns the sidebar chrome, a width the host can set, and the safe-area padding a rail would. */
+.cc-application-navigation-drawer {
+  background: var(--sidebar);
+  box-sizing: border-box;
+  color: var(--sidebar-foreground);
+  flex-direction: column;
+  inline-size: var(--application-navigation-drawer-width, 20rem);
+  padding-block: var(--application-safe-area-top) var(--application-safe-area-bottom);
   padding-inline-start: var(--application-safe-area-left);
 }
 
@@ -3068,7 +3082,8 @@ h3),
 
 @media (prefers-reduced-motion: no-preference) {
   .cc-application-navigation-shell__drawer,
-  .cc-application-navigation-panel-shell__drawer {
+  .cc-application-navigation-panel-shell__drawer,
+  .cc-application-navigation-drawer {
     animation: cc-application-navigation-drawer-in 160ms ease-out;
   }
 }

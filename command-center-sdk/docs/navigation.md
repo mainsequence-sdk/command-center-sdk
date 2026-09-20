@@ -265,6 +265,71 @@ The bar is 44px tall on touch, pads the top and inline safe areas, and is styled
 Do not pad the bottom safe area in the host: the site inside the iframe already does. See
 [Static-site embeds](./static-site-embeds.md) and [Mobile and touch](./concepts/mobile.md).
 
+## Frame an embedded site from host chrome on a wide screen
+
+This is also a host-side composition. From the `md` breakpoint up the host keeps its top bar
+around an embedded site and renders no sidebar column beside it (SDK ADR 010). The embedded
+application owns its left navigation, so a host sidebar next to it puts two rails side by side,
+and it narrows the iframe until the child picks its phone layout inside a desktop host. With the
+column gone the iframe spans the viewport and host and child resolve the same breakpoint.
+
+The host's own navigation moves into `ApplicationNavigationDrawer`, opened from an
+`ApplicationNavigationTrigger` in the top bar:
+
+```tsx
+import {
+  ApplicationNavigationDrawer,
+  ApplicationNavigationTrigger,
+} from "@dev-mainsequence/command-center-sdk/navigation";
+
+export function HostFrame({ embedded, children }: { embedded: boolean; children: ReactNode }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <div className="host-frame" data-embedded={embedded}>
+      {embedded ? null : <HostSidebar />}
+      <header data-theme-chrome="topbar">
+        {embedded ? (
+          <ApplicationNavigationTrigger
+            controlsId="host-menu"
+            open={menuOpen}
+            onOpenChange={setMenuOpen}
+          />
+        ) : null}
+        <HostTopBarContent />
+      </header>
+      <main>{children}</main>
+      <ApplicationNavigationDrawer
+        id="host-menu"
+        label="Host navigation"
+        open={embedded && menuOpen}
+        onOpenChange={setMenuOpen}
+      >
+        <HostSidebar presentation="drawer" />
+      </ApplicationNavigationDrawer>
+    </div>
+  );
+}
+```
+
+- The drawer is controlled. `open` and `onOpenChange` belong to the host, a dismissal only
+  reports, and nothing is rendered while it is closed. Close it on a route change.
+- The SDK owns the scrim, the named `role="dialog"` with `aria-modal`, moving focus in and
+  restoring it on close, containing Tab, locking document scroll, and dismissing on Escape, the
+  scrim, and a pointer press outside. It renders nothing inside: the host's sidebar, with its
+  branding and product actions, is the child.
+- The width is `--application-navigation-drawer-width` (default `20rem`), capped at
+  `calc(100vw - 3rem)` so a strip of scrim always remains. Other `div` attributes pass through.
+- Derive `embedded` from the route and the viewport on every render instead of storing it, so a
+  deep link paints the right frame first and leaving restores the host's own sidebar state.
+- Show the embedded site's name in the top bar as a label. The child owns navigation inside it.
+- Make the trigger the way to host navigation. Pointer movement and key presses inside a
+  cross-origin iframe never reach the host, so an edge-hover reveal or a shortcut-only toggle
+  does not work, and a host layer that is not a route needs a visible close control in the top bar.
+
+An embedded application never uses this drawer. It uses a navigation shell, whose overlay
+presentation owns its own drawer and trigger.
+
 ## Preserve native link behavior
 
 Routed applications and destinations render as real anchors when they have an `href`. An ordinary
@@ -315,6 +380,9 @@ as well as contributions targeting an unknown application.
 - Arrow Up and Arrow Down move between rail applications or panel destinations.
 - Home and End move to the first or last enabled item.
 - Escape closes the panel when `onClose` is supplied.
+- Every drawer, the shells' overlay presentation and the host's `ApplicationNavigationDrawer`, is
+  a named modal dialog that takes focus on open, contains Tab, locks document scroll, restores
+  focus on close, and dismisses on Escape, the scrim, and a pointer press outside.
 - Active items use `aria-current="page"`; collapsed items retain accessible labels and tooltips.
 - Routed items with `href` support native new-tab, new-window, context-menu, and copy-link actions.
 - Disabled items require a user-safe `unavailableReason` when the default message is insufficient.

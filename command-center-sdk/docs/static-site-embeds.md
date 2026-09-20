@@ -109,6 +109,21 @@ not send it a presentation hint and must not pad the bottom safe area a second t
 embedded site must carry its own viewport meta tag. See
 [Application navigation](./navigation.md#frame-an-embedded-site-from-host-chrome-on-a-phone).
 
+## Host: present the site on a wide screen
+
+From the `md` breakpoint up keep the host top bar and render no host sidebar column beside the
+iframe (SDK ADR 010). The embedded application owns its left navigation; a host sidebar next to
+it shows two rails, and it narrows the iframe until the site picks its phone layout inside a
+desktop host, because the site measures its own window. Open the host's navigation in
+`ApplicationNavigationDrawer` from an `ApplicationNavigationTrigger` in the top bar, and show the
+site's name there as a label.
+
+Escape and pointer events inside the cross-origin iframe never reach the host. A host layer that
+shows a site without a route, such as a release preview, therefore needs a visible close control
+in the top bar; a host `keydown` listener alone leaves it with no way out once the site has
+focus. The host still sends no presentation hint. See
+[Application navigation](./navigation.md#frame-an-embedded-site-from-host-chrome-on-a-wide-screen).
+
 ## Child: install the listener before announcing readiness
 
 ```ts
