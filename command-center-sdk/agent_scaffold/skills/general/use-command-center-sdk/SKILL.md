@@ -92,9 +92,10 @@ its narrower backend-proven path ownership, and all other namespaces remain unto
 - Use `/embed` and `/embed/react` for application-owned static sites using the numeric v1
   `mainsequence.*` handshake. Hosted static sites call an authorized FastAPI ResourceRelease through
   the client's high-level `fetchFastApi` method while the trusted host injects
-  `resolveFastApiCredential`. A top-level local Vite page instead calls its own `/api` client through
-  a same-origin proxy; it needs no release UID. Follow `$integrate-static-site-iframe` for both
-  paths and the server-side local developer identity prerequisite.
+  `resolveFastApiCredential`. Before implementing API calls for a top-level local Vite page,
+  follow `$integrate-static-site-iframe` to start a loopback FastAPI runner with server-side CLI
+  developer identity, wait for readiness, configure the same-origin `/api` proxy, and call it through
+  an application-owned client. This local path needs no release UID.
   The child consumes `StaticSiteFastApiTransportState` through `onFastApiStateChange` or
   `getFastApiState`; the SDK owns bounded retry, credential refresh, and cancellation. Route that
   work to `$integrate-static-site-iframe`.

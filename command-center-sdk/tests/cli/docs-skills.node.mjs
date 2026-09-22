@@ -299,6 +299,10 @@ test("static-site guidance keeps delegated FastAPI credentials behind the SDK li
   );
   const themesGuide = await readFile(join(docsRoot, "themes-and-embeds.md"), "utf8");
   const staticSiteGuide = await readFile(join(docsRoot, "static-site-embeds.md"), "utf8");
+  const localProcedure = await readFile(
+    join(skillsRoot, "embed", "integrate-static-site-iframe", "references", "local-vite-fastapi.md"),
+    "utf8",
+  );
 
   for (const value of [embedSkill, themesGuide]) {
     assert.match(value, /fetchFastApi/u);
@@ -315,8 +319,30 @@ test("static-site guidance keeps delegated FastAPI credentials behind the SDK li
   assert.match(embedSkill, /asks Django for runtime access/iu);
   assert.match(embedSkill, /Django returns ready access/iu);
   assert.match(embedSkill, /python -m uvicorn local_api:app/iu);
-  assert.match(embedSkill, /fetch\("\/api\/me"\)/u);
+  assert.match(embedSkill, /fetch\("\/api\/me", \{ signal \}\)/u);
   assert.match(embedSkill, /identity_unavailable/u);
+  assert.match(embedSkill, /\.\/references\/local-vite-fastapi\.md/u);
+  assert.ok(
+    embedSkill.indexOf("## Complete The Local Vite And FastAPI Setup") <
+      embedSkill.indexOf("## Confirm The Hosted Iframe Protocol"),
+    "the installed skill must make local setup a first-class prerequisite",
+  );
+  for (const value of [
+    "User.get_authenticated_user_details()",
+    'proxy: { "/api": "http://127.0.0.1:8001" }',
+    'fetch("/api/me", { signal })',
+    "curl --fail http://127.0.0.1:8001/healthz",
+    "503 identity_unavailable",
+  ]) {
+    assert.ok(localProcedure.includes(value), `packaged local procedure missing step: ${value}`);
+  }
+  const embedMetadata = await readFile(
+    join(skillsRoot, "embed", "integrate-static-site-iframe", "agents", "openai.yaml"),
+    "utf8",
+  );
+  assert.match(embedMetadata, /local Vite\/FastAPI proxy and developer identity/iu);
+  assert.match(useSdkSkill, /Before implementing API calls for a top-level local Vite page/iu);
+  assert.match(applicationSkill, /Before implementing top-level local Vite API calls/iu);
   for (const value of [embedSkill, staticSiteGuide]) {
     assert.match(value, /127\.0\.0\.1:8001/u);
     assert.match(value, /mainsequence login/u);

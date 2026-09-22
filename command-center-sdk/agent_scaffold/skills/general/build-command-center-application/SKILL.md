@@ -19,8 +19,9 @@ Make these cross-cutting decisions first:
    ready/initialize protocol. Route this work to `$integrate-static-site-iframe`. This embedding is
    the default for a Command Center application, not an optional alternative to its internal
    pages. For a hosted application calling a FastAPI ResourceRelease, use that same skill's
-   delegated `fetchFastApi` workflow. For top-level local Vite development, follow its `/api` proxy
-   workflow without a release UID.
+   delegated `fetchFastApi` workflow. Before implementing top-level local Vite API calls, follow
+   that skill's required loopback FastAPI runner, CLI identity, readiness, and `/api` proxy setup;
+   local requests need no release UID.
 2. Apply SDK tokens, presets, typography, density, surface hierarchy, data visualization, and
    packaged styles through `$theme-command-center-app`. Treat its closed-token audit as a required
    build gate whenever the base theme stylesheet is imported.

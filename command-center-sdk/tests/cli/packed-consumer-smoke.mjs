@@ -382,10 +382,10 @@ try {
     ),
     /contracts\/manifest\.json/u,
   );
-  await readFile(
+  assert.match(await readFile(
     join(managedRoot, "embed", "integrate-static-site-iframe", "agents", "openai.yaml"),
     "utf8",
-  );
+  ), /local Vite\/FastAPI proxy and developer identity/u);
   assert.match(
     await readFile(
       join(managedRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
@@ -398,7 +398,14 @@ try {
       join(managedRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
       "utf8",
     ),
-    /python -m uvicorn local_api:app[\s\S]*fetch\("\/api\/me"\)[\s\S]*identity_unavailable/u,
+    /## Complete The Local Vite And FastAPI Setup[\s\S]*\.\/references\/local-vite-fastapi\.md[\s\S]*python -m uvicorn local_api:app/u,
+  );
+  assert.match(
+    await readFile(
+      join(managedRoot, "embed", "integrate-static-site-iframe", "references", "local-vite-fastapi.md"),
+      "utf8",
+    ),
+    /User\.get_authenticated_user_details\(\)[\s\S]*proxy: \{ "\/api": "http:\/\/127\.0\.0\.1:8001" \}[\s\S]*fetch\("\/api\/me", \{ signal \}\)/u,
   );
   assert.match(
     await readFile(

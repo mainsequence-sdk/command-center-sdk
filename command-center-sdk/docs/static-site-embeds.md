@@ -5,6 +5,13 @@ description: Integrate an application-owned iframe with strict origin, lifecycle
 
 # Static-site embeds
 
+**Choose the API path before implementing requests:** a directly opened local Vite page must run
+its FastAPI process, establish server-side developer identity, and use a same-origin `/api` proxy
+as described [below](#run-a-top-level-vite-site-with-local-fastapi). The hosted iframe path uses
+`fetchFastApi` only after a trusted parent initializes the child and supplies delegated access.
+The installed `integrate-static-site-iframe` skill requires this choice and the complete local
+setup before treating local API calls as working.
+
 The embed API connects a trusted host application to an application-owned static site in a
 sandboxed iframe. It solves two problems without sharing the host session:
 

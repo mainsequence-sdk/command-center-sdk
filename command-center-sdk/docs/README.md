@@ -148,7 +148,7 @@ specific consuming-application task.
 | Implement resource collections | [Backend contracts](./backend-contracts.md) | `contracts/implement-resource-collection-contract` |
 | Implement bulk actions | [Backend contracts](./backend-contracts.md) | `contracts/implement-bulk-actions-contract` |
 | Theme an application | [Themes](./themes.md) | `theme/theme-command-center-app` |
-| Integrate a static site | [Static-site embeds](./static-site-embeds.md) | `embed/integrate-static-site-iframe` |
+| Integrate a static site locally or as a hosted iframe | [Static-site embeds](./static-site-embeds.md) | `embed/integrate-static-site-iframe` |
 
 Refresh packaged guidance after an upgrade or when lifecycle scripts were disabled:
 

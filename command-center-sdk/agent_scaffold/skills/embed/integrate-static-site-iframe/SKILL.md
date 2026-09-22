@@ -1,19 +1,49 @@
 ---
 name: integrate-static-site-iframe
-description: Build, migrate, review, or secure an application-owned static site embedded in Command Center with @dev-mainsequence/command-center-sdk/embed or /embed/react. Use for the mainsequence.* version-one handshake, StaticSiteIframe hosts, createStaticSiteIframeClient children, delegated FastAPI HTTP or WebSocket release calls, parent-origin configuration, theme propagation, public user UID context, iframe sandboxing, CSP, or static-site embed lifecycle and tests.
+description: Build, migrate, review, or secure a Command Center static site in top-level local Vite/FastAPI development or a hosted iframe. Use for the required local API runner, server-side developer identity, same-origin Vite proxy and direct /api transport, or for the mainsequence.* iframe handshake, delegated FastAPI release access, parent origin, theme, user context, and embed lifecycle.
 ---
 
-# Integrate A Static-Site Iframe
+# Integrate A Static Site And Its API
 
-## Confirm The Protocol
+## Choose The API Transport Before Writing Requests
+
+First record where the site is running. This is a required setup decision whenever the site calls
+FastAPI; do not copy the hosted request into a local Vite page.
+
+| Runtime | Required request path | Identity source | FastAPI release UID |
+| --- | --- | --- | --- |
+| Top-level Vite page at `127.0.0.1:5174` | Application-owned `fetch("/api/...")` through Vite's same-origin proxy | Local API process's verified Main Sequence CLI login, for one developer | None |
+| Site embedded by a trusted Command Center host | `client.fetchFastApi({ resourceReleaseUid, path })` after iframe initialization | Host-resolved delegated credential; deployed FastAPI receives platform-injected request state | Required |
+
+Choose the mode explicitly in the consuming application. A top-level page has no trusted parent
+credential bridge. Do not call `fetchFastApi` locally, ask for a release UID, send a browser user UID
+header, copy a session token, or put credentials in Vite variables. Do not infer the mode from
+whether a UID happens to be configured.
+Local development needs no ResourceRelease UID or iframe host.
+
+## Complete The Local Vite And FastAPI Setup
+
+For a top-level page, **read and implement the packaged
+[local Vite/FastAPI procedure](./references/local-vite-fastapi.md)** before calling the API. The
+consuming application must establish the API process's signed-in developer identity with
+`mainsequence login` and `mainsequence user`, start the loopback runner
+(`python -m uvicorn local_api:app --host 127.0.0.1 --port 8001`), wait for `/healthz`, configure
+Vite's same-origin `/api` proxy to `127.0.0.1:8001`, and use an
+application-owned `fetch("/api/me", { signal })` client. Adapt the module and route names to the
+application. Missing identity must produce `503 identity_unavailable` and an unavailable UI.
+The procedure and its copyable Python and Vite snippets are shipped with the installed skill; the
+SDK repository [consumer example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/static-site-vite-fastapi)
+is an additional runnable reference.
+
+## Confirm The Hosted Iframe Protocol
 
 Inspect the installed `/embed`, `/embed/react`, and `/theme` declarations and the iframe module
 README before changing an integration. Use only APIs published by that installed SDK version.
 
-Use this skill for application-owned static sites that exchange `mainsequence.*`, numeric
-version-one `ready` and `initialize` messages.
+For a hosted application, use `mainsequence.*` numeric version-one `ready` and `initialize`
+messages. Wait for the initial `onContext` callback before requesting delegated FastAPI access.
 
-## Build The Child Application
+## Build The Hosted Child Application
 
 1. Read the exact parent origin from trusted deployment configuration.
 2. Choose one stable, application-specific channel beginning with `mainsequence.`.
@@ -68,32 +98,12 @@ retry loop around `fetchFastApi`. The default policy makes no more than three at
 only `GET`, `HEAD`, `OPTIONS`, `PUT`, and `DELETE`. Keep `POST` and `PATCH` non-retryable unless the
 API has an idempotency contract and the request explicitly opts into `retryUnsafeMethods`.
 
-## Wait For The API In The Right Environment
+## Wait For The Hosted API
 
 For a deployed FastAPI release, call `client.fetchFastApi(...)`. The host's
 `resolveFastApiCredential` asks Django for runtime access. While Django is starting the release,
 present the SDK's `runtime-starting` state. When Django returns ready access, the resolver supplies
 the RPC URL and delegated credential, and `fetchFastApi` sends the application request.
-
-For top-level local Vite development, use the runnable
-[Vite/FastAPI consumer example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/static-site-vite-fastapi)
-from the SDK repository. From that example directory, run `mainsequence login` and `mainsequence user`,
-then `python -m uvicorn local_api:app --host 127.0.0.1 --port 8001`. Wait for Uvicorn's
-`Application startup complete`, verify `curl --fail http://127.0.0.1:8001/healthz`, and run
-`npm install && npm run dev` in a second terminal. Vite proxies same-origin `/api` to the local
-process at port 8001. The application-owned adapter calls `fetch("/api/me")` in local mode. It
-does not call `fetchFastApi` or need a ResourceRelease UID or iframe host.
-
-The example's loopback-only API resolves the one signed-in developer with server-side
-`User.get_authenticated_user_details()` from the Main Sequence CLI session, then returns only
-their public UID and optional username. If the CLI identity is missing or cannot be verified,
-`/api/me` returns `503 identity_unavailable`; keep the application in an unavailable state. This
-single-developer runner does not authenticate each browser visitor. A shared local server needs a
-platform-owned per-request identity gateway. Deployed FastAPI receives
-`request.state.user`/`request.state.user_uid` from the platform; no SDK iframe context UID, browser
-header, Vite variable, or copied session token is an identity source. See
-[Static-site embeds](../../../docs/static-site-embeds.md#run-a-top-level-vite-site-with-local-fastapi)
-for the two transport paths and prerequisites.
 
 For hosted delegated requests, handle `StaticSiteFastApiCredentialError.code` as a small UI-safe
 category: `access_denied`,
@@ -160,6 +170,13 @@ permissions, or unrestricted backend credential through iframe context. Do not e
 wire shape without an explicit protocol compatibility and security review.
 
 ## Verify
+
+For top-level local Vite development, verify `/healthz` only after Uvicorn completes startup,
+then call `/api/me` from the Vite origin and confirm Vite proxies to the local FastAPI process.
+With a valid CLI login, the API must return that developer's UID; with identity unavailable, it
+must return `503 identity_unavailable` and the page must show an unavailable state. Confirm the
+browser sends no user UID, token, or release UID and makes no iframe credential request. Do not
+declare the local workflow complete from a Vite page load alone.
 
 Test the valid handshake, wrong origin, wrong source window, invalid channel/version/payload,
 anonymous context, repeated theme/user initialization, payload limits, handshake timeout,

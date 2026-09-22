@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.3
+
+Compatibility axes: npm runtime public API unchanged. The packaged static-site skill and its
+discovery metadata now require the complete top-level local Vite/FastAPI setup before API calls:
+server-side developer identity, a loopback runner, readiness, a same-origin proxy, explicit local
+transport, and an unavailable state. Hosted delegation remains scoped to an initialized trusted
+iframe. No backend contract, JSON Schema, fixture, iframe protocol, theme ID, or storage change.
+
 ## 0.4.2
 
 Compatibility axes: npm public API unchanged. The packaged iframe skill and human documentation

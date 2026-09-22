@@ -31,6 +31,8 @@ For a directly opened Vite site backed by local FastAPI, follow the
 [local Vite/FastAPI example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/static-site-vite-fastapi).
 Its `/api` proxy uses a server-side CLI developer identity and no release UID; hosted iframe
 requests use the separate delegated `fetchFastApi` path.
+The installed `integrate-static-site-iframe` skill requires the local API runner, identity check,
+readiness check, and proxy setup before a top-level Vite application makes API requests.
 
 ## Start here
 

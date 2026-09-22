@@ -7,7 +7,7 @@
     "build": "tsc --noEmit && vite build"
   },
   "dependencies": {
-    "@dev-mainsequence/command-center-sdk": "^0.4.2"
+    "@dev-mainsequence/command-center-sdk": "^0.4.3"
   },
   "devDependencies": {
     "typescript": "^5.8.0",
