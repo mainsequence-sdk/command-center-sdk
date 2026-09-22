@@ -184,6 +184,14 @@ theme or authenticated user may change while the iframe remains mounted.
 Direct-link mode has no trusted parent bridge. Credential requests reject as `unsupported` and
 must not fall back to a normal user token, URL credential, or reconstructed runtime hostname.
 
+## Child: build it from the host's primitives
+
+Build the child's screens from the same primitives as the host: [`/layout`](./application-layout.md)
+for pages and cards, [`/controls`](./application-controls.md) for every button, badge, label, and
+text field, [`/feedback`](./application-feedback.md) for readiness, and [`/views`](./resources.md)
+for resources, with the SDK theme and component styles loaded once. A static site that hand-rolls
+a button or a form, or ships its own CSS for one, will not match the host it is framed in.
+
 ## Run a top-level Vite site with local FastAPI
 
 Use the [runnable Vite/FastAPI consumer example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/static-site-vite-fastapi)

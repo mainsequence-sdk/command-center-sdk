@@ -128,6 +128,8 @@ npx command-center-sdk theme audit --path src
 ## Enforce The Boundary
 
 - Keep exactly one `ApplicationPage` root per complete rendered route.
+- Render header and card actions with `Button` from `/controls`; never a raw `<button>` or a
+  Tailwind button.
 - Keep stable `data-cc-*` attributes; the verifier uses them as a public test contract.
 - Prefer parent stack/grid gaps over child margins.
 - Keep standard card padding unless the content is explicitly full-bleed.

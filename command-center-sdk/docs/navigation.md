@@ -223,6 +223,11 @@ await assertCommandCenterApplicationShell(page, {
 The verifier rejects child top-bar chrome, startup content mounted behind the gate, missing or
 duplicate viewport status screens, and a ready shell that differs from the declared depth.
 
+Inside every destination, compose the page with [`/layout`](./application-layout.md), its actions
+and forms with [`/controls`](./application-controls.md), and its status with
+[`/feedback`](./application-feedback.md). An embedded application that reaches these primitives
+through the SDK is indistinguishable from the host; one that hand-rolls a button or a form is not.
+
 ## Frame an embedded site from host chrome on a phone
 
 This is a host-side composition, not permission for an embedded child to add top navigation. When

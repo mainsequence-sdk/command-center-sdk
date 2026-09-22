@@ -51,6 +51,11 @@ npx command-center-sdk theme audit --path src
 Treat every audit violation as a build failure. Do not suppress it with a new literal or alias;
 either consume the published token or record a genuine missing SDK capability.
 
+Controls are theme consumers, not theme surfaces: `Button`, `Badge`, `Field`, `Input`, and
+`Textarea` from `/controls` read the published tokens, so a preset changes them without any
+application CSS. Do not restyle `.cc-button`, `.cc-input`, `.cc-badge`, or `.cc-field`, and do not
+add a themed button or input of your own; route control work to `$compose-command-center-controls`.
+
 ## Preserve Compatibility
 
 Keep released theme ids and token keys stable. Treat removal or renaming as a breaking change.

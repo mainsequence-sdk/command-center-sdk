@@ -38,6 +38,10 @@ summary models, and tests. Treat the installed version as authoritative.
 Do not create a separate breadcrumb header, summary card system, tab styling, blocking transition,
 or detail error shell. Do not encode routes or backend endpoints in reusable SDK models.
 
+`headerActions`, tab-content forms, and status markers use `Button`, `Field`, `Input`, `Textarea`,
+and `Badge` from `/controls`, never raw elements or application CSS, so every Command Center site
+renders them identically. Route their composition to `$compose-command-center-controls`.
+
 ## Check The Phone Presentation
 
 Render the screen at 375×812 with a coarse pointer and confirm no horizontal overflow, no control

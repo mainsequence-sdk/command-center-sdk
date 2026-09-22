@@ -182,6 +182,10 @@ override the timeout. The SDK formats only producer-reported stage elapsed time.
 The consumer owns focus restoration because it knows whether the feedback appeared on initial
 load, interrupted interactive content, or lives inside another focus-managed surface.
 
+Any recovery control the application renders outside `ApplicationStatusScreen`—a reconnect action
+in a banner, a manual retry in a card—is `Button` from [`/controls`](./application-controls.md).
+Do not write a raw `<button>` or restyle the screen's own action.
+
 ## Verify in a real browser
 
 Exercise viewport and contained feedback in at least one dark and one light SDK theme. Cover

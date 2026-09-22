@@ -19,6 +19,10 @@ import "@dev-mainsequence/command-center-sdk/styles.css";
 Do not copy SDK CSS or import `dist`, `src`, Command Center application components, aliases, or
 repository-only files.
 
+These primitives are what make an independent application look and behave exactly like the host
+and like every other Command Center site. A hand-rolled `<button>`, `<input>`, `<textarea>`, or
+`<label>`, a Tailwind or CSS button, or a private kit is the one thing that breaks that.
+
 ## Give Each Control Rule One Owner
 
 Use the public controls for every ordinary action and text control:

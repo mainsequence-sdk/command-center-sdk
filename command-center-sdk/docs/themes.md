@@ -107,6 +107,11 @@ A consumer-owned alias is acceptable when it derives entirely from public tokens
 This closed-token rule is what makes a theme switch complete. Literal colors, fallback values, or
 invented tokens create surfaces that look correct in one preset and drift in the next.
 
+Controls are theme consumers, not theme surfaces. `Button`, `Badge`, `Field`, `Input`, and
+`Textarea` from [`/controls`](./application-controls.md) read the published tokens, so a preset
+changes them without any application CSS. Do not restyle `.cc-button`, `.cc-input`, `.cc-badge`, or
+`.cc-field`, and do not add a themed button or input of your own.
+
 ## Density and surface hierarchy are semantic inputs
 
 Every preset chooses a `tightness` and `surfaceHierarchy`. Those values drive more than one CSS

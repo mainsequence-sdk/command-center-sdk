@@ -33,6 +33,11 @@ Do not introduce a browser-native select, one-off combobox, menu popover, or dro
 `ResourcePicker` expresses the interaction. Do not place non-searchable buttons into action mode
 just to bypass structured action APIs.
 
+When a picker is one field of a form, wrap it in `Field` from `/controls` and pass
+`useFieldControlProps()` to its trigger so the label, description, error, and required state are
+wired the same way as every other control. Do not build a second labelled-field pattern; route it
+to `$compose-command-center-controls`.
+
 ## Check The Phone Presentation
 
 Render the screen at 375×812 with a coarse pointer and confirm no horizontal overflow, no control

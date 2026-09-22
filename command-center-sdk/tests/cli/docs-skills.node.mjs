@@ -364,3 +364,61 @@ test("static-site guidance keeps delegated FastAPI credentials behind the SDK li
   assert.match(useSdkSkill, /integrate-static-site-iframe/u);
   assert.match(applicationSkill, /fetchFastApi/u);
 });
+
+test("control guidance requires the public primitives across every screen-building skill", async () => {
+  const screenSkills = [
+    ["general", "use-command-center-sdk"],
+    ["general", "build-command-center-application"],
+    ["layout", "compose-command-center-page"],
+    ["views", "build-resource-list"],
+    ["views", "build-resource-detail"],
+    ["views", "build-resource-picker"],
+    ["views", "add-resource-actions"],
+    ["feedback", "build-application-loading-flow"],
+    ["navigation", "compose-command-center-application-shell"],
+    ["embed", "integrate-static-site-iframe"],
+    ["theme", "theme-command-center-app"],
+    ["controls", "compose-command-center-controls"],
+  ];
+  for (const [lane, name] of screenSkills) {
+    const skill = await readFile(join(skillsRoot, lane, name, "SKILL.md"), "utf8");
+    assert.match(
+      skill,
+      /\/controls|\$compose-command-center-controls/u,
+      `${lane}/${name} does not route controls to the SDK`,
+    );
+  }
+
+  const controlsSkill = await readFile(
+    join(skillsRoot, "controls", "compose-command-center-controls", "SKILL.md"),
+    "utf8",
+  );
+  const controlsGuide = await readFile(join(docsRoot, "application-controls.md"), "utf8");
+  for (const value of [controlsSkill, controlsGuide]) {
+    assert.match(value, /@dev-mainsequence\/command-center-sdk\/controls/u);
+    assert.match(value, /useFieldControlProps/u);
+    assert.match(value, /cc-control/u);
+    assert.match(value, /variant="primary"/u);
+    assert.match(value, /iconOnly/u);
+    assert.match(value, /375×812/u);
+  }
+
+  async function skillFiles(directory) {
+    const files = [];
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const entryPath = join(directory, entry.name);
+      if (entry.isDirectory()) files.push(...(await skillFiles(entryPath)));
+      else if (/\.(md|tsx?|ya?ml)$/u.test(entry.name)) files.push(entryPath);
+    }
+    return files;
+  }
+  // Prose may name a raw element to forbid it; rendered examples and assets may not use one.
+  const rawControl = /<(button|input|textarea|label|select)\b/u;
+  for (const file of await skillFiles(skillsRoot)) {
+    const content = await readFile(file, "utf8");
+    const rendered = file.endsWith(".md")
+      ? [...content.matchAll(/```[^\n]*\n([\s\S]*?)```/gu)].map((match) => match[1]).join("\n")
+      : content;
+    assert.equal(rawControl.test(rendered), false, `${relative(skillsRoot, file)} renders a raw control`);
+  }
+});

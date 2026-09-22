@@ -103,6 +103,10 @@ landmark and `titleAs` inside an existing page. Let the component own its spacin
 detail chips, action placement, live region, and reduced-motion behavior; do not recreate those
 styles in application CSS.
 
+Any recovery control the application renders outside `ApplicationStatusScreen`—a reconnect action
+in a banner, a manual retry in a card—is `Button` from `/controls`. Do not write a raw `<button>` or
+restyle the screen's own action; route it to `$compose-command-center-controls`.
+
 ## Verify The Finished Flow
 
 Test the state adapter separately from presentation. Prove pending, active, complete, and error

@@ -62,6 +62,11 @@ Automatically retry transient failures with a bounded application-owned policy; 
 retry for terminal failure. After startup, keep list, detail, picker, and action loading inside the
 SDK surface that owns that operation.
 
+Inside every destination, compose the page with `/layout`, its actions and forms with `/controls`,
+and its status with `/feedback`. An embedded application that reaches these primitives through the
+SDK is indistinguishable from the host; one that hand-rolls a button or a form is not. Route
+control work to `$compose-command-center-controls`.
+
 ## Verify The Contract
 
 Add a browser test for both startup and ready state using the public verifier:

@@ -197,6 +197,10 @@ is a host scope selector and must correspond to an explicitly accepted hidden di
 Do not add a second header, toolbar, pagination footer, selection bar, or confirmation flow around
 the page. Use supported columns, cells, actions, filters, and narrow contribution points.
 
+Consumer-provided elements around the list—header actions, filter fields, empty-state actions—come
+from [`/controls`](./application-controls.md) (`Button`, `Field`, `Input`, `Badge`), never from raw
+elements or application CSS, so every Command Center site renders them identically.
+
 ### Present the list on a phone
 
 Give columns an `importance` and let the table change shape from the same definitions:
@@ -277,6 +281,10 @@ On a phone the tab strip scrolls sideways with edge shadows and keeps the active
 summary's facts fall into two columns with values allowed to wrap, and a field's `info` opens on
 tap instead of hover. Pass `tablePresentation="auto"` to an embedded list so it stacks too.
 
+`headerActions`, tab-content forms, and status markers use `Button`, `Field`, `Input`, `Textarea`,
+and `Badge` from [`/controls`](./application-controls.md); the detail shell owns the chrome around
+them.
+
 ## Build a resource picker
 
 `ResourcePicker` is controlled and has distinct single, multiple, and action modes. Pass
@@ -313,6 +321,10 @@ import { ResourcePicker } from "@dev-mainsequence/command-center-sdk/views";
 
 Fetching stays outside the picker. Pass normalized options and controlled values. The component
 owns keyboard navigation, focus return, search, loading/empty presentation, and portal placement.
+
+When a picker is one field of a form, wrap it in `Field` from `/controls` and pass
+`useFieldControlProps()` to its trigger so its label, description, error, and required state are
+wired like every other control. See [Application controls](./application-controls.md).
 
 ## Add actions
 
@@ -379,6 +391,10 @@ Action endpoints must be safe relative paths. The identity tuple is for UI recon
 bulk selection continues to use the resource definition's public UUIDs. Never replace backend
 discovery with one hardcoded toolbar button per action, and never call execution directly to bypass
 confirmation or preflight.
+
+Every consumer-provided action element is `Button` from `/controls`: `variant="primary"` for the one
+primary action, `variant="danger"` plus explicit copy for destructive work, and `pending` while the
+action is in flight. Do not render a raw `<button>` or restyle the SDK's own action buttons.
 
 ## What to test
 

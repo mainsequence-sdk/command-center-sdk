@@ -48,6 +48,11 @@ Do not add one toolbar button per discovered bulk action. Do not bypass confirma
 adapter directly. Do not execute a blocked bulk action. Do not claim SDK-owned lifecycle for a
 consumer-provided detail action element. Do not reduce warning or danger tone to button color alone.
 
+Every consumer-provided action element is `Button` from `/controls`: `variant="primary"` for the one
+primary action, `variant="danger"` plus explicit copy for destructive work, and `pending` while the
+action is in flight. Do not render a raw `<button>` or a Tailwind button, and do not restyle the
+SDK's own action buttons; route the composition to `$compose-command-center-controls`.
+
 ## Backend Handoff
 
 When an action contract is missing, hand the backend task the required action id, selection modes,

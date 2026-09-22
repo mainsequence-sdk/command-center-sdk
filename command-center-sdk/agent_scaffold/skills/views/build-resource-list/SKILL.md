@@ -59,6 +59,11 @@ a native select or bespoke dropdown for SDK-owned list filters.
 Use narrow cell renderers and supported contribution points for domain presentation. Keep endpoint
 paths, route state, authentication, and query caching outside the SDK definition.
 
+Consumer-provided elements around the list—header actions, filter fields, empty-state actions—use
+`Button`, `Field`, `Input`, and `Badge` from `/controls`, never raw elements or application CSS, so
+every Command Center site renders them identically. Route their composition to
+`$compose-command-center-controls`.
+
 ## Check The Phone Presentation
 
 Render the screen at 375×812 with a coarse pointer and confirm no horizontal overflow, no control

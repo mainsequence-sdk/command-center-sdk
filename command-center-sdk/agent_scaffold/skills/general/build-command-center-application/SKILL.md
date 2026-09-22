@@ -179,6 +179,9 @@ contracts or rebuild their owned behavior in this general skill.
 - Do not reproduce the main Command Center's global navigation or settings UI.
 - Do not recreate published page/card spacing with application-owned panels and sibling margins.
 - Do not double-wrap `ResourceListPage` or `ResourceDetailShell` in layout cards.
+- Do not write a raw `<button>`, `<input>`, `<textarea>`, or `<label>`, a Tailwind or CSS button, or
+  an application-owned control kit; every action, badge, and labelled field comes from `/controls`
+  so the application renders its controls exactly like every other Command Center site.
 - Do not duplicate canonical contracts or modify an installed SDK.
 - Do not invent theme variables, literal fallbacks, or application-owned replacements for
   published semantic visual tokens.

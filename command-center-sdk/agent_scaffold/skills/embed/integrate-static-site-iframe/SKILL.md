@@ -103,6 +103,12 @@ retry loop around `fetchFastApi`. The default policy makes no more than three at
 only `GET`, `HEAD`, `OPTIONS`, `PUT`, and `DELETE`. Keep `POST` and `PATCH` non-retryable unless the
 API has an idempotency contract and the request explicitly opts into `retryUnsafeMethods`.
 
+Build the child's screens from the same primitives as the host: `/layout` for pages and cards,
+`/controls` for every button, badge, label, and text field, `/feedback` for readiness, and `/views`
+for resources, with the SDK theme and component styles loaded once. A static site that hand-rolls
+a button or a form, or ships its own CSS for one, will not match the host it is framed in. Route
+action and form composition to `$compose-command-center-controls`.
+
 ## Wait For The Hosted API
 
 For a deployed FastAPI release, call `client.fetchFastApi(...)`. The host's
