@@ -230,6 +230,7 @@ Keep the selected UID, query, and tab state in the host. Pass normalized present
 shell:
 
 ```tsx
+import { Button } from "@dev-mainsequence/command-center-sdk/controls";
 import {
   EntitySummary,
   ResourceDetailShell,
@@ -250,7 +251,7 @@ export function ServiceDetail({ service }: { service: Service }) {
         { id: "overview", label: "Overview" },
         { id: "releases", label: "Releases" },
       ]}
-      headerActions={<button onClick={() => openEditDialog(service)}>Edit</button>}
+      headerActions={<Button onClick={() => openEditDialog(service)}>Edit</Button>}
       summary={
         <EntitySummary
           summary={{

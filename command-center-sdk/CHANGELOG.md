@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+Compatibility axes: npm public API additive (new `/controls` entrypoint). No backend contract,
+JSON Schema, fixture, iframe protocol, theme ID, theme variable, or storage change. The class names
+`cc-control`, `cc-button`, `cc-badge`, `cc-label`, `cc-field`, `cc-input`, and `cc-textarea`, their
+modifier and element classes, and the `data-cc-button`, `data-cc-badge`, `data-cc-label`,
+`data-cc-field`, `data-cc-input`, and `data-cc-textarea` attributes become stable with this release.
+Existing components, class names, and rendered output are unchanged.
+
+- Add `/controls` (SDK ADR 011): `Button` (`outline`, `primary`, `secondary`, `ghost`, `danger`;
+  `small`, `medium`, `large`; `iconOnly`; `pending`), `Badge`, `Label`, `Field`, `Input`,
+  `Textarea`, and `useFieldControlProps`. `Field` owns the control id, label target,
+  `aria-describedby`, `aria-invalid`, `aria-required`, and disabled propagation; values,
+  validation, and submission stay consumer-owned. The SDK owns these primitives; the Command
+  Center host and its sibling applications adopt them from the release and retire their private
+  kit.
+- `cc-control` carries `--application-control-min-size` at every pointer type, so a consumer's
+  controls meet the SDK ADR 006 touch floor without appearing in the device-axis selector list.
+  `Input` and `Textarea` join the 16px coarse-pointer text-input rule.
+- Copyable examples, the layout skill, and the packed consumer fixture render header actions with
+  `Button` instead of an unstyled `<button>`.
+- Add the `controls/compose-command-center-controls` packaged skill and the Application controls
+  guide. The layout and general application skills route action and form composition to it.
+
 ## 0.4.4
 
 Compatibility axes: npm runtime public API unchanged. The packaged static-site skill and human

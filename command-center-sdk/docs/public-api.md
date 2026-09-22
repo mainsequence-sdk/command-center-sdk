@@ -41,6 +41,7 @@ framework integrations do not affect the application.
 | `/layout` | React + DOM | Page, header, stack, card, responsive card-grid primitives, and the viewport seam |
 | `/layout/testing` | Browser automation adapter | Real-browser geometry verification and conformance reports |
 | `/feedback` | React + DOM | Activity indicators, ordered progress stages, and application status screens |
+| `/controls` | React + DOM | Buttons, badges, labels, labelled fields, inputs, and textareas that share the SDK control contract |
 | `/theme` | Framework-neutral; one DOM helper | Presets, tokens, CSS-variable generation/application, density, surfaces, breakpoints, and chart palettes |
 | `/theme/presets` | Framework-neutral | Individual built-in preset objects |
 | `/theme/data-viz` | Framework-neutral | Data-visualization palette types and resolvers |
@@ -143,6 +144,19 @@ import {
   ProgressStageList,
   type ProgressStageDefinition,
 } from "@dev-mainsequence/command-center-sdk/feedback";
+```
+
+Actions and labelled fields share one sizing, focus, and theme contract through `cc-control`:
+
+```ts
+import {
+  Badge,
+  Button,
+  Field,
+  Input,
+  Textarea,
+  useFieldControlProps,
+} from "@dev-mainsequence/command-center-sdk/controls";
 ```
 
 ## Theme API and CSS

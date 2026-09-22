@@ -82,6 +82,8 @@ its narrower backend-proven path ownership, and all other namespaces remain unto
   `$compose-command-center-page`.
 - Use `/feedback` for controlled application status, ordered progress stages, and activity
   indicators. Route startup and reconnection feedback to `$build-application-loading-flow`.
+- Use `/controls` for buttons, badges, labels, labelled fields, inputs, and textareas. Route
+  action and form composition to `$compose-command-center-controls`.
 - Use `/resource` for framework-neutral resource definitions and adapters.
 - Use `/resource/react` for resource selection state.
 - Use `/views` for React resource lists, details, pickers, and supporting compositions.

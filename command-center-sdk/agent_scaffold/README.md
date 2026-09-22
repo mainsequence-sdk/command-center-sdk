@@ -32,6 +32,7 @@ The bundle is organized into SDK-only lanes:
 - end-user application documentation organized by visible navigation, same-artifact builds,
   validation, and browser verification;
 - application page/card composition and real-browser layout verification;
+- action, badge, and labelled-field composition with the public controls;
 - embedded application-shell composition, zero/one/two-level navigation, and startup conformance;
 - resource lists, details, pickers, actions, and backend adapter normalization;
 - theme and embed authoring; and

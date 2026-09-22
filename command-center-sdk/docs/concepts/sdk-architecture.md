@@ -74,6 +74,7 @@ Use the highest-level view that owns the workflow you need:
 | One entity with summary and tabs | `ResourceDetailShell` |
 | Single, multiple, or action selection | `ResourcePicker` |
 | Complete responsive page composition | `/layout` primitives |
+| Actions, badges, and labelled fields | `/controls` primitives |
 | Application startup or reconnect status | `ApplicationStatusScreen` |
 | Application hierarchy and destinations | `/navigation` components |
 
@@ -185,7 +186,7 @@ SDK to guarantee.
 ## Framework and runtime boundaries
 
 The `/resource` and `/contracts` JavaScript entrypoints are framework-neutral. React components and
-hooks live in `/views`, `/navigation`, `/layout`, `/feedback`, `/resource/react`, and `/embed/react`.
+hooks live in `/views`, `/navigation`, `/layout`, `/feedback`, `/controls`, `/resource/react`, and `/embed/react`.
 Browser-only work should remain behind browser entrypoints or be executed only after a DOM exists.
 
 The package root currently re-exports the framework-neutral resource surface for compatibility.

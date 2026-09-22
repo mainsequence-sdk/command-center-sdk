@@ -56,6 +56,7 @@ Choose the highest-level composition that owns the required lifecycle:
 | Embedded root shell with zero/one/two-level navigation | `/navigation` shells and `/navigation/testing` | `$compose-command-center-application-shell` |
 | Complete route gutters, header, section rhythm, cards, and card grids | `/layout` primitives | `$compose-command-center-page` |
 | Blocking application startup, reconnection, or prerequisite progress | `/feedback` controlled primitives | `$build-application-loading-flow` |
+| Page and card actions, badges, and labelled fields | `/controls` primitives | `$compose-command-center-controls` |
 | Domain-object collection | `ResourceListPage` | `$build-resource-list` |
 | One domain object with summary, actions, and sections | `ResourceDetailShell` | `$build-resource-detail` |
 | Searchable single or multiple choice | `ResourcePicker` | `$build-resource-picker` |

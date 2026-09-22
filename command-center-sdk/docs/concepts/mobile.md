@@ -82,6 +82,8 @@ Under `@media (pointer: coarse)` the SDK sheets:
 
 - raise `--application-control-min-size` from 36px to 44px and apply it to rail items, panel
   destinations, pagination, pickers, dialog actions, tabs, breadcrumbs, and summary controls;
+- apply the same floor to every `/controls` component through `cc-control`, which reads the token
+  at every pointer type, so a consumer's buttons and inputs grow with the SDK's own;
 - keep every SDK text input at `max(16px, …)` so iOS Safari does not zoom the page on focus;
 - floor table text at 13px and cell padding at the standard row, whatever the density preset says;
   and

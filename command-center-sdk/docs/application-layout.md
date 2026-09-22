@@ -20,6 +20,7 @@ import "@dev-mainsequence/command-center-sdk/styles.css";
 ## Build the page
 
 ```tsx
+import { Button } from "@dev-mainsequence/command-center-sdk/controls";
 import {
   ApplicationCard,
   ApplicationCardGrid,
@@ -35,7 +36,7 @@ export function PortfolioPage() {
         eyebrow="Portfolio operations"
         title="Portfolio overview"
         description="Monitor exposures and rebalance the active portfolio."
-        actions={<button type="button">Rebalance</button>}
+        actions={<Button variant="primary">Rebalance</Button>}
       />
 
       <ApplicationPageStack>

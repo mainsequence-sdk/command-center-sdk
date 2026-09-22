@@ -32,6 +32,7 @@ Use one `ApplicationPage` as the page geometry owner. Put the title and page-lev
 `ApplicationCard` for an ordinary surface and `ApplicationCardGrid` for responsive peer cards.
 
 ```tsx
+import { Button } from "@dev-mainsequence/command-center-sdk/controls";
 import {
   ApplicationCard,
   ApplicationCardGrid,
@@ -45,7 +46,7 @@ import {
     eyebrow="Operations"
     title="Runtime overview"
     description="Current service health and capacity."
-    actions={<button type="button">Refresh</button>}
+    actions={<Button>Refresh</Button>}
   />
   <ApplicationPageStack>
     <ApplicationCardGrid>

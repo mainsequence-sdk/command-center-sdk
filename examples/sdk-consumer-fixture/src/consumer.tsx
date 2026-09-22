@@ -10,6 +10,12 @@ import {
 } from "@dev-mainsequence/command-center-sdk/embed";
 import { StaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed/react";
 import {
+  Badge,
+  Button,
+  Field,
+  Input,
+} from "@dev-mainsequence/command-center-sdk/controls";
+import {
   ActivityIndicator,
   ApplicationStatusScreen,
   ProgressStageList,
@@ -136,7 +142,7 @@ export const packedNavigationHtml = renderToStaticMarkup(
 export const packedLayoutHtml = renderToStaticMarkup(
   <ApplicationPage maxWidth="content">
     <ApplicationPageHeader
-      actions={<button type="button">Create service</button>}
+      actions={<Button variant="primary">Create service</Button>}
       description="Manage services through the public SDK layout."
       title="Services"
     />
@@ -147,6 +153,24 @@ export const packedLayoutHtml = renderToStaticMarkup(
       </ApplicationCardGrid>
     </ApplicationPageStack>
   </ApplicationPage>,
+);
+
+export const packedControlsHtml = renderToStaticMarkup(
+  <>
+    <Field
+      controlId="service-name"
+      description="Shown in the catalog."
+      error="Enter a name."
+      label="Display name"
+      required
+    >
+      <Input name="name" />
+    </Field>
+    <Badge variant="success">Deployed</Badge>
+    <Button pending variant="primary">
+      Saving
+    </Button>
+  </>,
 );
 
 export const packedFeedbackStages = [

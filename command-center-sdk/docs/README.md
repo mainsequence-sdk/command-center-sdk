@@ -55,6 +55,8 @@ action examples.
   browser verification.
 - [Application feedback](./application-feedback.md) covers staged startup, reconnect, retry, and
   terminal failure presentation.
+- [Application controls](./application-controls.md) covers buttons, badges, labels, labelled
+  fields, inputs, and textareas that inherit the SDK's theme, focus, and touch rules.
 
 ### Theme or embed an application
 
@@ -86,6 +88,7 @@ action examples.
 | Controlled navigation chrome and semantic intents | Permission filtering and route commitment |
 | Page gutters, section rhythm, cards, and geometry checks | Domain section ordering and specialized layouts |
 | Status/progress presentation and accessibility | Readiness APIs, polling, retry, and timeout policy |
+| Button, badge, and labelled-field presentation and accessible wiring | Form values, validation rules, submission, and mutation policy |
 | Theme presets, variables, and helper functions | Persisting and restoring the selected theme ID |
 | Iframe protocol validation and request correlation | Origin allowlists, CSP, backend authorization, and audit |
 | Versioned schema/fixture bundle | Backend implementation and coordinated rollout |
@@ -99,7 +102,7 @@ view.
 | Concept | Entry points |
 | --- | --- |
 | Resource model | `/resource`, `/resource/react`, `/views` |
-| Application chrome | `/navigation`, `/navigation/testing`, `/layout`, `/layout/testing`, `/feedback` |
+| Application chrome | `/navigation`, `/navigation/testing`, `/layout`, `/layout/testing`, `/feedback`, `/controls` |
 | Visual language | `/theme`, `/theme/presets`, `/theme/data-viz`, theme CSS exports |
 | Static-site integration | `/embed`, `/embed/react` |
 | Language-neutral contracts | `/contracts`, `/contracts/manifest.json`, schemas and fixtures |
@@ -139,6 +142,7 @@ specific consuming-application task.
 | Build and ship an application user guide | [Application documentation](./application-documentation.md) | `documentation/document-command-center-application` |
 | Compose a responsive page | [Application layout](./application-layout.md) | `layout/compose-command-center-page` |
 | Present startup or reconnect progress | [Application feedback](./application-feedback.md) | `feedback/build-application-loading-flow` |
+| Compose actions and labelled fields | [Application controls](./application-controls.md) | `controls/compose-command-center-controls` |
 | Adapt an external backend | [Resources](./resources.md#adapt-a-backend) | `resource/adapt-resource-backend` |
 | Build a resource list | [Resources](./resources.md#build-a-resource-list) | `views/build-resource-list` |
 | Build a resource detail | [Resources](./resources.md#build-a-resource-detail) | `views/build-resource-detail` |

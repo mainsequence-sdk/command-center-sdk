@@ -66,6 +66,10 @@ try {
     types: "./dist/feedback/index.d.ts",
     import: "./dist/feedback/index.js",
   });
+  assert.deepEqual(packageJson.exports["./controls"], {
+    types: "./dist/controls/index.d.ts",
+    import: "./dist/controls/index.js",
+  });
   assert.notEqual(
     (await stat(join(extractedPackage, "cli", "command-center-sdk.mjs"))).mode & 0o111,
     0,
@@ -158,12 +162,19 @@ try {
     "components.js",
     "components.d.ts",
   ].map((name) => readFile(join(extractedPackage, "dist", "feedback", name), "utf8")));
+  await Promise.all([
+    "index.js",
+    "index.d.ts",
+    "components.js",
+    "components.d.ts",
+  ].map((name) => readFile(join(extractedPackage, "dist", "controls", name), "utf8")));
   const docsIndex = await readFile(join(extractedPackage, "docs", "README.md"), "utf8");
   assert.match(docsIndex, /build-command-center-application/u);
   await Promise.all([
     "application-operations.md",
     "backend-contracts.md",
     "application-feedback.md",
+    "application-controls.md",
     "application-layout.md",
     "application-documentation.md",
     "concepts/resource-applications.md",
@@ -284,7 +295,7 @@ try {
     (await readdir(managedRoot, { withFileTypes: true })).filter(
       (entry) => entry.isDirectory() && !entry.name.startsWith("."),
     ).length,
-    10,
+    11,
   );
   const navigationSkillRoot = join(
     managedRoot,

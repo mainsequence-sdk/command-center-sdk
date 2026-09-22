@@ -22,6 +22,7 @@ repositories.
 - [SDK ADR 008: Immersive Embedded Presentation](./adr-sdk-008-immersive-embedded-presentation.md) — Accepted
 - [SDK ADR 009: Opinionated Embedded Application Shell](./adr-sdk-009-opinionated-embedded-application-shell.md) — Accepted
 - [SDK ADR 010: Host Navigation Drawer and the Wide-Screen Embedded Frame](./adr-sdk-010-host-navigation-drawer-and-wide-screen-embedded-frame.md) — Accepted
+- [SDK ADR 011: Public Control and Form Primitives](./adr-sdk-011-public-control-and-form-primitives.md) — Accepted
 
 ## Rules
 

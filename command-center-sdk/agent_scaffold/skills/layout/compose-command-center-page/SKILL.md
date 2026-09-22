@@ -34,6 +34,7 @@ Do not add top-level sibling margins to recreate stack spacing. Do not add defau
 consumer `.panel` class when `ApplicationCard` owns that surface.
 
 ```tsx
+import { Button } from "@dev-mainsequence/command-center-sdk/controls";
 import {
   ApplicationCard,
   ApplicationCardGrid,
@@ -49,7 +50,7 @@ export function PortfolioPage() {
         eyebrow="Portfolio operations"
         title="Portfolio overview"
         description="Monitor exposures and rebalance the active portfolio."
-        actions={<button type="button">Rebalance</button>}
+        actions={<Button variant="primary">Rebalance</Button>}
       />
       <ApplicationPageStack>
         <StatusBanner />
@@ -85,7 +86,7 @@ Keep domain-specific charts, forms, split panes, maps, editors, and canvases app
 The layout primitives do not own routing, authentication, permissions, persistence, API transport,
 notifications, or product actions. Route application-level staged loading, retry, and failure
 presentation to `$build-application-loading-flow`; the application still owns the underlying
-policy.
+policy. Route actions, badges, and labelled fields to `$compose-command-center-controls`.
 
 ## Verify Final Browser Geometry
 

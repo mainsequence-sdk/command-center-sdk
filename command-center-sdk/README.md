@@ -2,7 +2,7 @@
 
 `@dev-mainsequence/command-center-sdk` is the public TypeScript/React package for building
 Command Center-compatible navigation, responsive application layouts, application feedback,
-resource applications, themes, backend contracts, and static-site iframe integrations.
+application controls, resource applications, themes, backend contracts, and static-site iframe integrations.
 
 The SDK owns reusable contracts, UI, and lifecycle. Your application keeps authentication, API
 clients, routing, persistence, permissions, notifications, and product-specific behavior.
@@ -121,6 +121,8 @@ error normalization stay outside the resource definition.
   plus real-browser geometry verification.
 - `/feedback`: controlled activity indicator, ordered progress stages, and application-level
   loading, retrying, and error surfaces.
+- `/controls`: the public button, badge, label, labelled field, input, and textarea, plus the hook
+  that wires a custom control into a field.
 - `/resource`: framework-neutral resource definitions, adapters, HTTP normalization, pagination,
   activation, and discovered bulk actions.
 - `/resource/react`: loaded-page and explicit/all-matching selection state.
@@ -152,6 +154,7 @@ The npm package installs version-matched skills into:
   general/
   documentation/
   feedback/
+  controls/
   layout/
   navigation/
   resource/

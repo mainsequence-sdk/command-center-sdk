@@ -28,7 +28,7 @@ test("human documentation maps every packaged agent skill", async () => {
   for (const skillPath of skillPaths) {
     assert.equal(docsIndex.includes(`\`${skillPath}\``), true, `${skillPath} is not documented`);
   }
-  assert.equal(skillPaths.length, 17);
+  assert.equal(skillPaths.length, 18);
 });
 
 test("application documentation guidance stays aligned with the official scaffold", async () => {

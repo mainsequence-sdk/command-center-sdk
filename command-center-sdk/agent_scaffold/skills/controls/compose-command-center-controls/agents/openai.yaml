@@ -1,0 +1,4 @@
+interface:
+  display_name: "Compose Command Center Controls"
+  short_description: "Compose SDK buttons, badges, and labelled fields"
+  default_prompt: "Use $compose-command-center-controls to build and verify actions and labelled fields with the public Command Center SDK controls."
