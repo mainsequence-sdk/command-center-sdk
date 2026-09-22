@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-Compatibility axes: npm public API additive (new `/controls` entrypoint). No backend contract,
+## 0.5.0
+
+Compatibility axes: npm public API 0.5.0 (additive: new `/controls` entrypoint). No backend contract,
 JSON Schema, fixture, iframe protocol, theme ID, theme variable, or storage change. The class names
 `cc-control`, `cc-button`, `cc-badge`, `cc-label`, `cc-field`, `cc-input`, and `cc-textarea`, their
 modifier and element classes, and the `data-cc-button`, `data-cc-badge`, `data-cc-label`,

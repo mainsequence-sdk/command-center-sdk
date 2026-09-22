@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-22
-- Implementation: `@dev-mainsequence/command-center-sdk` unreleased
+- Implementation: `@dev-mainsequence/command-center-sdk` 0.5.0
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
 - Related:
@@ -218,8 +218,9 @@ After the release that carries `/controls`:
 
 1. The Command Center host replaces `@/components/ui/{button,input,textarea,badge}` imports with
    `@dev-mainsequence/command-center-sdk/controls`, applying the mapping table above, and deletes
-   those four files. `card.tsx` and `page-header.tsx` migrate to the already public `/layout`
-   components in the same pass.
+   those four files. `page-header.tsx` migrates to `ApplicationPageHeader` in the same pass.
+   `card.tsx` (111 call sites with per-subcomponent class overrides and depth-based nesting)
+   migrates to `ApplicationCard` in a following pass.
 2. The sibling applications stop importing `@/components/ui/*` for these controls. Their remaining
    `@/` imports are the next boundary item and are outside this decision.
 3. Independent consumers replace hand-styled controls with the SDK components and drop the CSS
