@@ -50,8 +50,10 @@ Build with `VITE_API_TRANSPORT=hosted`, `VITE_HOST_ORIGIN=<exact HTTPS host orig
 trusted Command Center host. These are public routing values, not credentials. The frontend
 installs the SDK iframe listener and uses `client.fetchFastApi`. The host must provide the
 delegated credential resolver, and its FastAPI release must serve `/api/me`. Directly opening the
-hosted build has no trusted parent bridge and shows an unavailable error. Never put a session
-token or secret in a Vite variable.
+hosted build has no trusted parent bridge and shows an unavailable error. A non-local direct link
+cannot use the local CLI developer identity; supporting it requires a separate application-owned
+backend transport that authenticates each request. Never put a session token or secret in a Vite
+variable.
 
 The application-owned selection lives in `src/transport.ts`; neither path is an SDK backend
 transport. Do not copy `local_api.py` into a deployed multi-user service.

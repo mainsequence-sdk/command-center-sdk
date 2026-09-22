@@ -1,4 +1,4 @@
 interface:
   display_name: "Integrate Static Site and API"
-  short_description: "Set up local Vite API or hosted iframe bridge"
-  default_prompt: "Use $integrate-static-site-iframe to choose and implement the required top-level local Vite/FastAPI proxy and developer identity path or the hosted Command Center iframe and delegated FastAPI path."
+  short_description: "Choose local API, trusted iframe, or direct-link path"
+  default_prompt: "Use $integrate-static-site-iframe to distinguish local top-level Vite/FastAPI, non-local trusted Command Center iframe, and non-local direct-link modes. Implement the correct API transport and identity source, including the required local Vite/FastAPI proxy and developer identity setup."

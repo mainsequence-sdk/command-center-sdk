@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.4
+
+Compatibility axes: npm runtime public API unchanged. The packaged static-site skill and human
+guides now distinguish top-level local Vite/FastAPI, non-local trusted iframe delegation, and a
+non-local direct link without a credential bridge. Transport selection requires a validated host
+handshake for delegation; deployed direct links cannot fall back to local CLI identity. No backend
+contract, JSON Schema, fixture, iframe protocol, theme ID, or storage change.
+
 ## 0.4.3
 
 Compatibility axes: npm runtime public API unchanged. The packaged static-site skill and its

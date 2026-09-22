@@ -96,6 +96,9 @@ its narrower backend-proven path ownership, and all other namespaces remain unto
   follow `$integrate-static-site-iframe` to start a loopback FastAPI runner with server-side CLI
   developer identity, wait for readiness, configure the same-origin `/api` proxy, and call it through
   an application-owned client. This local path needs no release UID.
+  A non-local direct link still has no trusted iframe bridge: SDK delegation is `unsupported` unless
+  the page completes the validated host handshake. It must show an unavailable state or use a
+  separately authenticated application-owned backend, never the local CLI identity.
   The child consumes `StaticSiteFastApiTransportState` through `onFastApiStateChange` or
   `getFastApiState`; the SDK owns bounded retry, credential refresh, and cancellation. Route that
   work to `$integrate-static-site-iframe`.

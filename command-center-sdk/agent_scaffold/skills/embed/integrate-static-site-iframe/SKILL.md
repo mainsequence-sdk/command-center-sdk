@@ -1,25 +1,30 @@
 ---
 name: integrate-static-site-iframe
-description: Build, migrate, review, or secure a Command Center static site in top-level local Vite/FastAPI development or a hosted iframe. Use for the required local API runner, server-side developer identity, same-origin Vite proxy and direct /api transport, or for the mainsequence.* iframe handshake, delegated FastAPI release access, parent origin, theme, user context, and embed lifecycle.
+description: Build, migrate, review, or secure a Command Center static site in local Vite/FastAPI development, a non-local trusted iframe, or a non-local direct link. Use to choose the API transport and identity source, set up the local runner and same-origin proxy, or implement the mainsequence.* handshake and delegated FastAPI access.
 ---
 
 # Integrate A Static Site And Its API
 
 ## Choose The API Transport Before Writing Requests
 
-First record where the site is running. This is a required setup decision whenever the site calls
-FastAPI; do not copy the hosted request into a local Vite page.
+First record **both** whether the site uses the documented local development setup or a non-local
+deployment, and whether an initialized trusted Command Center parent supplies a credential bridge.
+This is a required decision before the site calls FastAPI. Non-local does not mean embedded:
+a deployed page opened as a direct link has no host delegation.
 
-| Runtime | Required request path | Identity source | FastAPI release UID |
+| Runtime and trust state | API request path | Identity source | FastAPI release UID |
 | --- | --- | --- | --- |
-| Top-level Vite page at `127.0.0.1:5174` | Application-owned `fetch("/api/...")` through Vite's same-origin proxy | Local API process's verified Main Sequence CLI login, for one developer | None |
-| Site embedded by a trusted Command Center host | `client.fetchFastApi({ resourceReleaseUid, path })` after iframe initialization | Host-resolved delegated credential; deployed FastAPI receives platform-injected request state | Required |
+| Local development: top-level Vite page at `127.0.0.1:5174` plus loopback FastAPI | Application-owned `fetch("/api/...")` through Vite's same-origin proxy | Local API process's verified Main Sequence CLI login, for one developer | None |
+| Non-local deployment: embedded by an initialized trusted Command Center host | `client.fetchFastApi({ resourceReleaseUid, path })` after the validated iframe handshake and first context | Host-resolved delegated credential; deployed FastAPI receives platform-injected per-request user state | Required for the authorized target release |
+| Non-local deployment: direct link or no initialized trusted host | SDK delegation is `unsupported`; show an unavailable state, or use a separately designed application-owned authenticated backend transport | None from the iframe SDK; the separate backend must authenticate each request itself | No SDK delegated request is possible |
 
-Choose the mode explicitly in the consuming application. A top-level page has no trusted parent
-credential bridge. Do not call `fetchFastApi` locally, ask for a release UID, send a browser user UID
-header, copy a session token, or put credentials in Vite variables. Do not infer the mode from
-whether a UID happens to be configured.
-Local development needs no ResourceRelease UID or iframe host.
+Choose the transport explicitly in the consuming application and verify the trust state at runtime.
+Only a validated `ready`/`initialize` handshake and initial `onContext` from the configured host
+enable the delegated path. A configured release UID, deployment URL, build flag, or
+`window.parent !== window` alone does not establish that bridge. A deployed direct link must never
+fall back to the local CLI identity. For the documented top-level local workflow, do not call
+`fetchFastApi`, ask for a release UID, send a browser user UID header, copy a session token, or put
+credentials in Vite variables. Local development needs no ResourceRelease UID or iframe host.
 
 ## Complete The Local Vite And FastAPI Setup
 

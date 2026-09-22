@@ -5,12 +5,20 @@ description: Integrate an application-owned iframe with strict origin, lifecycle
 
 # Static-site embeds
 
-**Choose the API path before implementing requests:** a directly opened local Vite page must run
-its FastAPI process, establish server-side developer identity, and use a same-origin `/api` proxy
-as described [below](#run-a-top-level-vite-site-with-local-fastapi). The hosted iframe path uses
-`fetchFastApi` only after a trusted parent initializes the child and supplies delegated access.
-The installed `integrate-static-site-iframe` skill requires this choice and the complete local
-setup before treating local API calls as working.
+**Choose the API path before implementing requests.** Local development, non-local trusted
+embedding, and non-local direct links have different identity sources:
+
+| Case | API access and identity |
+| --- | --- |
+| Top-level local Vite plus loopback FastAPI | Run the local API with one verified CLI developer identity; use Vite's same-origin `/api` proxy. No release UID or iframe host is needed. |
+| Non-local site inside a trusted Command Center iframe | Wait for the validated host handshake and initial context; call `fetchFastApi` with an authorized release UID. The host delegates access and deployed FastAPI receives platform-injected per-request user state. |
+| Non-local direct link, or no initialized trusted host | SDK delegation is `unsupported`. Show an unavailable state, or build a separate application-owned backend that authenticates every request. |
+
+Non-local deployment alone does not grant the iframe bridge. A release UID, build flag, URL, or
+`window.parent !== window` does not establish host trust. The installed
+`integrate-static-site-iframe` skill requires this distinction and the complete
+[local setup](#run-a-top-level-vite-site-with-local-fastapi) before treating local API calls as
+working.
 
 The embed API connects a trusted host application to an application-owned static site in a
 sandboxed iframe. It solves two problems without sharing the host session:
@@ -211,19 +219,28 @@ If the local CLI login is missing, expired, or inaccessible, `/api/me` returns
 environment. A shared server needs a platform-owned per-request identity gateway. Never accept a
 browser-supplied UID header, copy session tokens, or put credentials in Vite variables.
 
-The frontend selects the transport explicitly:
+The frontend selects the transport explicitly and confirms the trusted host handshake before
+using delegation:
 
 ```ts
 // Application-owned adapter. The example contains the full typed version.
-const response = mode === "local"
-  ? await fetch("/api/me", { signal })
-  : await client.fetchFastApi(
-      { resourceReleaseUid: configuredFastApiReleaseUid, path: "/api/me" },
-      { method: "GET", signal },
-    );
+let response: Response;
+if (mode === "local") {
+  response = await fetch("/api/me", { signal });
+} else if (mode === "hosted") {
+  await trustedHostReady; // resolves only after a validated handshake and initial onContext
+  response = await client.fetchFastApi(
+    { resourceReleaseUid: configuredFastApiReleaseUid, path: "/api/me" },
+    { method: "GET", signal },
+  );
+} else {
+  throw new Error("No authenticated API transport for this direct link");
+}
 ```
 
-The hosted branch is valid only inside an iframe with a trusted parent credential bridge.
+The hosted branch is valid only inside an iframe with a trusted parent credential bridge. A
+deployed direct link cannot use the local CLI identity as a fallback. The example's hosted build
+reports the missing handshake as unavailable when opened directly.
 `configuredFastApiReleaseUid` is public routing configuration for an authorized deployed release,
 not a local development prerequisite.
 

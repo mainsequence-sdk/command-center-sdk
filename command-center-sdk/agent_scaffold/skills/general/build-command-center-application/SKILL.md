@@ -22,6 +22,9 @@ Make these cross-cutting decisions first:
    delegated `fetchFastApi` workflow. Before implementing top-level local Vite API calls, follow
    that skill's required loopback FastAPI runner, CLI identity, readiness, and `/api` proxy setup;
    local requests need no release UID.
+   A non-local direct link is not a hosted iframe: without the validated trusted-host handshake,
+   delegated API access is `unsupported`; use an unavailable state or a separately authenticated
+   application-owned backend. Never reuse local CLI identity for a deployed direct link.
 2. Apply SDK tokens, presets, typography, density, surface hierarchy, data visualization, and
    packaged styles through `$theme-command-center-app`. Treat its closed-token audit as a required
    build gate whenever the base theme stylesheet is imported.

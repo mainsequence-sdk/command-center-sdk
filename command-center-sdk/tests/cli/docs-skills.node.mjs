@@ -322,6 +322,10 @@ test("static-site guidance keeps delegated FastAPI credentials behind the SDK li
   assert.match(embedSkill, /fetch\("\/api\/me", \{ signal \}\)/u);
   assert.match(embedSkill, /identity_unavailable/u);
   assert.match(embedSkill, /\.\/references\/local-vite-fastapi\.md/u);
+  assert.match(embedSkill, /Non-local deployment: embedded by an initialized trusted Command Center host/u);
+  assert.match(embedSkill, /Non-local deployment: direct link or no initialized trusted host/u);
+  assert.match(embedSkill, /validated `ready`\/`initialize` handshake and initial `onContext`/u);
+  assert.match(embedSkill, /deployed direct link must never\s+fall back to the local CLI identity/u);
   assert.ok(
     embedSkill.indexOf("## Complete The Local Vite And FastAPI Setup") <
       embedSkill.indexOf("## Confirm The Hosted Iframe Protocol"),
@@ -341,8 +345,11 @@ test("static-site guidance keeps delegated FastAPI credentials behind the SDK li
     "utf8",
   );
   assert.match(embedMetadata, /local Vite\/FastAPI proxy and developer identity/iu);
+  assert.match(embedMetadata, /non-local direct-link modes/iu);
   assert.match(useSdkSkill, /Before implementing API calls for a top-level local Vite page/iu);
+  assert.match(useSdkSkill, /non-local direct link still has no trusted iframe bridge/iu);
   assert.match(applicationSkill, /Before implementing top-level local Vite API calls/iu);
+  assert.match(applicationSkill, /non-local direct link is not a hosted iframe/iu);
   for (const value of [embedSkill, staticSiteGuide]) {
     assert.match(value, /127\.0\.0\.1:8001/u);
     assert.match(value, /mainsequence login/u);
@@ -351,6 +358,9 @@ test("static-site guidance keeps delegated FastAPI credentials behind the SDK li
   }
   assert.match(staticSiteGuide, /fetch\("\/api\/me", \{ signal \}\)/u);
   assert.match(staticSiteGuide, /resourceReleaseUid: configuredFastApiReleaseUid/u);
+  assert.match(staticSiteGuide, /Non-local site inside a trusted Command Center iframe/u);
+  assert.match(staticSiteGuide, /Non-local direct link, or no initialized trusted host/u);
+  assert.match(staticSiteGuide, /await trustedHostReady/u);
   assert.match(useSdkSkill, /integrate-static-site-iframe/u);
   assert.match(applicationSkill, /fetchFastApi/u);
 });

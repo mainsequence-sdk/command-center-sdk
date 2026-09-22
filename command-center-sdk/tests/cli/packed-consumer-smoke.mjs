@@ -402,6 +402,13 @@ try {
   );
   assert.match(
     await readFile(
+      join(managedRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
+      "utf8",
+    ),
+    /Non-local deployment: direct link or no initialized trusted host[\s\S]*validated `ready`\/`initialize` handshake and initial `onContext`/u,
+  );
+  assert.match(
+    await readFile(
       join(managedRoot, "embed", "integrate-static-site-iframe", "references", "local-vite-fastapi.md"),
       "utf8",
     ),
