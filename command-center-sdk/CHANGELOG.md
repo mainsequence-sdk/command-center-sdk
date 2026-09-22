@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.5.1
+
+Compatibility axes: packaged agent skills and human guides only. No runtime, npm public API,
+backend contract, JSON Schema, fixture, iframe protocol, theme ID, or storage change.
+
+- Every screen-building skill (`use-command-center-sdk`, `build-command-center-application`,
+  `compose-command-center-page`, the four `views` skills, `build-application-loading-flow`,
+  `compose-command-center-application-shell`, `integrate-static-site-iframe`, and
+  `theme-command-center-app`) now requires `/controls` for every button, badge, label, and text
+  field and forbids raw elements, Tailwind or CSS buttons, and application-owned kits, so an
+  independent site renders its controls exactly like the host. The human guides carry the same
+  rule, and the `docs-skills` test pins it.
+
 ## 0.5.0
 
 Compatibility axes: npm public API 0.5.0 (additive: new `/controls` entrypoint). No backend contract,
