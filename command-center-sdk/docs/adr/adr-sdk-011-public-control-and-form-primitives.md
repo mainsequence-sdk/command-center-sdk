@@ -219,8 +219,10 @@ After the release that carries `/controls`:
 1. The Command Center host replaces `@/components/ui/{button,input,textarea,badge}` imports with
    `@dev-mainsequence/command-center-sdk/controls`, applying the mapping table above, and deletes
    those four files. `page-header.tsx` migrates to `ApplicationPageHeader` in the same pass.
-   `card.tsx` (111 call sites with per-subcomponent class overrides and depth-based nesting)
-   migrates to `ApplicationCard` in a following pass.
+   `card.tsx` (112 call sites with per-subcomponent class overrides and depth-based nesting)
+   migrates to `ApplicationCard` as a separate, reviewable commit on the same branch: header
+   children move into the `header` prop, padding ownership moves to the SDK, and
+   `variant="nested"` becomes `surface="nested"`.
 2. The sibling applications stop importing `@/components/ui/*` for these controls. Their remaining
    `@/` imports are the next boundary item and are outside this decision.
 3. Independent consumers replace hand-styled controls with the SDK components and drop the CSS
