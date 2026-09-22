@@ -1,7 +1,7 @@
 {
   "name": "command-center-sdk-repository",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "module",
   "workspaces": [
     "command-center-sdk"
@@ -10,7 +10,7 @@
     "boundaries:check": "node scripts/check-package-boundaries.mjs",
     "boundaries:test": "node --test scripts/check-package-boundaries.node.mjs",
     "public-packages:validate": "node scripts/validate-public-packages.mjs",
-    "examples:check": "tsc -p examples/sdk-consumer-fixture/tsconfig.json --noEmit",
+    "examples:check": "tsc -p examples/sdk-consumer-fixture/tsconfig.json --noEmit && tsc -p examples/static-site-vite-fastapi/tsconfig.json --noEmit && node --test examples/static-site-vite-fastapi/transport.node.mjs",
     "sdk:build": "npm --workspace @dev-mainsequence/command-center-sdk run build && npm --workspace @dev-mainsequence/command-center-sdk run size:check",
     "sdk:check": "npm --workspace @dev-mainsequence/command-center-sdk run check",
     "sdk:test": "npm --workspace @dev-mainsequence/command-center-sdk run test",

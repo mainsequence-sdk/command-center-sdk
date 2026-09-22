@@ -169,6 +169,57 @@ theme or authenticated user may change while the iframe remains mounted.
 Direct-link mode has no trusted parent bridge. Credential requests reject as `unsupported` and
 must not fall back to a normal user token, URL credential, or reconstructed runtime hostname.
 
+## Run a top-level Vite site with local FastAPI
+
+Use the [runnable Vite/FastAPI consumer example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/static-site-vite-fastapi)
+when opening a local static site directly at `http://127.0.0.1:5174/`. It supplies a named
+loopback-only API runner (`python -m uvicorn local_api:app`), a `/healthz` readiness endpoint, a
+same-origin `/api` Vite proxy to `127.0.0.1:8001`, and a transport adapter covering both local and
+hosted requests. No ResourceRelease UID is involved in the local path.
+
+```bash
+# Terminal 1, in examples/static-site-vite-fastapi, after Python 3.13 setup
+python3.13 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+mainsequence login
+mainsequence user
+python -m uvicorn local_api:app --host 127.0.0.1 --port 8001
+
+# Terminal 2, after Uvicorn reports "Application startup complete"
+curl --fail http://127.0.0.1:8001/healthz
+npm install
+npm run dev
+```
+
+Open `http://127.0.0.1:5174/`. The application-owned client uses
+`fetch("/api/me", { signal })`; Vite sends it to the local FastAPI process. The Python runner
+calls `User.get_authenticated_user_details()` with its own Main Sequence CLI login and returns
+only that developer's public UID and optional username. It is a **single-developer local identity**,
+not per-browser authentication. The platform injects `request.state.user` and
+`request.state.user_uid` in deployed FastAPI requests; see the
+[platform FastAPI request-user guide](https://github.com/mainsequence-sdk/mainsequence-sdk/blob/main/docs/knowledge/fastapi/index.md).
+If the local CLI login is missing, expired, or inaccessible, `/api/me` returns
+`503 identity_unavailable`. Show an unavailable state and sign in again in the API process's
+environment. A shared server needs a platform-owned per-request identity gateway. Never accept a
+browser-supplied UID header, copy session tokens, or put credentials in Vite variables.
+
+The frontend selects the transport explicitly:
+
+```ts
+// Application-owned adapter. The example contains the full typed version.
+const response = mode === "local"
+  ? await fetch("/api/me", { signal })
+  : await client.fetchFastApi(
+      { resourceReleaseUid: configuredFastApiReleaseUid, path: "/api/me" },
+      { method: "GET", signal },
+    );
+```
+
+The hosted branch is valid only inside an iframe with a trusted parent credential bridge.
+`configuredFastApiReleaseUid` is public routing configuration for an authorized deployed release,
+not a local development prerequisite.
+
 ## Use delegated HTTP through `fetchFastApi`
 
 ```ts

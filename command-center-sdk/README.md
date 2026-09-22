@@ -27,6 +27,11 @@ import "@dev-mainsequence/command-center-sdk/styles.css";
 The package ships standard ESM and TypeScript declarations. It is bundler-independent and does not
 require Vite.
 
+For a directly opened Vite site backed by local FastAPI, follow the
+[local Vite/FastAPI example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/static-site-vite-fastapi).
+Its `/api` proxy uses a server-side CLI developer identity and no release UID; hosted iframe
+requests use the separate delegated `fetchFastApi` path.
+
 ## Start here
 
 - [Documentation home](./docs/README.md): concept-based learning paths, ownership boundaries, and

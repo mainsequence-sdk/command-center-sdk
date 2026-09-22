@@ -127,6 +127,8 @@ import {
   resolveCommandCenterThemeById,
 } from "@dev-mainsequence/command-center-sdk/theme";
 
+let markContextReady!: () => void;
+const contextReady = new Promise<void>((resolve) => { markContextReady = resolve; });
 const client = createStaticSiteIframeClient({
   channel: "mainsequence.fund-competition",
   hostOrigin: "https://command-center.example.com",
@@ -136,6 +138,7 @@ const client = createStaticSiteIframeClient({
     if (preset) applyThemePresetToRoot(document.documentElement, { theme: preset });
     document.documentElement.classList.toggle("dark", context.themeMode === "dark");
     renderForUser(context.userUid);
+    markContextReady();
   },
   onFastApiStateChange(state) {
     renderFastApiStatus(state);
@@ -146,6 +149,8 @@ const onMessage = (event: MessageEvent<unknown>) => client.handleMessage(event);
 window.addEventListener("message", onMessage);
 client.announceReady();
 
+// Issue delegated requests only after the trusted host initializes the child.
+await contextReady;
 const response = await client.fetchFastApi(
   {
     resourceReleaseUid: configuredFastApiReleaseUid,
@@ -165,7 +170,9 @@ window.removeEventListener("message", onMessage);
 client.dispose();
 ```
 
-The static-site UID is untrusted display or routing context, not authentication. Never send session
+For a top-level local Vite page, use the [same-origin `/api` proxy workflow](./static-site-embeds.md#run-a-top-level-vite-site-with-local-fastapi)
+instead of `fetchFastApi`; this hosted example requires an initialized trusted parent and an
+authorized release UID. The static-site UID is untrusted display or routing context, not authentication. Never send session
 tokens, email, name, organization, permissions, or credentials through this context. For an
 authorized FastAPI release, `fetchFastApi` is the normal child API: it accepts only a relative path,
 uses the backend-issued RPC URL, injects the delegated bearer token and canonical release header,

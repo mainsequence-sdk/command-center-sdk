@@ -25,6 +25,7 @@ files.
 - [Application layout](./command-center-sdk/docs/application-layout.md)
 - [Resources](./command-center-sdk/docs/resources.md)
 - [Themes and static-site embeds](./command-center-sdk/docs/themes-and-embeds.md)
+- [Local Vite/FastAPI example](./examples/static-site-vite-fastapi/README.md)
 - [Backend contracts](./command-center-sdk/docs/backend-contracts.md)
 - [Extending and releasing](./command-center-sdk/docs/extending-and-releasing.md)
 

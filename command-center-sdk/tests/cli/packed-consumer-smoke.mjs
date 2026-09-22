@@ -398,6 +398,13 @@ try {
       join(managedRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
       "utf8",
     ),
+    /python -m uvicorn local_api:app[\s\S]*fetch\("\/api\/me"\)[\s\S]*identity_unavailable/u,
+  );
+  assert.match(
+    await readFile(
+      join(managedRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
+      "utf8",
+    ),
     /getFastApiState/u,
   );
   assert.match(

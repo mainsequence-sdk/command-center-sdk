@@ -33,9 +33,10 @@ Consume `context.userUid` only as untrusted display or routing context. Never ac
 proof of identity or permission. Use the delegated SDK flow below for a FastAPI ResourceRelease;
 other backends still require their own application-defined authentication.
 
-### Call a FastAPI release
+### Call a hosted FastAPI release
 
-When an embedded application needs a FastAPI release, use the client's high-level request method. The
+Only when the site is embedded under a trusted Command Center host, use the client's high-level
+request method for a FastAPI release. The
 SDK obtains, reuses, refreshes, and clears the short-lived delegated credential internally:
 
 ```ts
@@ -74,10 +75,28 @@ For a deployed FastAPI release, call `client.fetchFastApi(...)`. The host's
 present the SDK's `runtime-starting` state. When Django returns ready access, the resolver supplies
 the RPC URL and delegated credential, and `fetchFastApi` sends the application request.
 
-During local development, start the FastAPI process with the local development harness, wait for
-that process's startup signal, and connect the local Static Site to the local API.
+For top-level local Vite development, use the runnable
+[Vite/FastAPI consumer example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/static-site-vite-fastapi)
+from the SDK repository. From that example directory, run `mainsequence login` and `mainsequence user`,
+then `python -m uvicorn local_api:app --host 127.0.0.1 --port 8001`. Wait for Uvicorn's
+`Application startup complete`, verify `curl --fail http://127.0.0.1:8001/healthz`, and run
+`npm install && npm run dev` in a second terminal. Vite proxies same-origin `/api` to the local
+process at port 8001. The application-owned adapter calls `fetch("/api/me")` in local mode. It
+does not call `fetchFastApi` or need a ResourceRelease UID or iframe host.
 
-Handle `StaticSiteFastApiCredentialError.code` as a small UI-safe category: `access_denied`,
+The example's loopback-only API resolves the one signed-in developer with server-side
+`User.get_authenticated_user_details()` from the Main Sequence CLI session, then returns only
+their public UID and optional username. If the CLI identity is missing or cannot be verified,
+`/api/me` returns `503 identity_unavailable`; keep the application in an unavailable state. This
+single-developer runner does not authenticate each browser visitor. A shared local server needs a
+platform-owned per-request identity gateway. Deployed FastAPI receives
+`request.state.user`/`request.state.user_uid` from the platform; no SDK iframe context UID, browser
+header, Vite variable, or copied session token is an identity source. See
+[Static-site embeds](../../../docs/static-site-embeds.md#run-a-top-level-vite-site-with-local-fastapi)
+for the two transport paths and prerequisites.
+
+For hosted delegated requests, handle `StaticSiteFastApiCredentialError.code` as a small UI-safe
+category: `access_denied`,
 `origin_not_allowed`, `release_unavailable`, `runtime_starting`, `temporarily_unavailable`,
 `invalid_request`, or `unsupported`. A direct-link static site has no trusted parent bridge and
 returns `unsupported`; never fall back to a normal user credential.

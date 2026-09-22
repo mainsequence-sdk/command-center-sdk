@@ -23,6 +23,10 @@ handshake. It provides a framework-neutral host/client protocol and a React host
 
 The SDK does not own authentication or credential minting. The host application injects those
 capabilities and remains responsible for policy and audit behavior.
+For a directly opened Vite page, use an application-owned `/api` client and local FastAPI proxy.
+The [static-site embed guide](../../docs/static-site-embeds.md#run-a-top-level-vite-site-with-local-fastapi)
+links a runnable consumer example. `fetchFastApi` requires a trusted host bridge and target release
+UID; it is not the local proxy transport.
 
 ## Protocol lifecycle
 

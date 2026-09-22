@@ -90,8 +90,11 @@ its narrower backend-proven path ownership, and all other namespaces remain unto
   language-neutral backend payload design and validation.
 - Use `/theme`, `/theme/presets`, and `/theme/data-viz` for theme behavior.
 - Use `/embed` and `/embed/react` for application-owned static sites using the numeric v1
-  `mainsequence.*` handshake. Static sites call an authorized FastAPI ResourceRelease through the
-  client's high-level `fetchFastApi` method while the host injects `resolveFastApiCredential`.
+  `mainsequence.*` handshake. Hosted static sites call an authorized FastAPI ResourceRelease through
+  the client's high-level `fetchFastApi` method while the trusted host injects
+  `resolveFastApiCredential`. A top-level local Vite page instead calls its own `/api` client through
+  a same-origin proxy; it needs no release UID. Follow `$integrate-static-site-iframe` for both
+  paths and the server-side local developer identity prerequisite.
   The child consumes `StaticSiteFastApiTransportState` through `onFastApiStateChange` or
   `getFastApiState`; the SDK owns bounded retry, credential refresh, and cancellation. Route that
   work to `$integrate-static-site-iframe`.

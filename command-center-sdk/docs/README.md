@@ -61,8 +61,8 @@ action examples.
 - [Themes](./themes.md) covers CSS ordering, presets, the closed token contract, density, surface
   hierarchy, data visualization, persistence, and visual verification.
 - [Static-site embeds](./static-site-embeds.md) covers exact-origin messaging, sandbox policy,
-  context synchronization, delegated FastAPI HTTP and WebSocket access, cancellation, and security
-  testing.
+  context synchronization, local Vite/FastAPI development, delegated FastAPI HTTP and WebSocket
+  access, cancellation, and security testing.
 - [Backend contracts](./backend-contracts.md) explains the manifest, schemas, fixtures, roles, and
   compatibility rules for non-TypeScript implementations.
 

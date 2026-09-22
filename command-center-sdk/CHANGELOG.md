@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.4.2
+
+Compatibility axes: npm public API unchanged. The packaged iframe skill and human documentation
+now separate top-level local Vite `/api` transport from hosted delegated `fetchFastApi` transport.
+No backend contract, JSON Schema, fixture, iframe protocol, theme ID, or remote storage change.
+
+- Add a runnable Vite/FastAPI consumer example with a loopback-only API, readiness endpoint,
+  same-origin proxy, explicit transport selection, and server-side single-developer identity from
+  the Main Sequence CLI login. Missing identity returns `503 identity_unavailable`.
+- Replace the skill's unnamed local harness instruction with exact commands, identity behavior,
+  and a link to the consumer example. Clarify that hosted delegation requires a trusted parent
+  bridge and a FastAPI release UID.
+
 ## 0.4.1
 
 Compatibility axes: npm public API 0.4.1 (additive). No backend contract, JSON Schema, fixture,
