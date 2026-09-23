@@ -1,7 +1,7 @@
 # Publishing and Releases
 
-The repository publishes two public packages: `@dev-mainsequence/command-center-sdk` and, once its
-workspace exists, `@dev-mainsequence/chat` (SDK ADR 012). The release workflow publishes new
+The repository publishes two public packages: `@dev-mainsequence/command-center-sdk` and
+`@dev-mainsequence/chat` (SDK ADR 012). The release workflow publishes new
 versions in dependency order, the SDK before the chat, skips versions already on npm, and stops at
 the first failure.
 

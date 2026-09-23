@@ -3,7 +3,7 @@
 Thanks for contributing.
 
 This repository owns two public packages: `@dev-mainsequence/command-center-sdk` and
-`@dev-mainsequence/chat`, whose workspace `chat/` arrives with the chat's code
+`@dev-mainsequence/chat`, in `chat/`
 ([SDK ADR 012](./docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)). The chat
 depends on the SDK as a peer; the SDK knows nothing about the chat. Changes should preserve each
 package's public entrypoints, consumer compatibility, documentation, and package boundary.

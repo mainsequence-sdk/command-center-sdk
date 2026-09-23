@@ -29,6 +29,7 @@ files.
 - [Local Vite/FastAPI example](./examples/static-site-vite-fastapi/README.md)
 - [Backend contracts](./command-center-sdk/docs/backend-contracts.md)
 - [Extending and releasing](./command-center-sdk/docs/extending-and-releasing.md)
+- [The chat](./chat/README.md) and [its guides](./chat/docs/README.md)
 
 ## Development
 
@@ -39,9 +40,8 @@ npm test
 npm run docs:build
 ```
 
-The repository publishes two public packages: the SDK and `@dev-mainsequence/chat`, whose
-workspace `chat/` arrives with the chat's code
+The repository publishes two public packages: the SDK and `@dev-mainsequence/chat`, in `chat/`
 ([SDK ADR 012](./docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)). The chat
 depends on the SDK as a peer; the SDK knows nothing about the chat. Root checks validate each
-package's public boundary and that one-way dependency, compile the consumer fixture, run package
+package's public boundary and that one-way dependency, compile the consumer fixtures, run package
 tests, build declarations, and enforce size budgets.

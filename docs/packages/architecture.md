@@ -15,7 +15,7 @@ This repository publishes two packages:
   embed
   contracts
 
-@dev-mainsequence/chat                      chat/ (arrives with SDK ADR 012)
+@dev-mainsequence/chat                      chat/
   backend connection, session engine, chat UI, model providers
   peers: @dev-mainsequence/command-center-sdk, react, react-dom
 ```
