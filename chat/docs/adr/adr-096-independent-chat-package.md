@@ -8,11 +8,11 @@
 - Related:
   - [ADR 060: Session-Backed Chat Requests](./adr-060-session-backed-chat-request-contract.md)
   - [ADR 087: Queued Chat Messages While The Agent Works](./adr-087-queued-chat-messages-while-the-agent-works.md)
-  - [ADR 092: Environment Agent Shortcut And Unified Runtime](../../../../docs/adr/mainsequence_ai/adr-092-environment-agent-shortcut-and-unified-runtime.md)
+  - Command Center ADR 092: Environment Agent Shortcut And Unified Runtime
   - [ADR 093: Client-Verified Agent Readiness](./adr-093-client-verified-agent-readiness.md)
   - [ADR 098: One Communication Contract For Every Agent](./adr-098-one-communication-contract-for-every-agent.md)
-  - [Main Sequence AI assistant UI](../../../../apps/mainsequence-ai/src/assistant-ui/README.md),
-    [the package's backend connection](../../src/backend/README.md)
+  - The Main Sequence AI assistant UI (`apps/mainsequence-ai/src/assistant-ui/README.md` in
+    Command Center), [the package's backend connection](../../src/backend/README.md)
 
 ## Context
 

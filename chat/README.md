@@ -29,7 +29,7 @@ exports (`src/index.ts`).
 - `scripts/check-boundary.mjs`: the boundary check.
 - `docs/`: the package's [decisions and guides](./docs/README.md).
 - `CHANGELOG.md`, `LICENSE` (Apache-2.0), and `tsconfig.build.json`: what the package needs to be
-  published from the Command Center SDK repository (ADR 097).
+  published from this repository ([SDK ADR 012](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)).
 
 ## Inputs
 
@@ -81,7 +81,7 @@ platform API or to the Agent's runtime. Whether and when to rewrite is the appli
 - No dependency on an application package, no router, no host store, no `import.meta.env` in
   `src/`.
 - The Command Center SDK is its one Command Center dependency, as a peer, for its controls and
-  theme (ADR 097). The dependency goes one way only: the SDK knows nothing about this package.
+  theme (SDK ADR 012). The dependency goes one way only: the SDK knows nothing about this package.
 - `npm run check` runs the boundary check, which fails on a dependency outside the allowlist, a
   peer (the SDK or React) listed as a regular dependency, an `@/` import, an import that leaves
   the package, or an environment read, and then type-checks the package and the standalone
@@ -98,14 +98,15 @@ npm run chat:build
 npm run chat:dev
 ```
 
-`chat:check` runs the boundary check and type-checks the package, its NodeNext library build, and
-the standalone application. `chat:build` builds the library into `dist/` with `tsc`;
+`chat:check` runs the boundary check and the SDK's theme audit over the stylesheet, and
+type-checks the package, its NodeNext library build, and the standalone application. `chat:build`
+builds the library into `dist/` with `tsc`;
 `npm --workspace @dev-mainsequence/chat run build:standalone` bundles the standalone application
 into `standalone/dist/`.
 
 `chat:dev` serves the standalone application on port 5183. Open `/?stand-in` to run it on the
 scripted stand-in, with no platform and no token. To reach a platform that does not allow
-that origin, put the platform API URL in `packages/chat/.env.local`:
+that origin, put the platform API URL in `chat/.env.local`:
 
 ```bash
 VITE_CHAT_API_BASE_URL=http://127.0.0.1:8000

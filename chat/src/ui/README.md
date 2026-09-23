@@ -38,8 +38,7 @@ The rest is internal: `MessageActions.tsx`, `SessionModelRequiredState.tsx`,
 
 - The [session engine](../engine/README.md). Every part reads `useChatEngine()`, so the thread
   renders inside `ChatEngineProvider`.
-- The Command Center SDK, a peer dependency
-  ([ADR 097](../../../../docs/adr/packages/adr-097-upstream-chat-package-to-command-center-sdk.md)):
+- The Command Center SDK, a peer dependency (Command Center ADR 097):
   `Button` and `Badge` from `/controls`, the picker from `/views`, and the theme variables.
 - assistant-ui's thread, message, and composer primitives; lucide icons; `react-markdown` with
   `remark-gfm`, `rehype-raw`, and `rehype-sanitize`.
@@ -48,7 +47,7 @@ The rest is internal: `MessageActions.tsx`, `SessionModelRequiredState.tsx`,
 
 The engine owns runtime access and its re-checks; the thread renders its decision. A selected
 session is locked and silent while it is `checking`, an Agent that does not answer is `waking`
-with a notice that names it, and "<Agent> is ready" is shown only after a wait of a few seconds or
+with a notice that names it, and "\<Agent> is ready" is shown only after a wait of a few seconds or
 more. The composer asks the engine to confirm an old decision again when it takes focus
 (`revalidateStaleRuntimeAccess`). Transient states (checking, starting, waking, updating) lock the
 composer: a draft already written is kept, nothing is sent on the user's behalf, and writing

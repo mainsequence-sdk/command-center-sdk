@@ -49,6 +49,30 @@ const config = {
       }),
     ],
   ],
+  plugins: [
+    [
+      "@docusaurus/plugin-content-docs",
+      /** @type {import('@docusaurus/plugin-content-docs').Options} */
+      ({
+        // The chat package's documentation, as its own section. Its guides link to the module
+        // READMEs beside the code, so the section reads from the package root and publishes
+        // those files too; every relative link then resolves here as it does on GitHub.
+        id: "chat",
+        path: "../chat",
+        routeBasePath: "chat",
+        include: [
+          "README.md",
+          "docs/**/*.md",
+          "src/*/README.md",
+          "standalone/README.md",
+          "standalone/stand-in/README.md",
+        ],
+        sidebarPath: require.resolve("./chat-sidebars.js"),
+        editUrl: ({ docPath }) =>
+          `https://github.com/mainsequence-sdk/command-center-sdk/tree/main/chat/${docPath}`,
+      }),
+    ],
+  ],
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
@@ -61,6 +85,13 @@ const config = {
             sidebarId: "sdkSidebar",
             position: "left",
             label: "Documentation",
+          },
+          {
+            type: "docSidebar",
+            sidebarId: "chatSidebar",
+            docsPluginId: "chat",
+            position: "left",
+            label: "Chat",
           },
           {
             href: "https://www.npmjs.com/package/@dev-mainsequence/command-center-sdk",

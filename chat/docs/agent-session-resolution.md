@@ -12,8 +12,7 @@ not list, deploy, poll, patch, or delete coding-agent services and does not load
 deployment defaults.
 
 Command Center fills the engine's inputs with its Agent shortcut and its `?session=` route; that
-half is in
-[Main Sequence AI AgentSession Resolution](../../../docs/extensions/main-sequence-ai-agent-session-resolution.md).
+half is in Command Center's own guide, Main Sequence AI AgentSession Resolution.
 
 ## Identities
 

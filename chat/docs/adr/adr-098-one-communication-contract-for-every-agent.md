@@ -6,7 +6,7 @@
   package (ADR 096, section 7). The decisions are unchanged.
 - Owners: Main Sequence AI and Command Center
 - Related:
-  - [ADR 092: Environment Agent Shortcut and Unified Runtime](../../../../docs/adr/mainsequence_ai/adr-092-environment-agent-shortcut-and-unified-runtime.md),
+  - Command Center ADR 092: Environment Agent Shortcut and Unified Runtime,
     the rest of the original record: the shortcut preference, its blocking state, and the
     CodeRepository surfaces
   - [ADR 060: Main Sequence AI Session-Backed Chat Request Contract](./adr-060-session-backed-chat-request-contract.md)

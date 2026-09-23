@@ -29,7 +29,7 @@ It may read its own environment; the package in `../src` may not.
 
 With a platform: `npm run chat:dev` from the repository root serves the application on
 `http://localhost:5183`. That origin is not on the platform's allow-list, so a direct call is
-refused by the browser. Put the platform API URL in `packages/chat/.env.local`:
+refused by the browser. Put the platform API URL in `chat/.env.local`:
 
 ```bash
 VITE_CHAT_API_BASE_URL=http://127.0.0.1:8000

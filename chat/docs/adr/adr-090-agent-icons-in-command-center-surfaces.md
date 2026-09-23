@@ -10,7 +10,7 @@
     projection and the authenticated delivery
   - [ADR 087: Queued Chat Messages While the Agent Works](./adr-087-queued-chat-messages-while-the-agent-works.md),
     for the composer surfaces this touches
-  - [ADR 092: Environment Agent Shortcut and Unified Runtime](../../../../docs/adr/mainsequence_ai/adr-092-environment-agent-shortcut-and-unified-runtime.md)
+  - Command Center ADR 092: Environment Agent Shortcut and Unified Runtime
 
 ## Context
 

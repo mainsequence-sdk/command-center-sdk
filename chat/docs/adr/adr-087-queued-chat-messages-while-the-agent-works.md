@@ -8,7 +8,7 @@
   projection), it no longer stays open for typing
 - Related:
   - [ADR 060: Main Sequence AI Session-Backed Chat Request Contract](./adr-060-session-backed-chat-request-contract.md)
-  - [ADR 092: Environment Agent Shortcut and Unified Runtime](../../../../docs/adr/mainsequence_ai/adr-092-environment-agent-shortcut-and-unified-runtime.md)
+  - Command Center ADR 092: Environment Agent Shortcut and Unified Runtime
   - the platform's runtime interaction and its runtime wake signal and presence, which own the
     readiness decisions every send already passes through
 
@@ -94,7 +94,7 @@ is re-keyed with it.
   handler and calls `preventDefault`, so no fork of the primitive is needed.
 - **Stop** stays available as a secondary control next to the primary one while a local run is
   active. Escape keeps its current meaning (cancel the run).
-- Placeholder while working: "{Agent} is working. Your message will send when it finishes." with
+- Placeholder while working: "\{Agent} is working. Your message will send when it finishes." with
   the session's Agent name, never a fixed shortcut-Agent name (see ADR 092).
 - The wake and readiness gates stay in front of the queue: while the Agent is checking, starting,
   waking, or updating, the composer is locked (the draft already written is kept and never sent on
@@ -113,10 +113,10 @@ order:
 - a delete button;
 - an overflow menu with **Edit** and **Remove**.
 
-Above the rows, one line: "2 queued · will send when {Agent} finishes" and a **Clear** action.
+Above the rows, one line: "2 queued · will send when \{Agent} finishes" and a **Clear** action.
 When the queue is held, the line states the reason in the user's words ("Held after you stopped
-{Agent}.", "Held because the last answer failed.", "Held while you were in another session.",
-"Held: {notice message}.") and a **Send next** action appears next to it.
+\{Agent}.", "Held because the last answer failed.", "Held while you were in another session.",
+"Held: \{notice message}.") and a **Send next** action appears next to it.
 
 Rows carry `data-message-queue`, `data-queue-item`, `data-queue-index`, `data-queue-status`,
 `data-queue-handle`, `data-dragging`, `data-drop-edge` and

@@ -12,10 +12,12 @@ section 7).
 - [ADR 093: Client-Verified Agent Readiness](./adr/adr-093-client-verified-agent-readiness.md)
 - [ADR 096: The Chat as One Independent Package](./adr/adr-096-independent-chat-package.md)
 - [ADR 098: One Communication Contract for Every Agent](./adr/adr-098-one-communication-contract-for-every-agent.md),
-  split out of ADR 092, which keeps the Command Center shortcut
+  split out of Command Center ADR 092, which keeps the Command Center shortcut
 
-Moved records keep their numbers and titles. While the package lives in this repository, new
-records continue the repository's single ADR sequence.
+These records moved here from Command Center and keep their numbers and titles, because the code
+cites them. New decisions about the chat are `SDK ADR` records in `adr/` with
+`Package: @dev-mainsequence/chat`, numbered in the repository's one `SDK ADR` sequence
+([SDK ADR 012](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)).
 
 ## Guides
 

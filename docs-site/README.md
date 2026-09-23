@@ -1,7 +1,9 @@
 # Docs Site
 
 This directory contains the Docusaurus site that publishes the SDK documentation from
-[`command-center-sdk/docs/`](../command-center-sdk/docs).
+[`command-center-sdk/docs/`](../command-center-sdk/docs) and, as its own section under `/chat/`,
+the chat's documentation from [`chat/`](../chat): its `docs/`, its README, and the module READMEs
+its guides link to.
 
 ## Entry Points
 
@@ -9,6 +11,8 @@ This directory contains the Docusaurus site that publishes the SDK documentation
   Pages-aware `url`/`baseUrl` resolution.
 - `sdk-sidebars.js`: deliberate concept-based navigation for the Markdown docs under
   `../command-center-sdk/docs`.
+- `chat-sidebars.js`: the chat section's navigation. The chat's docs plugin instance (`id: "chat"`)
+  in `docusaurus.config.js` lists the files it publishes in `include`.
 - `src/css/custom.css`: docs-site-specific theming and layout overrides.
 - `package.json`: local development, build, and preview scripts for the docs site.
 
@@ -23,8 +27,8 @@ docs site configuration changes on `main`.
 
 ## Notes
 
-- The docs source of truth is `command-center-sdk/docs/`, not `docs-site/docs/` or generated build
-  output.
+- The docs source of truth is `command-center-sdk/docs/` and, for the chat, `chat/`, not
+  `docs-site/docs/` or generated build output.
 - Keep sidebar categories organized by reader intent: start, concepts, interface building,
   integrations, and maintenance. Do not let filename ordering become the information architecture.
 - `docusaurus.config.js` keeps local development on `/docs/`, but switches to the repository Pages
