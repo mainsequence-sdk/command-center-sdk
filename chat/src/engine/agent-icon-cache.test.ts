@@ -14,8 +14,9 @@ const connection = createChatBackendConnection({ apiBaseUrl: "http://localhost:8
 
 const url = "https://api.test/api/v1/command-center/agents/a1/icon/";
 
+// A string body with its Content-Type: the Response of Node 22 does not take jsdom's Blob.
 function iconResponse(body: string, etag: string | null) {
-  return new Response(new Blob([body], { type: "image/svg+xml" }), {
+  return new Response(body, {
     status: 200,
     headers: etag ? { ETag: etag, "Content-Type": "image/svg+xml" } : { "Content-Type": "image/svg+xml" },
   });

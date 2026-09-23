@@ -30,8 +30,9 @@ describe("AgentIcon", () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     fetchMock.mockReset();
+    // A string body with its Content-Type: the Response of Node 22 does not take jsdom's Blob.
     fetchMock.mockImplementation(async () =>
-      new Response(new Blob(["<svg/>"], { type: "image/svg+xml" }), {
+      new Response("<svg/>", {
         status: 200,
         headers: { ETag: '"one"', "Content-Type": "image/svg+xml" },
       }),

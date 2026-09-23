@@ -40,6 +40,7 @@ const toolingAllowlist = new Set(["@vitejs/plugin-react", "jsdom", "vite", "vite
 
 const devOnlyManifestAllowlist = new Set([
   ...toolingAllowlist,
+  "@types/node",
   "@types/react",
   "@types/react-dom",
   "typescript",

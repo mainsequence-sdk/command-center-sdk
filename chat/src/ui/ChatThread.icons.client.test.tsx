@@ -182,8 +182,9 @@ describe("ChatThread agent icons", () => {
     Element.prototype.scrollIntoView = Element.prototype.scrollIntoView ?? (() => {});
     Element.prototype.scrollTo = Element.prototype.scrollTo ?? (() => {});
     fetchMock.mockReset();
+    // A string body with its Content-Type: the Response of Node 22 does not take jsdom's Blob.
     fetchMock.mockImplementation(async () =>
-      new Response(new Blob(["<svg/>"], { type: "image/svg+xml" }), {
+      new Response("<svg/>", {
         status: 200,
         headers: { ETag: '"one"', "Content-Type": "image/svg+xml" },
       }),
