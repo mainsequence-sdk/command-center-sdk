@@ -127,7 +127,7 @@ function normalizeDynamicAssistantAccess(
 ): MainSequenceAiResolvedAssistantAccess {
   if (!payload.runtimeInteraction) {
     throw new MainSequenceAiError(
-      "Runtime access response is missing the ADR-027 interaction contract.",
+      "Runtime access response is missing the runtime interaction contract.",
       { source: "frontend_runtime_parser" },
     );
   }

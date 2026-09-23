@@ -157,7 +157,7 @@ function normalizeRuntimeAccess(
   );
   if (!runtimeInteraction || !runtimePresence) {
     throw new MainSequenceAiError(
-      "Runtime access response is missing the ADR-027 interaction or presence contract.",
+      "Runtime access response is missing the runtime interaction or presence contract.",
       { source: "frontend_runtime_parser" },
     );
   }

@@ -59,7 +59,7 @@ describe("AgentSession records merged from the API", () => {
       ended_at: null,
       llm_provider: "openai",
       llm_model: "gpt-5",
-      engine_name: "ms-tau-sdk",
+      engine_name: "tau",
       ...overrides,
     };
   }

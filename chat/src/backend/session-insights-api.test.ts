@@ -21,7 +21,7 @@ describe("session insights contract", () => {
     vi.unstubAllGlobals();
   });
 
-  it("normalizes the current Pi empty-insights payload shape", () => {
+  it("normalizes the current `pi` harness empty-insights payload shape", () => {
     const snapshot = normalizeSessionInsightsSnapshot({
       has_insights: false,
       agent_session_uid: "session-uid-73",
@@ -42,7 +42,7 @@ describe("session insights contract", () => {
     expect(snapshot.harness).toBe("pi");
 
     if (snapshot.harness !== "pi") {
-      throw new Error("Expected Pi insights.");
+      throw new Error("Expected pi harness insights.");
     }
 
     expect(snapshot.harnessProtocol).toBe("pi-checkpoint-v1");
@@ -61,7 +61,7 @@ describe("session insights contract", () => {
     expect(snapshot.session.agentSessionId).toBe("session-uid-73");
   });
 
-  it("normalizes Tau insights with native entry provenance", () => {
+  it("normalizes `tau` harness insights with native entry provenance", () => {
     const snapshot = normalizeSessionInsightsSnapshot({
       has_insights: true,
       agent_session_uid: "session-uid-73",
@@ -139,7 +139,7 @@ describe("session insights contract", () => {
     expect(snapshot.harness).toBe("tau");
 
     if (snapshot.harness !== "tau") {
-      throw new Error("Expected Tau insights.");
+      throw new Error("Expected tau harness insights.");
     }
 
     expect(snapshot.agentSessionId).toBe("session-uid-73");

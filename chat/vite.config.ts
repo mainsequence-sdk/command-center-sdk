@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 import { loadEnv, type ProxyOptions } from "vite";
 import { defineConfig } from "vitest/config";
 
-import { platformProxyPrefix } from "./standalone/platform-proxy";
+import { platformProxyPrefix } from "./standalone/platform-proxy.js";
 
 // The package's own configuration: the standalone application's dev server and build, and the
 // package's tests. Nothing here comes from the Command Center application.

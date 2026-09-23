@@ -35,8 +35,9 @@ The snapshot composes the two; it does not merge them into one endpoint.
   session (ADR 060) without rebuilding it.
 - Beside the platform's detail, the snapshot's `context` carries what the client knows of the
   selected session, such as its runtime session id, thread id, and session key.
-- Insights are discriminated by `harness` (`../backend/session-insights.ts`): Pi checkpoint fields
-  and Tau entry fields are separate variants, not one mixed payload.
+- Insights are discriminated by the `harness` value the platform sends
+  (`../backend/session-insights.ts`): the checkpoint fields of the `pi` harness and the entry fields
+  of the `tau` harness are separate variants, not one mixed payload.
 - Missing harness metadata (`harness`, `harness_protocol`, `harness_version`) stays unknown; it is
   never defaulted.
 - The snapshot is not readiness. The engine's readiness needs the detail and the history; insights

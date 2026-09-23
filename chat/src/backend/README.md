@@ -129,7 +129,7 @@ identity comes from authenticated backend context and must not be supplied by th
 - Keep transient polling driven by backend `retry_after_ms`, paused while the document is hidden,
   and stopped on ready or terminal state.
 - Keep provider/model catalog loading independent of runtime access.
-- `custom-model-direct-chat.ts` mirrors the request Tau's OpenAI-compatible adapter sends for a
+- `custom-model-direct-chat.ts` mirrors the request the Agent runtime's OpenAI-compatible adapter sends for a
   custom provider (`stream: true`, `stream_options.include_usage`, `store: false`,
   `max_completion_tokens` or `max_output_tokens`, `reasoning_effort` with `off` omitted, API key as
   bearer unless an explicit `Authorization` header is configured) minus tools, so a passing test

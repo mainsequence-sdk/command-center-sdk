@@ -51,7 +51,7 @@ describe("custom model direct chat", () => {
     expect(buildCustomModelDirectChatUrl(baseUrl, "openai-responses")).toBe(`${baseUrl}/responses`);
   });
 
-  it("mirrors Tau's chat-completions request without tools", () => {
+  it("mirrors the Agent runtime's chat-completions request without tools", () => {
     expect(
       buildCustomModelDirectChatPayload({
         api: "openai-completions",
@@ -92,7 +92,7 @@ describe("custom model direct chat", () => {
     });
   });
 
-  it("mirrors Tau's Responses request", () => {
+  it("mirrors the Agent runtime's Responses request", () => {
     expect(
       buildCustomModelDirectChatPayload({
         api: "openai-responses",

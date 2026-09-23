@@ -129,7 +129,7 @@ export function buildCustomModelDirectChatUrl(baseUrl: string, api: CustomModelP
 }
 
 /**
- * Mirrors the request Tau's OpenAI-compatible adapter sends for an Organization custom
+ * Mirrors the request the Agent runtime's OpenAI-compatible adapter sends for an Organization custom
  * provider, without tools, so a passing test predicts agent execution.
  */
 export function buildCustomModelDirectChatPayload(input: CustomModelDirectChatPayloadInput) {

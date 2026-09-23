@@ -7,7 +7,7 @@ import {
 /**
  * Who a message is from, resolved for rendering (ADR-0043 Phase C).
  *
- * The backend history projection stamps every Tau message with the verified
+ * The backend history projection stamps every Agent runtime message with the verified
  * caller (`actorKind`, `actorUid`, `actorName`) and the session's agent
  * (`targetAgentUid`). This module turns those fields, plus what the client
  * already knows about the viewer and the session, into the avatar, name and
@@ -228,7 +228,7 @@ export function resolveMessageActor(
 
 /**
  * The session's agent uid as stamped by the projection (`targetAgentUid` on
- * every Tau message). The active session summary carries the agent's label
+ * every Agent runtime message). The active session summary carries the agent's label
  * and numeric id but not its uid, so the thread supplies it.
  */
 export function findThreadTargetAgentUid(messages: readonly ThreadMessageShape[]) {
