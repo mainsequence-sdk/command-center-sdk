@@ -115,18 +115,32 @@ configuration or environment file. The repository boundary check applies to both
 | Path | Holds |
 | --- | --- |
 | `src/backend/` | The backend connection: the connection input, a client for each platform route and Agent-runtime route the chat calls, and the error helpers. Framework-neutral. |
-| `src/engine/` | The session engine: choosing, or getting or creating, the session behind a stable handle, hydration, runtime access and readiness, the model selection, sending, cancelling, and the queue. |
-| `src/ui/` | The chat UI: the assistant-ui runtime adapter, the thread, the composer with its provider, model and thinking picker, the connecting, readiness and model-required states, actors and provenance, agent icons, and the chat's own select, dialog, password input, confirmation dialog, markdown renderer and notification surface. |
+| `src/engine/` | The session engine: choosing, or getting or creating, the session behind a stable handle, hydration, runtime access and readiness, the model selection, sending, cancelling, the queue, and the assistant-ui runtime adapter (`useLatestMessageDataStreamRuntime`). |
+| `src/ui/` | The chat UI: the thread, the composer with its provider, model and thinking picker, the connecting stage, the model-required state, message actions, agent icons, and the chat's own select and markdown renderer. |
 | `src/model-providers/` | The model-provider screens: the catalog with built-in provider sign-in and sign-off, Organization custom providers and their models, and the direct test conversation. |
 | `src/index.ts` | The root export. |
-| `styles.css` | The chat stylesheet: prefixed class names and only the theme variables the SDK publishes, audited by `command-center-sdk theme audit`. |
+| `styles.css` | The chat stylesheet, in the `ms-chat` cascade layer: prefixed class names and only the theme variables the SDK publishes, audited by `command-center-sdk theme audit`. |
 | `standalone/` | The standalone example: a chat application built only on the chat and the SDK; the development bed and the target of the browser tests. |
 | `docs/` | Guides and records (section 3). |
 | `agent_scaffold/skills/`, `cli/` | The consumer skills and their installer (section 4). |
 | `scripts/` | The chat's own boundary check, run by its `check`, with the SDK on its allowlist as a peer only. |
 
-`src/backend/` and `src/engine/` exist in the chat's source today. The other names under `src/` are
-the target; if the imported code settles on other names, the import updates this table.
+`src/backend/`, `src/engine/` and `src/ui/` exist in the chat's source today, and the
+model-provider screens move into `src/model-providers/`. The chat renders no notification surface:
+the application passes a `notify` callback and shows notifications its own way. Like the select and
+the markdown renderer, the dialog, password input and confirmation dialog that the model-provider
+screens need are the chat's own, because the SDK publishes no equivalent; they arrive with those
+screens.
+
+**Stylesheet.** Every chat rule sits in one cascade layer, `ms-chat`, and every class is prefixed
+`ms-chat-`. The SDK's component rules are not layered, so they win where both style one element,
+and an application overrides the chat with ordinary rules. The exception is the compact provider,
+model and thinking picker: the chat draws it with the SDK's `ResourcePicker` and restyles the
+picker's trigger with `!important` declarations, because only `!important` lets a layered rule
+override an unlayered one. An application overrides those declarations only with an `!important`
+rule in a layer ordered before `ms-chat`. The theme audit accepts `!important` on an allowed value
+because it reads a value without the flag (an SDK CLI fix, under Unreleased in the SDK changelog).
+The application loads the SDK's stylesheets and then the chat's.
 
 **Build and exports.** `tsc` with NodeNext to `dist/`, with declarations and source maps and `.js`
 on every relative import, as the SDK builds.
@@ -149,19 +163,24 @@ alone, is an additive decision for later. `files` lists what a consumer and its 
 `dist`, `styles.css`, `docs`, `agent_scaffold`, `cli`, the standalone example the skills point at,
 `README.md`, `CHANGELOG.md` and `LICENSE`. `npm pack --dry-run` lists nothing else.
 
-**Dependencies.** `@assistant-ui/react`, `@assistant-ui/core`, `assistant-stream`, `lucide-react`,
-`react-markdown`, `remark-gfm`, `rehype-raw` and `rehype-sanitize`, with registry ranges only.
+**Dependencies.** `@assistant-ui/react`, `@assistant-ui/core`, `@assistant-ui/store`,
+`assistant-stream`, `lucide-react`, `react-markdown`, `remark-gfm`, `rehype-raw` and
+`rehype-sanitize`, with registry ranges only.
 
-- `@assistant-ui/react`, `@assistant-ui/core` and `assistant-stream` are one family, used partly
-  through unstable entry points. They move together, in a chat release, with the chat's tests.
+- `@assistant-ui/react`, `@assistant-ui/core`, `@assistant-ui/store` and `assistant-stream` are one
+  family, used partly through unstable entry points. They move together, in a chat release, with
+  the chat's tests. The thread imports `useAuiState` from `@assistant-ui/store` directly, so the
+  chat declares it (`^0.2.6`) instead of reaching it through `@assistant-ui/react`.
 - `lucide-react` uses the SDK's range, so an application gets one copy.
 - The markdown renderer keeps the order it has in Command Center: `remark-gfm`, then `rehype-raw`
   followed by `rehype-sanitize`, so raw HTML in an Agent's answer is sanitized before it renders.
 
-**Peer dependencies.** `@dev-mainsequence/command-center-sdk` `^0.5.0`, the first SDK with
-`/controls`; `react` and `react-dom` `>=18 <20`, the SDK's range. While the SDK is 0.x its caret
-range stops at the next minor, so the change that releases a new SDK minor also widens the chat's
-range and releases the chat. The lower bound rises when the chat starts to need a newer SDK.
+**Peer dependencies.** `@dev-mainsequence/command-center-sdk` with a caret range on the first SDK
+release that publishes `--warning-tint`, which the chat's warning panels use. No release publishes
+it yet (it is on this repository's `warning-tint` branch), so `^0.5.0` is not enough. `react` and
+`react-dom` `>=18 <20`, the SDK's range. While the SDK is 0.x its caret range stops at the next
+minor, so the change that releases a new SDK minor also widens the chat's range and releases the
+chat. The lower bound rises again when the chat starts to need a newer SDK.
 
 **First version.** `0.1.0`.
 
@@ -207,29 +226,33 @@ Every skill has a human guide, pinned by the test of section 3.
 
 ### 5. Release
 
-The first version, 0.1.0, is published by the existing workflow on a push to `main`, after the SDK
-version it requires. `publish-public-packages.mjs` publishes the SDK before the chat, skips versions
-already on npm, and stops the chat when the SDK fails; `packed-consumer` has installed the chat's
-tarball next to the SDK's before `publish` runs. SDK 0.5.x is already on npm, so the first chat
-release needs no SDK release.
+The first version, 0.1.0, is published by the existing workflow on a push to `main`. It follows the
+SDK release that publishes `--warning-tint`, in the same push or an earlier one: the workflow
+already publishes the SDK before the chat. `publish-public-packages.mjs` skips versions already on
+npm and stops the chat when the SDK fails, and `packed-consumer` has installed the chat's tarball
+next to the SDK's before `publish` runs.
 
 ### 6. Order of work in this repository
 
 1. **This record and the amendments of section 1**, before any chat code. Gate: `check`, `test`,
    `build`, `docs:build`, the SDK package smoke test and the packed-consumer verification pass
    with a second public package allowed.
-2. **Import the chat** as one commit, without its history: the workspace, declared in the root
-   `workspaces`; the chat's consumer fixture, also compiled by `examples:check`; the docs-site
-   section; its browser tests; its skills with their installer and guides; its changelog entry.
-   Gate: the full repository lane on a pull request.
+2. **Import the chat.** First merge `warning-tint` into `chat-package`, because the chat's
+   stylesheet must pass the theme audit against the theme in this repository, and only that branch
+   publishes `--warning-tint`. Then copy the chat in as one commit, without its history: the
+   workspace, declared in the root `workspaces`; the chat's consumer fixture, also compiled by
+   `examples:check`; the docs-site section; its browser tests; its skills with their installer and
+   guides; its changelog entry. Gate: the full repository lane on a pull request.
 3. **Release 0.1.0** through the workflow. Gate: the version is on npm and its packed consumer
    installed it next to the SDK. This record then names its implementation version.
 
 ## Compatibility and release impact
 
-- The SDK package does not change: no source, export, declaration, stylesheet, skill, contract,
-  schema, fixture, iframe protocol, theme ID or storage change, and no SDK release or changelog
-  entry.
+- This decision changes nothing in the SDK package: no source, export, declaration, stylesheet,
+  skill, contract, schema, fixture, iframe protocol, theme ID or storage change. The chat relies on
+  two SDK changes that stand on their own: `--warning-tint`, which no release publishes yet, and the
+  theme audit reading a value without its `!important` flag. The first chat release waits for an
+  SDK release that publishes `--warning-tint` (section 5).
 - The repository tooling changes: the direction check, validation that allows the chat,
   per-package builds, browser tests and packed consumers, and root `check` and `test` over every
   public package. With the SDK as the only workspace, each runs what it ran before.
