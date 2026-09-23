@@ -77,3 +77,18 @@ describe("SDK stylesheets device axis", () => {
     expect(dvhCount).toBeGreaterThanOrEqual(vhCount);
   });
 });
+
+describe("SDK stylesheets warning tint", () => {
+  const tailwindCss = readFileSync(new URL("../../theme/tailwind.css", import.meta.url), "utf8");
+
+  it("publishes --warning-tint, keyed to --warning by default and grey in Main Sequence Light", () => {
+    expect(themeCss).toContain("--warning-tint: var(--warning);");
+    expect(themeCss).toMatch(/\[data-theme="quartz-light"\] \{[^}]*--warning-tint: #909090;/u);
+    expect(tailwindCss).toContain("--color-warning-tint: var(--warning-tint);");
+  });
+
+  it("tints warning backgrounds from --warning-tint, never from --warning", () => {
+    expect(componentCss).not.toMatch(/background: color-mix\(in srgb, var\(--warning\) /u);
+    expect(componentCss).toMatch(/background: color-mix\(in srgb, var\(--warning-tint\) /u);
+  });
+});

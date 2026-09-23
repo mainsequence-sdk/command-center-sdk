@@ -28,6 +28,9 @@
   --success-foreground: #02140a;
   --warning: #f59e0b;
   --warning-foreground: #201400;
+  /* Base color that warning backgrounds are tinted from, always used with an opacity
+     (bg-warning-tint/10). It is the warning hue itself unless a preset overrides it. */
+  --warning-tint: var(--warning);
   --positive: #22c55e;
   --negative: #f87171;
   --ring: #4f8cff;
@@ -304,6 +307,10 @@ html[data-theme="quartz-light"],
   --shadow-panel: none;
   --shadow-dialog: 0 16px 48px -24px rgb(40 42 48 / 24%);
   --shadow-picker: 0 8px 24px -16px rgb(40 42 48 / 22%);
+  /* Linear keeps light surfaces neutral and shows status only on icon, border, and text.
+     The darkened warning olive tints white into eggshell and khaki, so warning panels
+     tint from grey instead: 10% lands on --muted (#F4F4F4). */
+  --warning-tint: #909090;
 }
 
 /* Solid indigo tint rather than the shared 30% alpha of --primary. */

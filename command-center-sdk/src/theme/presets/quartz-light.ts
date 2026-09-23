@@ -62,8 +62,9 @@ export const quartzLightTheme: ThemePreset = {
       "#5F5EFF", // indigo bright
       "#3C4149", // dark neutral
     ],
-    // Light mode runs pale to saturated. Starts are hue-matched to their anchor
-    // because the palette resolver interpolates hue in HSL along the shorter arc.
+    // Light mode runs pale to saturated. Primary and success start on a pale tint of
+    // their own hue; warning starts on neutral grey because a pale olive reads as
+    // eggshell. A pure grey endpoint takes the other endpoint's hue in the resolver.
     sequential: {
       primary: {
         start: "#EEEFFB",
@@ -76,7 +77,7 @@ export const quartzLightTheme: ThemePreset = {
         end: "#1F8536",
       },
       warning: {
-        start: "#F7F3E3",
+        start: "#F4F4F4",
         mid: "#C4B26A",
         end: "#8D7000",
       },
@@ -86,20 +87,17 @@ export const quartzLightTheme: ThemePreset = {
         end: "#3C4149",
       },
     },
+    // Diverging centers are pure neutral grey, matching the surface greys. The
+    // resolver treats a grey's hue as powerless, so each half keeps its own hue.
     diverging: {
-      // A pure grey neutral is HSL hue 0deg, so the indigo half passes through
-      // pale lavender near the center. Tinted neutrals at 260-315deg were tested
-      // and each pushed the orange half to pink instead; grey drifts least.
       default: {
         negative: "#FB611F",
         neutral: "#F0F0F0",
         positive: "#5E6AD2",
       },
-      // Neutral sits at ~60deg, between red and green, so both halves
-      // interpolate directly and never wrap through magenta.
       "positive-negative": {
         negative: "#E42020",
-        neutral: "#F4F4F0",
+        neutral: "#F4F4F4",
         positive: "#1F8536",
       },
     },

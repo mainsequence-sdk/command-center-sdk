@@ -921,7 +921,7 @@ h3),
 
 .cc-entity-summary__warning {
   align-items: flex-start;
-  background: color-mix(in srgb, var(--warning) 10%, transparent);
+  background: color-mix(in srgb, var(--warning-tint) 10%, transparent);
   border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
   border-radius: max(0.25rem, calc(var(--radius) - 6px));
   color: var(--warning);
@@ -3340,7 +3340,7 @@ h3),
 }
 
 .cc-badge--warning {
-  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  background: color-mix(in srgb, var(--warning-tint) 16%, transparent);
   border-color: color-mix(in srgb, var(--warning) 40%, transparent);
   color: var(--warning);
 }
