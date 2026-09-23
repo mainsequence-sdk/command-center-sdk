@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - "command-center-sdk/**"
+      - "chat/**"
       - "examples/**"
       - "scripts/**"
       - "package.json"
@@ -27,13 +28,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.packages.outputs.matrix }}
+      browser-matrix: ${{ steps.packages.outputs.browser-matrix }}
     steps:
       - uses: actions/checkout@v5.0.1
       - uses: actions/setup-node@v5.0.0
         with:
           node-version: 24
       - id: packages
-        run: echo "matrix=$(node scripts/list-public-packages.mjs --matrix)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "matrix=$(node scripts/list-public-packages.mjs --matrix)" >> "$GITHUB_OUTPUT"
+          echo "browser-matrix=$(node scripts/list-public-packages.mjs --matrix --with-script test:browser)" >> "$GITHUB_OUTPUT"
 
   package:
     needs: prepare
@@ -51,8 +55,10 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm run public-packages:validate
-      - name: Check and build
-        run: npm run sdk:build && npm --workspace "${{ matrix.package.name }}" run check && npm --workspace "${{ matrix.package.name }}" run test
+      - name: Build after the packages it depends on
+        run: node scripts/run-public-package-scripts.mjs --package "${{ matrix.package.name }}" build size:check
+      - name: Check and test
+        run: npm --workspace "${{ matrix.package.name }}" run check && npm --workspace "${{ matrix.package.name }}" run test
       - name: Pack
         run: npm pack --workspace "${{ matrix.package.name }}"
       - uses: actions/upload-artifact@v4.6.2
@@ -74,8 +80,12 @@ jobs:
       - run: node scripts/verify-packed-consumer.mjs
 
   browser:
-    needs: package
+    needs: [prepare, package]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.prepare.outputs.browser-matrix).include }}
     steps:
       - uses: actions/checkout@v5.0.1
       - uses: actions/setup-node@v5.0.0
@@ -85,7 +95,9 @@ jobs:
           cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm --workspace @dev-mainsequence/command-center-sdk run test:browser
+      - name: Build the packages it depends on
+        run: node scripts/run-public-package-scripts.mjs --dependencies-of "${{ matrix.package.name }}" build
+      - run: npm --workspace "${{ matrix.package.name }}" run test:browser
 
   publish:
     needs: [package, packed-consumer, browser]

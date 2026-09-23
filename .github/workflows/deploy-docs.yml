@@ -10,6 +10,7 @@ on:
     paths:
       - "command-center-sdk/docs/**"
       - "command-center-sdk/README.md"
+      - "chat/docs/**"
       - "docs-site/docusaurus.config.js"
       - "docs-site/sdk-sidebars.js"
       - "docs-site/package.json"
