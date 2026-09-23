@@ -22,3 +22,13 @@ release policy.
 New reusable capabilities become deliberate SDK subpath exports. Command Center application code,
 product policy, routes, authentication, persistence, and deployment configuration do not belong in
 this repository.
+
+## Decisions
+
+- [SDK ADR 012: The Chat as a Second Public Package](./adr/adr-sdk-012-chat-as-a-second-public-package.md)
+  — Accepted
+
+`SDK ADR` numbers form one sequence for the whole repository, and each record lives with what it
+governs: the SDK's decisions in `command-center-sdk/docs/adr/`, the chat's in the chat's
+`docs/adr/`, and decisions about the repository itself here. That is why the SDK's catalog skips
+number 012. A new record takes the number after the highest one in all three places.
