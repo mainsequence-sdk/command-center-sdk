@@ -14,6 +14,8 @@ on:
       - "chat/README.md"
       - "chat/src/*/README.md"
       - "chat/standalone/**/README.md"
+      - "chat/agent_scaffold/README.md"
+      - "chat/cli/README.md"
       - "docs-site/docusaurus.config.js"
       - "docs-site/sdk-sidebars.js"
       - "docs-site/chat-sidebars.js"

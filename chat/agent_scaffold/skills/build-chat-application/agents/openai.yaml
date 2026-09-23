@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Chat Application"
+  short_description: "Mount the Main Sequence chat in an SDK application"
+  default_prompt: "Use $build-chat-application to mount the chat next to the Command Center SDK, give it its inputs, and verify it on the stand-in and in a browser."

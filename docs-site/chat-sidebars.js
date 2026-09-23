@@ -7,7 +7,14 @@ const chatSidebars = {
       type: "category",
       label: "Guides",
       collapsed: false,
-      items: ["docs/agent-session-resolution", "docs/main-sequence-ai-provider-errors"],
+      items: [
+        "docs/build-a-chat-application",
+        "docs/connect-to-the-platform",
+        "docs/model-providers",
+        "docs/conversation-contract",
+        "docs/agent-session-resolution",
+        "docs/main-sequence-ai-provider-errors",
+      ],
     },
     {
       type: "category",
@@ -20,6 +27,8 @@ const chatSidebars = {
         "src/model-providers/README",
         "standalone/README",
         "standalone/stand-in/README",
+        "agent_scaffold/README",
+        "cli/README",
       ],
     },
     {

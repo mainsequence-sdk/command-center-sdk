@@ -14,6 +14,8 @@
     "*.css"
   ],
   "files": [
+    "agent_scaffold",
+    "cli",
     "dist",
     "docs",
     "standalone",
@@ -24,6 +26,9 @@
     "CHANGELOG.md",
     "LICENSE"
   ],
+  "bin": {
+    "mainsequence-chat": "./cli/mainsequence-chat.mjs"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -42,11 +47,12 @@
     "boundary": "node scripts/check-boundary.mjs",
     "theme:audit": "command-center-sdk theme audit --path styles.css",
     "check": "node scripts/check-boundary.mjs && npm run theme:audit && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.build.json --noEmit && tsc -p standalone/tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && node --test tests/cli/*.node.mjs",
     "dev": "vite",
     "build": "tsc -p tsconfig.build.json",
     "build:standalone": "vite build",
-    "test:browser": "playwright test --config playwright.config.ts"
+    "test:browser": "playwright test --config playwright.config.ts",
+    "postinstall": "node ./cli/postinstall.mjs"
   },
   "dependencies": {
     "@assistant-ui/core": "0.1.13",

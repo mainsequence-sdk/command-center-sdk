@@ -1,0 +1,4 @@
+interface:
+  display_name: "Connect Chat To The Platform"
+  short_description: "Reach the platform and Agent runtime from the chat"
+  default_prompt: "Use $connect-chat-to-the-platform to connect the chat to the platform through the application's origin and handle its tokens and failure states."

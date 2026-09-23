@@ -66,6 +66,8 @@ const config = {
           "src/*/README.md",
           "standalone/README.md",
           "standalone/stand-in/README.md",
+          "agent_scaffold/README.md",
+          "cli/README.md",
         ],
         sidebarPath: require.resolve("./chat-sidebars.js"),
         editUrl: ({ docPath }) =>

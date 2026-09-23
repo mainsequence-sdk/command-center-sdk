@@ -28,6 +28,8 @@ exports (`src/index.ts`).
   runtime. It is the proof of independence, the development bed, and the browser-test target.
 - `scripts/check-boundary.mjs`: the boundary check.
 - `docs/`: the package's [decisions and guides](./docs/README.md).
+- `agent_scaffold/skills/`: the package's agent skills, and `cli/`, their installer. See
+  [Agent Skills](#agent-skills).
 - `CHANGELOG.md`, `LICENSE` (Apache-2.0), and `tsconfig.build.json`: what the package needs to be
   published from this repository ([SDK ADR 012](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)).
 
@@ -86,6 +88,24 @@ platform API or to the Agent's runtime. Whether and when to rewrite is the appli
   peer (the SDK or React) listed as a regular dependency, an `@/` import, an import that leaves
   the package, or an environment read, and then type-checks the package and the standalone
   application. It is part of the repository's `check`.
+
+## Agent Skills
+
+The package ships four agent skills, each with a human guide in `docs/`:
+`build-chat-application`, `connect-chat-to-the-platform`, `manage-model-providers`, and
+`design-agent-conversation-capabilities` ([the map](./docs/README.md#task-and-agent-skill-map)).
+Installing the package installs them into `.agents/skills/chat/` of the repository that runs
+`npm install`; install or refresh them explicitly with:
+
+```bash
+npx mainsequence-chat skills install --path .
+```
+
+The package owns `.agents/skills/chat/` alone: every install replaces it and records the package
+version in `PINNED_FROM.txt`, and no other namespace is touched, the Command Center SDK's
+`.agents/skills/command-center/` included. The skills may refer to the SDK's skills; the SDK's
+never refer to these. See the [agent scaffold](./agent_scaffold/README.md) and the
+[CLI](./cli/README.md).
 
 ## Commands
 
