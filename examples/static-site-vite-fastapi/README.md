@@ -45,15 +45,38 @@ separately. Run `mainsequence login` again in the Python process's environment w
 
 ## Hosted transport
 
-Build with `VITE_API_TRANSPORT=hosted`, `VITE_HOST_ORIGIN=<exact HTTPS host origin>`, and
-`VITE_FASTAPI_RELEASE_UID=<authorized canonical release UUID>` only for a site embedded by a
-trusted Command Center host. These are public routing values, not credentials. The frontend
-installs the SDK iframe listener and uses `client.fetchFastApi`. The host must provide the
-delegated credential resolver, and its FastAPI release must serve `/api/me`. Directly opening the
-hosted build has no trusted parent bridge and shows an unavailable error. A non-local direct link
-cannot use the local CLI developer identity; supporting it requires a separate application-owned
-backend transport that authenticates each request. Never put a session token or secret in a Vite
-variable.
+Build with `VITE_API_TRANSPORT=hosted`, `VITE_HOST_ORIGIN=<exact HTTPS host origin>`, and a JSON
+map of application API names to authorized canonical release UIDs. For example:
+
+```bash
+VITE_API_TRANSPORT=hosted \
+VITE_HOST_ORIGIN=https://command-center.example.com \
+VITE_FASTAPI_RELEASES='{"identity":"00000000-0000-4000-8000-000000000001","reports":"00000000-0000-4000-8000-000000000002"}' \
+npm run build
+```
+
+The page uses the `identity` entry for `/api/me`. Add any number of names to the map, then select
+the target for each request through the same transport:
+
+```ts
+const releases = parseHostedApiReleases(import.meta.env.VITE_FASTAPI_RELEASES);
+const transport = createHostedApiTransport({ client, releases });
+await transport.get("identity", "/api/me");
+await transport.get("reports", "/v1/report");
+```
+
+The second call illustrates routing; this small example does not implement `/v1/report`. An
+unknown API name fails before a request is sent. The names and release UIDs are public routing
+values, not credentials. `fetchFastApi` receives the selected UID on each call and has no
+dependency on the name of the Vite variable or on this example's configuration format.
+
+The frontend installs the SDK iframe listener and uses `client.fetchFastApi`. The trusted host
+must provide a delegated credential resolver that authorizes each requested release, and the
+identity release must serve `/api/me`. Directly opening the hosted build has no trusted parent
+bridge and shows an unavailable error. A non-local direct link cannot use the local CLI developer
+identity; supporting it requires a separate application-owned backend transport that
+authenticates each request. Never put a session token or secret in a Vite variable.
 
 The application-owned selection lives in `src/transport.ts`; neither path is an SDK backend
-transport. Do not copy `local_api.py` into a deployed multi-user service.
+transport. The local runner and Vite proxy still demonstrate one API; add local proxy routes for
+additional local APIs. Do not copy `local_api.py` into a deployed multi-user service.

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.5.2
+
+Compatibility axes: repository consumer example and its guide only. No SDK runtime or public API,
+packaged agent skill, backend contract, JSON Schema, fixture, iframe protocol, theme ID, or storage
+change. No backend rollout is required.
+
+- The hosted Vite/FastAPI example now selects a release UID by API name for each request from a
+  JSON map, so one site can call multiple FastAPI releases. Unknown names and invalid release UIDs
+  fail before a request is sent. The local one-API runner remains a focused development example.
+
 ## 0.5.1
 
 Compatibility axes: packaged agent skills and human guides only. No runtime, npm public API,

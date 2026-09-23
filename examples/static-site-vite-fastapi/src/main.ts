@@ -1,22 +1,27 @@
 import { createStaticSiteIframeClient } from "@dev-mainsequence/command-center-sdk/embed";
 
-import { createApiTransport } from "./transport";
+import {
+  createHostedApiTransport,
+  createLocalApiTransport,
+  parseHostedApiReleases,
+} from "./transport";
 
 const result = document.querySelector<HTMLParagraphElement>("#result") ??
   (() => { throw new Error("Missing result element"); })();
 
 async function run(): Promise<void> {
   const mode = import.meta.env.VITE_API_TRANSPORT ?? "local";
-  let transport: ReturnType<typeof createApiTransport>;
+  let getIdentity: () => Promise<Response>;
 
   if (mode === "local") {
-    transport = createApiTransport({ mode: "local" });
+    const transport = createLocalApiTransport();
+    getIdentity = () => transport.get("/api/me");
   } else if (mode === "hosted") {
     const hostOrigin = import.meta.env.VITE_HOST_ORIGIN;
-    const resourceReleaseUid = import.meta.env.VITE_FASTAPI_RELEASE_UID;
-    if (!hostOrigin || !resourceReleaseUid || window.parent === window) {
+    if (!hostOrigin || window.parent === window) {
       throw new Error("Hosted transport needs a trusted iframe host and public routing values");
     }
+    const releases = parseHostedApiReleases(import.meta.env.VITE_FASTAPI_RELEASES);
     let contextReady!: () => void;
     const ready = new Promise<void>((resolve) => { contextReady = resolve; });
     const client = createStaticSiteIframeClient({
@@ -43,12 +48,13 @@ async function run(): Promise<void> {
     } finally {
       window.clearTimeout(timer);
     }
-    transport = createApiTransport({ mode: "hosted", client, resourceReleaseUid });
+    const transport = createHostedApiTransport({ client, releases });
+    getIdentity = () => transport.get("identity", "/api/me");
   } else {
     throw new Error(`Unknown API transport: ${mode}`);
   }
 
-  const response = await transport.get("/api/me");
+  const response = await getIdentity();
   if (response.status === 503 && mode === "local") {
     result.textContent = "Local identity unavailable. Run mainsequence login and retry.";
   } else if (!response.ok) {
