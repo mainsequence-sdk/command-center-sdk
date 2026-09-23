@@ -15,7 +15,7 @@
     "public-packages:validate": "node scripts/validate-public-packages.mjs",
     "packages:check": "node scripts/run-public-package-scripts.mjs check build size:check",
     "packages:test": "node scripts/run-public-package-scripts.mjs test",
-    "examples:check": "tsc -p examples/sdk-consumer-fixture/tsconfig.json --noEmit && tsc -p examples/static-site-vite-fastapi/tsconfig.json --noEmit && node --test examples/static-site-vite-fastapi/transport.node.mjs",
+    "examples:check": "tsc -p examples/sdk-consumer-fixture/tsconfig.json --noEmit && tsc -p examples/chat-consumer-fixture/tsconfig.json --noEmit && tsc -p examples/static-site-vite-fastapi/tsconfig.json --noEmit && node --test examples/static-site-vite-fastapi/transport.node.mjs",
     "sdk:build": "npm --workspace @dev-mainsequence/command-center-sdk run build && npm --workspace @dev-mainsequence/command-center-sdk run size:check",
     "sdk:check": "npm --workspace @dev-mainsequence/command-center-sdk run check",
     "sdk:test": "npm --workspace @dev-mainsequence/command-center-sdk run test",
