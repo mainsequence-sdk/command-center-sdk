@@ -1,0 +1,13 @@
+{
+  "name": "package-direction-valid-sdk",
+  "private": true,
+  "scripts": {
+    "build": "node ../scripts/clean-dist.mjs && tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20"
+  },
+  "dependencies": {
+    "lucide-react": "^0.500.0"
+  }
+}

@@ -16,6 +16,27 @@ npm run boundaries:check
 npm run boundaries:test
 ```
 
+## Package Direction Validation
+
+The chat depends on the SDK, and the SDK knows nothing about the chat
+([SDK ADR 012](../docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)).
+
+- `check-package-direction.mjs` reads every file under `command-center-sdk/`, whatever its type,
+  except build output and installed dependencies. It fails when one contains
+  `@dev-mainsequence/chat`, holds a path that resolves into `chat/`, links into `chat/` on the
+  repository's GitHub, or is a symbolic link into `chat/`, and when the SDK's `package.json` lists
+  the chat in a dependency field. It reads text: a path that code assembles at run time from
+  separate segments is left to review. The rule holds before the chat's workspace exists.
+- `check-package-direction.node.mjs` tests the check against fixtures under
+  `fixtures/package-direction/`.
+
+Run both checks with:
+
+```bash
+npm run direction:check
+npm run direction:test
+```
+
 ## Public Package Releases
 
 - `public-package-graph.mjs` discovers the public package and resolves release order.

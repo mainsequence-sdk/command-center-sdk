@@ -1,0 +1,10 @@
+{
+  "name": "package-direction-invalid-sdk",
+  "private": true,
+  "peerDependencies": {
+    "@dev-mainsequence/chat": "^0.1.0"
+  },
+  "devDependencies": {
+    "chat-source": "file:../chat"
+  }
+}
