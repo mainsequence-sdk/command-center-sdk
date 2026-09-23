@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Compatibility axes: CLI theme audit only; a stylesheet it passed before still passes. No npm public
+API, packaged agent skill, backend contract, JSON Schema, fixture, iframe protocol, theme ID, theme
+variable, or storage change. No backend rollout is required.
+
+- `command-center-sdk theme audit` reads a declaration's value without its `!important` flag. An
+  allowed value such as `transparent !important` or `none !important` on a theme-owned property no
+  longer fails as `hardcoded-theme-value`; a color literal, fallback, unknown variable, or hardcoded
+  value still fails with the flag.
+
 ## 0.5.2
 
 Compatibility axes: repository consumer example and its guide only. No SDK runtime or public API,

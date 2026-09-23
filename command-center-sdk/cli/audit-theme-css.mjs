@@ -12,6 +12,9 @@ const themeLikeCustomPropertyPattern =
   /(?:background|border|card|color|danger|font|foreground|input|muted|primary|radius|ring|shadow|success|surface|text|warning)/iu;
 const allowedThemeIndependentValuePattern =
   /^(?:0(?:\s+0){0,3}|50%|currentcolor|inherit|initial|none|revert(?:-layer)?|transparent|unset)$/iu;
+// `!important` is a flag on the declaration, not part of its value, so every check reads the value
+// without it. CSS allows whitespace before `!` and between `!` and `important`, in any case.
+const importantFlagPattern = /\s*!\s*important$/iu;
 
 function stripComments(css) {
   return css.replace(/\/\*[\s\S]*?\*\//gu, (comment) => comment.replace(/[^\n]/gu, " "));
@@ -24,7 +27,7 @@ function parseDeclarations(css) {
 
   for (const match of source.matchAll(pattern)) {
     const property = match[1].toLowerCase();
-    const value = match[2].trim();
+    const value = match[2].trim().replace(importantFlagPattern, "");
     const propertyOffset = match[0].indexOf(match[1]);
     const index = (match.index ?? 0) + Math.max(propertyOffset, 0);
     const line = source.slice(0, index).split("\n").length;

@@ -90,6 +90,59 @@ test("rejects invented variables, fallbacks, and hardcoded semantic values", asy
   }
 });
 
+test("reads an allowed theme value without its !important flag", async () => {
+  const { root, source } = await fixture(`
+    .picker-trigger {
+      background-color: transparent !important;
+      box-shadow: none !important;
+      border-color: TRANSPARENT !IMPORTANT;
+      outline: none ! important;
+      background-image: none!important;
+      color: var(--primary) !important;
+    }
+  `);
+  try {
+    const result = await auditThemeCss({ projectDir: root, targetPath: source });
+    assert.equal(result.ok, true, JSON.stringify(result.diagnostics, null, 2));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("an !important flag neither causes nor hides a theme violation", async () => {
+  const declarations = [
+    "color: #fff",
+    "font-size: 12px",
+    "background: var(--card, #10231d)",
+    "border-color: var(--ms-color-unknown)",
+    "box-shadow: none",
+  ];
+  const css = (flag) => `.panel {\n${declarations.map((line) => `  ${line}${flag};`).join("\n")}\n}\n`;
+  const plain = await fixture(css(""));
+  const flagged = await fixture(css(" !important"));
+  const rulesByLine = ({ diagnostics }) => diagnostics.map(({ line, rule }) => `${line} ${rule}`);
+  try {
+    const plainResult = await auditThemeCss({ projectDir: plain.root, targetPath: plain.source });
+    const flaggedResult = await auditThemeCss({
+      projectDir: flagged.root,
+      targetPath: flagged.source,
+    });
+    assert.equal(flaggedResult.ok, false);
+    assert.deepEqual(rulesByLine(flaggedResult), rulesByLine(plainResult));
+    for (const expected of [
+      "2 hardcoded-theme-color",
+      "3 hardcoded-theme-value",
+      "4 theme-fallback",
+      "5 unknown-theme-variable",
+    ]) {
+      assert.equal(rulesByLine(flaggedResult).includes(expected), true, expected);
+    }
+  } finally {
+    await rm(plain.root, { recursive: true, force: true });
+    await rm(flagged.root, { recursive: true, force: true });
+  }
+});
+
 test("CLI emits machine-readable failures and exits nonzero", async () => {
   const { root, source } = await fixture(`.panel { color: var(--ms-color-text, #fff); }`);
   try {
