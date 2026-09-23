@@ -1,11 +1,11 @@
 # Repository Scripts
 
-Repository-level SDK validation, packing, and publication scripts live here.
+Repository-level validation, packing, and publication scripts for the public packages live here.
 
 ## Package Boundary Validation
 
-- `check-package-boundaries.mjs` rejects imports that couple the SDK to Command Center application
-  internals or bypass declared package exports.
+- `check-package-boundaries.mjs` rejects imports that couple a public package to Command Center
+  application internals or bypass declared package exports. It runs on every public workspace.
 - `check-package-boundaries.node.mjs` tests the validator against fixtures under
   `fixtures/package-boundaries/`.
 
@@ -39,13 +39,23 @@ npm run direction:test
 
 ## Public Package Releases
 
-- `public-package-graph.mjs` discovers the public package and resolves release order.
+- `public-package-graph.mjs` discovers the public packages and resolves release order: a package
+  after the public packages it depends on, peers included.
 - `validate-public-packages.mjs` enforces publish metadata, exports, licenses, changelog, and
-  registry-safe dependencies.
-- `list-public-packages.mjs --matrix` supplies the release workflow matrix.
+  registry-safe dependencies, and allows exactly the SDK and, once `chat/package.json` exists, the
+  chat.
+- `list-public-packages.mjs --matrix` supplies the release workflow matrix; `--with-script <name>`
+  keeps the packages that define that script, such as `test:browser` for the browser job.
+- `run-public-package-scripts.mjs <script>...` runs npm scripts in every public package in release
+  order; `--package <name>` limits it to that package and the packages it depends on, and
+  `--dependencies-of <name>` to the packages it depends on. The root `check` and `test` and the
+  release workflow use it.
 - `publish-public-packages.mjs` builds, skips existing versions, and publishes with provenance.
-- `verify-packed-consumer.mjs` compiles an isolated consumer against the packed tarball.
+- `verify-packed-consumer.mjs` packs every public package and compiles each package's consumer
+  fixture in its own clean consumer, installed with the tarballs of the sibling packages it
+  declares as dependencies or peers ([fixture convention](../docs/packages/sdk-consumer-fixture.md)).
 - `clean-sdk-dist.mjs` removes only the SDK build output before compilation so deleted source files cannot survive into a package.
 - `check-package-size.mjs` enforces entry-bundle budgets after build.
 
-`@dev-mainsequence/command-center-sdk` is the only public package in this repository.
+The public packages are `@dev-mainsequence/command-center-sdk` and, once its workspace exists,
+`@dev-mainsequence/chat` (SDK ADR 012).

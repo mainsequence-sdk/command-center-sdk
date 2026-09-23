@@ -1,17 +1,44 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { readPublicPackageGraph } from "./public-package-graph.mjs";
 
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+// The repository publishes the SDK and, once its workspace exists, the chat (SDK ADR 012). Any
+// other public package is a policy change that needs its own decision.
+const sdkPackage = { name: "@dev-mainsequence/command-center-sdk", directory: "command-center-sdk" };
+const chatPackage = { name: "@dev-mainsequence/chat", directory: "chat" };
+
+const chatWorkspaceExists = fs.existsSync(
+  path.join(repositoryRoot, chatPackage.directory, "package.json"),
+);
+const expectedPublicPackages = chatWorkspaceExists ? [sdkPackage, chatPackage] : [sdkPackage];
 const packages = readPublicPackageGraph();
-const expectedPublicPackages = ["@dev-mainsequence/command-center-sdk"];
-const actualPublicPackages = packages.map((entry) => entry.name);
+
+function describe(entries) {
+  return (
+    entries
+      .map(({ name, directory }) => `${name} (${directory}/)`)
+      .sort()
+      .join(", ") || "none"
+  );
+}
 
 if (
-  actualPublicPackages.length !== expectedPublicPackages.length ||
-  actualPublicPackages.some((name, index) => name !== expectedPublicPackages[index])
+  packages.length !== expectedPublicPackages.length ||
+  expectedPublicPackages.some(
+    (expected) =>
+      !packages.some(
+        (entry) => entry.name === expected.name && entry.directory === expected.directory,
+      ),
+  )
 ) {
   throw new Error(
-    `Expected the unified SDK to be the only public package; found: ${
-      actualPublicPackages.join(", ") || "none"
-    }`,
+    `Expected the public packages to be ${describe(expectedPublicPackages)}; found ${describe(
+      packages,
+    )}. The repository publishes the SDK and, once chat/package.json exists, the chat as a public root workspace (SDK ADR 012).`,
   );
 }
 

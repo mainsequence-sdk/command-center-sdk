@@ -134,3 +134,23 @@ export function parseExcludedPackageNames(args) {
   });
   return names;
 }
+
+// The public packages `packageName` depends on, directly or through another public package, peers
+// included.
+export function collectPublicDependencyNames(packages, packageName) {
+  const byName = new Map(packages.map((entry) => [entry.name, entry]));
+  if (!byName.has(packageName)) {
+    throw new Error(`${packageName} is not a public package of this repository.`);
+  }
+  const found = new Set();
+  const visit = (entry) => {
+    entry.dependencies.forEach((dependencyName) => {
+      const dependency = byName.get(dependencyName);
+      if (!dependency || found.has(dependencyName)) return;
+      found.add(dependencyName);
+      visit(dependency);
+    });
+  };
+  visit(byName.get(packageName));
+  return found;
+}

@@ -22,6 +22,21 @@ The fixture must never import `@/`, repository `apps/command-center/src/`, `apps
 legacy Command Center package, or a private host. It should stay intentionally small: its purpose
 is export-map and package installation validation, not end-to-end application coverage.
 
+## Consumer fixtures for every public package
+
+`scripts/verify-packed-consumer.mjs` verifies each public package in its own clean consumer:
+
+- The SDK's fixture is this one, `examples/sdk-consumer-fixture/`. It gets only the SDK tarball.
+- Every other public package brings its own fixture at
+  `examples/<workspace directory>-consumer-fixture/`; the chat's is
+  `examples/chat-consumer-fixture/`. It gets the package's tarball and the tarballs of the sibling
+  packages the package declares as dependencies or peers, installed together as an application
+  installs them: the chat's fixture gets the chat and the SDK.
+- A fixture has this fixture's shape: a `package.json` with a `check` script and its registry
+  dependencies, a `tsconfig.json`, and `src/`. The verification copies only those, points the
+  sibling packages at their tarballs, and runs `npm install --ignore-scripts` and `npm run check`.
+- A public package without a fixture fails the verification, which names the path it expected.
+
 ## Related
 
 - [Fixture README](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/examples/sdk-consumer-fixture/README.md)

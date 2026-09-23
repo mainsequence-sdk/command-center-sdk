@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -37,15 +38,18 @@ test("rejects relative traversal outside a publishable package", () => {
   assert.match(violations[0]?.reason ?? "", /must not traverse outside/);
 });
 
-test("discovers only the unified SDK as publishable", () => {
+test("discovers the SDK and, once its workspace exists, the chat as publishable", () => {
   const packages = discoverPublishablePackages();
+  const chatWorkspaceExists = fs.existsSync(path.join(repositoryRoot, "chat", "package.json"));
 
   assert.deepEqual(
-    packages.map((workspacePackage) => workspacePackage.name),
-    ["@dev-mainsequence/command-center-sdk"],
-  );
-  assert.equal(
-    path.relative(repositoryRoot, packages[0]?.packageRoot ?? ""),
-    "command-center-sdk",
+    packages.map((workspacePackage) => [
+      workspacePackage.name,
+      path.relative(repositoryRoot, workspacePackage.packageRoot),
+    ]),
+    [
+      ...(chatWorkspaceExists ? [["@dev-mainsequence/chat", "chat"]] : []),
+      ["@dev-mainsequence/command-center-sdk", "command-center-sdk"],
+    ],
   );
 });
