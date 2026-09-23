@@ -6,22 +6,26 @@ slug: /packages
 
 # Command Center SDK Package Architecture
 
-This repository produces one public package: `@dev-mainsequence/command-center-sdk`.
+This repository produces two public packages: `@dev-mainsequence/command-center-sdk` and
+`@dev-mainsequence/chat` ([SDK ADR 012](./adr/adr-sdk-012-chat-as-a-second-public-package.md)).
+The chat depends on the SDK as a peer; the SDK knows nothing about the chat. The chat's workspace
+is added when its code is imported; until then the SDK is the only workspace.
 
-The package source lives under `command-center-sdk/`. Its README and `docs/` directory define the
-supported consumer API, while this section records repository-level dependency, compatibility, and
-release policy.
+The SDK's source lives under `command-center-sdk/` and the chat's under `chat/`. Each package's
+README and `docs/` directory define its supported consumer API, while this section records
+repository-level dependency, compatibility, and release policy.
 
 ## Reading Order
 
 1. [Architecture and dependency rules](./architecture.md)
 2. [Compatibility policy](./compatibility.md)
 3. [Publishing and releases](./publishing.md)
-4. [Packed consumer fixture](./sdk-consumer-fixture.md)
+4. [Packed consumer fixtures](./sdk-consumer-fixture.md)
 
 New reusable capabilities become deliberate SDK subpath exports. Command Center application code,
-product policy, routes, authentication, persistence, and deployment configuration do not belong in
-this repository.
+product policy, authentication, persistence, and deployment configuration do not belong in this
+repository. Product routes stay out of the SDK package; the chat is bound to the platform's routes
+by design.
 
 ## Decisions
 

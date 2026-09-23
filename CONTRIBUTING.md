@@ -2,8 +2,11 @@
 
 Thanks for contributing.
 
-This repository owns one public package: `@dev-mainsequence/command-center-sdk`. Changes should
-preserve its public entrypoints, consumer compatibility, documentation, and package boundary.
+This repository owns two public packages: `@dev-mainsequence/command-center-sdk` and
+`@dev-mainsequence/chat`, whose workspace `chat/` arrives with the chat's code
+([SDK ADR 012](./docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)). The chat
+depends on the SDK as a peer; the SDK knows nothing about the chat. Changes should preserve each
+package's public entrypoints, consumer compatibility, documentation, and package boundary.
 
 ## Before You Start
 
@@ -53,6 +56,10 @@ npm run docs:dev
 
 - Keep reusable contracts, views, themes, embeds, and navigation in the SDK.
 - Keep product routes, authentication, backend transports, permissions, and deployment outside.
+  This exclusion of routes and transports applies to the SDK package; the chat is bound to the
+  platform's routes by design.
+- Keep the SDK unaware of the chat: nothing under `command-center-sdk/` may name
+  `@dev-mainsequence/chat` or reach into `chat/`. `npm run check` fails if it does.
 - Treat schema IDs, protocol IDs, theme IDs, and persisted fields as compatibility boundaries.
 
 ### Document compatibility impact

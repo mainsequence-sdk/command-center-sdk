@@ -5,8 +5,9 @@ This repository is the canonical source for the public
 application navigation, responsive layout, resource views, feedback, themes, static-site iframe
 integration, backend schemas, consumer skills, and package verification tooling.
 
-Product applications, product routes, authentication, backend transports, persistence, and
-deployment configuration are outside this repository.
+Product applications, authentication, persistence, and deployment configuration are outside this
+repository. Product routes and backend transports are outside the SDK package; the chat package is
+bound to the platform's routes by design.
 
 ## Install
 
@@ -38,5 +39,9 @@ npm test
 npm run docs:build
 ```
 
-The repository publishes one SDK package. Root checks validate its public boundary, compile the
-consumer fixture, run package tests, build declarations, and enforce size budgets.
+The repository publishes two public packages: the SDK and `@dev-mainsequence/chat`, whose
+workspace `chat/` arrives with the chat's code
+([SDK ADR 012](./docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)). The chat
+depends on the SDK as a peer; the SDK knows nothing about the chat. Root checks validate each
+package's public boundary and that one-way dependency, compile the consumer fixture, run package
+tests, build declarations, and enforce size budgets.
