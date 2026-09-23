@@ -97,6 +97,12 @@ Import optional skins only when the consuming application uses those surfaces:
 - Keep browser-ready portable base theme CSS in `styles.css`; keep framework or library-specific
   skins in separate optional CSS entrypoints.
 - Keep Tailwind-specific mapping in `tailwind.css`.
+- Warning backgrounds tint from `--warning-tint` (Tailwind `warning-tint`), never from `--warning`.
+  It defaults to `var(--warning)` and is overridden to neutral grey in `quartz-light`, whose
+  text-safe olive warning tints white into eggshell. Add the same override to any light preset
+  whose warning hue is dark or yellow.
+- Data-viz ramps give a pure grey endpoint the other endpoint's hue, so preset neutrals can be
+  dead grey. Verify scale changes through `resolveThemeDataVizPalette` and diff every preset.
 - This package intentionally has no React, Vite, app-registry, auth, or storage dependencies.
 
 ## Validation And Release

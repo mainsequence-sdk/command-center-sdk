@@ -95,6 +95,24 @@ color: var(--ms-color-foreground);
 background: var(--background, #ffffff);
 ```
 
+Tint warning panels from `--warning-tint`, not from `--warning`. It equals `--warning` in most
+presets, but a light preset whose warning is a dark text-safe olive sets it to neutral grey so the
+panel does not read as eggshell. Keep the warning color on the border, icon, and text:
+
+```html
+<div class="border border-warning/40 bg-warning-tint/10 text-warning">Quota almost reached.</div>
+```
+
+```css
+.quota-warning {
+  background: color-mix(in srgb, var(--warning-tint) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+  color: var(--warning);
+}
+```
+
+Use `--warning-tint` only with an opacity; at full strength it is a mid grey in Main Sequence Light.
+
 A consumer-owned alias is acceptable when it derives entirely from public tokens:
 
 ```css

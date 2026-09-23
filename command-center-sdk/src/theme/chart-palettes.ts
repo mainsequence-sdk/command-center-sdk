@@ -177,10 +177,14 @@ function interpolateHexColor(start: string, end: string, ratio: number) {
 
   const startHsl = rgbToHsl(startRgb);
   const endHsl = rgbToHsl(endRgb);
+  // A pure grey has no hue (CSS Color 4 "powerless" hue), so it takes the other endpoint's
+  // hue. Otherwise its nominal 0deg drags the ramp through reds, tans, and mauves.
+  const startHue = startHsl.s === 0 ? endHsl.h : startHsl.h;
+  const endHue = endHsl.s === 0 ? startHsl.h : endHsl.h;
 
   return toHexColor(
     hslToRgb({
-      h: interpolateHue(startHsl.h, endHsl.h, ratio),
+      h: interpolateHue(startHue, endHue, ratio),
       s: startHsl.s + (endHsl.s - startHsl.s) * ratio,
       l: startHsl.l + (endHsl.l - startHsl.l) * ratio,
     }),

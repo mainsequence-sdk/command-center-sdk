@@ -2,10 +2,23 @@
 
 ## Unreleased
 
-Compatibility axes: CLI theme audit only; a stylesheet it passed before still passes. No npm public
-API, packaged agent skill, backend contract, JSON Schema, fixture, iframe protocol, theme ID, theme
-variable, or storage change. No backend rollout is required.
+Compatibility axes: public CSS (additive: `--warning-tint` variable and the Tailwind
+`warning-tint` color), Main Sequence Light rendering, and the CLI theme audit, which still passes
+every stylesheet it passed before. No TypeScript API, theme token key, theme ID, packaged agent
+skill, backend contract, JSON Schema, fixture, iframe protocol, or storage change. No backend
+rollout is required.
 
+- Main Sequence Light (`quartz-light`) no longer paints eggshell and khaki surfaces. Its darkened
+  warning olive, tinted onto white, produced `#F4F1E6` and `#EDE8D6`; Linear keeps light surfaces
+  neutral and shows status only on icon, border, and text. Warning backgrounds now tint from the new
+  `--warning-tint` variable, which equals `--warning` in every other preset and is neutral grey in
+  Main Sequence Light, so `bg-warning-tint/10` lands on `--muted`. SDK warning badges and entity
+  summary warnings use it. Applications should write `bg-warning-tint/<n>` instead of
+  `bg-warning/<n>` for warning panels and keep `border-warning/<n>` and `text-warning`.
+- Data-viz ramps treat a pure grey endpoint's hue as powerless (CSS Color 4) and take the other
+  endpoint's hue. Only Main Sequence Light output changes: its diverging centers and warning
+  sequential start are now dead-neutral `#F0F0F0`/`#F4F4F4`, and the red/green scale runs rose to
+  grey to mint instead of through tan and eggshell. Every other preset resolves to identical colors.
 - `command-center-sdk theme audit` reads a declaration's value without its `!important` flag. An
   allowed value such as `transparent !important` or `none !important` on a theme-owned property no
   longer fails as `hardcoded-theme-value`; a color literal, fallback, unknown variable, or hardcoded
