@@ -36,7 +36,7 @@ const runtimeAllowlist = new Set([
 const peerOnly = new Set(["@dev-mainsequence/command-center-sdk", "react", "react-dom"]);
 
 // What tests and build configuration may import on top of the runtime allowlist.
-const toolingAllowlist = new Set(["@vitejs/plugin-react", "jsdom", "vite", "vitest"]);
+const toolingAllowlist = new Set(["@playwright/test", "@vitejs/plugin-react", "jsdom", "vite", "vitest"]);
 
 const devOnlyManifestAllowlist = new Set([
   ...toolingAllowlist,

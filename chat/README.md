@@ -102,7 +102,9 @@ npm run chat:dev
 type-checks the package, its NodeNext library build, and the standalone application. `chat:build`
 builds the library into `dist/` with `tsc`;
 `npm --workspace @dev-mainsequence/chat run build:standalone` bundles the standalone application
-into `standalone/dist/`.
+into `standalone/dist/`. `npm --workspace @dev-mainsequence/chat run test:browser` runs the
+standalone application on the stand-in in Chromium with Playwright (`tests/browser/`): it connects,
+sends a message and watches the reply stream in, and opens the model provider settings.
 
 `chat:dev` serves the standalone application on port 5183. Open `/?stand-in` to run it on the
 scripted stand-in, with no platform and no token. To reach a platform that does not allow
