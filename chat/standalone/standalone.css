@@ -1,0 +1,113 @@
+/* The standalone application's own layout. Colours and type come from the SDK theme, which
+   `main.tsx` loads before this file. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+.standalone {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+
+.standalone h1 {
+  margin: 0 0 0.25rem;
+  font-size: var(--font-size-page-title);
+}
+
+.standalone__lead {
+  margin: 0 0 1.5rem;
+  color: var(--muted-foreground);
+}
+
+.standalone__form {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.standalone__form label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: var(--font-size-body-sm);
+  color: var(--muted-foreground);
+}
+
+.standalone__submit {
+  justify-self: start;
+}
+
+.standalone-chat {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.standalone-chat__header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.standalone-chat__title {
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-semibold);
+}
+
+.standalone-chat__nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.standalone-chat__main {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+}
+
+.standalone-chat__settings {
+  overflow-y: auto;
+  padding: 0 1.25rem 1.5rem;
+}
+
+.standalone-chat__notices {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 200;
+  display: grid;
+  gap: 0.5rem;
+  max-width: min(24rem, calc(100vw - 2rem));
+}
+
+.standalone-chat__notice {
+  display: grid;
+  gap: 0.125rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow-picker);
+  font-size: var(--font-size-body);
+}
+
+.standalone-chat__notice--success {
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
+}
+
+.standalone-chat__notice--error {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
