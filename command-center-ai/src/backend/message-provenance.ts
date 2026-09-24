@@ -6,10 +6,9 @@ export interface MainSequenceAiMessageProvenance {
   origin: string;
   channel: string | null;
   /**
-   * Verified caller of the turn, projected by the backend from the gateway
-   * headers (ADR-0043). `actorName` is the agent's name for agents and the
-   * gateway username for humans; absent on messages persisted before the
-   * cutover.
+   * Verified caller of the turn, as the platform's history records it.
+   * `actorName` is the agent's name for agents and the person's username for
+   * humans; absent on older messages.
    */
   actorKind: MainSequenceAiProvenanceActorKind | null;
   actorUid: string | null;
@@ -58,7 +57,7 @@ export function normalizeMessageProvenance(value: unknown): MainSequenceAiMessag
 
   const actorKind = normalizeActorKind(candidate.actorKind);
   // The actor uid and name are only meaningful with a recognised kind; the
-  // backend projection applies the same rule before it emits them.
+  // platform's history applies the same rule before it emits them.
   const actorUid = actorKind ? normalizeIdLikeString(candidate.actorUid) : null;
   const actorName = actorKind && actorUid ? normalizeString(candidate.actorName) : null;
 
@@ -70,7 +69,7 @@ export function normalizeMessageProvenance(value: unknown): MainSequenceAiMessag
     actorName,
     callerAgentName: normalizeString(candidate.callerAgentName),
     handleUniqueId: normalizeString(candidate.handleUniqueId),
-    // The backend provenance serializer emits ...Uid names; the legacy ...Id
+    // The backend provenance payload carries ...Uid names; the legacy ...Id
     // names are kept as fallbacks for payloads persisted before the rename.
     callerAgentSessionUid:
       normalizeIdLikeString(candidate.callerAgentSessionUid) ??

@@ -95,7 +95,7 @@ Give the application an explicit status surface through `onFastApiStateChange`, 
 state with `getFastApiState(resourceReleaseUid)`. Render `authorizing`, `runtime-starting`, `ready`,
 `expired`, `authentication-failed`, `forbidden`, `missing-route`, `transient`, `cancelled`,
 `unavailable`, `unsupported`, and `invalid` distinctly. Do not label an opaque browser fetch
-failure as cold start: only `502`, `503`, and `504` have that meaning. A `401` causes one bounded
+failure as a starting runtime: only `502`, `503`, and `504` have that meaning. A `401` causes one bounded
 credential reacquisition; `403` and origin denial are never retried; `404` is a missing route.
 
 Let the SDK own retry and cancellation. Pass `RequestInit.signal`; do not add a second application
@@ -112,8 +112,9 @@ action and form composition to `$compose-command-center-controls`.
 ## Wait For The Hosted API
 
 For a deployed FastAPI release, call `client.fetchFastApi(...)`. The host's
-`resolveFastApiCredential` asks Django for runtime access. While Django is starting the release,
-present the SDK's `runtime-starting` state. When Django returns ready access, the resolver supplies
+`resolveFastApiCredential` asks the platform for runtime access. While the release is starting,
+present the SDK's `runtime-starting` state. When the platform returns ready access, the resolver
+supplies
 the RPC URL and delegated credential, and `fetchFastApi` sends the application request.
 
 For hosted delegated requests, handle `StaticSiteFastApiCredentialError.code` as a small UI-safe
@@ -164,8 +165,8 @@ call the authenticated ResourceRelease WebSocket-ticket action exactly once with
 retry. Validate the returned UID, Origin, path, WebSocket URL, RFC 3339 expiry, and canonical
 `mainsequence.ws-ticket.<opaque>` subprotocol before returning
 `StaticSiteFastApiWebSocketTicket`. Map failures only to `StaticSiteFastApiWebSocketError` codes;
-never return raw backend bodies. Do not reuse the HTTP credential or the separate Command Center
-WebSocket-ticket audience.
+never return raw backend bodies. Do not reuse the HTTP credential or a Command Center WebSocket
+ticket issued for another purpose.
 
 Review any change to the component's default sandbox. Add popups, downloads, modals, or navigation
 only when required and security-reviewed. Keep production origins on exact HTTPS values and align

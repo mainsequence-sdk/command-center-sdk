@@ -21,8 +21,7 @@ actions.
 
 Command Center already had a useful left rail and grouped application panel, but the implementation
 was private to the host. Other SDK consumers could not create the same interaction without copying
-host code and coupling themselves to React Router, the Command Center registry, or its Zustand
-store.
+host code and coupling themselves to the host's router, registry, and state store.
 
 The reusable boundary is the interaction and hierarchy, not the product registry. Icons are React
 components and navigation actions are callbacks, so this API is not a JSON-safe backend contract.

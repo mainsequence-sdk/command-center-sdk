@@ -11,8 +11,7 @@ section 7).
 - [ADR 090: Agent Icons In Command Center Surfaces](./adr/adr-090-agent-icons-in-command-center-surfaces.md)
 - [ADR 093: Client-Verified Agent Readiness](./adr/adr-093-client-verified-agent-readiness.md)
 - [ADR 096: The Chat as One Independent Package](./adr/adr-096-independent-chat-package.md)
-- [ADR 098: One Communication Contract for Every Agent](./adr/adr-098-one-communication-contract-for-every-agent.md),
-  split out of Command Center ADR 092, which keeps the Command Center shortcut
+- [ADR 098: One Communication Contract for Every Agent](./adr/adr-098-one-communication-contract-for-every-agent.md)
 
 These records moved here from Command Center and keep their numbers and titles, because the code
 cites them. New decisions about the chat are `SDK ADR` records in `adr/` with
@@ -38,8 +37,7 @@ cites them. New decisions about the chat are `SDK ADR` records in `adr/` with
 - [Model providers](../src/model-providers/README.md): the settings screens, their state, and the
   rules for credentials, custom providers, and the test conversation.
 - [AgentSession resolution](./agent-session-resolution.md): how the engine chooses, hydrates, and
-  connects a session and enables sending, the same for every Agent. Command Center's shortcut and
-  `?session=` route stay in the application's half of the guide.
+  connects a session and enables sending, the same for every Agent.
 - [Provider errors](./main-sequence-ai-provider-errors.md)
 
 ## Task and agent-skill map

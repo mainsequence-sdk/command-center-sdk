@@ -295,7 +295,7 @@ function normalizeSession(value: unknown): SessionHistoryApiSession {
       typeof candidate.threadId === "string" && candidate.threadId.trim()
         ? candidate.threadId.trim()
         : null,
-    // The DRF history serializer emits agentUid/agentSessionUid; the legacy
+    // The platform's history sends agentUid/agentSessionUid; the legacy
     // agentId/agentSessionId names are kept as fallbacks for older payloads
     // and fixtures.
     agentUid: normalizeIdLikeField(candidate.agentUid) ?? normalizeIdLikeField(candidate.agentId),

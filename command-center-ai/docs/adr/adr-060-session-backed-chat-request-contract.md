@@ -4,8 +4,7 @@
 - Date: 2026-05-06
 - Amended: 2026-09-17: the request carries no Agent type and no workflow key
 - Related:
-  - [AgentSession Resolution](../agent-session-resolution.md), for the readiness gate. The separate
-    "AgentSession Interaction Readiness Gate" ADR was removed from the tree; its history is in Git.
+  - [AgentSession Resolution](../agent-session-resolution.md), for the readiness gate.
   - [ADR 098: One Communication Contract for Every Agent](./adr-098-one-communication-contract-for-every-agent.md)
 
 ## Context
@@ -28,7 +27,7 @@ problems:
 2. the request duplicates data that already belongs to the backend `AgentSession`, especially
    `llm_provider` and `llm_model`
 
-At the same time, the page already loads the canonical backend session detail serializer through:
+At the same time, the page already loads the canonical backend session detail payload through:
 
 - `GET /api/v1/agent-sessions/{agent_session_id}/`
 
@@ -49,19 +48,19 @@ is not session-specific enough to justify constant reloads during session churn.
 
 ### 1. Available-model discovery cache is 15 minutes
 
-The shared `/api/chat/get_available_models` cache will use:
+The shared cache of the available models, from a retired runtime route, will use:
 
 - key: `user id + agent request name`
 - TTL: `15 minutes`
 
 The cache remains a Command Center in-memory optimization. It is not a persisted backend contract.
 
-### 2. The loaded AgentSession serializer becomes the authoritative chat-config payload
+### 2. The loaded AgentSession detail becomes the authoritative chat-config payload
 
 For session-bound `/api/chat` requests, Command Center will stop treating the top-level `model`
 object as the source of truth.
 
-Instead, each live request will include the full canonical session serializer payload loaded from:
+Instead, each live request will include the full canonical session detail payload loaded from:
 
 - `GET /api/v1/agent-sessions/{agent_session_id}/`
 
@@ -96,11 +95,11 @@ the session persisted in Main Sequence.
 
 ### 5. Send stays blocked until the canonical session snapshot exists
 
-Because `/api/chat` will now depend on the loaded session serializer rather than a locally derived
+Because `/api/chat` will now depend on the loaded session detail rather than a locally derived
 top-level model object, the composer must stay non-interactive until Command Center has:
 
 - selected a concrete backend `AgentSession`
-- loaded its detail serializer successfully
+- loaded its detail payload successfully
 - stored the canonical session snapshot that will be injected into the send payload
 
 ## Scope
@@ -123,7 +122,7 @@ It does not cover:
 
 ### 1. Single source of truth for session config
 
-The backend `AgentSession` serializer becomes the source of truth for:
+The backend `AgentSession` detail payload becomes the source of truth for:
 
 - `llm_provider`
 - `llm_model`
@@ -149,7 +148,7 @@ The intended contract shape is:
   "sessionId": "...",
   "runtime_session_id": "...",
   "session": {
-    "...": "verbatim AgentSession detail serializer payload"
+    "...": "verbatim AgentSession detail payload"
   },
   "context": {
     "...": "surface context"
@@ -186,7 +185,7 @@ The available-model catalog is a picker concern, not a per-message transport dep
 TTL is acceptable because:
 
 - the cache is already scoped by user + agent request name
-- the request no longer blocks send-payload completeness once the session serializer is
+- the request no longer blocks send-payload completeness once the session detail is
   authoritative
 - model-picker churn should not repeatedly hammer the agent runtime for the same catalog
 
@@ -195,21 +194,21 @@ TTL is acceptable because:
 ### Positive
 
 - `/api/chat` no longer races model resolution just to include a top-level `model`
-- session-owned config is read from the same serializer Main Sequence already persists
+- session-owned config is read from the same session detail Main Sequence already persists
 - model changes stay aligned between Main Sequence, local session storage, and later chat sends
 - runtime catalog fetch pressure drops because the shared cache stays warm for 15 minutes
 
 ### Negative
 
-- the `/api/chat` payload becomes larger because it carries the full session serializer
+- the `/api/chat` payload becomes larger because it carries the full session detail
 - Command Center must preserve a canonical session-detail snapshot, not only a lightweight summary
 
 ## Backend Contract Impact
 
-No new Main Sequence ORM contract is introduced here.
+No new platform contract is introduced here.
 
 This ADR assumes the agent runtime session-bound chat path already supports a top-level `session`
-payload containing the canonical `AgentSession` serializer and does not require a parallel
+payload containing the canonical `AgentSession` detail and does not require a parallel
 top-level `model` object for that path.
 
 ## Amendment 2026-09-17: No Agent Type in the Request

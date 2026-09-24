@@ -38,7 +38,7 @@ The rest is internal: `MessageActions.tsx`, `SessionModelRequiredState.tsx`,
 
 - The [session engine](../engine/README.md). Every part reads `useChatEngine()`, so the thread
   renders inside `ChatEngineProvider`.
-- The Command Center SDK, a peer dependency (Command Center ADR 097):
+- The Command Center SDK, a peer dependency (SDK ADR 012):
   `Button` and `Badge` from `/controls`, the picker from `/views`, and the theme variables.
 - assistant-ui's thread, message, and composer primitives; lucide icons; `react-markdown` with
   `remark-gfm`, `rehype-raw`, and `rehype-sanitize`.
@@ -55,9 +55,8 @@ resumes, with focus returned on the surfaces that focus the composer, once the A
 messages. Terminal states surface the backend notice. Existing history stays visible while a
 runtime wakes or restarts.
 
-The platform no longer reports image drift and nothing serves a repo diff, so neither exists here:
-there is no `image_drift` field, drift notice, or drift banner, and no repo diff viewer, session
-tools types, or `react-diff-view` dependency.
+Nothing serves a repo diff, so there is no repo diff viewer, session tools types, or
+`react-diff-view` dependency here.
 
 There is no Agent type. The platform does not serialize one and the Agent runtime does not read
 one, so requests carry no `agentType` and no `sessionMetadata.workflow_key`, and no record,

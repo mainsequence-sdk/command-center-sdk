@@ -7,10 +7,10 @@ the browser supplies no user UID or credential. No FastAPI ResourceRelease UID o
 needed for this local path.
 
 This local identity model is for a single developer on a loopback-bound machine. It does not
-authenticate each browser visitor. A shared development server needs a platform-owned per-request
-identity gateway instead. Deployed FastAPI routes read platform-injected `request.state.user` and
-`request.state.user_uid`; the local runner here deliberately does not pretend to provide that
-deployment middleware. See the [Main Sequence FastAPI request-user guide](https://github.com/mainsequence-sdk/mainsequence-sdk/blob/main/docs/knowledge/fastapi/index.md)
+authenticate each browser visitor. Do not share this runner with other
+users. Deployed FastAPI routes read platform-injected `request.state.user` and
+`request.state.user_uid`; the local runner here deliberately does not provide those
+fields. See the [Main Sequence FastAPI request-user guide](https://github.com/mainsequence-sdk/mainsequence-sdk/blob/main/docs/knowledge/fastapi/index.md)
 and [CLI authentication guide](https://github.com/mainsequence-sdk/mainsequence-sdk/blob/main/docs/knowledge/infrastructure/auth.md).
 
 ## Run
@@ -38,7 +38,7 @@ npm run dev
 Open `http://127.0.0.1:5174/`. The page calls `/api/me`; Vite proxies it to
 `http://127.0.0.1:8001/api/me`. The API obtains the UID from
 `User.get_authenticated_user_details()` using its own CLI session, and returns the public UID and
-optional username. If login is absent, expired, or the identity service is unavailable, `/api/me`
+optional username. If login is absent, expired, or the platform cannot be reached, `/api/me`
 returns `503` with `identity_unavailable`; the page shows a sign-in/availability message rather than
 inventing a user. `/healthz` remains available so readiness and identity can be diagnosed
 separately. Run `mainsequence login` again in the Python process's environment when needed.

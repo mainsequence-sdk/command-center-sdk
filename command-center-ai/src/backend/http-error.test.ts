@@ -19,7 +19,7 @@ describe("runtime HTTP errors", () => {
     ).resolves.toBe("The provider is invalid.");
   });
 
-  it("formats nested DRF field errors", async () => {
+  it("formats nested field errors", async () => {
     await expect(
       readRuntimeBackendErrorMessage(
         jsonResponse({
@@ -39,7 +39,7 @@ describe("runtime HTTP errors", () => {
     );
   });
 
-  it("formats top-level DRF field errors and omits response metadata", async () => {
+  it("formats top-level field errors and omits response metadata", async () => {
     await expect(
       readRuntimeBackendErrorMessage(
         jsonResponse({

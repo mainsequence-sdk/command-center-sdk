@@ -8,24 +8,21 @@
   - [ADR 060: Main Sequence AI Session-Backed Chat Request Contract](./adr-060-session-backed-chat-request-contract.md)
   - [ADR 087: Queued Chat Messages While the Agent Works](./adr-087-queued-chat-messages-while-the-agent-works.md)
   - [ADR 098: One Communication Contract for Every Agent](./adr-098-one-communication-contract-for-every-agent.md)
-  - the platform's durable runtime activation and restored Agent projection (Proposed)
 
 ## Context
 
 Command Center admits a message when `resolve-runtime-access` answers
-`runtime_interaction.can_submit: true`. Since Agents moved onto harness agent releases, the
-platform answers `ready` / `serving` for every Agent that has a deployed release, whether or not
-anything is running. Agent releases scale to zero when idle and start again only on the first
-request that reaches them.
+`runtime_interaction.can_submit: true`. The platform answers `ready` / `serving` for every deployed
+Agent, whether or not it is running, and an idle Agent does not answer until a request reaches it
+and starts it.
 
 So a session on an idle Agent loads, the composer opens, the person writes and sends, and the
 browser's own request to the Agent fails at the network level while the Agent is still starting.
 The thread shows `Source: Agent runtime HTTP. Failed to fetch`. Nothing told the person the Agent
 was not up, and nothing waited for it.
 
-The platform's durable runtime activation restores a truthful projection (waking, phases,
-deadlines), but it is a multi-phase backend change and is not available yet. This repository cannot
-change the platform.
+The platform does not report today whether a deployed Agent is running, and the chat cannot change
+the platform.
 
 ## Decision
 
@@ -63,10 +60,9 @@ before it treats a `ready` decision as ready.
    waits, so the wait never mistakes the older `ready` the composer was opened on for the end of
    the start, and it tries again after every settle, so a second `waking` keeps the message held
    instead of surfacing the block as an error. One deadline, from the first block, bounds it.
-6. **Old decisions.** The platform trusts that an Agent serves for a bounded time (fourteen
-   minutes at the time of writing) and does not say when that ends, so a `ready` can become
-   `waking` at any moment. A decision older than one minute is therefore confirmed again at the
-   moments a person is about to use it:
+6. **Old decisions.** A `ready` can become `waking` at any moment, and the platform does not say
+   when. A decision older than one minute is therefore confirmed again at the moments a person is
+   about to use it:
    - the chat coming into view (the rail opening, the chat page, another session selected): the
      session drops to `checking`, locked and silent, before the composer opens;
    - the tab returning after it was hidden;
@@ -87,10 +83,10 @@ transient platform decision is never upgraded by the client, only a `ready` can 
 - Opening a session on an idle Agent starts it. This matches the behaviour before the platform's
   wake reporting was removed.
 - The client cannot know why an Agent does not start; past the deadline it can only say so and
-  offer a re-check. Phases, failure categories and support references return with ADR-066.
-- When ADR-066's Agent projection ships, the platform reports `waking` itself and this
-  verification only confirms it. It can then be reduced to the send-time check or removed; that
-  is a follow-up decision, not part of this one.
+  offer a re-check. Phases, failure categories and support references come when the platform
+  reports them.
+- When the platform reports `waking` itself, this verification only confirms it. It can then be
+  reduced to the send-time check or removed; that is a follow-up decision, not part of this one.
 
 ## Backend Contract Impact
 

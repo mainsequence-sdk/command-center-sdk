@@ -41,9 +41,8 @@ Once the host drops its sidebar column it needs somewhere to put its navigation.
 had the right behavior but no way for a host to use it. The shells' drawers are internal to the
 shells, which render SDK rails and panels; a host renders its own sidebar. `useOverlayBehavior`,
 which supplies the focus trap, focus restoration, scroll lock, and dismissal, is deliberately not
-exported. The Command Center host therefore rebuilt the drawer from the shells' class names
-`cc-application-navigation-shell__drawer` and `__scrim`, which are not a published API, and had
-no focus containment or scroll lock at all.
+exported. Hosts rebuilt the drawer from unpublished class names, without focus containment or
+scroll lock.
 
 ## Decision drivers
 

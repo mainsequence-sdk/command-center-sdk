@@ -31,8 +31,8 @@ import { ModelProviderSettings } from "@dev-mainsequence/command-center-ai";
 - The catalog is `GET /api/v1/model-providers/`: one request per person, trusted for five minutes,
   shared by the settings and every picker. It lists providers with missing credentials too.
 - A card follows the platform's fields: `authenticated` shows "Sign off", and `sign_in_available`
-  shows "Sign in". An OAuth credential can stay `active` after it expires or enters the platform's
-  safety window; it is then not `authenticated`, and the card asks for sign-in again.
+  shows "Sign in". An OAuth credential can stay `active` after it expires, or shortly before; it
+  is then not `authenticated`, and the card asks for sign-in again.
 - Sign-in starts an attempt, which is read at once and then every 1.5 seconds until it completes,
   fails, or is cancelled. The dialog shows only the platform's next step: a browser callback that
   completes at the platform, or a device code the person enters with the provider. Never collect

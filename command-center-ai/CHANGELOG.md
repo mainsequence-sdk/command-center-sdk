@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: documentation, source comments, and one user-facing message. No API, route,
+payload, stylesheet, storage, or skill-namespace change.
+
+- The documentation and source comments describe the platform and the Agent runtime only as the
+  chat sees them on the wire.
+- Sending before a session's detail has loaded now says "Wait for the session detail to finish
+  loading before sending."
+
 ## 0.0.1
 
 Compatibility axes: the first release of the npm public API (`src/index.ts`), the stylesheet

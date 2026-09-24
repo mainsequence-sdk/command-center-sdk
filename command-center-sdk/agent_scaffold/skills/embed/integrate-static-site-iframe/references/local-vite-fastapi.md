@@ -30,8 +30,8 @@ def me():
     return {"uid": user.uid, "username": user.username}
 ```
 
-This identifies the CLI user of the local API process, not each browser visitor. A shared local
-server needs a platform-owned per-request identity gateway. Deployed FastAPI routes use the
+This identifies the CLI user of the local API process, not each browser visitor. Do not share
+this runner with other users. Deployed FastAPI routes use the
 platform-injected `request.state.user` and `request.state.user_uid`; plain Uvicorn does not inject
 those fields. Do not accept a browser UID header, copied session token, or Vite credential as a
 substitute.
@@ -62,7 +62,7 @@ Wait for Uvicorn's `Application startup complete`. In another terminal check:
 curl --fail http://127.0.0.1:8001/healthz
 ```
 
-If login is absent, expired, or the identity service is unavailable, the protected route must
+If login is absent, expired, or the platform cannot be reached, the protected route must
 return `503 identity_unavailable` without leaking backend auth errors. Show an unavailable state
 and fix the API process's CLI login.
 

@@ -693,8 +693,8 @@ function useMessageActorContext(): MessageActorContext {
   const viewerUid = viewer?.uid ?? null;
   const viewerName = viewer?.name ?? null;
   const viewerAvatarUrl = viewer?.avatarUrl ?? null;
-  // The summary knows the agent's label but not its uid; the projection stamps
-  // the uid on every message, so read it from the thread.
+  // The summary knows the agent's label but not its uid; the platform's history
+  // stamps the uid on every message, so read it from the thread.
   const sessionAgentUid = useAuiState((s) => findThreadTargetAgentUid(s.thread.messages));
   // Every agent has a name. The session record carries it (the page header
   // shows the same one); the summary label and the resolved label are
@@ -1069,8 +1069,8 @@ function useNow(active: boolean, intervalMs = 1000) {
 /**
  * What the runtime step shows while the backend decision is transient: the
  * notice, the presence detail, how long the wake has run, and the belt for a
- * wake that outlived its deadline (a dead queue looks like "waking" forever
- * to the backend until it settles; the user gets a way to re-check).
+ * wake that outlived its deadline (the platform can keep reporting "waking"
+ * past the deadline; the user gets a way to re-check).
  */
 // A check or an update that has shown no progress for this long gets the
 // "taking longer than expected" line and the re-check button.
@@ -1127,7 +1127,7 @@ function useRuntimeStatus(): AgentRuntimeStatus | null {
 const READY_AFTER_WAIT_MIN_MS = 4_000;
 
 // Offers to send the draft that was kept while the agent was waking. The
-// draft is never auto-submitted (ADR-027); this is one explicit click.
+// draft is never auto-submitted; this is one explicit click.
 function SendDraftNowButton() {
   const composerRuntime = useComposerRuntime();
   const draft = useAuiState((s) => s.composer.text.trim());
@@ -2097,8 +2097,8 @@ function ChatThreadBody({
   const participants = useThreadParticipants(actorContext);
   const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
   // The page hosts the same connecting stage as the rail. The rail hides the
-  // whole thread behind it (ChatOverlay); here it replaces the loading panel
-  // and the centered composer while the session or the runtime is not ready.
+  // whole thread behind it; here it replaces the loading panel and the
+  // centered composer while the session or the runtime is not ready.
   // Errors and not-found keep the readiness state below, which carries the
   // deployment action and the retry.
   const connecting = useAgentConnectingState({ surface });

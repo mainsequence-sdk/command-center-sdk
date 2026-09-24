@@ -129,8 +129,8 @@ export function buildCustomModelDirectChatUrl(baseUrl: string, api: CustomModelP
 }
 
 /**
- * Mirrors the request the Agent runtime's OpenAI-compatible adapter sends for an Organization custom
- * provider, without tools, so a passing test predicts agent execution.
+ * Mirrors the request an Agent sends a custom provider, without tools, so a passing test predicts
+ * agent execution.
  */
 export function buildCustomModelDirectChatPayload(input: CustomModelDirectChatPayloadInput) {
   const system = input.system?.trim() ?? "";

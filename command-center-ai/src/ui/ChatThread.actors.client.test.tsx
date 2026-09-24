@@ -262,7 +262,7 @@ describe("ChatThread actors", () => {
       "Research Orchestrator",
     );
 
-    // Another human: mailbox part of the gateway username, initials monogram.
+    // Another human: mailbox part of their email address, initials monogram.
     expect(teammateTurn?.querySelector("[data-actor-name]")?.textContent).toBe("grace");
     expect(teammateTurn?.querySelector('[data-actor-kind="user"]')?.textContent).toBe("GR");
     expect(teammateTurn?.querySelector('[data-actor-kind="user"]')?.getAttribute("title")).toBe(

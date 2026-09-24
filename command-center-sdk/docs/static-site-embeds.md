@@ -152,7 +152,7 @@ import {
 } from "@dev-mainsequence/command-center-sdk/theme";
 
 const client = createStaticSiteIframeClient({
-  channel: "mainsequence.fund-competition",
+  channel: "mainsequence.reports",
   hostOrigin: "https://command-center.example.com",
   parentWindow: window.parent,
   onContext(context: StaticSiteIframeContext) {
@@ -224,7 +224,7 @@ not per-browser authentication. The platform injects `request.state.user` and
 [platform FastAPI request-user guide](https://github.com/mainsequence-sdk/mainsequence-sdk/blob/main/docs/knowledge/fastapi/index.md).
 If the local CLI login is missing, expired, or inaccessible, `/api/me` returns
 `503 identity_unavailable`. Show an unavailable state and sign in again in the API process's
-environment. A shared server needs a platform-owned per-request identity gateway. Never accept a
+environment. Do not share this local server with other users. Never accept a
 browser-supplied UID header, copy session tokens, or put credentials in Vite variables.
 
 The frontend selects the transport explicitly and confirms the trusted host handshake before
@@ -297,7 +297,7 @@ The state callback distinguishes:
 | --- | --- |
 | `idle` | No request has started for the target |
 | `authorizing` | The child is waiting for delegated credentials |
-| `runtime-starting` | A gateway response says the target runtime is not ready yet |
+| `runtime-starting` | The platform answered `502`, `503`, or `504`: the target runtime is not ready yet |
 | `ready` | A delegated request reached a usable response |
 | `expired` | A cached credential crossed its refresh window |
 | `authentication-failed` | Reacquisition did not recover authentication |
@@ -328,7 +328,7 @@ replacement can change credentials and permissions even when the visible UID is 
 ## Open a native FastAPI WebSocket
 
 The host injects a separate one-time ticket resolver. It accepts only the exact target and path
-from the iframe, derives Origin from the pinned iframe URL, and maps the authenticated Django
+from the iframe, derives Origin from the pinned iframe URL, and maps the authenticated backend
 response into the SDK type:
 
 ```tsx
@@ -406,9 +406,9 @@ try {
 
 The SDK validates the canonical release UID, absolute path, correlated ticket response, exact
 binding, future expiry, secure scheme, and application protocols. It constructs the native browser
-socket with `[ticket, "mainsequence.ws-bridge.v1", ...applicationProtocols]`. The gateway strips
-the first two values before FastAPI and returns either the application-selected protocol or the
-fixed acknowledgement. `socket.protocol` is therefore never the ticket.
+socket with `[ticket, "mainsequence.ws-bridge.v1", ...applicationProtocols]`. FastAPI receives
+only the application protocols, and the socket opens with the protocol FastAPI selects or, when it
+selects none, the fixed acknowledgement. `socket.protocol` is therefore never the ticket.
 
 Each call obtains one fresh ticket and makes one native constructor attempt. There is deliberately
 no public raw-ticket method, cache, concurrent deduplication, or automatic reconnect. After the
@@ -422,7 +422,7 @@ keep the host value strictly shorter so a capable but unavailable resolver retur
 `temporarily_unavailable`; a child timeout means the host is old or unsupported.
 
 Paths must be absolute ASCII paths without a query, fragment, percent encoding, backslash, empty
-segment, or dot segment. `/_healthz` and `/logos/...` are gateway-reserved. Application protocols
+segment, or dot segment. `/_healthz` and `/logos/...` are reserved by the platform. Application protocols
 must be unique valid WebSocket tokens; the `mainsequence.ws-ticket.` and
 `mainsequence.ws-bridge.` prefixes are reserved for the platform.
 

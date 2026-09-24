@@ -7,8 +7,7 @@ title: SDK Architecture Decisions
 
 This catalog records durable decisions owned by the independently publishable
 `@dev-mainsequence/command-center-sdk` package. Application integration decisions belong to their
-owning application repositories, and backend implementation decisions belong to their backend
-repositories.
+owning application repositories; backend implementation decisions are out of scope.
 
 ## Current decisions
 
@@ -30,6 +29,6 @@ repositories.
   skill decisions here.
 - Keep product endpoints, authentication stores, routes, and viewer-specific wiring outside this
   catalog.
-- Link to application and backend ADRs instead of copying their implementation plans.
-- Use the `SDK ADR` prefix so package decisions remain unambiguous when this package moves to its
-  own repository.
+- Record only the public contract and observable behavior; do not link to or name records in
+  private repositories.
+- Use the `SDK ADR` prefix so package decisions remain unambiguous beside other records.

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: documentation shipped in the package only (guides, ADRs, skills, and module
+READMEs). No TypeScript API, contract, JSON Schema, fixture, theme, iframe protocol, CLI behaviour,
+or storage change.
+
+- The documentation describes the public contract and the behaviour an integrator observes, and
+  nothing about how the platform is built or run.
+
 ## 0.5.3
 
 Compatibility axes: public CSS (additive: `--warning-tint` variable and the Tailwind
@@ -60,9 +69,7 @@ Existing components, class names, and rendered output are unchanged.
   `small`, `medium`, `large`; `iconOnly`; `pending`), `Badge`, `Label`, `Field`, `Input`,
   `Textarea`, and `useFieldControlProps`. `Field` owns the control id, label target,
   `aria-describedby`, `aria-invalid`, `aria-required`, and disabled propagation; values,
-  validation, and submission stay consumer-owned. The SDK owns these primitives; the Command
-  Center host and its sibling applications adopt them from the release and retire their private
-  kit.
+  validation, and submission stay consumer-owned. The SDK owns these primitives.
 - `cc-control` carries `--application-control-min-size` at every pointer type, so a consumer's
   controls meet the SDK ADR 006 touch floor without appearing in the device-axis selector list.
   `Input` and `Textarea` join the 16px coarse-pointer text-input rule.

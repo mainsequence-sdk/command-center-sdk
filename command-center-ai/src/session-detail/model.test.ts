@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { normalizeAgentSessionCoreDetail } from "./model.js";
 
 describe("AgentSession detail model", () => {
-  it("preserves the current multi-harness session serializer contract", () => {
+  it("preserves the current multi-harness session detail contract", () => {
     const detail = normalizeAgentSessionCoreDetail({
       uid: "session-uid-73",
       agent_uid: "agent-uid-12",

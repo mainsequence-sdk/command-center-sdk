@@ -185,7 +185,7 @@ describe("command center runtime access contract", () => {
     });
   });
 
-  it("normalizes ADR-027 runtime presence without deriving admission", async () => {
+  it("normalizes runtime presence without deriving admission", async () => {
     fetchMock.mockResolvedValue(
       new Response(
         JSON.stringify({

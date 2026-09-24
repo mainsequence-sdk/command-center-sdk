@@ -14,8 +14,8 @@ controls.
 
 `parseResourceDiscovery(...)` rejects unknown keys, duplicate identifiers, unsafe field paths,
 broken sort/filter references, and incomplete generic column bindings. The SDK serializes ordered
-identity values as a JSON tuple, so compound Kubernetes-style identity never relies on delimiter
-concatenation. UI identity is separate from the UUIDs used by the existing bulk-action selection
+identity values as a JSON tuple, so a compound identity (for example a namespace and a name)
+never relies on delimiter concatenation. UI identity is separate from the UUIDs used by the existing bulk-action selection
 contract.
 
 Applications retain trusted local columns for rich cells. `resolveResourceDiscoveryColumns(...)`

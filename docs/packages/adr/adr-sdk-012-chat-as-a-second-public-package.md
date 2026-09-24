@@ -8,7 +8,6 @@
 - Package: `@dev-mainsequence/command-center-ai` (named `@dev-mainsequence/chat` until 2026-09-24, before any
   release)
 - Related:
-  - Command Center ADR 097: Upstreaming the Chat Package to the Command Center SDK Repository
   - [ADR 096: The Chat as One Independent Package](../../../command-center-ai/docs/adr/adr-096-independent-chat-package.md),
     which moved into the chat's `docs/` with the package
   - [SDK ADR 011: Public Control and Form Primitives](../../../command-center-sdk/docs/adr/adr-sdk-011-public-control-and-form-primitives.md)
@@ -38,9 +37,8 @@ package; the chat is bound to the platform's routes by design.
 The chat has become one package independent of the Command Center application (Command Center
 ADR 096) so that anyone can build a chat application that talks to the platform Command Center
 talks to. A private workspace cannot be installed by anyone else. This repository already has a
-release lane, a docs site, an ADR catalog and packaged skills. Command Center ADR 097 decides that
-the chat comes here as its own package, depending on the SDK as a peer in one direction only, and
-names what this record decides.
+release lane, a docs site, an ADR catalog and packaged skills. The chat therefore comes here as its
+own package, depending on the SDK as a peer in one direction only.
 
 Measured on `main` at 0.5.2, before this decision:
 
@@ -86,7 +84,7 @@ install anything of the chat.
   `docs/packages/adr/` because `command-center-sdk/docs/` ships inside the SDK package.
 
 **The boundary, per package.** The exclusion of product routes and backend transports stays for
-the SDK package. The chat is bound to the platform's routes by design (Command Center ADR 096,
+the SDK package. The chat is bound to the platform's routes by design (the chat's ADR 096,
 section 3) and says so in its documentation: it calls them through a connection the application
 gives it (base URL, token and its refresh, an optional request-URL rewrite), reads no environment
 variable, and stores no credential. Both packages keep the rest of the repository boundary: no
@@ -208,10 +206,8 @@ skills and the browser storage keys. It always names two axes the SDK does not h
 - The chat's `docs/` holds its guides, one per skill: building a chat application, connecting to
   the platform, model providers, and the conversation contract. Verification and browser storage
   are in the first.
-- The records that moved with the package (Command Center ADR 060, 087, 090, 093 and 096, and the
-  contract half of ADR 092, now ADR 098) keep their numbers and titles as historical records,
-  because the code cites them ("ADR 093", "ADR 060"). Their references to Command Center's own
-  records and files are plain text: this repository is public and Command Center's is not.
+- The records that moved with the package (ADR 060, 087, 090, 093, 096 and 098) keep their numbers
+  and titles as historical records, because the code cites them ("ADR 093", "ADR 060").
 - New chat decisions are `SDK ADR NNN` records with `Package: @dev-mainsequence/command-center-ai` in the
   chat's `docs/adr/`. The repository keeps one `SDK ADR` sequence and files each record with what
   it governs, which is why this one is in `docs/packages/adr/` and the SDK's catalog has no 012.
@@ -261,8 +257,8 @@ next to the SDK's before `publish` runs.
    publishes `--warning-tint`. Then copy the chat in as one commit, without its history: the
    workspace, declared in the root `workspaces`; the chat's consumer fixture, also compiled by
    `examples:check`; the docs-site section; its browser tests; its skills with their installer and
-   guides; its changelog entry. Gate: the full repository lane on a pull request. Done: the chat is
-   Command Center's `packages/chat` at 8849f0de, adapted in the commits after the copy. Until SDK 0.5.3
+   guides; its changelog entry. Gate: the full repository lane on a pull request. Done: the chat was
+   copied in as one commit and adapted in the commits after the copy. Until SDK 0.5.3
    was prepared, the chat's packed consumer failed as designed: npm refused the chat next to SDK
    0.5.2.
 3. **Release 0.0.1**, published once by hand (section 5), with SDK 0.5.3 through the workflow.
@@ -283,7 +279,7 @@ next to the SDK's before `publish` runs.
 ## Backend and storage impact
 
 None. The chat calls the platform's existing routes with their existing payloads and keeps its
-browser storage keys (Command Center ADR 096, sections 3 and 4). No route, setting or permission is
+browser storage keys (the chat's ADR 096, sections 3 and 4). No route, setting or permission is
 added. The routes and payloads it calls become public documentation; the platform stays the owner
 of authorization, session ownership, and which Agents an Environment exposes.
 

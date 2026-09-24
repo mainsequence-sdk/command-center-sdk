@@ -250,8 +250,7 @@ max-width media query outside the published scale.
 1. All sections are implemented in SDK source together with ADR 007 and ship in the next release.
    After it, the host can adopt overlay navigation, and every existing SDK page stops zooming on
    input focus and stops holding hover state after a tap.
-2. Host adoption is recorded in the Command Center application's own decision catalog and linked
-   from here; this ADR does not carry the host's implementation plan.
+2. Host adoption is the host's own work; this ADR does not carry the host's implementation plan.
 
 ## Acceptance criteria
 

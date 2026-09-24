@@ -4,7 +4,7 @@ import { normalizeSessionHistorySnapshot } from "./session-history.js";
 
 describe("session history provenance", () => {
   it("preserves backend agent-origin provenance on user messages", () => {
-    // Field names mirror AgentSessionProjectedHistoryResponseSerializer —
+    // Field names mirror the platform's history payload —
     // the session emits agentUid/agentSessionUid and the provenance emits
     // callerAgentSessionUid/targetAgentUid.
     const snapshot = normalizeSessionHistorySnapshot({
@@ -83,7 +83,7 @@ describe("session history provenance", () => {
     });
   });
 
-  it("carries the verified actor fields projected after ADR-0043", () => {
+  it("carries the verified actor fields", () => {
     const snapshot = normalizeSessionHistorySnapshot({
       version: 1,
       session: {

@@ -135,7 +135,7 @@ scripted stand-in, with no platform and no token. To reach a platform that does 
 that origin, put the platform API URL in `command-center-ai/.env.local`:
 
 ```bash
-VITE_CHAT_API_BASE_URL=http://127.0.0.1:8000
+VITE_CHAT_API_BASE_URL=https://platform.example.com
 ```
 
 The dev server then forwards `/__platform__` to it, and the application's connection points

@@ -61,16 +61,14 @@ The screens hold their own state; nothing here needs a query client.
 - Provider auth state is the source of truth for sign-in/sign-off controls. Do not infer provider
   authentication only from model presence.
 - The platform's model catalog and provider sign-in operations require `session.user.uid` only as a
-  local identity sanity check. Requests send the authenticated JWT without `created_by_user_uid`, an
-  impersonation header, an Agent uid, or an AgentSession uid; the platform derives the User. Numeric
-  legacy ids are rejected before network I/O.
+  local identity sanity check. Requests send the person's token and no user, Agent, or AgentSession
+  uid; the platform derives the User. Numeric legacy ids are rejected before network I/O.
 - The canonical catalog includes providers with missing credentials. Render its `authenticated`,
   `credential_status`, and `sign_in_available` fields directly rather than merging a second
   runtime-owned provider list.
-- An OAuth credential may retain `credential_status=active` after it expires or enters the
-  platform's five-minute execution safety window. In that state `authenticated=false`; provider
-  cards render `Requires sign-in`, offer the normal sign-in flow when available, and must not render
-  `Sign off`.
+- An OAuth credential may keep `credential_status=active` after it expires, or shortly before it
+  does. In that state `authenticated=false`; provider cards render `Requires sign-in`, offer the
+  normal sign-in flow when available, and must not render `Sign off`.
 - Provider cards should follow the platform's workflow flags directly: `authenticated` controls
   `Sign off` and `signInAvailable` controls `Sign in`.
 - Built-in authentication cards render only catalog rows with `known=true`. Organization custom

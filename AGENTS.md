@@ -8,7 +8,7 @@
 - The chat depends on the SDK as a peer. The SDK knows nothing about the chat: nothing under
   `command-center-sdk/` may name `@dev-mainsequence/command-center-ai` or reach into `command-center-ai/`, and
   `npm run check` fails if it does.
-- Do not add the private Command Center application, authentication, persistence policy,
+- Do not add Command Center product application code, authentication, persistence policy,
   deployment configuration, or application environment files. Product routes and backend
   transports stay out of the SDK package; the chat is bound to the platform's routes by design.
 - Consumers must use declared package exports. Do not introduce aliases into repository source or

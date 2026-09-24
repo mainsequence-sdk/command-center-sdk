@@ -130,7 +130,7 @@ import {
 let markContextReady!: () => void;
 const contextReady = new Promise<void>((resolve) => { markContextReady = resolve; });
 const client = createStaticSiteIframeClient({
-  channel: "mainsequence.fund-competition",
+  channel: "mainsequence.reports",
   hostOrigin: "https://command-center.example.com",
   parentWindow: window.parent,
   onContext(context: StaticSiteIframeContext) {
@@ -177,7 +177,7 @@ tokens, email, name, organization, permissions, or credentials through this cont
 authorized FastAPI release, `fetchFastApi` is the normal child API: it accepts only a relative path,
 uses the backend-issued RPC URL, injects the delegated bearer token and canonical release header,
 reuses the credential only in memory, and refreshes before expiry. Do not manually parse
-postMessage, call the control-plane exchange, reconstruct hostnames, or store/log the token.
+postMessage, request credentials from the platform yourself, reconstruct hostnames, or store/log the token.
 
 The client reports `authorizing`, `runtime-starting`, `ready`, `expired`,
 `authentication-failed`, `forbidden`, `missing-route`, `transient`, `cancelled`, `unavailable`,
@@ -185,7 +185,7 @@ The client reports `authorizing`, `runtime-starting`, `ready`, `expired`,
 abortable maximum-three-attempt policy for replay-safe requests. Only `502`, `503`, and `504` mean
 runtime start; `401` causes one bounded credential reacquisition, `403` is forbidden, `404` is a
 missing route, and an opaque browser fetch failure stays transient/CORS-or-network rather than
-being mislabeled as cold start. `POST` and `PATCH` are not replayed by default.
+being mislabeled as a starting runtime. `POST` and `PATCH` are not replayed by default.
 
 The low-level `requestFastApiCredential` method is reserved for advanced transports that cannot use
 `fetchFastApi`; it exposes the narrow token and makes the caller responsible for containing it in
@@ -197,9 +197,9 @@ For WebSockets, `resolveFastApiWebSocketTicket` is a separate authenticated host
 derives the pinned child Origin, calls the one-time ticket endpoint once, validates the exact
 release/path/origin/URL/expiry binding, and returns the SDK ticket shape. The child uses only
 `createFastApiWebSocket`; it never receives a raw-ticket API or reuses the HTTP credential. The SDK
-places the ticket first and `mainsequence.ws-bridge.v1` second in the native protocol list. The
-gateway strips both, so `socket.protocol` is the FastAPI-selected application protocol or the fixed
-non-secret acknowledgement. Reconnect by calling the method again for a fresh ticket.
+places the ticket first and `mainsequence.ws-bridge.v1` second in the native protocol list. FastAPI
+never receives either value, so `socket.protocol` is the FastAPI-selected application protocol or
+the fixed non-secret acknowledgement. Reconnect by calling the method again for a fresh ticket.
 
 `StaticSiteIframe` defaults to `allow-forms allow-same-origin allow-scripts`. Any added popups,
 downloads, modals, or navigation require a security review. Production deployments must align the
@@ -214,7 +214,7 @@ host's `frame-src`, the child's `frame-ancestors`, and an operator-controlled ex
   repeated initialization, and teardown.
 - Anonymous/public UID behavior and real-browser CSP/sandbox behavior for static sites.
 - Delegated FastAPI source/origin/target validation, single-flight reuse, refresh before expiry,
-  sanitized errors, bounded cold-start retry, cancellation, exact HTTP-state classification,
+  sanitized errors, bounded retry while the runtime starts, cancellation, exact HTTP-state classification,
   user/navigation/disposal clearing, direct-link failure, and absence of tokens from DOM, URLs,
   storage, logs, analytics, or serialized state. Exercise this path in a real browser so CORS
   preflight, origin binding, and the canonical release header are covered.

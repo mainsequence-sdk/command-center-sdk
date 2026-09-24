@@ -36,8 +36,8 @@ The settings never change a session's model. The composer's picker does, on the 
 ## Built-in providers
 
 - A provider card follows the platform: "Sign off" when the provider is `authenticated`, and
-  "Sign in" when sign-in is available. An OAuth credential that expired, or entered the platform's
-  safety window, is no longer authenticated, and its card asks for sign-in again.
+  "Sign in" when sign-in is available. An OAuth credential is no longer authenticated after it
+  expires, or shortly before, and its card asks for sign-in again.
 - Signing in starts an attempt that the screen follows every 1.5 seconds until it completes, fails,
   or is cancelled. The dialog shows only the platform's next step: a browser page whose callback
   completes at the platform, or a device code. The person never pastes a callback URL or a code.

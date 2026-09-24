@@ -1,7 +1,6 @@
 ---
 id: main-sequence-ai-provider-errors
 title: Main Sequence AI Provider Errors
-slug: /extensions/main-sequence-ai-provider-errors
 ---
 
 # Main Sequence AI Provider Errors

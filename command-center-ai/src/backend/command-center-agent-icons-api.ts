@@ -109,9 +109,8 @@ export async function fetchCommandCenterAgentIconBytes({
   tokenType?: string;
   url: string;
 }): Promise<CommandCenterAgentIconBytes> {
-  // The delivery view is a DRF view: its content negotiation only knows the
-  // JSON renderers and answers 406 to an image-only Accept header before the
-  // file is served, so the request accepts anything.
+  // The delivery route answers 406 to an image-only Accept header, so the
+  // request accepts anything.
   const headers = new Headers({ Accept: "*/*" });
   if (token) {
     headers.set("Authorization", `${tokenType} ${token}`);

@@ -5,9 +5,9 @@ import {
 } from "../backend/message-provenance.js";
 
 /**
- * Who a message is from, resolved for rendering (ADR-0043 Phase C).
+ * Who a message is from, resolved for rendering.
  *
- * The backend history projection stamps every Agent runtime message with the verified
+ * The platform's history stamps every Agent runtime message with the verified
  * caller (`actorKind`, `actorUid`, `actorName`) and the session's agent
  * (`targetAgentUid`). This module turns those fields, plus what the client
  * already knows about the viewer and the session, into the avatar, name and
@@ -108,10 +108,10 @@ function humanLabelFromName(name: string | null) {
     return null;
   }
 
-  // Human actor names come from the gateway username, which the platform
-  // stores as the email address. Show the mailbox part as the label so a
-  // multi-party thread does not read as a list of addresses; the full
-  // value stays available on the avatar tooltip through `title`.
+  // Human actor names arrive as the person's email address. Show the mailbox
+  // part as the label so a multi-party thread does not read as a list of
+  // addresses; the full value stays available on the avatar tooltip through
+  // `title`.
   const atIndex = name.indexOf("@");
   if (atIndex > 0 && !name.includes(" ")) {
     return name.slice(0, atIndex);
@@ -152,12 +152,12 @@ export function getSessionAgentActor(context: MessageActorContext): MessageActor
  * Resolve the actor of a message.
  *
  * - assistant messages are the session's agent (`targetAgentUid` when the
- *   projection stamped it, the session summary otherwise);
+ *   platform's history stamped it, the session summary otherwise);
  * - user messages with `actorKind: "agent"` are the calling agent;
  * - user messages whose actor is the viewer, or that carry no verified actor
- *   at all (a message the viewer just sent, or one persisted before ADR-0043),
- *   are the viewer;
- * - any other human is a teammate named by the gateway.
+ *   at all (a message the viewer just sent, or an older one without
+ *   provenance), are the viewer;
+ * - any other human is a teammate, named by the platform.
  */
 export function resolveMessageActor(
   message: ThreadMessageShape,
@@ -227,9 +227,10 @@ export function resolveMessageActor(
 }
 
 /**
- * The session's agent uid as stamped by the projection (`targetAgentUid` on
- * every Agent runtime message). The active session summary carries the agent's label
- * and numeric id but not its uid, so the thread supplies it.
+ * The session's agent uid as stamped by the platform's history
+ * (`targetAgentUid` on every Agent runtime message). The active session summary
+ * carries the agent's label and numeric id but not its uid, so the thread
+ * supplies it.
  */
 export function findThreadTargetAgentUid(messages: readonly ThreadMessageShape[]) {
   for (const message of messages) {

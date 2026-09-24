@@ -3,7 +3,7 @@
 - Status: Accepted
 - Date: 2026-09-14
 - Implementation: `@dev-mainsequence/command-center-sdk` 0.3.0 (bar and documentation); host
-  adoption tracked in the Command Center application catalog
+  adoption is outside this package
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
 - Related:
@@ -16,9 +16,8 @@
 ## Publication status
 
 The `ApplicationImmersiveBar` primitive shipped in 0.3.0. The immersive route behavior itself is
-host-owned and is not part of the package; the Command Center application records its own
-decision for it. A consumer may use the bar only when its installed package export map and
-declarations contain it.
+host-owned and is not part of the package. A consumer may use the bar only when its installed
+package export map and declarations contain it.
 
 ## Decision summary
 
@@ -99,8 +98,7 @@ The host decides which routes are immersive and below which breakpoint using the
 seam. For the Command Center host the recommended rule is: the navigation-link static-site route
 below `md` renders only the bar and the iframe in a `100dvh` column with `overflow: hidden`, no
 sidebar, no top bar, no docked rails. "Back" goes to the previous in-app history entry when there
-is one, otherwise the default application. The title is the navigation link's label. That plan
-belongs in the application's decision catalog, not here.
+is one, otherwise the default application. The title is the navigation link's label.
 
 From `md` up the same routes are not immersive, and they do not keep the host's whole chrome
 either. SDK ADR 010 amends this section: the host keeps its top bar, renders no sidebar column
@@ -152,4 +150,4 @@ child adapts by width already. Revisit when a real site shows duplicated chrome.
 
 - Hosts get a consistent immersive frame for embedded sites with one component.
 - Embedded sites stay unaware of the host frame, so they need no change.
-- The Command Center host owes a shell branch and a decision record to realize the behavior.
+- The Command Center host implements the immersive route to realize the behavior.

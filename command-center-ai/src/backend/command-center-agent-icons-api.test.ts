@@ -41,7 +41,7 @@ describe("command center agent icon bytes", () => {
     vi.unstubAllGlobals();
   });
 
-  it("asks with the bearer token and accepts any type, because the DRF view answers 406 to an image-only Accept", async () => {
+  it("asks with the bearer token and accepts any type, because the delivery route answers 406 to an image-only Accept", async () => {
     const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
       async () =>
         new Response(new Blob(["<svg/>"], { type: "image/svg+xml" }), {

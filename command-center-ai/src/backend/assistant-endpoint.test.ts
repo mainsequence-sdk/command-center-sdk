@@ -168,7 +168,7 @@ describe("assistant endpoint resolver", () => {
     expect(fetchMock.mock.calls.map(([, init]) => (init as RequestInit).method)).toEqual(["GET"]);
   });
 
-  it("treats a gateway answer for an Agent that is not up as not serving", async () => {
+  it("treats a 502, 503 or 504 for an Agent that is not up as not serving", async () => {
     mocks.fetchAgentSessionRuntimeAccess.mockResolvedValue(readyRuntimeAccess());
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 503 })));
 

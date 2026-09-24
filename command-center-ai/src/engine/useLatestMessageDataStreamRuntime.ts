@@ -125,12 +125,12 @@ export function extractUiMessageStreamError(value: unknown) {
 }
 
 /**
- * Rewrites the tool chunks of Agent runtime releases from before the encoder change
- * (`tool-input-available`, `tool-output-delta`, `tool-output-available`, the
- * AI SDK v5 names) into the names assistant-stream's decoder understands
- * (`tool-call-start` + `tool-call-delta` + `tool-call-end`, `tool-result`).
- * Without it those runtimes' tool calls never become message parts. Frames
- * of any other type pass through byte for byte.
+ * Rewrites the tool chunks of older Agent runtimes (`tool-input-available`,
+ * `tool-output-delta`, `tool-output-available`, the AI SDK v5 names) into the
+ * names assistant-stream's decoder understands (`tool-call-start` +
+ * `tool-call-delta` + `tool-call-end`, `tool-result`). Without it those
+ * runtimes' tool calls never become message parts. Frames of any other type
+ * pass through byte for byte.
  */
 export function createLegacyToolChunkTranslator(): TransformStream<Uint8Array, Uint8Array> {
   const decoder = new TextDecoder();

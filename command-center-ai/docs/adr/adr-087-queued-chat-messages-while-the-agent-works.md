@@ -4,13 +4,12 @@
 - Date: 2026-09-13
 - Implemented: 2026-09-13 (phase 1, Command Center only)
 - Amended: 2026-09-13, after review: no Send now until the runtime can steer; reorder by drag
-- Amended: 2026-09-17: the composer is locked while the Agent wakes (the platform's Agent
-  projection), it no longer stays open for typing
+- Amended: 2026-09-17: the composer is locked while the Agent wakes; it no longer stays open
+  for typing
 - Related:
   - [ADR 060: Main Sequence AI Session-Backed Chat Request Contract](./adr-060-session-backed-chat-request-contract.md)
-  - Command Center ADR 092: Environment Agent Shortcut and Unified Runtime
-  - the platform's runtime interaction and its runtime wake signal and presence, which own the
-    readiness decisions every send already passes through
+  - the platform's `runtime_interaction` and `runtime_presence`, which own the readiness decisions
+    every send already passes through
 
 ## Context
 
@@ -30,14 +29,13 @@ Four facts about the stack shape the design.
    starts a new run, and `performRoundtrip` aborts the previous run's controller first
    (`@assistant-ui/core` `local-thread-runtime-core.js`). A queue cannot use the thread as its
    store; it must add to the thread only after the previous stream has ended.
-2. **The runtime serialises turns with the connection open.** The active-session runtime holds the
-   session lock for the whole turn, durability included. A second
-   `/api/chat` for the same session waits on that lock with its request open; the chat stream has
-   no keepalive and the load balancer closes idle connections after four minutes. Sending the
-   next message before the previous stream ends is therefore unsafe, not merely wasteful.
+2. **The runtime serialises turns with the connection open.** A second `/api/chat` for the same
+   session waits, with its request open, until the running turn ends; the chat stream has no
+   keepalive, and an idle connection is closed after a few minutes. Sending the next message
+   before the previous stream ends is therefore unsafe, not merely wasteful.
 3. **One user message per request.** The runtime reads the last user message of `messages` as the
-   prompt (`api/models.py`, `ChatRequest.prompt_text`). Several queued messages cannot ride one
-   request; each queued message is its own turn. ADR 060's request contract is unchanged.
+   prompt. Several queued messages cannot ride one request; each queued message is its own turn.
+   ADR 060's request contract is unchanged.
 4. **assistant-ui has a queue model nobody feeds.** `@assistant-ui/core` 0.1.13 defines
    `composer.queue` of `QueueItemState {id, prompt}`, `ComposerPrimitive.Queue` and
    `QueueItemPrimitive` (Text, Steer, Remove), but the composer runtime client hard-codes
@@ -46,13 +44,12 @@ Four facts about the stack shape the design.
    keeps its store independent of `composer.queue`, so a future assistant-ui version that
    implements the capability does not collide with this feature.
 
-The underlying harness supports steering and follow-up queues, but the current runtime transport
-does not expose them. Reaching those queues is runtime work and is out of scope here; see
-"Later: runtime steering".
+The Agent runtime does not take steering or follow-up messages today. Supporting them is runtime
+work and is out of scope here; see "Later: runtime steering".
 
-The backend `working` flag is lease-based (`session_leases.py`) and reaches the client only when
-the session list refreshes on specific events. A session busy because another tab or agent is
-writing is therefore observed late; the design treats that case as best-effort.
+The backend `working` flag reaches the client only when the session list refreshes on specific
+events. A session busy because another tab or agent is writing is therefore observed late; the
+design treats that case as best-effort.
 
 A precedent exists: a draft written while the runtime wakes is kept and offered with one
 "Send now" click (`SendDraftNowButton`). The queue generalises it.
@@ -76,8 +73,8 @@ type QueuedMessage = {
 
 A pure reducer in `src/engine/message-queue.ts` implements `enqueue`,
 `remove`, `edit`, `move`, `clear`, `takeNext`, `hold` and `release`, with unit tests. Nothing in
-the queue exists on the platform until it is sent: the platform, the Agent runtime and the history
-projection are untouched by this ADR.
+the queue exists on the platform until it is sent: the platform, the Agent runtime and the
+platform's history are untouched by this ADR.
 
 The queue is keyed by the session record id used by the other per-session maps. When a new chat is
 promoted from the stream to its backend session id (`promoteCurrentSessionFromStream`), the queue
@@ -95,7 +92,7 @@ is re-keyed with it.
 - **Stop** stays available as a secondary control next to the primary one while a local run is
   active. Escape keeps its current meaning (cancel the run).
 - Placeholder while working: "\{Agent} is working. Your message will send when it finishes." with
-  the session's Agent name, never a fixed shortcut-Agent name (see ADR 092).
+  the session's Agent name, never a fixed shortcut-Agent name.
 - The wake and readiness gates stay in front of the queue: while the Agent is checking, starting,
   waking, or updating, the composer is locked (the draft already written is kept and never sent on
   the user's behalf), and a queued message sent later passes through the same `fetch` gate as a
@@ -166,7 +163,7 @@ The queue is **held** and nothing sends automatically when:
 - the run ended in error (`onError`): reason `failed`;
 - the user stopped the run (`onCancel` from Stop or Escape): reason `stopped`;
 - the user switched sessions while a run was active: reason `away`;
-- the runtime decision blocks sending and is not transient (ADR-026 `can_submit=false` with a
+- the runtime decision blocks sending and is not transient (`can_submit=false` with a
   non-transient state): reason `blocked`, with the decision's notice message;
 - `thread.append` throws before a run starts: reason `unavailable`, with the thrown message. A
   guard that fires inside the run (the readiness guard in the request body builder) surfaces as
@@ -191,13 +188,13 @@ runtime capability (see "Later").
   full. Send or remove a message first." No new per-message length limit is introduced.
 - Queued messages are text only. The composer has no attachments today; if it gains them, queued
   attachments need their own decision.
-- Where sessions are listed (`AgentSessionExplorer`, next to the working indicator), a session with
-  queued messages shows a small count.
+- Where sessions are listed (next to the working indicator), a session with queued messages shows
+  a small count.
 
 ### 8. Copy
 
 User-facing text names the agent and what the user can do. It never names the runtime, the
-platform, pods, the backend or the queue's implementation. Held reasons use the wording in §3.
+platform, the backend or the queue's implementation. Held reasons use the wording in §3.
 
 ## Non-goals
 
@@ -233,7 +230,7 @@ unit-tested in `message-queue.test.ts`.
 - Composer: typing while busy, **Add to queue** primary control with Enter, Stop as secondary,
   placeholder copy.
 - `ComposerQueueStrip`: the strip described in §3, rendered above the composer on both surfaces.
-- Session list count in `AgentSessionExplorer.tsx`.
+- The queued-message count where the application lists sessions.
 
 ### Tests
 
@@ -247,11 +244,11 @@ unit-tested in `message-queue.test.ts`.
 - The drain, hold and restore wiring in the provider is exercised through the pure reducer
   tests (take, hold, release, return, storage) and the type-checker; it has no component-level
   test, because the provider cannot be rendered in isolation. Verifying the end-to-end drain
-  against the dev runtime is a manual step.
+  against a running Agent is a manual step.
 
 ### Docs
 
-This ADR, listed in the chat package's decisions. The chat rendering map gets a pointer.
+This ADR, listed in the chat package's decisions.
 
 ## Acceptance
 
@@ -281,21 +278,17 @@ This ADR, listed in the chat package's decisions. The chat rendering map gets a 
 
 ## Later: runtime steering
 
-The Agent runtime can inject a message between agent steps (steer) or run it as the next turn
-inside the same run (follow-up). Exposing that needs Agent-runtime work: a route such as
-`POST /api/sessions/{session_uid}/queue` with `{content, mode: "steer" | "follow_up"}` that bypasses
-the turn lock, the same caller identity and provenance stamp as the chat route, and the runtime's
-queue updates forwarded as a `data-queue` chunk so the strip can show rows that are already inside
-the run. With that in place, Send now becomes Steer without cancelling, and the strip's rows move
-from "queued here" to "queued in the run". That is a separate decision for the Agent runtime and an
-amendment of this one.
+Steering the answer in progress, or queueing a follow-up inside the same run, needs the Agent
+runtime to accept it, and today it does not. When it does, Send now becomes Steer without
+cancelling, and the strip can show rows that are already inside the run. That is a separate
+decision and an amendment of this one.
 
 ## Answered Questions
 
 ### One turn per queued message, or join consecutive rows?
 
 One turn per message. The transcript stays faithful to what the user wrote, the runtime's
-persistence and the history projection need no change, and the cost is the model calls the user
+persistence and the platform's history need no change, and the cost is the model calls the user
 asked for. Joining is available to the user by editing rows into one.
 
 ### Resume automatically after Stop or an error?

@@ -6,11 +6,10 @@
 - Moved: 2026-09-23 into the chat package with its code (ADR 096, step 4); the code paths below
   are the package's
 - Related:
-  - the platform's repository-backed agent icons, which own the icon, its sanitization, the
-    projection and the authenticated delivery
+  - the platform, which owns the icon, its sanitization, the projection and the authenticated
+    delivery
   - [ADR 087: Queued Chat Messages While the Agent Works](./adr-087-queued-chat-messages-while-the-agent-works.md),
     for the composer surfaces this touches
-  - Command Center ADR 092: Environment Agent Shortcut and Unified Runtime
 
 ## Context
 
@@ -120,9 +119,8 @@ navigation entry are not agents and do not change.
   `AgentIconAuthContext`, `useAgentIconLookup`, `useAgentIconAuth`.
 - `src/ui/AgentIcon.tsx`, exported by the package; tested for mask, colour, fallback and failure.
 - `ChatEngineProvider` mounts the provider and exposes `activeAgentUid`; the package's
-  `ChatThread.tsx` (`ActorAvatar`, the connecting stage prop) and `AgentConnectingState.tsx`, and
-  Command Center's `ChatOverlay.tsx`, `AgentSessionCatalogPicker.tsx`, `AgentSessionExplorer.tsx`,
-  `AgentsPage.tsx`, `AgentDetailView.tsx`, and the agent task list use the component.
+  `ChatThread.tsx` (`ActorAvatar`, the connecting stage prop) and `AgentConnectingState.tsx` use
+  the component, and so do the application's own agent surfaces in section 4.
 - `ChatThread.icons.client.test.tsx`: the session agent's messages show its icon after the
   robot, a calling agent without one keeps the robot, one request per agent, people unchanged.
 

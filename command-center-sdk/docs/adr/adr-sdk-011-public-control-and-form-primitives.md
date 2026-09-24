@@ -69,35 +69,23 @@ satisfy it, and every new SDK control must be added to the list by hand.
 
 ### Consumers rebuild the same controls by hand
 
-The Command Center host keeps a private kit at `apps/command-center/src/components/ui/`: 15 files,
-1,239 lines, built on Tailwind utility classes, `class-variance-authority`, `clsx`, and
-`tailwind-merge`. Its imports across the monorepo, counted as importing files:
+The Command Center host keeps a private control kit built on Tailwind utility classes,
+`class-variance-authority`, `clsx`, and `tailwind-merge`. The host and its sibling applications
+import its buttons, badges, inputs, cards, dialogs, selects, textareas, and toaster widely.
 
-| Module | Total | Host | Sibling applications |
-| --- | --- | --- | --- |
-| `button` | 92 | 28 | 64 |
-| `badge` | 81 | 26 | 55 |
-| `toaster` | 50 | 14 | 36 |
-| `card` | 49 | 25 | 24 |
-| `input` | 47 | 21 | 26 |
-| `dialog` | 33 | 11 | 22 |
-| `select` | 21 | 7 | 14 |
-| `textarea` | 19 | 5 | 14 |
-
-The sibling applications (`mainsequence-foundry`, `marketplace`, `mainsequence-ai`) are separate
-workspace packages that declare this SDK as a dependency and then import `@/components/ui/*`,
-where `@/` is a build alias to the host application's private `src`. They compile only inside the
-host's Vite and TypeScript configuration. That is the alias-based coupling this repository's
-boundary rules forbid, and it exists because the SDK left the gap.
+The host's sibling applications declare this SDK as a dependency and then import these controls
+through a build alias into the host application's private source, so they compile only inside the
+host's build. That is the alias-based coupling the SDK's boundary rules forbid, and it exists
+because the SDK left the gap.
 
 An independent consumer cannot even do that. `CommandCenterWidgets`, a separate repository on
 0.1.20 with no access to the host alias, hand-rolls 72 controls (33 `<label>`, 19 `<input>`, 12
 `<select>`, 4 `<textarea>`, 4 `<button>`) and styles them from SDK variables by hand: correct,
 duplicated, and unverifiable.
 
-Nothing in the monorepo publishes a label, field, checkbox, switch, radio, or form primitive at
-all; 41 files hand-roll `<label>`. The host kit covers actions, not forms. Upstreaming the host kit
-alone would therefore serve the host and leave the form-heavy independent consumer where it is.
+Nothing in the host publishes a label, field, checkbox, switch, radio, or form primitive at all.
+The host kit covers actions, not forms. Upstreaming the host kit alone would therefore serve the
+host and leave the form-heavy independent consumer where it is.
 
 ### The host kit is already an SDK-token kit
 
@@ -139,8 +127,8 @@ the coarse-pointer 16px rule that every SDK text input already follows.
 The Command Center host, its sibling applications, and every other consumer use the released
 `/controls` components in place of private buttons, badges, inputs, textareas, and labels. The host
 kit is a migration source, not a parallel implementation: after the host adopts the release, its
-`button.tsx`, `input.tsx`, `textarea.tsx`, and `badge.tsx` are deleted and the sibling
-applications import only declared SDK exports for these controls.
+private button, input, textarea, and badge are deleted and the sibling applications import only
+declared SDK exports for these controls.
 
 ### Name parity, re-authored styling
 
@@ -161,13 +149,13 @@ framework. No theme variable is added; the audit's closed token set is unchanged
 
 ### Deferred, with reasons
 
-- `Select`: the host's `select.tsx` already wraps the SDK's `ResourcePicker`. A public select must
+- `Select`: the host's select already wraps the SDK's `ResourcePicker`. A public select must
   be reconciled with the picker's option model and sheet presentation rather than published as a
   second listbox. Separate decision.
 - `Dialog`: SDK ADR 010 gave the SDK scrim, focus trap, scroll lock, and dismissal ownership for
   the navigation drawer through an internal overlay utility. A public dialog should stand on that
   utility once it is promoted; publishing a dialog first would fork it. Separate decision.
-- `Toaster`: 36 sibling-application importers, but its state lives in a store. The SDK pattern
+- `Toaster`: widely used by the host's applications, but its state lives in a store. The SDK pattern
   (SDK ADR 004) is a controlled surface fed by consumer state; a notification primitive needs that
   design. Separate decision.
 - `Tabs`, `Tooltip`, `Popover`, `Menu`, `Checkbox`, `Switch`, `Radio`: no current SDK consumer
@@ -216,15 +204,13 @@ No backend or storage action is required.
 
 After the release that carries `/controls`:
 
-1. The Command Center host replaces `@/components/ui/{button,input,textarea,badge}` imports with
-   `@dev-mainsequence/command-center-sdk/controls`, applying the mapping table above, and deletes
-   those four files. `page-header.tsx` migrates to `ApplicationPageHeader` in the same pass.
-   `card.tsx` (112 call sites with per-subcomponent class overrides and depth-based nesting)
-   migrates to `ApplicationCard` as a separate, reviewable commit on the same branch: header
-   children move into the `header` prop, padding ownership moves to the SDK, and
-   `variant="nested"` becomes `surface="nested"`.
-2. The sibling applications stop importing `@/components/ui/*` for these controls. Their remaining
-   `@/` imports are the next boundary item and are outside this decision.
+1. The Command Center host replaces its private button, input, textarea, and badge with
+   `@dev-mainsequence/command-center-sdk/controls`, applying the mapping table above, and moves its
+   page header to `ApplicationPageHeader` and its card to `ApplicationCard`: header children move
+   into the `header` prop, padding ownership moves to the SDK, and `variant="nested"` becomes
+   `surface="nested"`.
+2. The sibling applications stop importing the host's private controls; their other imports from
+   the host are outside this decision.
 3. Independent consumers replace hand-styled controls with the SDK components and drop the CSS
    that reproduced SDK tokens.
 4. The layout verifier's `touch-target` and `input-zoom` rules become satisfiable by construction

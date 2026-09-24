@@ -206,8 +206,8 @@ many callbacks that it no longer owns meaningful behavior.
 
 ### Publish the analytics runtime response as a contract
 
-Rejected because `core`, `pricing`, model names, and attachment semantics describe one backend.
-The reusable boundary is controlled feedback presentation, not those bytes.
+Rejected because that response describes one backend. The reusable boundary is controlled feedback
+presentation, not those bytes.
 
 ### Continue with application-owned CSS
 

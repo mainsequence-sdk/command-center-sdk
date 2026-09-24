@@ -2,17 +2,15 @@
 
 - Status: Implemented
 - Date: 2026-09-20
-- Amended: 2026-09-23 by ADR 097: the package depends on the Command Center SDK as a peer, in
-  one direction only
+- Amended: 2026-09-23: the package depends on the Command Center SDK as a peer, in one direction
+  only (SDK ADR 012)
 - Owners: Main Sequence AI maintainers
 - Related:
   - [ADR 060: Session-Backed Chat Requests](./adr-060-session-backed-chat-request-contract.md)
   - [ADR 087: Queued Chat Messages While The Agent Works](./adr-087-queued-chat-messages-while-the-agent-works.md)
-  - Command Center ADR 092: Environment Agent Shortcut And Unified Runtime
   - [ADR 093: Client-Verified Agent Readiness](./adr-093-client-verified-agent-readiness.md)
   - [ADR 098: One Communication Contract For Every Agent](./adr-098-one-communication-contract-for-every-agent.md)
-  - The Main Sequence AI assistant UI README in Command Center,
-    [the package's backend connection](../../src/backend/README.md)
+  - [The package's backend connection](../../src/backend/README.md)
 
 ## Context
 
@@ -42,10 +40,9 @@ does not. Measured on 2026-09-20:
   and three settings screens (the provider section, the custom-provider workflow, and the test
   conversation). Their host imports are the auth store, the toaster, the class-name helper, the
   settings section type, and the host's form and dialog primitives.
-- The chat's documentation is spread over the repository: five of the seven Main Sequence AI
-  records (ADR 060, 087, 090, 092, 093), two guides (AgentSession resolution, provider errors),
-  and the module READMEs beside the code. ADR 092 and the resolution guide each mix the Command
-  Center shortcut with the contract every Agent uses.
+- The chat's documentation is spread over the application: its decision records, two guides
+  (AgentSession resolution, provider errors), and the module READMEs beside the code. Some of them
+  mix the Command Center shortcut with the contract every Agent uses.
 - Nothing in this repository can show that a package is independent. Application packages are
   source packages the host compiles: the application's `tsconfig.json` extends the host's and
   inherits its `@/*` alias, the host's global stylesheet scans application sources for Tailwind,
@@ -107,7 +104,7 @@ Enforcement:
   matches the theme of every application that loads the SDK theme. It does not need Tailwind.
 - It depends on the Command Center SDK as a peer dependency, not a regular one, so an application
   has exactly one SDK: one stylesheet and one set of `cc-*` classes. React is a peer for the same
-  reason. The dependency goes one way only: the SDK knows nothing about the package (ADR 097).
+  reason. The dependency goes one way only: the SDK knows nothing about the package (SDK ADR 012).
 - It does not depend on any application package, holds no router and no host store, and does not
   read `import.meta.env`.
 - A boundary check fails the build on a dependency outside the allowlist, an `@/` import, an
@@ -170,10 +167,10 @@ whoever mounts it supplies them. Today they come from these places:
 
 | Value | Today | In the package |
 | --- | --- | --- |
-| Platform API base URL | `VITE_API_BASE_URL` through `env.apiBaseUrl`, read in ten client files | Required input |
+| Platform API base URL | The application's API base URL setting, read in ten client files | Required input |
 | Authentication | The auth store: token, token type, and its refresh | Required input: the current token and a way to get a fresh one |
 | Active Organization Environment and signed-in user | Their providers in the host | Required input |
-| Stream protocol | `assistant_ui.protocol`, only `ui-message-stream` is supported | Fixed in the package; not configurable |
+| Stream protocol | A stream protocol setting, only `ui-message-stream` is supported | Fixed in the package; not configurable |
 
 **The request-URL rewrite.** The platform API and the Agent's runtime answer browser requests
 only from the origins on their allow-lists. In production the platform's list is Command Center's
@@ -200,10 +197,9 @@ catalog, provider sign-in, and custom providers) each carried their own copy of 
 once, where it builds its connection, and every platform request follows it. The standalone
 application uses the rewrite for a proxy of its own.
 
-Two others were removed from the repository before this work, so the chat has one path: the
-`VITE_DEBUG_CHAT` logging flag, and the local runtime proxy (`assistant_ui.endpoint`,
-`VITE_ASSISTANT_UI_ENDPOINT`, `VITE_ASSISTANT_UI_PROXY_TARGET`, and the `local-proxy` access
-mode). The Agent's runtime is reached only through the `rpc_url` the platform returns.
+Two others were removed from the repository before this work, so the chat has one path: a debug
+logging flag and a local runtime proxy. The Agent's runtime is reached only through the `rpc_url`
+the platform returns.
 
 Browser storage keeps its keys and shapes: `main_sequence_ai.message_queue.{session}` in
 `sessionStorage` and `ms.main-sequence-ai.agent-sessions:{user}:{environment}` in `localStorage`.
@@ -215,7 +211,7 @@ Nothing is needed from the backend: no new route, setting, or permission.
 The package includes a minimal application that is nothing but the chat. Given the API base URL,
 a token, and an Agent, it gets or creates a session and chats with the same backend Command Center
 uses, with no Command Center shell, stores, or Tailwind build. It loads the Command Center SDK's
-theme and controls, the package's one Command Center dependency (ADR 097). A person can send a
+theme and controls, the package's one Command Center dependency (SDK ADR 012). A person can send a
 message, watch text, reasoning, and tool calls stream in, connect a provider and change the model,
 stop a run, see an error, and reload into the same transcript. (`data-<name>` parts reach the engine,
 which reads the provenance they carry; the thread does not draw them, in Command Center or here.) Its tests run
@@ -227,7 +223,7 @@ bed and the browser-test target.
 What belongs to Command Center and not to chat:
 
 - the shortcut: the `agentShortcutUid` preference, the `command_center_shortcut` handle session,
-  and its blocking state (ADR 092);
+  and its blocking state;
 - the rails: the chat overlay and its mount, the CodeRepository Agent rail, their stores, and the
   keyboard shortcut;
 - route synchronisation (`?session=`) and the view context built from the host's registry and
@@ -251,18 +247,14 @@ in this repository, its new ADRs continue the repository's single ADR sequence.
 | Document | What happens |
 | --- | --- |
 | ADR 060 (chat request), ADR 087 (queue), ADR 090 (agent icons), ADR 093 (readiness) | Move. |
-| ADR 092 (shortcut and unified runtime) | Split. "All Agents use one communication contract" and "Retire the compatibility service clients" move as their own record. The shortcut preference, its blocking state, and the CodeRepository surfaces stay as ADR 092. Each links to the other. |
-| ADR 089 (Agent capability UI), ADR 094 (agent tasks) | Stay. They are not chat. |
+| The contract every Agent uses | Moves as ADR 098. The Command Center shortcut stays with the application. |
 | The Main Sequence AI AgentSession resolution guide | Split the same way. Identities, hydration, runtime access, sending, the shared states, the model catalog, the failure rules, and the invariants move. The Command Center shortcut and explicit session navigation stay. |
 | The Main Sequence AI provider-errors guide | Moves. |
 | The READMEs of the runtime clients, the assistant UI, and the settings screens | Move with their code. What describes the shortcut, the rails, and the Agent shortcut setting stays with the wrapper. |
-| The READMEs of the session explorer and the chat page | Stay. The session explorer's follows it when it moves. |
-| The Main Sequence AI user guides | Stay. They explain the Command Center product to the people who use it, and the public site may not reach into internal documentation. |
 | This record | Moves into the package once the package exists. |
 
 Each document moves in the same step as the code it describes, and every link to it is updated
-in that change. The Main Sequence AI catalogs drop the moved entries and keep one pointer to the
-package's documentation.
+in that change.
 
 ### 8. Order of work
 
@@ -308,13 +300,11 @@ All six steps of section 8 are done: steps 1 and 2 on 2026-09-21, steps 3 to 6 o
   itself arrives with steps 3 to 6.
 - The two shortcut constants (`command_center_shortcut`, its session name) were defined inside a
   runtime client. They stayed with the application.
-- Two runtime clients were deleted instead of moved, because they were leftovers of removed
-  features with no caller. One was the transport of the Agent Terminal workspace widget, removed
-  with the workspaces on 2026-09-12; it was a second way to send a chat request. The other was the
-  compaction switch of the old session detail panel, whose only caller was removed in April; it
-  called `PATCH {rpc_url}/api/chat/session-config`, a route the current Agent runtime does not
-  serve. Section 3 lists the three runtime routes the
-  package calls.
+- Two runtime clients were deleted instead of moved, because they were leftovers of removed features
+  with no caller. One was the transport of the Agent Terminal workspace widget, removed with the
+  workspaces on 2026-09-12; it was a second way to send a chat request. The other was the compaction
+  switch of the old session detail panel, whose only caller was removed in April; it called a
+  retired runtime route. Section 3 lists the three runtime routes the package calls.
 - Documents moved in steps 1 and 2: ADR 060, ADR 093, the provider-errors guide, the runtime
   clients' README (now the backend connection's README), and this record.
 
@@ -332,9 +322,9 @@ Step 3:
 - The engine uses no react-query. The model catalog and the agent icon projection keep small
   stores of their own with the same staleness, and the provider screens call
   `invalidateModelProviderCatalog()` when a provider changes.
-- Documents moved in step 3: ADR 087; the contract half of ADR 092, as ADR 098; the contract half
-  of the AgentSession resolution guide; and the parts of the assistant UI and session detail
-  READMEs that describe moved code, as the engine and session-detail READMEs.
+- Documents moved in step 3: ADR 087; the contract every Agent uses, as ADR 098; the contract half
+  of the AgentSession resolution guide; and the parts of the assistant UI and session detail READMEs
+  that describe moved code, as the engine and session-detail READMEs.
 
 Step 4:
 
@@ -370,9 +360,8 @@ Step 5:
   application's queries had.
 - The dialog, the confirmation dialog, and the password input are the package's own, in `src/ui/`,
   with their rules in the stylesheet.
-- The screens name the platform, not its implementation, as ADR 097 requires of a published
-  package: "Secrets are encrypted by the platform", "the platform's model catalog", "the Agent
-  runtime".
+- The screens name the platform, not its implementation, as a published package must: "Secrets are
+  encrypted by the platform", "the platform's model catalog", "the Agent runtime".
 - The tests moved with the code, and a new one covers the sign-in polling. Documents moved in step
   5: the parts of the settings README that describe the screens, as the package's model providers
   README.
@@ -399,15 +388,14 @@ Step 6:
 - Checked in a browser against the stand-in and in the tests. The standalone was not run against
   the live platform in this step: that needs a person's token typed into its form.
 
-The package also meets the preconditions ADR 097 sets before it leaves this repository: it holds no
-react-query, router, or store library; its stylesheet passes the SDK's theme audit; every relative
-import names its `.js` file, and `tsconfig.build.json` builds it with NodeNext into `dist`, as the
-SDK repository builds; it has `CHANGELOG.md` and `LICENSE`; `npm pack --dry-run` with the publish
-manifest of SDK ADR 012 lists only `dist`, the stylesheet, the documentation, the standalone
-example without its tests, and the three files at the root; and its code, tests, and documentation
-name the platform and the Agent runtime, not their implementations. Values the platform sends keep
-their names. The manifest here still points at `src`, because Command Center consumes the package
-from source until it moves.
+The package also meets the preconditions for publishing it: it holds no react-query, router, or
+store library; its stylesheet passes the SDK's theme audit; every relative import names its `.js`
+file, and `tsconfig.build.json` builds it with NodeNext into `dist`, as the SDK repository builds;
+it has `CHANGELOG.md` and `LICENSE`; `npm pack --dry-run` with the publish manifest of SDK ADR 012
+lists only `dist`, the stylesheet, the documentation, the standalone example without its tests, and
+the three files at the root; and its code, tests, and documentation name the platform and the Agent
+runtime, not their implementations. Values the platform sends keep their names. The manifest here
+still points at `src`, because Command Center consumes the package from source until it moves.
 
 ## Backend and storage impact
 
@@ -432,12 +420,11 @@ the same keys and shapes.
   Command Center has: readiness, held sends, the queue, model selection.
 - Independence is demonstrated by tooling and a running application, not by convention.
 - Command Center uses the package for its own chat, so the two cannot drift apart.
-- The split of the chat provider that the audit deferred happens here, along boundaries the code
-  already has. It and the thread restyle touch audited code; the steps are small, ordered, and
-  gated by the chat's existing tests.
+- The split of the chat provider happens here, along boundaries the code already has. It and the
+  thread restyle touch working code; the steps are small, ordered, and gated by the chat's existing
+  tests.
 - Buttons, badges, inputs and textareas come from the SDK's `/controls`. The package keeps its
   own select, dialog, password input, confirmation dialog, markdown renderer and notification
-  surface, because the SDK publishes no equivalent (ADR 097).
+  surface, because the SDK publishes no equivalent (SDK ADR 012).
 - Two styling systems coexist in the chat until steps 4 and 5 complete.
-- The package carries its own decisions and guides, so the reasons behind the chat travel with
-  it. The Main Sequence AI catalog shrinks to the shortcut, Agent configuration, and agent tasks.
+- The package carries its own decisions and guides, so the reasons behind the chat travel with it.

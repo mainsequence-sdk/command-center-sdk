@@ -205,8 +205,7 @@ This ADR moves to Accepted when:
 ### Add a new `priority` field to the discovery contract
 
 Rejected. The contract already carries `importance` with the same intent. A second field would
-force backends to emit both and the SDK to reconcile them. The gap analysis that preceded this ADR
-proposed a new field before this was noticed; this decision corrects that.
+force backends to emit both and the SDK to reconcile them.
 
 ### Automatic column dropping by measured width
 

@@ -16,7 +16,7 @@ export const AGENT_RUNTIME_FIRST_CHECK_TIMEOUT_MS = 3_000;
 /** Later checks wait, so they return the moment the Agent is up. */
 export const AGENT_RUNTIME_WAKING_CHECK_TIMEOUT_MS = 20_000;
 
-// Answers that come from in front of an Agent that is not up yet.
+// A 502, 503 or 504 means the Agent is not up yet.
 const NOT_SERVING_STATUSES = new Set([502, 503, 504]);
 
 const servingVerifiedAtByUrl = new Map<string, number>();
@@ -28,7 +28,7 @@ function createAbortError() {
 
 /**
  * One request to the Agent's information route. Resolves true when the Agent answered, false
- * when nothing did (network failure, timeout, or a gateway answer for an Agent that is not up).
+ * when nothing did (network failure, timeout, or a 502, 503 or 504 for an Agent that is not up).
  * Rejects only when the caller aborted.
  */
 export async function probeAgentRuntimeServing({

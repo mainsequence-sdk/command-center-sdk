@@ -43,7 +43,7 @@ const stages: ProgressStageDefinition[] = [
     id: "runtime",
     label: "Start runtime",
     status: "active",
-    description: "Waiting for a healthy instance.",
+    description: "Waiting for the application to respond.",
   },
   { id: "data", label: "Load data", status: "pending" },
 ];
@@ -51,7 +51,7 @@ const stages: ProgressStageDefinition[] = [
 <ApplicationStatusScreen
   state="loading"
   title="Opening the application"
-  message="This can take a moment after an idle period."
+  message="This can take a moment."
   stages={stages}
 />;
 ```

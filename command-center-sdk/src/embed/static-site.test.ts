@@ -28,7 +28,7 @@ import {
   resolveStaticSiteIframeOrigin,
 } from "./static-site";
 
-const channel = "mainsequence.fund-competition" as const;
+const channel = "mainsequence.reports" as const;
 const targetUid = "11111111-1111-4111-8111-111111111111";
 const credential = {
   resourceReleaseUid: targetUid,

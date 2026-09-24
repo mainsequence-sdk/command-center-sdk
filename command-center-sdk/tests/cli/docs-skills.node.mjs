@@ -316,8 +316,8 @@ test("static-site guidance keeps delegated FastAPI credentials behind the SDK li
     assert.match(value, /real cross-origin browser|real browser/iu);
   }
   assert.match(embedSkill, /resolveFastApiCredential/u);
-  assert.match(embedSkill, /asks Django for runtime access/iu);
-  assert.match(embedSkill, /Django returns ready access/iu);
+  assert.match(embedSkill, /asks the platform for runtime access/iu);
+  assert.match(embedSkill, /the platform returns ready access/iu);
   assert.match(embedSkill, /python -m uvicorn local_api:app/iu);
   assert.match(embedSkill, /fetch\("\/api\/me", \{ signal \}\)/u);
   assert.match(embedSkill, /identity_unavailable/u);

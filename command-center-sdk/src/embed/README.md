@@ -43,7 +43,7 @@ child                         host
   ← credential response/error ─
   ── WebSocket ticket request →
   ← ticket response/error ─────
-  ── native WebSocket ─────────────────────────→ FastAPI gateway
+  ── native WebSocket ─────────────────────────→ FastAPI release
 ```
 
 Request IDs are correlated and replay-protected. Handshake and credential work have bounded
@@ -116,7 +116,7 @@ without a credential fallback.
 `createFastApiWebSocket` accepts one absolute WebSocket path and optional application protocols.
 It requests a fresh one-time ticket, validates the response, and calls the native constructor with
 the reserved ticket first and `mainsequence.ws-bridge.v1` second. It returns the socket without
-exposing a raw ticket. The gateway removes both platform protocols; `socket.protocol` is the
+exposing a raw ticket. Neither reserved protocol reaches the FastAPI application; `socket.protocol` is the
 application-selected protocol or the fixed acknowledgement. Reconnects require a new method call.
 
 ## Failure model

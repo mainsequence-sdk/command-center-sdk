@@ -128,10 +128,9 @@ import type {
 } from "./types.js";
 import { useLatestMessageDataStreamRuntime } from "./useLatestMessageDataStreamRuntime.js";
 
-// The platform trusts that an Agent serves for a bounded time and does not say when that ends,
-// so a "ready" can turn into "starting" at any moment. A decision older than this is confirmed
-// again at the moments a person is about to use it (ADR 093): the chat coming into view, the
-// tab returning, the composer taking focus.
+// A "ready" can turn into "starting" at any moment, and the platform does not say when. A
+// decision older than this is confirmed again at the moments a person is about to use it
+// (ADR 093): the chat coming into view, the tab returning, the composer taking focus.
 const RUNTIME_ACCESS_RECHECK_AFTER_MS = 60_000;
 const RUNTIME_ACCESS_REVALIDATE_AFTER_HIDDEN_MS = RUNTIME_ACCESS_RECHECK_AFTER_MS;
 const RUNTIME_ACCESS_REVALIDATE_AFTER_IDLE_MS = RUNTIME_ACCESS_RECHECK_AFTER_MS;
@@ -1307,9 +1306,9 @@ export function ChatEngineProvider({
     sessionRuntimeAccessResolvedAtRef.current[sessionId] = Date.now();
     void refreshActiveSessionRuntimeAccessRef.current();
   }, []);
-  // A runtime that served fifteen minutes ago may have scaled to zero while
-  // this tab was hidden. Re-resolve on return after a long absence so the
-  // composer shows "waking" before the user types, not after they send.
+  // An Agent that answered a while ago may have gone idle while this tab was
+  // hidden. Re-resolve on return after a long absence so the composer shows
+  // "waking" before the user types, not after they send.
   useEffect(() => {
     if (typeof document === "undefined") {
       return;
@@ -3591,7 +3590,7 @@ export function ChatEngineProvider({
 
       if (!isNewChatRequest && !serializedSession) {
         throw new MainSequenceAiError(
-          "AgentSession detail payload is unavailable. Wait for the session serializer to finish loading before sending.",
+          "AgentSession detail payload is unavailable. Wait for the session detail to finish loading before sending.",
           {
             source: "frontend_runtime_guard",
           },

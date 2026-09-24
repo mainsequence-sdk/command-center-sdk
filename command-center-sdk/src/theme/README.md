@@ -121,4 +121,4 @@ changes.
 ## Architecture Documentation
 
 - [Package publishing](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/docs/packages/publishing.md)
-- [Platform theming](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/docs/platform/theming.md)
+- [Themes](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/command-center-sdk/docs/themes.md)

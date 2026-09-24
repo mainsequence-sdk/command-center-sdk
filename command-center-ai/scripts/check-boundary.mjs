@@ -4,7 +4,7 @@
 // that would tie it back: a dependency outside the allowlist, an `@/` import, an import that
 // leaves the package root, an environment read in the library, or a TypeScript configuration
 // that borrows the host's. It also holds the peers to being peers: the Command Center SDK and
-// React are never regular dependencies, so an application has exactly one of each (ADR 097).
+// React are never regular dependencies, so an application has exactly one of each (SDK ADR 012).
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,7 +15,7 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 
 // What the library and the standalone application may import. Adding a name here is a decision:
 // nothing from the Command Center application or an application package belongs on this list.
-// The Command Center SDK is on it as a peer: the chat depends on the SDK, one way (ADR 097).
+// The Command Center SDK is on it as a peer: the chat depends on the SDK, one way (SDK ADR 012).
 const runtimeAllowlist = new Set([
   "@assistant-ui/core",
   "@assistant-ui/react",

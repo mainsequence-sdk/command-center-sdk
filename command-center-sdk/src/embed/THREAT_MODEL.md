@@ -23,12 +23,12 @@
 - versioned channels and strict message parsing;
 - bounded payloads, request correlation, timeouts, and replay rejection;
 - sandboxed iframe execution;
-- short-lived, target-scoped credentials minted by the backend;
+- short-lived, target-scoped credentials issued by the platform;
 - host-owned authorization and audit logging;
 - deterministic teardown of listeners and pending requests;
 - exact WebSocket UID, Origin, path, URL, expiry, and ticket-subprotocol binding checks;
-- ticket-first and acknowledgement-second constructor ordering, with both platform values stripped
-  by the gateway before FastAPI;
+- ticket-first and acknowledgement-second constructor ordering, with neither platform value
+  reaching the FastAPI application;
 - one fresh ticket and one constructor attempt per call, with no raw-ticket API, cache,
   deduplication, or automatic retry;
 - cancellation propagation plus socket closure on user change and client disposal; and

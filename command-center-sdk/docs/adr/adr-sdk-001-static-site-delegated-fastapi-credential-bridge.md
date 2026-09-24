@@ -7,9 +7,6 @@
 - Related:
   - [Themes and embeds](../themes-and-embeds.md)
   - [command-center-sdk issue 3](https://github.com/mainsequence-sdk/command-center-sdk/issues/3)
-  - [tdag-django issue 383](https://github.com/Main-Sequence-Server-Side/tdag-django/issues/383)
-  - [Command Center ADR 075: Foundry Static-Site FastAPI Credential Bridge Integration](https://github.com/Main-Sequence-Server-Side/CommandCenter/blob/main/docs/adr/main_sequence/adr-075-foundry-static-site-fastapi-credential-bridge-integration.md)
-  - [Backend ADR-0034: Static-Site-Delegated FastAPI Release Credentials](https://github.com/Main-Sequence-Server-Side/tdag-django/blob/development/docs/platform/adr/adr-0034-static-site-delegated-fastapi-release-access.md)
   - [SDK ADR 005: Static-Site FastAPI WebSocket Ticket Bridge](./adr-sdk-005-static-site-fastapi-websocket-ticket-bridge.md)
 
 ## Decision Summary
@@ -25,7 +22,7 @@ to the exact managed iframe through the `mainsequence.*` protocol.
 
 Application static-site code uses a supported SDK child API. It never parses raw
 postMessage events, receives the host application's general credential, imports
-the host application's auth store, or calls a control-plane exchange endpoint
+the host application's auth store, or requests credentials from the platform
 directly.
 
 This package owns the complete reusable bridge slice:
@@ -61,13 +58,12 @@ This ADR does not define or implement:
 
 - a host application's authenticated API adapter, endpoint selection, auth
   store, router, or viewer-specific resolver closure;
-- Django token claims, permissions, serializers, models, or validators;
+- the platform's token claims, permissions, or validation;
 - backend MCP ontology or backend-owned design skills;
-- FastAPI gateway routing or authentication configuration;
-- PodDeploymentOrchestrator middleware;
+- how the platform routes and authenticates requests to a FastAPI release;
 - FastAPI runtime request-user injection;
 - Main Sequence Python SDK behavior;
-- target FastAPI CORS persistence or deployment;
+- target FastAPI CORS configuration or deployment;
 - application FastAPI route authorization; or
 - a static-site direct-link authentication service.
 
@@ -107,7 +103,7 @@ parent.
 
 ## Injected Application Resolver Contract
 
-The SDK does not call a control-plane endpoint and does not know how the host
+The SDK does not call a platform endpoint and does not know how the host
 authenticates. The host injects a resolver through a public SDK option. The SDK
 passes that resolver only:
 
@@ -123,7 +119,7 @@ origin bindings.
 The SDK validates the mapped public result again before sending it across the
 iframe boundary. Backend endpoint paths, response implementation fields, token
 claims, permissions, and application error bodies are deliberately outside
-this package decision. The owning application and backend ADRs define those
+this package decision. The host application and the platform define those
 details.
 
 ## Decision
@@ -250,7 +246,7 @@ unsupported
 ```
 
 The bridge does not forward raw backend bodies, stack traces, internal URLs,
-permissions, branches, environments, clusters, or provider metadata.
+permissions, branches, or environments.
 
 ### 6. Public SDK types
 
@@ -288,7 +284,7 @@ export type ResolveStaticSiteFastApiCredential = (
 ```
 
 The runtime parsers validate the same shapes. They do not expose decoded JWT
-claims or backend response implementation fields such as `delegation`.
+claims or backend response implementation fields.
 
 ### 7. Framework-independent host API
 
@@ -477,9 +473,8 @@ binding before returning the small public SDK credential shape. Its endpoint,
 authentication, source-release rules, organization policy, and error mapping
 remain application-owned.
 
-The MainSequence Foundry implementation is specified separately by Command
-Center ADR 075. That decision consumes this SDK extension point without making
-Foundry paths, endpoints, or auth state part of the reusable package.
+Main Sequence Foundry is one host that consumes this extension point; its
+paths, endpoints, and auth state are not part of the reusable package.
 
 ## Language-Neutral Protocol Contract
 
@@ -565,8 +560,8 @@ is not owned by this ADR.
 - The SDK host is trusted to enforce iframe source/origin/channel binding.
 - Application static-site JavaScript is not trusted with general platform
   authority but intentionally receives the narrow delegated credential.
-- The backend and public gateway remain authoritative for authentication and
-  release access; the frontend is not an authorization boundary.
+- The platform remains authoritative for authentication and release access;
+  the frontend is not an authorization boundary.
 
 ### Residual risk
 
@@ -645,9 +640,9 @@ Documentation must include:
 
 ### Backend impact
 
-This package defines no backend endpoint. An application resolver may consume
-an additive backend contract such as the one documented by backend ADR-0034,
-but the SDK sees only the mapped public credential or a sanitized error.
+This package defines no backend endpoint. An application resolver calls
+whatever platform endpoint its host uses, but the SDK sees only the mapped
+public credential or a sanitized error.
 
 If the application or backend capability is unavailable, the resolver returns
 `unsupported` or `temporarily_unavailable`; the SDK never falls back to a
@@ -679,10 +674,10 @@ storage, and error behavior and would make security dependent on every applicati
 Rejected. The public SDK must remain backend-neutral and reusable. The owning
 application injects a narrow resolver.
 
-### Let the iframe call the control-plane exchange endpoint
+### Let the iframe request credentials from the platform
 
 Rejected. The iframe does not receive the normal parent credential and must not
-own control-plane authentication.
+own platform authentication.
 
 ### Put the delegated token in the launch URL
 
@@ -811,8 +806,8 @@ contract, skill, packaging, and docs checks required by the final diff.
 ### Costs and risks
 
 - The SDK owns additional asynchronous credential lifecycle state.
-- The integrated viewer depends on the separately owned backend exchange and
-  FastAPI gateway enforcement remaining available and compatible.
+- The integrated viewer depends on the platform's credential exchange and its
+  enforcement of delegated credentials remaining available and compatible.
 - Old hosts cannot satisfy new credential requests, so new clients must handle
   `unsupported` without unsafe fallback.
 - Application JavaScript intentionally sees the narrow delegated credential and can
@@ -841,5 +836,5 @@ This ADR is `Accepted` because:
    and docs checks pass;
 10. the public package version containing this implementation is merged to the
     default branch and published; and
-11. the ADR contains no claim that this package implements Django, gateway,
-    orchestrator, Python SDK, or backend MCP responsibilities.
+11. the ADR contains no claim that this package implements platform, Python SDK,
+    or other backend responsibilities.

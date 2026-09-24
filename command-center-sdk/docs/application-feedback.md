@@ -7,7 +7,7 @@ title: Application feedback
 
 Use the public feedback primitives when a prerequisite blocks a complete application or another
 large application-owned region and the producer can report meaningful progress or recovery
-information. Typical examples include backend cold start, runtime attachment, transport
+information. Typical examples include a starting backend runtime, runtime attachment, transport
 reconnection, schema preparation, and a long initialization pipeline.
 
 Import the controlled React components from the public entrypoint:

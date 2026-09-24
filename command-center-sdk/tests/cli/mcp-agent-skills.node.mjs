@@ -234,7 +234,7 @@ test("installs MCP skill folders, removes stale managed folders, and preserves u
 
     const secondCatalog = catalog([
       { name: "command_center", path: "skills/command_center/command_center/SKILL.md" },
-      { name: "static_site", path: "skills/pod_manager/static_site/SKILL.md" },
+      { name: "static_site", path: "skills/releases/static_site/SKILL.md" },
     ]);
     await installMcpAgentSkills({
       projectDir: projectRoot,
@@ -246,14 +246,14 @@ test("installs MCP skill folders, removes stale managed folders, and preserves u
       readFile(join(first.destinationRoot, "platform", "code_repository_design", "SKILL.md"), "utf8"),
       { code: "ENOENT" },
     );
-    await readFile(join(first.destinationRoot, "pod_manager", "static_site", "SKILL.md"), "utf8");
+    await readFile(join(first.destinationRoot, "releases", "static_site", "SKILL.md"), "utf8");
     assert.equal(await readFile(join(unrelated, "keep.txt"), "utf8"), "keep");
     const sentinel = await readFile(
       join(first.destinationRoot, MCP_PINNED_FROM_FILENAME),
       "utf8",
     );
     assert.match(sentinel, /namespace=mainsequence/u);
-    assert.match(sentinel, /managed_skill_path=pod_manager\/static_site/u);
+    assert.match(sentinel, /managed_skill_path=releases\/static_site/u);
     assert.doesNotMatch(sentinel, /managed_skill_path=platform\/code_repository_design/u);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
@@ -324,7 +324,7 @@ test("restores the previous MCP tree and sentinel when the final write fails", a
         projectDir: projectRoot,
         catalog: catalog([
           { name: "command_center", path: "skills/command_center/command_center/SKILL.md" },
-          { name: "static_site", path: "skills/pod_manager/static_site/SKILL.md" },
+          { name: "static_site", path: "skills/releases/static_site/SKILL.md" },
         ]),
         installerVersion: "0.1.4",
         onBeforeSentinelWrite: () => {
@@ -336,7 +336,7 @@ test("restores the previous MCP tree and sentinel when the final write fails", a
     assert.equal(await readFile(skillPath, "utf8"), previousSkill);
     assert.equal(await readFile(first.sentinelPath, "utf8"), previousSentinel);
     await assert.rejects(
-      readFile(join(first.destinationRoot, "pod_manager", "static_site", "SKILL.md"), "utf8"),
+      readFile(join(first.destinationRoot, "releases", "static_site", "SKILL.md"), "utf8"),
       { code: "ENOENT" },
     );
   } finally {

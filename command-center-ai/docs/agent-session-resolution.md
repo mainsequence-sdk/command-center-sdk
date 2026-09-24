@@ -7,12 +7,8 @@ it, resolves runtime access, and enables sending. The same contract applies to e
 ([ADR 098](./adr/adr-098-one-communication-contract-for-every-agent.md)). The engine's inputs and
 the values it exposes are listed in its [README](../src/engine/README.md).
 
-The former special orchestrator and coding-agent service bootstrap paths are retired. The chat does
-not list, deploy, poll, patch, or delete coding-agent services and does not load coding-agent
-deployment defaults.
-
-Command Center fills the engine's inputs with its Agent shortcut and its `?session=` route; that
-half is in Command Center's own guide, Main Sequence AI AgentSession Resolution.
+An application fills the engine's inputs from its own settings and routes, as Command Center does
+with its Agent shortcut and its `?session=` route.
 
 ## Identities
 

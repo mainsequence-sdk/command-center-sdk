@@ -1,12 +1,11 @@
 /**
  * Describes a tool the agent used so the chat can say what it was.
  *
- * The Agent runtime registers every tool it gets from the platform's MCP gateway
- * under the `mainsequence__<mcp name>` prefix and
- * returns `details.mcp_tool` with the canonical MCP name in the result. Both
- * signals mean the same thing: this call went through the Main Sequence MCP.
- * Built-in tools (read, write, bash, web_search, runtime_info, ...) carry no
- * prefix.
+ * The Agent runtime registers every tool it gets from the platform's MCP server
+ * under the `mainsequence__<mcp name>` prefix and returns `details.mcp_tool`
+ * with the canonical MCP name in the result. Both signals mean the same thing:
+ * this call went through the Main Sequence MCP. Built-in tools (read, write,
+ * bash, web_search, runtime_info, ...) carry no prefix.
  */
 export const MAIN_SEQUENCE_MCP_TOOL_PREFIX = "mainsequence__";
 export const MAIN_SEQUENCE_MCP_PROVIDER_LABEL = "Main Sequence MCP";

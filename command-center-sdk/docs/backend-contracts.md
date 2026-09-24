@@ -33,11 +33,11 @@ usage and intentionally does not maintain another contract catalog.
 
 The manifest also indexes `command-center.static_site_iframe@v1` with role `iframe-protocol`. That
 schema lets non-TypeScript hosts and static sites validate the additive version-one iframe
-messages, including delegated FastAPI request/response/error bytes. It does not define the
-control-plane exchange endpoint. The host backend remains authoritative for credential minting,
-source/target access, organization policy, origin policy, expiry, CORS, and FastAPI authorization;
-the host adapter maps that response into the public SDK resolver shape. A backend-confirmed
-retryable cold start maps to `runtime_starting`; permission and origin denials must not use that
+messages, including delegated FastAPI request/response/error bytes. It does not define how
+the host obtains credentials from its backend. The host backend remains authoritative for issuing
+credentials, source/target access, organization policy, origin policy, expiry, CORS, and FastAPI
+authorization; the host adapter maps the backend's response into the public SDK resolver shape. A
+backend-confirmed, retryable runtime start maps to `runtime_starting`; permission and origin denials must not use that
 code. HTTP `401`, `403`, `404`, `502`, `503`, and `504` from the target runtime remain HTTP
 responses classified by the SDK child transport and are not credential-error messages.
 
@@ -47,9 +47,8 @@ and normalized absolute path. The response carries the correlated binding, WebSo
 canonical reserved ticket subprotocol, and expiry; it never carries a separate raw `ticket`, user,
 Origin, session, or application protocol list. Runtime checks additionally enforce exact
 request/response correlation, child Origin binding, secure scheme, future expiry, protocol-list
-limits, and one native constructor attempt. Django's ticket response, serializer, storage, routes,
-and schema version are unchanged; the Command Center host adapter maps that existing response into
-the SDK resolver result.
+limits, and one native constructor attempt. The host adapter maps its backend's ticket
+response into the SDK resolver result.
 
 The normalized collection is not automatically a requirement for every raw product endpoint. An
 existing `{count, results}` API can keep that envelope when its frontend adapter maps it to
@@ -63,9 +62,8 @@ contract manifest. The backend already owns its version-2 resource manifest,
 CLI consumes that existing protocol through `resources/list` and `resources/read`; it does not
 publish a competing `command-center.*` catalog shape.
 
-To extend the platform guidance, the backend adds or removes the skill under the same manifest
-schema version, updates `ontology.skill_resources`, publishes matching list/read metadata, and
-publishes a new manifest hash identifying that concrete revision. Compatible installed SDKs accept
+Each catalog revision has one manifest hash; its skills are listed in `ontology.skill_resources`
+under the manifest schema version, and list and read metadata match that revision. Compatible installed SDKs accept
 additive skills dynamically without a new npm contract or hard-coded skill list. Breaking metadata
 semantics require a new backend manifest version and an SDK compatibility update. Run
 `command-center-sdk skills sync --path . --json` to validate the complete live revision before it

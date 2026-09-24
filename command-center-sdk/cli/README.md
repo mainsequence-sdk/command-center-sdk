@@ -119,8 +119,7 @@ rather than being discovered or translated. The orchestration, backend client, a
 operations live in the focused `code-repository-sync*.mjs` modules and remain dependency-free and bin-only.
 
 Before local mutation, the command resolves the canonical `origin`, attached branch, and exact
-`HEAD` commit through `POST /api/v1/code-repository-branches/resolve-git-context/`, implementing the
-Git-native source-identity contract from platform ADR-0037. The response supplies the exact
+`HEAD` commit through `POST /api/v1/code-repository-branches/resolve-git-context/`. The response supplies the exact
 `CodeRepositoryBranch` and its parent CodeRepository UID. Superseded local repository-identity
 markers are neither read nor written; if a caller supplies the legacy positional CodeRepository
 UID, it is only an assertion and cannot select another CodeRepository. Missing, ambiguous,
@@ -138,9 +137,6 @@ Backend requests default to 60,000 milliseconds. Consumers may pass `--timeout-m
 `COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS` to an integer from 1,000 through 300,000; the CLI
 option takes precedence. Timeout errors identify the effective limit and retain the preflight
 no-mutation guarantee. The client does not retry POST requests automatically.
-
-The governing decision is
-[platform ADR-0037](https://github.com/Main-Sequence-Server-Side/tdag-django/blob/development/docs/platform/adr/adr-0037-git-native-project-source-context.md).
 
 The repository key filename is `mainsequence-<repository-slug>-<first-16-sha256>` from the
 normalized `host[:non-default-port]/repository/path`. Equivalent SCP and `ssh://` origins share an

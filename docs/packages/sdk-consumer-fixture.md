@@ -18,7 +18,7 @@ monorepo aliases, source traversal, or any other Command Center package.
 
 ## Constraints
 
-The fixture must never import `@/`, repository `apps/command-center/src/`, `apps/command-center/extensions/`, another package's source, a
+The fixture must never import `@/`, a host application's source, another package's source, a
 legacy Command Center package, or a private host. It should stay intentionally small: its purpose
 is export-map and package installation validation, not end-to-end application coverage.
 

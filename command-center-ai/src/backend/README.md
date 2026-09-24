@@ -129,15 +129,14 @@ identity comes from authenticated backend context and must not be supplied by th
 - Keep transient polling driven by backend `retry_after_ms`, paused while the document is hidden,
   and stopped on ready or terminal state.
 - Keep provider/model catalog loading independent of runtime access.
-- `custom-model-direct-chat.ts` mirrors the request the Agent runtime's OpenAI-compatible adapter sends for a
-  custom provider (`stream: true`, `stream_options.include_usage`, `store: false`,
-  `max_completion_tokens` or `max_output_tokens`, `reasoning_effort` with `off` omitted, API key as
-  bearer unless an explicit `Authorization` header is configured) minus tools, so a passing test
-  predicts agent execution. Update it when that adapter's request shape changes. It must never
-  send the platform JWT or cookies (`credentials: "omit"`), log or persist caller-supplied secrets,
-  or be routed through a proxy or the connection's rewrite: the endpoint has to be HTTPS (browsers
-  block plain HTTP from an HTTPS page, loopback excepted) and must allow CORS from the
-  application's origin. A browser cannot tell a CORS rejection from an unreachable host, so both
-  surface as one `network` error stage.
+- `custom-model-direct-chat.ts` mirrors the request an Agent sends a custom provider
+  (`stream: true`, `stream_options.include_usage`, `store: false`, `max_completion_tokens` or
+  `max_output_tokens`, `reasoning_effort` with `off` omitted, API key as bearer unless an explicit
+  `Authorization` header is configured) minus tools, so a passing test predicts agent execution.
+  Update it when that request shape changes. It must never send the platform JWT or cookies
+  (`credentials: "omit"`), log or persist caller-supplied secrets, or be routed through a proxy or
+  the connection's rewrite: the endpoint has to be HTTPS (browsers block plain HTTP from an HTTPS
+  page, loopback excepted) and must allow CORS from the application's origin. A browser cannot tell
+  a CORS rejection from an unreachable host, so both surface as one `network` error stage.
 - Treat a `404` history read for a fresh session as an empty transcript, not a failed session.
 - Keep archived and active session queries explicitly scoped and UID-first.

@@ -48,7 +48,7 @@ function assistantMessage(provenance: Record<string, unknown> | null) {
 
 describe("resolveMessageActor", () => {
   it("treats a user message without a verified actor as the viewer", () => {
-    // A message the viewer just sent, or one persisted before ADR-0043.
+    // A message the viewer just sent, or an older one without provenance.
     const actor = resolveMessageActor(userMessage(null), context);
 
     expect(actor).toMatchObject({
@@ -75,7 +75,7 @@ describe("resolveMessageActor", () => {
     expect(actor.name).toBe("You");
   });
 
-  it("labels another human by the mailbox part of the gateway username", () => {
+  it("labels another human by the mailbox part of their email address", () => {
     const actor = resolveMessageActor(
       userMessage({
         origin: "user",

@@ -56,7 +56,7 @@ export interface AgentSessionApiRecord {
   created_by_user_uid?: string | null;
   is_archived?: boolean;
   archived_at?: string | null;
-  /** ADR-045 owner capability links; application_logs_url targets the session log route. */
+  /** Owner capability links; `application_logs_url` targets the session log route. */
   observability?: {
     application_logs_url?: string | null;
     resource_usage_url?: string | null;
