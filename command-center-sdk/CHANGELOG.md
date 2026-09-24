@@ -1,13 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.5.4
 
-Compatibility axes: documentation shipped in the package only (guides, ADRs, skills, and module
-READMEs). No TypeScript API, contract, JSON Schema, fixture, theme, iframe protocol, CLI behaviour,
-or storage change.
+Compatibility axes: documentation shipped in the package (guides, ADRs, skills, and module
+READMEs), one invalid fixture, and the platform MCP skills installer's checks. No TypeScript API,
+contract ID, JSON Schema, valid fixture, theme, iframe protocol, or storage change.
 
 - The documentation describes the public contract and the behaviour an integrator observes, and
   nothing about how the platform is built or run.
+- The platform MCP skills installer verifies every resource against the platform's catalog (URI,
+  manifest version, and content hash) and no longer checks the resources' owner application name.
+- `static-site-iframe-v1.unknown-credential-error.json` stays invalid with another unknown error
+  code.
 
 ## 0.5.3
 

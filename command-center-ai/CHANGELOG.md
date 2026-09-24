@@ -1,14 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.0.2
 
-Compatibility axes: documentation, source comments, and one user-facing message. No API, route,
-payload, stylesheet, storage, or skill-namespace change.
+Compatibility axes: documentation, source comments, one user-facing message, and one input
+placeholder. No API, route, payload, stylesheet, storage, or skill-namespace change.
 
 - The documentation and source comments describe the platform and the Agent runtime only as the
   chat sees them on the wire.
 - Sending before a session's detail has loaded now says "Wait for the session detail to finish
   loading before sending."
+- The custom provider form's identifier placeholder is `acme-models`.
 
 ## 0.0.1
 
