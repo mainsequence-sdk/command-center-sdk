@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.0.1)
+## 0.0.1
 
 Compatibility axes: the first release of the npm public API (`src/index.ts`), the stylesheet
 (`styles.css`, `ms-chat-` classes in the `ms-chat` cascade layer), the browser storage keys

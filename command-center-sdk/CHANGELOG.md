@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.3
 
 Compatibility axes: public CSS (additive: `--warning-tint` variable and the Tailwind
 `warning-tint` color), Main Sequence Light rendering, and the CLI theme audit, which still passes

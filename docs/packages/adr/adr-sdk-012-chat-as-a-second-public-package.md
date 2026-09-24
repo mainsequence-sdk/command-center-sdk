@@ -2,7 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- Implementation: `@dev-mainsequence/command-center-ai` unreleased (planned 0.0.1)
+- Implementation: `@dev-mainsequence/command-center-ai` 0.0.1, with `@dev-mainsequence/command-center-sdk`
+  0.5.3
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-ai` (named `@dev-mainsequence/chat` until 2026-09-24, before any
   release)
@@ -16,12 +17,10 @@
 
 ## Publication status
 
-The repository policy and tooling of section 1 are implemented, and the chat is in `command-center-ai/`: copied
-from Command Center when ADR 096 was done, and adapted to this repository (section 6). No version
-of `@dev-mainsequence/command-center-ai` is on npm. Its first release waits for the SDK release that publishes
-`--warning-tint` (section 5); until then npm refuses to install the chat next to the workspace SDK,
-and the chat's packed consumer says so. A consumer may install the chat only when the registry has
-a version of it; this record or a newer checkout does not make the package available.
+The repository policy and tooling of section 1 are implemented, and the chat is in
+`command-center-ai/`: copied from Command Center when ADR 096 was done, and adapted to this
+repository (section 6). Its first version, 0.0.1, is released with SDK 0.5.3, the SDK release that
+publishes `--warning-tint` (section 5).
 
 ## Decision summary
 
@@ -242,9 +241,13 @@ Every skill has a human guide, pinned by the test of section 3.
 
 ### 5. Release
 
-The first version, 0.0.1, is published by the existing workflow on a push to `main`. It follows the
-SDK release that publishes `--warning-tint`, in the same push or an earlier one: the workflow
-already publishes the SDK before the chat. `publish-public-packages.mjs` skips versions already on
+The workflow publishes through npm trusted publishing, and npm lets a trusted publisher be
+configured only on a package that already exists. So the first version, 0.0.1, is published once
+by hand, from the release commit, by the npm account that owns the `@dev-mainsequence` scope; the
+package's trusted publisher is then this repository's `command-center-packages.yml`, and every
+later version is published by the workflow on a push to `main`. The chat follows the SDK release
+that publishes `--warning-tint` (0.5.3), in the same push or an earlier one: the workflow publishes
+the SDK before the chat. `publish-public-packages.mjs` skips versions already on
 npm and stops the chat when the SDK fails, and `packed-consumer` has installed the chat's tarball
 next to the SDK's before `publish` runs.
 
@@ -259,11 +262,12 @@ next to the SDK's before `publish` runs.
    workspace, declared in the root `workspaces`; the chat's consumer fixture, also compiled by
    `examples:check`; the docs-site section; its browser tests; its skills with their installer and
    guides; its changelog entry. Gate: the full repository lane on a pull request. Done: the chat is
-   Command Center's `packages/chat` at 8849f0de, adapted in the commits after the copy. Until the
-   SDK release that publishes `--warning-tint` is prepared, the chat's packed consumer fails as
-   designed: npm refuses the chat next to SDK 0.5.2.
-3. **Release 0.0.1** through the workflow. Gate: the version is on npm and its packed consumer
-   installed it next to the SDK. This record then names its implementation version.
+   Command Center's `packages/chat` at 8849f0de, adapted in the commits after the copy. Until SDK 0.5.3
+   was prepared, the chat's packed consumer failed as designed: npm refused the chat next to SDK
+   0.5.2.
+3. **Release 0.0.1**, published once by hand (section 5), with SDK 0.5.3 through the workflow.
+   Gate: both versions are on npm and the chat's packed consumer installed it next to the SDK. The
+   Implementation line names the versions.
 
 ## Compatibility and release impact
 

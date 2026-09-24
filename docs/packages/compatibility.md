@@ -8,7 +8,7 @@
 | Contract manifest | `command-center-contract-manifest@v1` | Breaking wire changes require a new contract ID and schema. |
 | Static-site iframe | `mainsequence.*`, version `1` | Hosts and children reject malformed or unsupported messages. |
 | Themes | SDK semantic version | Published theme IDs and token names are compatibility-sensitive. |
-| Chat | Unreleased; first version `0.0.1` | Public entrypoints follow semantic versioning. |
+| Chat | `0.0.1` | Public entrypoints follow semantic versioning. |
 | Chat's SDK peer range | A caret range on the first SDK release that publishes `--warning-tint` (`^0.5.3` in the manifest) | A new SDK minor widens the range and releases the chat in the same change. |
 | Chat's platform routes | The routes listed in the chat's documentation | Each chat release names the routes it calls and the platform version it expects. |
 
