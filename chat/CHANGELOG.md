@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.1.0)
+## Unreleased (0.0.1)
 
 Compatibility axes: the first release of the npm public API (`src/index.ts`), the stylesheet
 (`styles.css`, `ms-chat-` classes in the `ms-chat` cascade layer), the browser storage keys
@@ -11,9 +11,10 @@ skills with their namespace, `.agents/skills/chat/`.
 - **SDK range:** a peer dependency on `@dev-mainsequence/command-center-sdk` from the first release
   that publishes the `--warning-tint` theme variable; React and React DOM `>=18 <20`, also as
   peers.
-- **Dependencies:** `@assistant-ui/react`, `@assistant-ui/core`, `@assistant-ui/store`, and
-  `assistant-stream` are pinned to the exact versions the chat is tested with; they move together,
-  in a chat release.
+- **Dependencies:** `@assistant-ui/react` `^0.12.19`, `@assistant-ui/core` `^0.1.13`,
+  `@assistant-ui/store` `>=0.2.6 <0.2.14`, and `assistant-stream` `^0.3.10`; they move together, in
+  a chat release. The store's upper bound keeps it on the releases that accept `@assistant-ui/tap`
+  0.5, which `@assistant-ui/react` 0.12 and `@assistant-ui/core` 0.1 need.
 - **Platform routes:** the platform API routes and the three Agent-runtime routes listed in
   section 3 of ADR 096 (`docs/adr/adr-096-independent-chat-package.md`), with the payloads the
   platform serves on 2026-09-23. No route is added or called differently, so no platform rollout

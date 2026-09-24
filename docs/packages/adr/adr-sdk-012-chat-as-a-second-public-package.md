@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- Implementation: `@dev-mainsequence/chat` unreleased (planned 0.1.0)
+- Implementation: `@dev-mainsequence/chat` unreleased (planned 0.0.1)
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/chat`
 - Related:
@@ -170,15 +170,17 @@ lists nothing else. The binary is `mainsequence-chat`.
 `rehype-sanitize`, with registry versions only.
 
 - `@assistant-ui/react`, `@assistant-ui/core`, `@assistant-ui/store` and `assistant-stream` are one
-  family, used partly through unstable entry points. They are pinned to the exact versions the
-  chat is tested with (0.12.19, 0.1.13, 0.2.6 and 0.3.10) and move together, in a chat release,
-  with the chat's tests. Caret ranges do not hold for this family: `@assistant-ui/store` 0.2.14 and
-  later moved its `@assistant-ui/tap` peer through 0.6 to 0.9 inside 0.2.x, while the newest
-  `@assistant-ui/core` 0.1.x needs `tap` 0.5, so the caret ranges stopped installing. The thread
-  imports `useAuiState` from `@assistant-ui/store` directly, so the chat declares it instead of
-  reaching it through `@assistant-ui/react`.
+  family, used partly through unstable entry points, and move together, in a chat release, with
+  the chat's tests. They are ranges, not exact versions, so an application shares one copy with
+  anything else that uses them and receives their fixes: `^0.12.19`, `^0.1.13`, `^0.3.10`, and
+  `>=0.2.6 <0.2.14` for `@assistant-ui/store`. That upper bound is needed: from 0.2.14,
+  `@assistant-ui/store` moved its `@assistant-ui/tap` peer through 0.6 to 0.9 inside 0.2.x, while
+  every `@assistant-ui/react` 0.12.x and `@assistant-ui/core` 0.1.x needs `tap` 0.5, so a plain
+  caret stops installing. Moving to the family's current line (`@assistant-ui/react` 0.15) is a
+  change of its own. The thread imports `useAuiState` from `@assistant-ui/store` directly, so the
+  chat declares it instead of reaching it through `@assistant-ui/react`.
 - `lucide-react` uses the SDK's range, so an application gets one copy.
-- The markdown renderer keeps the order it has in Command Center: `remark-gfm`, then `rehype-raw`
+- The markdown renderer keeps its order: `remark-gfm`, then `rehype-raw`
   followed by `rehype-sanitize`, so raw HTML in an Agent's answer is sanitized before it renders.
 
 **Peer dependencies.** `@dev-mainsequence/command-center-sdk` with a caret range on the first SDK
@@ -190,7 +192,8 @@ range. While the SDK is 0.x its caret range stops at the next minor, so the chan
 new SDK minor also widens the chat's range and releases the chat. The lower bound rises again when
 the chat starts to need a newer SDK.
 
-**First version.** `0.1.0`.
+**First version.** `0.0.1`. npm reads a caret on a 0.0.x version as that version alone, so an
+application moves to each later 0.0.x release on purpose.
 
 **Changelog.** Every release opens with a "Compatibility axes" paragraph, as the SDK's releases do.
 It names the npm public API and, when they change, the stylesheet's class names, the installed
@@ -238,7 +241,7 @@ Every skill has a human guide, pinned by the test of section 3.
 
 ### 5. Release
 
-The first version, 0.1.0, is published by the existing workflow on a push to `main`. It follows the
+The first version, 0.0.1, is published by the existing workflow on a push to `main`. It follows the
 SDK release that publishes `--warning-tint`, in the same push or an earlier one: the workflow
 already publishes the SDK before the chat. `publish-public-packages.mjs` skips versions already on
 npm and stops the chat when the SDK fails, and `packed-consumer` has installed the chat's tarball
@@ -258,7 +261,7 @@ next to the SDK's before `publish` runs.
    Command Center's `packages/chat` at 8849f0de, adapted in the commits after the copy. Until the
    SDK release that publishes `--warning-tint` is prepared, the chat's packed consumer fails as
    designed: npm refuses the chat next to SDK 0.5.2.
-3. **Release 0.1.0** through the workflow. Gate: the version is on npm and its packed consumer
+3. **Release 0.0.1** through the workflow. Gate: the version is on npm and its packed consumer
    installed it next to the SDK. This record then names its implementation version.
 
 ## Compatibility and release impact

@@ -1,6 +1,6 @@
 {
   "name": "@dev-mainsequence/chat",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": false,
   "description": "A chat for Main Sequence Agents: the connection to the platform, a session engine, the chat UI, and model provider settings, built on the Command Center SDK.",
   "type": "module",
@@ -55,10 +55,10 @@
     "postinstall": "node ./cli/postinstall.mjs"
   },
   "dependencies": {
-    "@assistant-ui/core": "0.1.13",
-    "@assistant-ui/react": "0.12.19",
-    "@assistant-ui/store": "0.2.6",
-    "assistant-stream": "0.3.10",
+    "@assistant-ui/core": "^0.1.13",
+    "@assistant-ui/react": "^0.12.19",
+    "@assistant-ui/store": ">=0.2.6 <0.2.14",
+    "assistant-stream": "^0.3.10",
     "lucide-react": "^0.500.0",
     "react-markdown": "^10.1.0",
     "rehype-raw": "^7.0.0",
