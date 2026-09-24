@@ -52,8 +52,8 @@ const modelResponse = {
 
 const providerResponse = {
   uid: providerUid,
-  identifier: "acme-gateway",
-  display_name: "Acme Gateway",
+  identifier: "acme-models",
+  display_name: "Acme Models",
   base_url: "https://models.example.test/v1",
   auth: { has_api_key: true, header_names: ["Authorization"] },
   default_model: "alpha",
@@ -92,7 +92,7 @@ describe("custom model provider api", () => {
     await expect(fetchCustomModelProviders(options)).resolves.toMatchObject([
       {
         uid: providerUid,
-        identifier: "acme-gateway",
+        identifier: "acme-models",
         auth: { hasApiKey: true, headerNames: ["Authorization"] },
         models: [{ uid: modelUid, displayName: "Alpha", isDefault: true }],
       },
@@ -115,8 +115,8 @@ describe("custom model provider api", () => {
 
     const provider = await createCustomModelProvider(
       {
-        identifier: "acme-gateway",
-        displayName: "Acme Gateway",
+        identifier: "acme-models",
+        displayName: "Acme Models",
         baseUrl: "https://models.example.test/v1",
         apiKey: "organization-secret",
         headers: [{ name: "Authorization", value: "Bearer header-secret" }],
@@ -128,8 +128,8 @@ describe("custom model provider api", () => {
     const [, init] = fetchMock.mock.calls[0] ?? [];
     const body = JSON.parse(String(init.body));
     expect(body).toEqual({
-      identifier: "acme-gateway",
-      display_name: "Acme Gateway",
+      identifier: "acme-models",
+      display_name: "Acme Models",
       base_url: "https://models.example.test/v1",
       api_key: "organization-secret",
       headers: [{ name: "Authorization", value: "Bearer header-secret" }],
@@ -168,7 +168,7 @@ describe("custom model provider api", () => {
 
     await updateCustomModelProvider(
       providerUid,
-      { displayName: "Updated Gateway", apiKey: null, headers: [] },
+      { displayName: "Updated Models", apiKey: null, headers: [] },
       options,
     );
 
@@ -176,7 +176,7 @@ describe("custom model provider api", () => {
     expect(url).toContain(`/custom-model-providers/${providerUid}/`);
     expect(init.method).toBe("PATCH");
     expect(JSON.parse(String(init.body))).toEqual({
-      display_name: "Updated Gateway",
+      display_name: "Updated Models",
       api_key: null,
       headers: [],
     });

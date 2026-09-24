@@ -348,10 +348,10 @@ export function createModelProviders(context: StandInContext) {
   }
 
   // One Organization custom provider exists from the start, so the settings show both kinds.
-  const gateway: CustomProvider = {
+  const seededProvider: CustomProvider = {
     uid: context.nextUid("custom-provider"),
-    identifier: "stand-in-gateway",
-    displayName: "Stand-in Gateway",
+    identifier: "stand-in-models",
+    displayName: "Stand-in Models",
     baseUrl: "https://models.stand-in.test/v1",
     apiKey: "stand-in-key",
     headers: [],
@@ -360,7 +360,7 @@ export function createModelProviders(context: StandInContext) {
     creationDate: context.now(),
     updatedAt: context.now(),
   };
-  addCustomModel(gateway, {
+  addCustomModel(seededProvider, {
     model: "alpha",
     displayName: "Alpha",
     api: "openai-completions",
@@ -371,7 +371,7 @@ export function createModelProviders(context: StandInContext) {
     maxTokens: 16_000,
     isDefault: true,
   });
-  custom.push(gateway);
+  custom.push(seededProvider);
 
   function catalog() {
     return {

@@ -77,7 +77,7 @@ describe("session insights contract", () => {
       },
       title: "Competition analysis",
       computed_at: "2026-07-26T19:25:00Z",
-      reason: "tau_entries_projection",
+      reason: "history_entries",
       updated_at: "2026-07-26T19:24:00Z",
       insights: {
         version: 1,
@@ -112,7 +112,7 @@ describe("session insights contract", () => {
           },
         },
         context: {
-          source: "tau_entries",
+          source: "session_entries",
           status: "reported_by_last_assistant",
           tokens: 100,
           latestCompaction: null,

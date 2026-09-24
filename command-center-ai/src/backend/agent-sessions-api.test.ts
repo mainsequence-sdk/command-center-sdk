@@ -26,7 +26,7 @@ function createAgentSessionRecord(
 ): AgentSessionApiRecord {
   return {
     id: 91,
-    agent_name: "Research Orchestrator",
+    agent_name: "Research Assistant",
     organization_environment_uid: "environment-uid",
     organization_environment_name: "Development",
     status: "completed",
@@ -122,7 +122,7 @@ describe("agent session api", () => {
       new Response(
         JSON.stringify({
           uid: "session-uid-123",
-          agent_name: "Research Orchestrator",
+          agent_name: "Research Assistant",
           status: "running",
           started_at: "2026-06-03T15:00:00Z",
           ended_at: null,
@@ -362,7 +362,7 @@ describe("agent session api", () => {
       new Response(
         JSON.stringify({
           uid: "session-uid-123",
-          agent_name: "Research Orchestrator",
+          agent_name: "Research Assistant",
           status: "running",
           started_at: "2026-06-03T15:00:00Z",
           ended_at: null,
@@ -410,7 +410,7 @@ describe("agent session api", () => {
       new Response(
         JSON.stringify({
           uid: "session-uid-123",
-          agent_name: "Research Orchestrator",
+          agent_name: "Research Assistant",
           status: "running",
           started_at: "2026-06-03T15:00:00Z",
           ended_at: null,
@@ -445,7 +445,7 @@ describe("agent session api", () => {
       new Response(
         JSON.stringify({
           uid: "session-uid-123",
-          agent_name: "Research Orchestrator",
+          agent_name: "Research Assistant",
           status: "running",
           started_at: "2026-06-03T15:00:00Z",
           ended_at: null,

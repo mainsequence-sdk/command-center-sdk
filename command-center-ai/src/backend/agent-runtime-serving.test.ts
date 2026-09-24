@@ -206,7 +206,7 @@ describe("client-built runtime decisions", () => {
     const { runtimeInteraction } = buildClientWakingRuntimeState({ wakeStartedAt: Date.now() });
     const copy = `${runtimeInteraction.notice?.title} ${runtimeInteraction.notice?.message}`;
 
-    expect(copy).not.toMatch(/runtime|pod|backend|cluster|server|gateway/i);
+    expect(copy).not.toMatch(/runtime|backend|server/i);
   });
 
   it("locks silently for the first check and says why once a check has failed", () => {

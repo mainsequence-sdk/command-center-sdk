@@ -180,8 +180,8 @@ describe("model provider catalog api", () => {
           catalog_digest: catalogDigest,
           providers: [
             {
-              provider: "acme-gateway",
-              display_name: "Acme Gateway",
+              provider: "acme-models",
+              display_name: "Acme Models",
               auth_methods: [],
               sign_in_available: false,
               known: false,
@@ -210,10 +210,10 @@ describe("model provider catalog api", () => {
 
     const options = await fetchAvailableRunConfigOptions({ connection, createdByUserUid: userUid });
 
-    expect(options.providers).toEqual([{ label: "Acme Gateway", value: "acme-gateway" }]);
+    expect(options.providers).toEqual([{ label: "Acme Models", value: "acme-models" }]);
     expect(options.models).toMatchObject([
       {
-        provider: "acme-gateway",
+        provider: "acme-models",
         value: "alpha",
         known: false,
         enabled: true,

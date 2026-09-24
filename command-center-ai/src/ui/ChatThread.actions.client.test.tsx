@@ -27,8 +27,8 @@ const chatFeature = {
     sessionId: "session-1",
     error: null,
   },
-  activeAgentLabel: "research-orchestrator",
-  activeAgentName: "Research Orchestrator",
+  activeAgentLabel: "research-assistant",
+  activeAgentName: "Research Assistant",
   activeSessionSummary: {
     sessionId: "session-1",
     displayLabel: null,

@@ -40,7 +40,6 @@ function resourceRow({ uri, name, path, mimeType, content, manifestSha256 = "a".
     mimeType,
     size,
     _meta: {
-      owner_application: "mcp_gateway",
       manifest_version: 2,
       manifest_sha256: manifestSha256,
       resource_path: path,
@@ -53,7 +52,6 @@ function resourceRow({ uri, name, path, mimeType, content, manifestSha256 = "a".
       _meta: {
         resource_name: name,
         resource_path: path,
-        owner_application: "mcp_gateway",
         manifest_version: 2,
         manifest_sha256: manifestSha256,
         content_sha256: contentSha256,

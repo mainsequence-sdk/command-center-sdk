@@ -29,7 +29,7 @@ const MAX_WEBSOCKET_PROTOCOL_HEADER_BYTES = 4_096;
 const WEBSOCKET_TICKET_SUBPROTOCOL_PATTERN =
   /^mainsequence\.ws-ticket\.[A-Za-z0-9_-]{32,256}$/u;
 const WEBSOCKET_APPLICATION_PROTOCOL_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/u;
-const FAST_API_COLD_START_STATUSES = new Set([502, 503, 504]);
+const FAST_API_STARTING_STATUSES = new Set([502, 503, 504]);
 const FAST_API_DEFAULT_RETRY_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
 
 export type StaticSiteIframeChannel = `${typeof STATIC_SITE_IFRAME_CHANNEL_PREFIX}${string}`;
@@ -2431,7 +2431,7 @@ export function createStaticSiteIframeClient(
             });
             return response;
           }
-          if (FAST_API_COLD_START_STATUSES.has(response.status)) {
+          if (FAST_API_STARTING_STATUSES.has(response.status)) {
             const retryDelayMs = resolveRetryDelayMs(response, attempt, retryPolicy);
             emitFastApiState({
               status: "runtime-starting",

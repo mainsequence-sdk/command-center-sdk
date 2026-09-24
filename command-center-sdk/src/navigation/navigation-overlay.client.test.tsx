@@ -25,7 +25,7 @@ const applications: NavigationApplicationDefinition[] = [
         label: "Build",
         destinations: [
           { id: "services", label: "Services", href: "/app/foundry/services" },
-          { id: "clusters", label: "Clusters", href: "/app/foundry/clusters" },
+          { id: "projects", label: "Projects", href: "/app/foundry/projects" },
         ],
       },
     ],
@@ -129,12 +129,12 @@ describe("application navigation overlay presentation", () => {
     expect(drawer.id).toBe("panel-menu");
     expect(drawer.contains(document.activeElement)).toBe(true);
 
-    const clusters = Array.from(container.querySelectorAll("a"))
-      .find((link) => link.textContent === "Clusters")!;
-    await act(async () => clusters.click());
+    const projects = Array.from(container.querySelectorAll("a"))
+      .find((link) => link.textContent === "Projects")!;
+    await act(async () => projects.click());
     expect(onNavigate).toHaveBeenCalledWith({
       applicationId: "foundry",
-      destinationId: "clusters",
+      destinationId: "projects",
       subApplicationId: "build",
     });
     expect(onMenuOpenChange).toHaveBeenCalledWith(false);
@@ -173,12 +173,12 @@ describe("application navigation overlay presentation", () => {
       shell({ menuOpen: true, onMenuOpenChange, onNavigate, presentation: "overlay" }),
     );
 
-    const clusters = Array.from(container.querySelectorAll("a"))
-      .find((link) => link.textContent === "Clusters")!;
-    await act(async () => clusters.click());
+    const projects = Array.from(container.querySelectorAll("a"))
+      .find((link) => link.textContent === "Projects")!;
+    await act(async () => projects.click());
     expect(onNavigate).toHaveBeenCalledWith({
       applicationId: "foundry",
-      destinationId: "clusters",
+      destinationId: "projects",
       subApplicationId: "build",
     });
     expect(onMenuOpenChange).toHaveBeenLastCalledWith(false);

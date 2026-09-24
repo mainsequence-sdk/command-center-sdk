@@ -486,7 +486,7 @@ describe("the standalone chat against the stand-in", () => {
     await click(button("Model providers"));
     await waitFor(() => {
       expect(text()).toContain("Organization custom providers");
-      expect(text()).toContain("Stand-in Gateway");
+      expect(text()).toContain("Stand-in Models");
       expect(text()).toContain("Built-in providers");
       expect(text()).toContain("Stand In Cloud");
       expect(text()).toContain("Stand In Labs");
@@ -637,7 +637,7 @@ describe("the stand-in answers the package's clients", () => {
     expect((await fetchModelProviderCatalog(request)).providers.map((provider) => provider.provider)).toEqual([
       "stand-in-cloud",
       "stand-in-labs",
-      "stand-in-gateway",
+      "stand-in-models",
     ]);
 
     // A sign-in completes on its second read; a second start opens the attempt in progress.
@@ -693,7 +693,7 @@ describe("the stand-in answers the package's clients", () => {
       models: [{ model: "gamma" }],
     });
     await deleteCustomModelProvider(created.uid, request);
-    expect((await fetchCustomModelProviders(request)).map((provider) => provider.identifier)).toEqual(["stand-in-gateway"]);
+    expect((await fetchCustomModelProviders(request)).map((provider) => provider.identifier)).toEqual(["stand-in-models"]);
     expect(standIn.unhandledRequests).toEqual([]);
   });
 

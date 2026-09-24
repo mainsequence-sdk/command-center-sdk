@@ -189,7 +189,7 @@ describe("static-site iframe protocol", () => {
           payload: {
             requestId: "request-unknown",
             resourceReleaseUid: targetUid,
-            code: "cold_start",
+            code: "not_a_known_code",
           },
         },
         channel,
@@ -561,7 +561,7 @@ describe("static-site iframe client", () => {
     client.dispose();
   });
 
-  it("reports cold-start lifecycle and retries only a bounded number of times", async () => {
+  it("reports the runtime-starting lifecycle and retries only a bounded number of times", async () => {
     const parentWindow = { postMessage: vi.fn() };
     const onFastApiStateChange = vi.fn();
     const fetcher = vi

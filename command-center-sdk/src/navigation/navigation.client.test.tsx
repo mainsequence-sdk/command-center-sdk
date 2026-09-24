@@ -23,7 +23,7 @@ const applications: NavigationApplicationDefinition[] = [
         label: "Build",
         destinations: [
           { id: "services", label: "Services", href: "/app/foundry/services" },
-          { id: "clusters", label: "Clusters", href: "/app/foundry/clusters" },
+          { id: "projects", label: "Projects", href: "/app/foundry/projects" },
         ],
       },
       {
@@ -201,7 +201,7 @@ describe("application navigation", () => {
       root.render(
         <ApplicationNavigationShell
           activeApplicationId="foundry"
-          activeDestinationId="clusters"
+          activeDestinationId="projects"
           applications={applications}
           collapsed
           onNavigate={() => undefined}

@@ -34,7 +34,7 @@ describe("session history provenance", () => {
           provenance: {
             origin: "agent",
             channel: "a2a",
-            callerAgentName: "research-orchestrator",
+            callerAgentName: "research-assistant",
             handleUniqueId: "6f41da6f-bfd8-4598-a8a2-822bfabfba51",
             callerAgentSessionUid: "session-uid-52",
             targetAgentUid: "agent-uid-25",
@@ -55,7 +55,7 @@ describe("session history provenance", () => {
           data: {
             origin: "agent",
             channel: "a2a",
-            callerAgentName: "research-orchestrator",
+            callerAgentName: "research-assistant",
             handleUniqueId: "6f41da6f-bfd8-4598-a8a2-822bfabfba51",
             callerAgentSessionUid: "session-uid-52",
             targetAgentUid: "agent-uid-25",
@@ -72,7 +72,7 @@ describe("session history provenance", () => {
             provenance: {
               origin: "agent",
               channel: "a2a",
-              callerAgentName: "research-orchestrator",
+              callerAgentName: "research-assistant",
               handleUniqueId: "6f41da6f-bfd8-4598-a8a2-822bfabfba51",
               callerAgentSessionUid: "session-uid-52",
               targetAgentUid: "agent-uid-25",
@@ -89,7 +89,7 @@ describe("session history provenance", () => {
       session: {
         sessionId: "88",
         threadId: "88",
-        agentName: "research-orchestrator",
+        agentName: "research-assistant",
         agentUid: "e49e23e5-d7a6-4ebc-912e-d5257252945f",
         agentSessionUid: "session-uid-88",
         status: "complete",
@@ -178,7 +178,7 @@ describe("session history provenance", () => {
 });
 
 describe("session history tool calls", () => {
-  it("keeps projected tool-call parts with their arguments and results", () => {
+  it("keeps tool-call parts with their arguments and results", () => {
     const snapshot = normalizeSessionHistorySnapshot({
       version: 1,
       session: {

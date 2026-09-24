@@ -255,12 +255,12 @@ test.describe("static-site FastAPI native WebSocket ticket bridge", () => {
 
   test.beforeAll(async () => {
     const sdkModule = await readFile(sdkModulePath, "utf8");
-    const gateway = await listen((_request, response) => {
+    const webSocketRuntime = await listen((_request, response) => {
       response.writeHead(404);
       response.end();
     });
-    webSocketOrigin = gateway.origin;
-    gateway.server.on("upgrade", (request, socket) =>
+    webSocketOrigin = webSocketRuntime.origin;
+    webSocketRuntime.server.on("upgrade", (request, socket) =>
       acceptWebSocket(request, socket, observations, consumedTickets),
     );
 
@@ -288,7 +288,7 @@ test.describe("static-site FastAPI native WebSocket ticket bridge", () => {
       );
     });
     hostOrigin = host.origin;
-    closeServers = [host.close, child.close, gateway.close];
+    closeServers = [host.close, child.close, webSocketRuntime.close];
   });
 
   test.afterAll(async () => {

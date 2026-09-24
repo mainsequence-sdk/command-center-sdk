@@ -24,7 +24,7 @@ const context: MessageActorContext = {
   },
   sessionAgent: {
     uid: "e49e23e5-d7a6-4ebc-912e-d5257252945f",
-    name: "Research Orchestrator",
+    name: "Research Assistant",
   },
 };
 
@@ -123,7 +123,7 @@ describe("resolveMessageActor", () => {
     expect(actor).toMatchObject({ kind: "user", name: "Teammate", named: false });
   });
 
-  it("names a calling agent from the projected actorName", () => {
+  it("names a calling agent from its actorName", () => {
     const actor = resolveMessageActor(
       userMessage({
         origin: "agent",
@@ -149,15 +149,15 @@ describe("resolveMessageActor", () => {
       userMessage({
         origin: "agent",
         channel: "a2a",
-        callerAgentName: "research-orchestrator",
+        callerAgentName: "research-assistant",
       }),
       context,
     );
 
     expect(actor).toMatchObject({
-      key: "agent-name:research-orchestrator",
+      key: "agent-name:research-assistant",
       kind: "agent",
-      name: "research-orchestrator",
+      name: "research-assistant",
       named: true,
       uid: null,
     });
@@ -175,7 +175,7 @@ describe("resolveMessageActor", () => {
     );
 
     expect(actor).toEqual(getSessionAgentActor(context));
-    expect(actor.name).toBe("Research Orchestrator");
+    expect(actor.name).toBe("Research Assistant");
   });
 
   it("keeps an assistant message on a different target agent apart from the session agent", () => {
@@ -198,13 +198,13 @@ describe("resolveMessageActor", () => {
       content: [
         {
           type: "data-main_sequence_ai_provenance",
-          data: { origin: "agent", channel: "a2a", callerAgentName: "research-orchestrator" },
+          data: { origin: "agent", channel: "a2a", callerAgentName: "research-assistant" },
         },
         { type: "text", text: "hello" },
       ],
     });
 
-    expect(provenance?.callerAgentName).toBe("research-orchestrator");
+    expect(provenance?.callerAgentName).toBe("research-assistant");
   });
 });
 
@@ -230,7 +230,7 @@ describe("collectThreadParticipants", () => {
     );
 
     expect(participants.multiParty).toBe(false);
-    expect(participants.actors.map((actor) => actor.name)).toEqual(["You", "Research Orchestrator"]);
+    expect(participants.actors.map((actor) => actor.name)).toEqual(["You", "Research Assistant"]);
   });
 
   it("becomes multi-party when a calling agent or another human took part", () => {
@@ -242,7 +242,7 @@ describe("collectThreadParticipants", () => {
     expect(participants.multiParty).toBe(true);
     expect(participants.actors.map((actor) => [actor.kind, actor.name])).toEqual([
       ["agent", "Code Repository Executor"],
-      ["agent", "Research Orchestrator"],
+      ["agent", "Research Assistant"],
       ["user", "grace"],
       ["viewer", "You"],
     ]);
@@ -289,7 +289,7 @@ describe("findThreadTargetAgentUid", () => {
 
 describe("getActorInitials", () => {
   it("builds a two-letter monogram", () => {
-    expect(getActorInitials("Research Orchestrator")).toBe("RO");
+    expect(getActorInitials("Research Assistant")).toBe("RA");
     expect(getActorInitials("grace")).toBe("GR");
     expect(getActorInitials("  ")).toBe("");
   });

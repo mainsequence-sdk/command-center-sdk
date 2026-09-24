@@ -77,7 +77,7 @@ again. The settings never change a session's model; the session's picker does.
 
 1. On the scripted stand-in (`build-chat-application`), open the settings: "Built-in providers"
    lists the stand-in's providers with "Sign in" and "Sign off", and "Organization custom
-   providers" lists its gateway. A sign-in completes on the second read of its attempt.
+   providers" lists its custom provider. A sign-in completes on the second read of its attempt.
 2. Create a custom provider with two models, edit it, and delete a model; the chat's picker offers
    the change without a reload.
 3. Against the platform, sign in to a provider and pick one of its models in the chat.

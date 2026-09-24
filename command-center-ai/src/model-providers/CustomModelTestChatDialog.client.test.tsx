@@ -53,7 +53,7 @@ Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
 });
 
 const storedTarget: CustomModelTestChatTarget = {
-  providerLabel: "Acme Gateway",
+  providerLabel: "Acme Models",
   baseUrl: "https://models.example.test/v1",
   model: "alpha",
   displayName: "Alpha",

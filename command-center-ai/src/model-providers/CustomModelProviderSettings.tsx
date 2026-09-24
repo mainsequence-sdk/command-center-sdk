@@ -369,7 +369,7 @@ function ProviderFields({
           <Input
             required
             value={draft.identifier}
-            placeholder="acme-gateway"
+            placeholder="acme-models"
             onChange={(event) => onChange({ ...draft, identifier: event.target.value })}
           />
           <span className="ms-chat-form__hint">
@@ -381,7 +381,7 @@ function ProviderFields({
           <Input
             required
             value={draft.displayName}
-            placeholder="Acme Gateway"
+            placeholder="Acme Models"
             onChange={(event) => onChange({ ...draft, displayName: event.target.value })}
           />
         </label>

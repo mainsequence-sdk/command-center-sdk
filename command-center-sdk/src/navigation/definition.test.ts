@@ -21,7 +21,7 @@ describe("navigation definitions", () => {
           label: "Develop",
           order: 20,
           destinations: [
-            { id: "clusters", label: "Clusters", order: 20 },
+            { id: "projects", label: "Projects", order: 20 },
             { id: "services", label: "Services", order: 10 },
           ],
         },
@@ -58,7 +58,7 @@ describe("navigation definitions", () => {
     ]);
     expect(result[1]?.subApplications[1]?.destinations.map((item) => item.id)).toEqual([
       "services",
-      "clusters",
+      "projects",
     ]);
     expect(findNavigationDestination(result[1]!, "daily")?.subApplication.id)
       .toBe("reports");

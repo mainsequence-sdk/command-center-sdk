@@ -54,7 +54,7 @@ test("opens the model provider settings and returns to the chat", async ({ page 
   await page.getByRole("button", { name: "Model providers" }).click();
   await expect(page.getByText("Built-in providers", { exact: true })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("Organization custom providers", { exact: true })).toBeVisible();
-  await expect(page.getByText("Stand-in Gateway").first()).toBeVisible();
+  await expect(page.getByText("Stand-in Models").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in" }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Back to chat" }).click();

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { normalizeMessageProvenance } from "./message-provenance.js";
 
 describe("normalizeMessageProvenance", () => {
-  it("carries the verified actor fields projected by the backend", () => {
+  it("carries the verified actor fields from the platform's history", () => {
     const provenance = normalizeMessageProvenance({
       origin: "agent",
       channel: "a2a",
@@ -52,12 +52,12 @@ describe("normalizeMessageProvenance", () => {
     const provenance = normalizeMessageProvenance({
       origin: "agent",
       channel: "a2a",
-      callerAgentName: "research-orchestrator",
+      callerAgentName: "research-assistant",
     });
 
     expect(provenance).toMatchObject({
       origin: "agent",
-      callerAgentName: "research-orchestrator",
+      callerAgentName: "research-assistant",
       actorKind: null,
       actorUid: null,
       actorName: null,

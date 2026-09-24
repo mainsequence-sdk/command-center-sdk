@@ -36,8 +36,8 @@ const chatFeature = {
     sessionId: "session-1",
     error: null,
   },
-  activeAgentLabel: "research-orchestrator",
-  activeAgentName: "Research Orchestrator",
+  activeAgentLabel: "research-assistant",
+  activeAgentName: "Research Assistant",
   activeSessionSummary: {
     sessionId: "session-1",
     displayLabel: null,
@@ -228,7 +228,7 @@ describe("ChatThread actors", () => {
     const strip = container.querySelector("[data-thread-participants]");
     expect(strip).not.toBeNull();
     expect(strip?.textContent).toContain("Code Repository Executor");
-    expect(strip?.textContent).toContain("Research Orchestrator");
+    expect(strip?.textContent).toContain("Research Assistant");
     expect(strip?.textContent).toContain("grace");
     expect(strip?.textContent).toContain("You");
 
@@ -243,7 +243,7 @@ describe("ChatThread actors", () => {
 
     const [executorTurn, assistantTurn, teammateTurn, viewerTurn, viewerFollowUp] = roots;
 
-    // Calling agent: monogram from the projected name, labelled.
+    // Calling agent: monogram from its name, labelled.
     expect(executorTurn?.querySelector("[data-actor-name]")?.textContent).toBe(
       "Code Repository Executor",
     );
@@ -253,13 +253,13 @@ describe("ChatThread actors", () => {
 
     // Session agent: monogram from the session label, labelled.
     expect(assistantTurn?.querySelector("[data-actor-name]")?.textContent).toBe(
-      "Research Orchestrator",
+      "Research Assistant",
     );
     expect(
       assistantTurn?.querySelector('[data-actor-kind="agent"] [data-actor-icon="robot"]'),
     ).not.toBeNull();
     expect(assistantTurn?.querySelector('[data-actor-kind="agent"]')?.getAttribute("title")).toBe(
-      "Research Orchestrator",
+      "Research Assistant",
     );
 
     // Another human: mailbox part of their email address, initials monogram.
@@ -297,7 +297,7 @@ describe("ChatThread actors", () => {
       assistantTurn?.querySelector('[data-actor-kind="agent"] [data-actor-icon="robot"]'),
     ).not.toBeNull();
     expect(assistantTurn?.querySelector('[data-actor-kind="agent"]')?.getAttribute("title")).toBe(
-      "Research Orchestrator",
+      "Research Assistant",
     );
   });
 });

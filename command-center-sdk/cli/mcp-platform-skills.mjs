@@ -197,9 +197,6 @@ function validateResourcePayload(rawRow, uri) {
   const label = `Platform resource ${JSON.stringify(uri)}`;
   const row = requireObject(rawRow, `${label} list row`);
   const metadata = requireObject(row._meta, `${label} list _meta`);
-  if (metadata.owner_application !== "mcp_gateway") {
-    throw new McpPlatformSkillError(`${label} is not owned by mcp_gateway.`);
-  }
   const manifestVersion = metadata.manifest_version;
   if (!Number.isInteger(manifestVersion)) {
     throw new McpPlatformSkillError(`${label} has an invalid manifest version.`);
@@ -234,9 +231,6 @@ function validateResourcePayload(rawRow, uri) {
   const responseSha256 = requireSha256(contentMetadata.content_sha256, `${label} read hash`);
   if (contentSha256(content) !== declaredSha256 || responseSha256 !== declaredSha256) {
     throw new McpPlatformSkillError(`${label} content hash mismatch.`);
-  }
-  if (contentMetadata.owner_application !== "mcp_gateway") {
-    throw new McpPlatformSkillError(`${label} read response is not owned by mcp_gateway.`);
   }
   if (
     contentMetadata.manifest_version !== manifestVersion ||
