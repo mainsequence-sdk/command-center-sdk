@@ -29,7 +29,7 @@ is export-map and package installation validation, not end-to-end application co
 - The SDK's fixture is this one, `examples/sdk-consumer-fixture/`. It gets only the SDK tarball.
 - Every other public package brings its own fixture at
   `examples/<workspace directory>-consumer-fixture/`; the chat's is
-  `examples/chat-consumer-fixture/`. It gets the package's tarball and the tarballs of the sibling
+  `examples/command-center-ai-consumer-fixture/`. It gets the package's tarball and the tarballs of the sibling
   packages the package declares as dependencies or peers, installed together as an application
   installs them: the chat's fixture gets the chat and the SDK.
 - A fixture has this fixture's shape: a `package.json` with a `check` script and its registry

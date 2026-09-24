@@ -3,10 +3,10 @@
 ## Repository Boundary
 
 - This repository owns two public packages, `@dev-mainsequence/command-center-sdk` and
-  `@dev-mainsequence/chat` (SDK ADR 012 in `docs/packages/adr/`), with their examples, contracts,
+  `@dev-mainsequence/command-center-ai` (SDK ADR 012 in `docs/packages/adr/`), with their examples, contracts,
   documentation, tests, skills, and release tooling.
 - The chat depends on the SDK as a peer. The SDK knows nothing about the chat: nothing under
-  `command-center-sdk/` may name `@dev-mainsequence/chat` or reach into `chat/`, and
+  `command-center-sdk/` may name `@dev-mainsequence/command-center-ai` or reach into `command-center-ai/`, and
   `npm run check` fails if it does.
 - Do not add the private Command Center application, authentication, persistence policy,
   deployment configuration, or application environment files. Product routes and backend

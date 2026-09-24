@@ -2,12 +2,13 @@
 
 - Status: Accepted
 - Date: 2026-09-23
-- Implementation: `@dev-mainsequence/chat` unreleased (planned 0.0.1)
+- Implementation: `@dev-mainsequence/command-center-ai` unreleased (planned 0.0.1)
 - Owners: Command Center SDK maintainers
-- Package: `@dev-mainsequence/chat`
+- Package: `@dev-mainsequence/command-center-ai` (named `@dev-mainsequence/chat` until 2026-09-24, before any
+  release)
 - Related:
   - Command Center ADR 097: Upstreaming the Chat Package to the Command Center SDK Repository
-  - [ADR 096: The Chat as One Independent Package](../../../chat/docs/adr/adr-096-independent-chat-package.md),
+  - [ADR 096: The Chat as One Independent Package](../../../command-center-ai/docs/adr/adr-096-independent-chat-package.md),
     which moved into the chat's `docs/` with the package
   - [SDK ADR 011: Public Control and Form Primitives](../../../command-center-sdk/docs/adr/adr-sdk-011-public-control-and-form-primitives.md)
   - Repository policy: [architecture](../architecture.md), [compatibility](../compatibility.md),
@@ -15,17 +16,17 @@
 
 ## Publication status
 
-The repository policy and tooling of section 1 are implemented, and the chat is in `chat/`: copied
+The repository policy and tooling of section 1 are implemented, and the chat is in `command-center-ai/`: copied
 from Command Center when ADR 096 was done, and adapted to this repository (section 6). No version
-of `@dev-mainsequence/chat` is on npm. Its first release waits for the SDK release that publishes
+of `@dev-mainsequence/command-center-ai` is on npm. Its first release waits for the SDK release that publishes
 `--warning-tint` (section 5); until then npm refuses to install the chat next to the workspace SDK,
 and the chat's packed consumer says so. A consumer may install the chat only when the registry has
 a version of it; this record or a newer checkout does not make the package available.
 
 ## Decision summary
 
-The repository publishes a second public package, `@dev-mainsequence/chat`, from a workspace at
-`chat/` next to `command-center-sdk/`. It is the chat that talks to the Main Sequence platform: a
+The repository publishes a second public package, `@dev-mainsequence/command-center-ai`, from a workspace at
+`command-center-ai/` next to `command-center-sdk/`. It is the chat that talks to the Main Sequence platform: a
 backend connection, a session engine, the chat UI and the model-provider screens, with a
 standalone example. It depends on the SDK as a peer dependency. The SDK knows nothing about it:
 nothing under `command-center-sdk/` names it, imports, tests, verifies or installs it, and
@@ -65,8 +66,8 @@ Measured on `main` at 0.5.2, before this decision:
 ### 1. Repository policy: two public packages, one direction
 
 **Two public packages.** The repository publishes `@dev-mainsequence/command-center-sdk` from
-`command-center-sdk/` and `@dev-mainsequence/chat` from `chat/`. `validate-public-packages.mjs`
-allows exactly these two, the chat once `chat/package.json` exists, and fails on any other public
+`command-center-sdk/` and `@dev-mainsequence/command-center-ai` from `command-center-ai/`. `validate-public-packages.mjs`
+allows exactly these two, the chat once `command-center-ai/package.json` exists, and fails on any other public
 package and on a chat workspace that is not a public root workspace.
 
 **One direction.** The chat depends on the SDK. The SDK does not depend on, import, test, verify or
@@ -77,8 +78,8 @@ install anything of the chat.
   the same reason.
 - `scripts/check-package-direction.mjs`, part of `npm run check`, fails when a file under
   `command-center-sdk/` (any type; build output and installed dependencies excepted) contains
-  `@dev-mainsequence/chat`, holds a path that resolves into `chat/`, links into `chat/` on this
-  repository's GitHub, or is a symbolic link into `chat/`, and when the SDK's `package.json` lists
+  `@dev-mainsequence/command-center-ai`, holds a path that resolves into `command-center-ai/`, links into `command-center-ai/` on this
+  repository's GitHub, or is a symbolic link into `command-center-ai/`, and when the SDK's `package.json` lists
   the chat in a dependency field. It reads text: a path that code assembles at run time from
   separate segments is left to review.
 - The SDK's changelog, guides, ADR catalog, skills and tests do not mention the chat, and the
@@ -101,14 +102,14 @@ configuration or environment file. The repository boundary check applies to both
   the public packages it depends on.
 - `verify-packed-consumer.mjs` verifies each public package in its own clean consumer. The SDK's
   fixture, `examples/sdk-consumer-fixture/`, gets only the SDK tarball. The chat's fixture,
-  `examples/chat-consumer-fixture/`, gets the chat and SDK tarballs installed together, as an
+  `examples/command-center-ai-consumer-fixture/`, gets the chat and SDK tarballs installed together, as an
   application installs them. The convention is `examples/<workspace directory>-consumer-fixture/`,
   the SDK's fixture keeping the name it had; a public package without a fixture fails the
   verification.
 - The root `check` and `test` run the scripts of every public package, a package after the
   packages it depends on.
-- `ci.yml` and `command-center-packages.yml` watch `chat/**`; `deploy-docs.yml` watches
-  `chat/docs/**`.
+- `ci.yml` and `command-center-packages.yml` watch `command-center-ai/**`; `deploy-docs.yml` watches
+  `command-center-ai/docs/**`.
 
 ### 2. The chat package
 
@@ -125,7 +126,7 @@ configuration or environment file. The repository boundary check applies to both
 | `styles.css` | The chat stylesheet, in the `ms-chat` cascade layer: prefixed class names and only the theme variables the SDK publishes, audited by `command-center-sdk theme audit` in the chat's `check`. |
 | `standalone/` | The standalone example: a chat application built only on the chat and the SDK; the development bed and the target of the browser tests. `standalone/stand-in/` is its scripted stand-in for the platform and the Agent runtime. |
 | `docs/` | Guides and records (section 3). |
-| `agent_scaffold/skills/`, `cli/` | The consumer skills and their installer, the `mainsequence-chat` binary (section 4). |
+| `agent_scaffold/skills/`, `cli/` | The consumer skills and their installer, the `command-center-ai` binary (section 4). |
 | `tests/` | The browser tests of the standalone application on the stand-in, and the Node tests of the installer and the skills. The unit tests sit beside the code. |
 | `scripts/` | The chat's own boundary check, run by its `check`, with the SDK on its allowlist as a peer only. |
 
@@ -163,7 +164,7 @@ The root export is the chat's whole public API; a narrower subpath, such as the 
 alone, is an additive decision for later. `files` lists what a consumer and its agent need:
 `dist`, `styles.css`, `docs`, `agent_scaffold`, `cli`, the standalone example the skills point at
 without its tests or its build, `README.md`, `CHANGELOG.md` and `LICENSE`. `npm pack --dry-run`
-lists nothing else. The binary is `mainsequence-chat`.
+lists nothing else. The binary is `command-center-ai`.
 
 **Dependencies.** `@assistant-ui/react`, `@assistant-ui/core`, `@assistant-ui/store`,
 `assistant-stream`, `lucide-react`, `react-markdown`, `remark-gfm`, `rehype-raw` and
@@ -212,7 +213,7 @@ skills and the browser storage keys. It always names two axes the SDK does not h
   contract half of ADR 092, now ADR 098) keep their numbers and titles as historical records,
   because the code cites them ("ADR 093", "ADR 060"). Their references to Command Center's own
   records and files are plain text: this repository is public and Command Center's is not.
-- New chat decisions are `SDK ADR NNN` records with `Package: @dev-mainsequence/chat` in the
+- New chat decisions are `SDK ADR NNN` records with `Package: @dev-mainsequence/command-center-ai` in the
   chat's `docs/adr/`. The repository keeps one `SDK ADR` sequence and files each record with what
   it governs, which is why this one is in `docs/packages/adr/` and the SDK's catalog has no 012.
 - The docs site publishes the chat as its own section under `/chat/`: its README, `docs/`, and the
@@ -223,7 +224,7 @@ skills and the browser storage keys. It always names two axes the SDK does not h
 ### 4. Skills
 
 The chat ships its consumer skills and installs them itself: its own postinstall and CLI command,
-`mainsequence-chat skills install`, dependency-free, writing into `.agents/skills/chat/` with its
+`command-center-ai skills install`, dependency-free, writing into `.agents/skills/command-center-ai/` with its
 own provenance file, `PINNED_FROM.txt`. Like the SDK's
 installer it owns only its namespace, leaves every other one untouched, the SDK's
 `command-center/` included, and skips installation inside this source repository. The chat's

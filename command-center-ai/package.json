@@ -1,0 +1,87 @@
+{
+  "name": "@dev-mainsequence/command-center-ai",
+  "version": "0.0.1",
+  "private": false,
+  "description": "A chat for Main Sequence Agents: the connection to the platform, a session engine, the chat UI, and model provider settings, built on the Command Center SDK.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mainsequence-sdk/command-center-sdk.git",
+    "directory": "command-center-ai"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "agent_scaffold",
+    "cli",
+    "dist",
+    "docs",
+    "standalone",
+    "!standalone/dist",
+    "!standalone/**/*.test.tsx",
+    "styles.css",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "command-center-ai": "./cli/command-center-ai.mjs"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./styles.css",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "boundary": "node scripts/check-boundary.mjs",
+    "theme:audit": "command-center-sdk theme audit --path styles.css",
+    "check": "node scripts/check-boundary.mjs && npm run theme:audit && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.build.json --noEmit && tsc -p standalone/tsconfig.json --noEmit",
+    "test": "vitest run && node --test tests/cli/*.node.mjs",
+    "dev": "vite",
+    "build": "tsc -p tsconfig.build.json",
+    "build:standalone": "vite build",
+    "test:browser": "playwright test --config playwright.config.ts",
+    "postinstall": "node ./cli/postinstall.mjs"
+  },
+  "dependencies": {
+    "@assistant-ui/core": "^0.1.13",
+    "@assistant-ui/react": "^0.12.19",
+    "@assistant-ui/store": ">=0.2.6 <0.2.14",
+    "assistant-stream": "^0.3.10",
+    "lucide-react": "^0.500.0",
+    "react-markdown": "^10.1.0",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "peerDependencies": {
+    "@dev-mainsequence/command-center-sdk": "^0.5.3",
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20"
+  },
+  "devDependencies": {
+    "@dev-mainsequence/command-center-sdk": "^0.5.2",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "jsdom": "^29.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.8.0",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.5"
+  }
+}

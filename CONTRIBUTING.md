@@ -3,7 +3,7 @@
 Thanks for contributing.
 
 This repository owns two public packages: `@dev-mainsequence/command-center-sdk` and
-`@dev-mainsequence/chat`, in `chat/`
+`@dev-mainsequence/command-center-ai`, in `command-center-ai/`
 ([SDK ADR 012](./docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)). The chat
 depends on the SDK as a peer; the SDK knows nothing about the chat. Changes should preserve each
 package's public entrypoints, consumer compatibility, documentation, and package boundary.
@@ -59,7 +59,7 @@ npm run docs:dev
   This exclusion of routes and transports applies to the SDK package; the chat is bound to the
   platform's routes by design.
 - Keep the SDK unaware of the chat: nothing under `command-center-sdk/` may name
-  `@dev-mainsequence/chat` or reach into `chat/`. `npm run check` fails if it does.
+  `@dev-mainsequence/command-center-ai` or reach into `command-center-ai/`. `npm run check` fails if it does.
 - Treat schema IDs, protocol IDs, theme IDs, and persisted fields as compatibility boundaries.
 
 ### Document compatibility impact

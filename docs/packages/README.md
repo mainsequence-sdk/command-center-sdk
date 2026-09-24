@@ -7,10 +7,10 @@ slug: /packages
 # Command Center SDK Package Architecture
 
 This repository produces two public packages: `@dev-mainsequence/command-center-sdk` and
-`@dev-mainsequence/chat` ([SDK ADR 012](./adr/adr-sdk-012-chat-as-a-second-public-package.md)).
+`@dev-mainsequence/command-center-ai` ([SDK ADR 012](./adr/adr-sdk-012-chat-as-a-second-public-package.md)).
 The chat depends on the SDK as a peer; the SDK knows nothing about the chat.
 
-The SDK's source lives under `command-center-sdk/` and the chat's under `chat/`. Each package's
+The SDK's source lives under `command-center-sdk/` and the chat's under `command-center-ai/`. Each package's
 README and `docs/` directory define its supported consumer API, while this section records
 repository-level dependency, compatibility, and release policy.
 

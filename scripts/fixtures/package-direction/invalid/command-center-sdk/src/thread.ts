@@ -1,1 +1,1 @@
-export { ChatThread } from "../../chat/src/index.js";
+export { ChatThread } from "../../command-center-ai/src/index.js";

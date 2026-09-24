@@ -2,9 +2,9 @@
   "name": "package-direction-invalid-sdk",
   "private": true,
   "peerDependencies": {
-    "@dev-mainsequence/chat": "^0.1.0"
+    "@dev-mainsequence/command-center-ai": "^0.1.0"
   },
   "devDependencies": {
-    "chat-source": "file:../chat"
+    "chat-source": "file:../command-center-ai"
   }
 }

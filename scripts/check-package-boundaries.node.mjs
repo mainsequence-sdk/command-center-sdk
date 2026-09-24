@@ -40,7 +40,7 @@ test("rejects relative traversal outside a publishable package", () => {
 
 test("discovers the SDK and, once its workspace exists, the chat as publishable", () => {
   const packages = discoverPublishablePackages();
-  const chatWorkspaceExists = fs.existsSync(path.join(repositoryRoot, "chat", "package.json"));
+  const chatWorkspaceExists = fs.existsSync(path.join(repositoryRoot, "command-center-ai", "package.json"));
 
   assert.deepEqual(
     packages.map((workspacePackage) => [
@@ -48,7 +48,7 @@ test("discovers the SDK and, once its workspace exists, the chat as publishable"
       path.relative(repositoryRoot, workspacePackage.packageRoot),
     ]),
     [
-      ...(chatWorkspaceExists ? [["@dev-mainsequence/chat", "chat"]] : []),
+      ...(chatWorkspaceExists ? [["@dev-mainsequence/command-center-ai", "command-center-ai"]] : []),
       ["@dev-mainsequence/command-center-sdk", "command-center-sdk"],
     ],
   );

@@ -23,8 +23,8 @@ The chat depends on the SDK, and the SDK knows nothing about the chat
 
 - `check-package-direction.mjs` reads every file under `command-center-sdk/`, whatever its type,
   except build output and installed dependencies. It fails when one contains
-  `@dev-mainsequence/chat`, holds a path that resolves into `chat/`, links into `chat/` on the
-  repository's GitHub, or is a symbolic link into `chat/`, and when the SDK's `package.json` lists
+  `@dev-mainsequence/command-center-ai`, holds a path that resolves into `command-center-ai/`, links into `command-center-ai/` on the
+  repository's GitHub, or is a symbolic link into `command-center-ai/`, and when the SDK's `package.json` lists
   the chat in a dependency field. It reads text: a path that code assembles at run time from
   separate segments is left to review. The rule holds before the chat's workspace exists.
 - `check-package-direction.node.mjs` tests the check against fixtures under
@@ -42,7 +42,7 @@ npm run direction:test
 - `public-package-graph.mjs` discovers the public packages and resolves release order: a package
   after the public packages it depends on, peers included.
 - `validate-public-packages.mjs` enforces publish metadata, exports, licenses, changelog, and
-  registry-safe dependencies, and allows exactly the SDK and, once `chat/package.json` exists, the
+  registry-safe dependencies, and allows exactly the SDK and, once `command-center-ai/package.json` exists, the
   chat.
 - `list-public-packages.mjs --matrix` supplies the release workflow matrix; `--with-script <name>`
   keeps the packages that define that script, such as `test:browser` for the browser job.
@@ -58,4 +58,4 @@ npm run direction:test
 - `check-package-size.mjs` enforces entry-bundle budgets after build.
 
 The public packages are `@dev-mainsequence/command-center-sdk` and, once its workspace exists,
-`@dev-mainsequence/chat` (SDK ADR 012).
+`@dev-mainsequence/command-center-ai` (SDK ADR 012).

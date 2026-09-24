@@ -58,7 +58,7 @@ const config = {
         // READMEs beside the code, so the section reads from the package root and publishes
         // those files too; every relative link then resolves here as it does on GitHub.
         id: "chat",
-        path: "../chat",
+        path: "../command-center-ai",
         routeBasePath: "chat",
         include: [
           "README.md",
@@ -71,7 +71,7 @@ const config = {
         ],
         sidebarPath: require.resolve("./chat-sidebars.js"),
         editUrl: ({ docPath }) =>
-          `https://github.com/mainsequence-sdk/command-center-sdk/tree/main/chat/${docPath}`,
+          `https://github.com/mainsequence-sdk/command-center-sdk/tree/main/command-center-ai/${docPath}`,
       }),
     ],
   ],

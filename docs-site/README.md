@@ -2,7 +2,7 @@
 
 This directory contains the Docusaurus site that publishes the SDK documentation from
 [`command-center-sdk/docs/`](../command-center-sdk/docs) and, as its own section under `/chat/`,
-the chat's documentation from [`chat/`](../chat): its `docs/`, its README, and the module READMEs
+the chat's documentation from [`command-center-ai/`](../command-center-ai): its `docs/`, its README, and the module READMEs
 its guides link to.
 
 ## Entry Points
@@ -27,7 +27,7 @@ docs site configuration changes on `main`.
 
 ## Notes
 
-- The docs source of truth is `command-center-sdk/docs/` and, for the chat, `chat/`, not
+- The docs source of truth is `command-center-sdk/docs/` and, for the chat, `command-center-ai/`, not
   `docs-site/docs/` or generated build output.
 - Keep sidebar categories organized by reader intent: start, concepts, interface building,
   integrations, and maintenance. Do not let filename ordering become the information architecture.

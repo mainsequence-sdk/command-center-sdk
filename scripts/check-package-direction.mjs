@@ -15,9 +15,9 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-export const chatPackageName = "@dev-mainsequence/chat";
+export const chatPackageName = "@dev-mainsequence/command-center-ai";
 const sdkWorkspaceDirectory = "command-center-sdk";
-const chatWorkspaceDirectory = "chat";
+const chatWorkspaceDirectory = "command-center-ai";
 const repositorySlug = "mainsequence-sdk/command-center-sdk";
 
 // Build output and installed dependencies are not the SDK's source; every other file is read.

@@ -12,7 +12,7 @@ const fixturesRoot = path.join(scriptsRoot, "fixtures", "package-direction");
 
 function fixtureRoots(name) {
   const root = path.join(fixturesRoot, name);
-  return { sdkRoot: path.join(root, "command-center-sdk"), chatRoot: path.join(root, "chat") };
+  return { sdkRoot: path.join(root, "command-center-sdk"), chatRoot: path.join(root, "command-center-ai") };
 }
 
 function summarize(violations, sdkRoot) {
@@ -35,18 +35,18 @@ test("rejects every way a file of the SDK can refer to the chat", () => {
   const { violations } = findSdkReferencesToChat(roots);
 
   assert.deepEqual(summarize(violations, roots.sdkRoot), [
-    ["docs/guide.md", "package-name", "@dev-mainsequence/chat"],
+    ["docs/guide.md", "package-name", "@dev-mainsequence/command-center-ai"],
     [
       "docs/guide.md",
       "link",
-      "github.com/mainsequence-sdk/command-center-sdk/tree/main/chat",
+      "github.com/mainsequence-sdk/command-center-sdk/tree/main/command-center-ai",
     ],
-    ["package.json", "manifest", "@dev-mainsequence/chat: ^0.1.0"],
-    ["package.json", "package-name", "@dev-mainsequence/chat"],
-    ["package.json", "manifest", "chat-source: file:../chat"],
-    ["package.json", "path", "../chat"],
-    ["src/thread.ts", "path", "../../chat/src/index.js"],
-    ["styles.css", "path", "../chat/styles.css"],
+    ["package.json", "manifest", "@dev-mainsequence/command-center-ai: ^0.1.0"],
+    ["package.json", "package-name", "@dev-mainsequence/command-center-ai"],
+    ["package.json", "manifest", "chat-source: file:../command-center-ai"],
+    ["package.json", "path", "../command-center-ai"],
+    ["src/thread.ts", "path", "../../command-center-ai/src/index.js"],
+    ["styles.css", "path", "../command-center-ai/styles.css"],
   ]);
   assert.match(
     violations.find((violation) => violation.kind === "manifest")?.reason ?? "",
@@ -59,23 +59,23 @@ test("rejects a symbolic link into the chat and does not read build output or de
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "package-direction-"));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const sdkRoot = path.join(root, "command-center-sdk");
-  const chatRoot = path.join(root, "chat");
+  const chatRoot = path.join(root, "command-center-ai");
 
   fs.mkdirSync(path.join(chatRoot, "src"), { recursive: true });
   fs.mkdirSync(path.join(sdkRoot, "src"), { recursive: true });
-  fs.symlinkSync(path.join("..", "..", "chat", "src"), path.join(sdkRoot, "src", "chat"));
+  fs.symlinkSync(path.join("..", "..", "command-center-ai", "src"), path.join(sdkRoot, "src", "chat"));
   for (const ignored of ["dist", "node_modules/some-dependency"]) {
     fs.mkdirSync(path.join(sdkRoot, ignored), { recursive: true });
     fs.writeFileSync(
       path.join(sdkRoot, ignored, "index.js"),
-      'export * from "@dev-mainsequence/chat";\n',
+      'export * from "@dev-mainsequence/command-center-ai";\n',
     );
   }
 
   const { checkedFileCount, violations } = findSdkReferencesToChat({ sdkRoot, chatRoot });
 
   assert.deepEqual(summarize(violations, sdkRoot), [
-    ["src/chat", "symlink", path.join("..", "..", "chat", "src")],
+    ["src/chat", "symlink", path.join("..", "..", "command-center-ai", "src")],
   ]);
   assert.equal(checkedFileCount, 0);
 });

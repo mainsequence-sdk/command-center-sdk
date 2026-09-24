@@ -9,7 +9,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 // The repository publishes the SDK and, once its workspace exists, the chat (SDK ADR 012). Any
 // other public package is a policy change that needs its own decision.
 const sdkPackage = { name: "@dev-mainsequence/command-center-sdk", directory: "command-center-sdk" };
-const chatPackage = { name: "@dev-mainsequence/chat", directory: "chat" };
+const chatPackage = { name: "@dev-mainsequence/command-center-ai", directory: "command-center-ai" };
 
 const chatWorkspaceExists = fs.existsSync(
   path.join(repositoryRoot, chatPackage.directory, "package.json"),
@@ -38,7 +38,7 @@ if (
   throw new Error(
     `Expected the public packages to be ${describe(expectedPublicPackages)}; found ${describe(
       packages,
-    )}. The repository publishes the SDK and, once chat/package.json exists, the chat as a public root workspace (SDK ADR 012).`,
+    )}. The repository publishes the SDK and, once command-center-ai/package.json exists, the chat as a public root workspace (SDK ADR 012).`,
   );
 }
 

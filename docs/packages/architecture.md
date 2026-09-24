@@ -15,7 +15,7 @@ This repository publishes two packages:
   embed
   contracts
 
-@dev-mainsequence/chat                      chat/
+@dev-mainsequence/command-center-ai         command-center-ai/
   backend connection, session engine, chat UI, model providers
   peers: @dev-mainsequence/command-center-sdk, react, react-dom
 ```
@@ -32,7 +32,7 @@ credential ([SDK ADR 012](./adr/adr-sdk-012-chat-as-a-second-public-package.md))
 - The chat depends on the SDK as a peer dependency, never a regular one, so an application has
   exactly one SDK: one stylesheet and one set of `cc-*` classes.
 - The SDK knows nothing about the chat. Nothing under `command-center-sdk/` names
-  `@dev-mainsequence/chat`, reaches into `chat/`, or tests, verifies or installs the chat, and the
+  `@dev-mainsequence/command-center-ai`, reaches into `command-center-ai/`, or tests, verifies or installs the chat, and the
   SDK's manifest lists it in no dependency field. `npm run direction:check`, part of
   `npm run check`, enforces this.
 
