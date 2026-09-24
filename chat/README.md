@@ -4,6 +4,10 @@ The chat as one independent package: everything a chat application needs to talk
 backend Command Center talks to. It is independent of the Command Center application, not of the
 backend. See [ADR 096](./docs/adr/adr-096-independent-chat-package.md).
 
+The chat uses the assistant-ui front end (`@assistant-ui/react`): the engine runs an assistant-ui
+runtime against the platform and the Agent runtime, and the thread is built from assistant-ui's
+primitives, styled by the chat's stylesheet on the Command Center SDK's theme.
+
 The Main Sequence AI application is its first consumer and imports it only through its public
 exports (`src/index.ts`).
 

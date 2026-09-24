@@ -11,8 +11,8 @@
   - Command Center ADR 092: Environment Agent Shortcut And Unified Runtime
   - [ADR 093: Client-Verified Agent Readiness](./adr-093-client-verified-agent-readiness.md)
   - [ADR 098: One Communication Contract For Every Agent](./adr-098-one-communication-contract-for-every-agent.md)
-  - The Main Sequence AI assistant UI (`apps/mainsequence-ai/src/assistant-ui/README.md` in
-    Command Center), [the package's backend connection](../../src/backend/README.md)
+  - The Main Sequence AI assistant UI README in Command Center,
+    [the package's backend connection](../../src/backend/README.md)
 
 ## Context
 
@@ -24,37 +24,34 @@ a seam of that kind appears along the way, that is fine, but it is not the goal.
 To be reusable the chat first has to stand alone from the Command Center application. Today it
 does not. Measured on 2026-09-20:
 
-- It lives inside the Main Sequence AI application: `src/assistant-ui` (about 8,900 lines plus
-  3,000 in `components/`) and `src/runtime` (about 6,900 lines).
-- The connection to the backend is already close to free. The clients in `runtime/` take the token
-  as a parameter, and their only host imports are configuration: `env.apiBaseUrl`, `env.DEV`, and
-  the stream protocol in `config/command-center`.
-- `ChatProvider.tsx` (4,607 lines) is almost entirely chat against that backend: selecting or
+- It lives inside the Main Sequence AI application: its assistant UI and its runtime clients.
+- The connection to the backend is already close to free. The runtime clients take the token as a
+  parameter, and their only host imports are configuration: the API base URL, the development
+  flag, and the stream protocol.
+- The application's chat provider is almost entirely chat against that backend: selecting or
   getting and creating a session, loading detail, insights, and history, polling runtime access,
   model state, sending, cancelling, the queue. What it takes from the host is six things, the auth
   store, the active Environment, the preferences (for the shortcut Agent), the toaster, and two
-  configuration objects, plus the router. The Command Center specifics inside it are thin: about
-  13 mentions of the shortcut, 29 of the rail, 7 of routing.
-- `components/ChatThread.tsx` (2,390 lines) reads 40 fields of the provider's context at 11 call
-  sites. It also imports the host's `button`, `badge`, `select`, `markdown-content`, `cn`, the
-  auth store, the shell store, and `env`, and it is styled with the host's Tailwind classes.
-- Model providers sit beside the chat in the same application: five clients in `runtime/` (the
-  catalog, provider sign-in, Organization custom providers, their model JSON, and the direct test
-  turn) and three screens in `features/settings/` (the provider section, 607 lines; the
-  custom-provider workflow, 1,364; the test conversation, 437). Their host imports are the auth
-  store, the toaster, `cn`, the settings section type, and the host's form and dialog primitives.
-- The chat's documentation is spread over the repository: five of the seven records in
-  `docs/adr/mainsequence_ai/` (ADR 060, 087, 090, 092, 093), two guides in `docs/extensions/`
-  (AgentSession resolution, provider errors), and the module READMEs beside the code. About 33
-  files link to them. ADR 092 and the resolution guide each mix the Command Center shortcut with
-  the contract every Agent uses.
+  configuration objects, plus the router. The Command Center specifics inside it are thin: the
+  shortcut, the rail, and routing.
+- The thread reads many fields of the provider's context. It also imports the host's button,
+  badge, select, and markdown components, its class-name helper, the auth store, the shell store,
+  and the environment configuration, and it is styled with the host's Tailwind classes.
+- Model providers sit beside the chat in the same application: five runtime clients (the catalog,
+  provider sign-in, Organization custom providers, their model JSON, and the direct test turn)
+  and three settings screens (the provider section, the custom-provider workflow, and the test
+  conversation). Their host imports are the auth store, the toaster, the class-name helper, the
+  settings section type, and the host's form and dialog primitives.
+- The chat's documentation is spread over the repository: five of the seven Main Sequence AI
+  records (ADR 060, 087, 090, 092, 093), two guides (AgentSession resolution, provider errors),
+  and the module READMEs beside the code. ADR 092 and the resolution guide each mix the Command
+  Center shortcut with the contract every Agent uses.
 - Nothing in this repository can show that a package is independent. Application packages are
   source packages the host compiles: the application's `tsconfig.json` extends the host's and
-  inherits its `@/*` alias, the host's `globals.css` scans application sources for Tailwind,
-  application tests run on the host's Vite configuration, and
-  `scripts/check-application-packages.mjs` validates manifests, not imports.
-- The safety net is about 250 tests: 24 files in `runtime/`, 10 in `assistant-ui/`, 7 in
-  `assistant-ui/components/`.
+  inherits its `@/*` alias, the host's global stylesheet scans application sources for Tailwind,
+  application tests run on the host's Vite configuration, and the application-package check
+  validates manifests, not imports.
+- The safety net is the chat's existing tests.
 
 ## Decision
 
@@ -65,21 +62,21 @@ of scope.
 
 ### 1. One package, with the backend connection inside it
 
-One workspace package, outside `apps/`, because it is a library and not an application the host
-composes. It contains everything a chat application needs:
+One workspace package, outside the applications, because it is a library and not an application
+the host composes. It contains everything a chat application needs:
 
-- **The backend connection**, from `runtime/`: agent sessions (list, detail, create, get or
-  create, archive, the session's model settings), runtime access and readiness (ADR 093), the
+- **The backend connection**, from the runtime clients: agent sessions (list, detail, create, get
+  or create, archive, the session's model settings), runtime access and readiness (ADR 093), the
   chat request (ADR 060) and its stream, history, insights, session configuration, cancel, the
   model catalog and run-configuration selection, tool activity, and the error helpers.
 - **Model providers**, resolved from the same backend: the catalog, signing in to and out of
   built-in providers, Organization custom providers with their models, and the direct test
   conversation, with their screens. A chat application needs a model to chat with, so connecting
   and choosing one is part of the chat.
-- **The session engine**, from `ChatProvider`: choosing or creating the session for an Agent,
+- **The session engine**, from the chat provider: choosing or creating the session for an Agent,
   hydrating it, following runtime access, holding the model selection, sending and cancelling,
   and the queue (ADR 087).
-- **The chat itself**, from `assistant-ui/`: the assistant-ui runtime adapter, the thread, the
+- **The chat itself**, from the assistant UI: the assistant-ui runtime adapter, the thread, the
   composer with its provider, model, and thinking picker, the connecting and readiness states, the
   model-required state, actors and provenance, agent icons, and its own stylesheet.
 
@@ -88,7 +85,7 @@ answers: those are backend capabilities, and the package carries the code that r
 
 ### 2. Independent of the application, not of the backend
 
-The package receives from whoever mounts it what `ChatProvider` takes from the host today, as
+The package receives from whoever mounts it what the chat provider takes from the host today, as
 inputs instead of imports:
 
 - the API base URL, with an optional request-URL rewrite (section 4);
@@ -197,11 +194,11 @@ one, so it is part of the connection and not a development detail:
 - Whether and when to rewrite is the application's decision. The package does not detect a
   development build and does not know about a proxy.
 
-Command Center uses the rewrite for its development proxy, `/__command_center_auth__`. Before this
-work three clients (the catalog, provider sign-in, and custom providers) each carried their own
-copy of that rule, tied to `import.meta.env.DEV`, and the rest called the API directly. Now the
-application states the rule once, in `runtime/chat-backend-connection.ts`, and every platform
-request follows it. The standalone application uses the rewrite for a proxy of its own.
+Command Center uses the rewrite for its development proxy. Before this work three clients (the
+catalog, provider sign-in, and custom providers) each carried their own copy of that rule, tied to
+`import.meta.env.DEV`, and the rest called the API directly. Now the application states the rule
+once, where it builds its connection, and every platform request follows it. The standalone
+application uses the rewrite for a proxy of its own.
 
 Two others were removed from the repository before this work, so the chat has one path: the
 `VITE_DEBUG_CHAT` logging flag, and the local runtime proxy (`assistant_ui.endpoint`,
@@ -231,7 +228,7 @@ What belongs to Command Center and not to chat:
 
 - the shortcut: the `agentShortcutUid` preference, the `command_center_shortcut` handle session,
   and its blocking state (ADR 092);
-- the rails: `ChatOverlay`, `ChatMount`, the CodeRepository Agent rail, their stores, and the
+- the rails: the chat overlay and its mount, the CodeRepository Agent rail, their stores, and the
   keyboard shortcut;
 - route synchronisation (`?session=`) and the view context built from the host's registry and
   route;
@@ -240,9 +237,9 @@ What belongs to Command Center and not to chat:
   `agentShortcutUid` preference;
 - agent tasks and the surfaces.
 
-`ChatProvider` becomes a thin Command Center wrapper around the package's engine: it supplies the
-inputs of sections 2 and 4 and adds the shortcut, the rails, and the routing. The session explorer
-is chat and can follow in a later step.
+The chat provider becomes a thin Command Center wrapper around the package's engine: it supplies
+the inputs of sections 2 and 4 and adds the shortcut, the rails, and the routing. The session
+explorer is chat and can follow in a later step.
 
 ### 7. The documentation moves with the code
 
@@ -256,26 +253,26 @@ in this repository, its new ADRs continue the repository's single ADR sequence.
 | ADR 060 (chat request), ADR 087 (queue), ADR 090 (agent icons), ADR 093 (readiness) | Move. |
 | ADR 092 (shortcut and unified runtime) | Split. "All Agents use one communication contract" and "Retire the compatibility service clients" move as their own record. The shortcut preference, its blocking state, and the CodeRepository surfaces stay as ADR 092. Each links to the other. |
 | ADR 089 (Agent capability UI), ADR 094 (agent tasks) | Stay. They are not chat. |
-| `docs/extensions/main-sequence-ai-agent-session-resolution.md` | Split the same way. Identities, hydration, runtime access, sending, the shared states, the model catalog, the failure rules, and the invariants move. The Command Center shortcut and explicit session navigation stay. |
-| `docs/extensions/main-sequence-ai-provider-errors.md` | Moves. |
-| The READMEs of `runtime/`, `assistant-ui/`, and `features/settings/` | Move with their code. What describes the shortcut, the rails, and the Agent shortcut setting stays with the wrapper. |
-| The READMEs of `features/chat/` and `surfaces/chat/` | Stay. The session explorer's follows it when it moves. |
-| The user guides in `user-docs/main-sequence-ai/` | Stay. They explain the Command Center product to the people who use it, and the public site may not reach into internal documentation. |
+| The Main Sequence AI AgentSession resolution guide | Split the same way. Identities, hydration, runtime access, sending, the shared states, the model catalog, the failure rules, and the invariants move. The Command Center shortcut and explicit session navigation stay. |
+| The Main Sequence AI provider-errors guide | Moves. |
+| The READMEs of the runtime clients, the assistant UI, and the settings screens | Move with their code. What describes the shortcut, the rails, and the Agent shortcut setting stays with the wrapper. |
+| The READMEs of the session explorer and the chat page | Stay. The session explorer's follows it when it moves. |
+| The Main Sequence AI user guides | Stay. They explain the Command Center product to the people who use it, and the public site may not reach into internal documentation. |
 | This record | Moves into the package once the package exists. |
 
 Each document moves in the same step as the code it describes, and every link to it is updated
-in that change. The catalogs in `docs/adr/mainsequence_ai/` and `docs/extensions/` drop the moved
-entries and keep one pointer to the package's documentation.
+in that change. The Main Sequence AI catalogs drop the moved entries and keep one pointer to the
+package's documentation.
 
 ### 8. Order of work
 
 Each step ships on its own, gated by the existing chat tests plus the package's tests.
 
 1. Scaffold the package, the boundary check, and the standalone application's skeleton.
-2. The backend connection: the chat and model-provider clients of `runtime/` move, taking the
-   base URL as an input. The application imports them from the package.
-3. The session engine: `ChatProvider` is split. The engine moves; the shortcut, rails, and routing
-   stay as the wrapper.
+2. The backend connection: the chat and model-provider runtime clients move, taking the base URL
+   as an input. The application imports them from the package.
+3. The session engine: the chat provider is split. The engine moves; the shortcut, rails, and
+   routing stay as the wrapper.
 4. The chat: the runtime adapter, then the leaf renderers with the package stylesheet, then the
    thread and the composer. `ChatThread`'s host imports are replaced by the package's own
    primitives and by the inputs of sections 2 and 4.
@@ -298,29 +295,28 @@ Each step ships on its own, gated by the existing chat tests plus the package's 
 
 All six steps of section 8 are done: steps 1 and 2 on 2026-09-21, steps 3 to 6 on 2026-09-23.
 
-- The package is `packages/chat`, a private workspace package. Its name and folder are working
-  labels; nothing is published.
+- The package is a private workspace package. Its name and folder are working labels; nothing is
+  published.
 - It type-checks and runs its tests on its own configuration, and its standalone application
   builds from it alone. The boundary check is part of the repository's `check`.
-- The backend connection moved into `src/backend/`: 24 modules and their tests. Every client
-  takes the connection as an input. The application passes one connection, built in
-  `apps/mainsequence-ai/src/runtime/chat-backend-connection.ts`, and imports the package only
+- The backend connection moved into `src/backend/` with its tests. Every client takes the
+  connection as an input. The application passes one connection and imports the package only
   through its public exports.
 - The standalone application is a skeleton: given the platform API URL, a token, the person, the
   Environment, and an Agent, it gets or creates a session, reads the model catalog, and checks
   that the Agent answers. It has its own development proxy and shows the rewrite at work. The chat
   itself arrives with steps 3 to 6.
 - The two shortcut constants (`command_center_shortcut`, its session name) were defined inside a
-  runtime client. They stayed with the application, in `assistant-ui/command-center-shortcut.ts`.
-- Two modules of `runtime/` were deleted instead of moved, because they were leftovers of removed
-  features with no caller. `agent-session-stream.ts` was the transport of the Agent Terminal
-  workspace widget, removed with the workspaces on 2026-09-12; it was a second way to send a chat
-  request. `session-config-api.ts` was the compaction switch of the old session detail panel,
-  whose only caller was removed in April; it called `PATCH {rpc_url}/api/chat/session-config`,
-  a route the current Agent runtime does not serve. Section 3 lists the three runtime routes the
+  runtime client. They stayed with the application.
+- Two runtime clients were deleted instead of moved, because they were leftovers of removed
+  features with no caller. One was the transport of the Agent Terminal workspace widget, removed
+  with the workspaces on 2026-09-12; it was a second way to send a chat request. The other was the
+  compaction switch of the old session detail panel, whose only caller was removed in April; it
+  called `PATCH {rpc_url}/api/chat/session-config`, a route the current Agent runtime does not
+  serve. Section 3 lists the three runtime routes the
   package calls.
-- Documents moved in steps 1 and 2: ADR 060, ADR 093, the provider-errors guide, the `runtime/`
-  README (now the backend connection's README), and this record.
+- Documents moved in steps 1 and 2: ADR 060, ADR 093, the provider-errors guide, the runtime
+  clients' README (now the backend connection's README), and this record.
 
 Step 3:
 
@@ -330,16 +326,15 @@ Step 3:
   [engine README](../../src/engine/README.md) lists them. The session detail model and its hook
   moved into `src/session-detail/`.
 - The Command Center shortcut is the engine's default session: the session behind a stable handle
-  for one Agent. `ChatProvider` is the wrapper of section 6: it supplies the inputs and keeps the
-  shortcut, the rails, and the route. The stored session marker keeps its value,
+  for one Agent. The chat provider is the wrapper of section 6: it supplies the inputs and keeps
+  the shortcut, the rails, and the route. The stored session marker keeps its value,
   `command_center_shortcut`, so saved session lists stay readable.
 - The engine uses no react-query. The model catalog and the agent icon projection keep small
   stores of their own with the same staleness, and the provider screens call
   `invalidateModelProviderCatalog()` when a provider changes.
 - Documents moved in step 3: ADR 087; the contract half of ADR 092, as ADR 098; the contract half
-  of the AgentSession resolution guide; and the parts of the `assistant-ui/` and
-  `agent-session-detail/` READMEs that describe moved code, as the engine and session-detail
-  READMEs.
+  of the AgentSession resolution guide; and the parts of the assistant UI and session detail
+  READMEs that describe moved code, as the engine and session-detail READMEs.
 
 Step 4:
 
@@ -350,9 +345,8 @@ Step 4:
   them.
 - What the thread read from Command Center arrives as `ChatThread`'s inputs: its words (`copy`),
   the signed-in person (`viewer`), and the way to open the model provider settings
-  (`onOpenModelProviderSettings`). Command Center passes them from
-  `assistant-ui/command-center-thread.ts`, with its own words for the Main Sequence AI rail and
-  for a CodeRepository's Agent.
+  (`onOpenModelProviderSettings`). Command Center passes them with its own words for the Main
+  Sequence AI rail and for a CodeRepository's Agent.
 - The package's stylesheet, `styles.css`, replaces the Tailwind classes: `ms-chat-` classes in the
   `ms-chat` cascade layer, built on the SDK's theme variables, and it passes the SDK's theme audit
   but for two declarations the audit misreads (the UI README has the details). It was generated
@@ -362,7 +356,7 @@ Step 4:
 - The package depends on the Command Center SDK as a peer, and on React as a peer; the boundary
   check fails if either is listed as a regular dependency.
 - The UI tests moved with the code. Documents moved in step 4: ADR 090, and the parts of the
-  `assistant-ui/` README that describe the thread.
+  assistant UI README that describe the thread.
 
 Step 5:
 
@@ -380,8 +374,8 @@ Step 5:
   package: "Secrets are encrypted by the platform", "the platform's model catalog", "the Agent
   runtime".
 - The tests moved with the code, and a new one covers the sign-in polling. Documents moved in step
-  5: the parts of the `features/settings/` README that describe the screens, as the package's model
-  providers README.
+  5: the parts of the settings README that describe the screens, as the package's model providers
+  README.
 
 Step 6:
 
@@ -438,9 +432,9 @@ the same keys and shapes.
   Command Center has: readiness, held sends, the queue, model selection.
 - Independence is demonstrated by tooling and a running application, not by convention.
 - Command Center uses the package for its own chat, so the two cannot drift apart.
-- The `ChatProvider` split that the audit deferred happens here, along boundaries the code
+- The split of the chat provider that the audit deferred happens here, along boundaries the code
   already has. It and the thread restyle touch audited code; the steps are small, ordered, and
-  gated by about 250 tests.
+  gated by the chat's existing tests.
 - Buttons, badges, inputs and textareas come from the SDK's `/controls`. The package keeps its
   own select, dialog, password input, confirmation dialog, markdown renderer and notification
   surface, because the SDK publishes no equivalent (ADR 097).

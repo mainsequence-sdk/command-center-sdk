@@ -34,8 +34,8 @@ const connection = createChatBackendConnection({
 The rewrite exists because the platform API and the Agent's runtime answer browser requests only
 from the origins on their allow-lists. An application served from another origin reaches them
 through an address on its own origin that forwards the call, and the rewrite is where it says
-which one. Command Center uses it for its development proxy (`/__command_center_auth__`); the
-standalone application uses it for its own (`/__platform__`). The package never detects a
+which one. Command Center uses it for its development proxy, and the standalone application for
+its own (`/__platform__`). The package never detects a
 development build and never knows about a proxy.
 
 Every request goes through it. `connection.test.ts` holds each client to that, because one client

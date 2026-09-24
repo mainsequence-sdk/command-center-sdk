@@ -79,8 +79,7 @@ earlier versions stay readable.
   `hasVisibleAssistantOutput`. It is a separate context because the thinking summary changes on
   every reasoning chunk; only the components that render progress subscribe to it.
 
-An application may layer its own fields over the engine's value. Command Center's `ChatProvider`
-does, and its components read `useChatFeature()`.
+An application may layer its own fields over the engine's value, as Command Center does.
 
 ## Modules
 
