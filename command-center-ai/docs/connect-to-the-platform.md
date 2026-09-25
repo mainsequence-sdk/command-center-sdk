@@ -125,6 +125,9 @@ const connection = createChatBackendConnection({
 });
 ```
 
+`client.sendPlatformRequest` first shipped in Command Center SDK 0.5.5. Command Center AI accepts
+older SDK versions, so an embedded application needs SDK `^0.5.5`: upgrade an older one.
+
 `client` is the application's `createStaticSiteIframeClient(...)`, and `auth` is `{ userUid }` with
 the person's uid from the host's context. The host decides which platform paths it sends; the
 Command Center SDK's

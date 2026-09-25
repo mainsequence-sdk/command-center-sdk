@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the packaged agent skills and one guide. No API, route, payload, stylesheet,
+storage, or skill-namespace change, and no platform rollout.
+
+- An application embedded in Command Center needs Command Center SDK `^0.5.5`, the first release
+  with `client.sendPlatformRequest`, although this package accepts older SDK versions. The
+  `build-command-center-ai-application`, `connect-command-center-ai-to-the-platform`, and
+  `use-command-center-ai` skills and `docs/connect-to-the-platform.md` now say so, and to upgrade
+  an older SDK. Before, the architecture skill said to stop and report the sender as missing.
+
 ## 0.0.3
 
 Compatibility axes: the npm public API, additively (the connection's `sendPlatformRequest`, the

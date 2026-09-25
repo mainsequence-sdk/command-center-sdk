@@ -53,6 +53,9 @@ and `--json` prints the result for other tools.
 3. Import only `@dev-mainsequence/command-center-ai` and
    `@dev-mainsequence/command-center-ai/styles.css`. Never import `dist/`, `src/`, or a file inside
    the package.
+4. An application embedded in Command Center needs SDK `^0.5.5`, the first release with
+   `client.sendPlatformRequest`, although this package accepts older SDK versions. Read the version
+   in `node_modules/@dev-mainsequence/command-center-sdk/package.json` and upgrade an older one.
 
 ## Upgrade With The SDK
 

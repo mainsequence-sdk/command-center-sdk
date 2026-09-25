@@ -34,10 +34,11 @@ platform. The SDK owns the application's shell, pages, controls, and theme.
 5. **Which deployment.** The production case is an application embedded in Command Center through
    the SDK's static-site iframe, with Command Center AI running inside it. It holds no platform
    credential: its sender is the SDK's static-site client, `(request) =>
-   client.sendPlatformRequest(request)`, and Command Center sends each request as the person. If
-   the installed SDK has no `client.sendPlatformRequest`, stop and report that piece as missing,
-   and never pass another credential, such as a FastAPI release token, as the person's. A
-   standalone application on its own origin sends the requests itself, with the forwarder.
+   client.sendPlatformRequest(request)`, and Command Center sends each request as the person. An
+   embedded application needs SDK `^0.5.5`, the first release with `client.sendPlatformRequest`;
+   upgrade an older one. Never pass another credential, such as a FastAPI release token, as the
+   person's. A standalone application on its own origin sends the requests itself, with the
+   forwarder.
 6. **Controls, pages, and theme.** The application's own buttons, badges, and fields come from the
    SDK's `/controls` (`$compose-command-center-controls`), its pages from `/layout`
    (`$compose-command-center-page`), and its styling from SDK tokens checked by

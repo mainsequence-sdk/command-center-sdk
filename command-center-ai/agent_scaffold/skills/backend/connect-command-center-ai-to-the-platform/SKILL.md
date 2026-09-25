@@ -102,7 +102,8 @@ const connection = createChatBackendConnection({
 - Inside an application embedded in Command Center, the sender is the SDK's static-site client,
   `(request) => client.sendPlatformRequest(request)`. Command Center sends the request as the person;
   the application holds no platform credential. Its `apiBaseUrl` only builds request paths, so the
-  page's own origin works.
+  page's own origin works. This needs SDK `^0.5.5`, the first release with
+  `client.sendPlatformRequest`; upgrade an older one.
 - Never put a credential in a build variable (`VITE_*`), an environment file, the bundle, or browser
   storage. The standalone application keeps its token in memory only.
 - The runtime token: the package resolves runtime access for the session, through the sender, and
