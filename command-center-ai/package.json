@@ -1,6 +1,6 @@
 {
   "name": "@dev-mainsequence/command-center-ai",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": false,
   "description": "A chat for Main Sequence Agents: the connection to the platform, a session engine, the chat UI, and model provider settings, built on the Command Center SDK.",
   "type": "module",

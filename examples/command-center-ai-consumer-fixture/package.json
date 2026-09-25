@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@dev-mainsequence/command-center-ai": "^0.1.0",
-    "@dev-mainsequence/command-center-sdk": "^0.5.3",
+    "@dev-mainsequence/command-center-sdk": "^0.5.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "react": "^19.0.0",

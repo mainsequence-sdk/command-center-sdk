@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.3
 
 Compatibility axes: the npm public API, additively (the connection's `sendPlatformRequest`, the
 `ChatPlatformRequestSender` type, and an optional `ChatAuth.token`); the packaged agent skills

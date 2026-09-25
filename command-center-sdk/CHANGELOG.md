@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.5
 
 Compatibility axes: the `command-center.static_site_iframe@v1` protocol, with four additive
 messages; the `/embed` and `/embed/react` TypeScript API, additively; the protocol's JSON Schema and
@@ -21,10 +21,11 @@ theme, or storage change, and no backend change.
   host sends it only for its own current person, so a request sent just before a person change is
   refused with `access_denied` rather than sent for the new person. Only that uid, the method, the
   path and query, `accept`, `content-type`, and a text body go out, and only the status,
-  `content-type`, and the body (text for JSON and UTF-8 `text/*`, base64 otherwise) come back. The caps are paths of 4,096 characters, request bodies of 1 MiB, responses
-  of 8 MiB, and 16 requests in flight per child, past which the child queues. The host times out
-  at 60 seconds and the child at 65, reporting an older host's silence as `unsupported`. Live
-  streams are not bridged.
+  `content-type`, and the body (text for JSON and UTF-8 `text/*`, base64 otherwise) come back.
+  The caps are paths of 4,096 characters, request bodies of 1 MiB, responses of 8 MiB, and 16
+  requests in flight per child, past which the child queues. The host times out at 60 seconds
+  and the child at 65, reporting an older host's silence as `unsupported`. Live streams are not
+  bridged.
 
 - An agent asked for a chat or AI capabilities in an SDK application is now sent to the Command
   Center AI package: the two general skills and their guides (`getting-started.md`,
