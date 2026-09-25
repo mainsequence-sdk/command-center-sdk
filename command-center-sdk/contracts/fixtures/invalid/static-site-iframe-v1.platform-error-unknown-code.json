@@ -1,0 +1,9 @@
+{
+  "channel": "mainsequence.portfolio-dashboard",
+  "version": 1,
+  "type": "platform-error",
+  "payload": {
+    "requestId": "platform-request-1",
+    "code": "origin_not_allowed"
+  }
+}

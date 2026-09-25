@@ -6,7 +6,7 @@ handshake. It provides a framework-neutral host/client protocol and a React host
 ## Entry points
 
 - `/embed`: message types, parsers, host/client creation, origin resolution, delegated FastAPI
-  HTTP helpers, and native WebSocket ticket construction.
+  HTTP helpers, native WebSocket ticket construction, and platform requests sent through the host.
 - `/embed/react`: `StaticSiteIframe`.
 
 ## Required controls
@@ -18,6 +18,8 @@ handshake. It provides a framework-neutral host/client protocol and a React host
 - Resolve runtime credentials through a trusted host callback.
 - Resolve one-time WebSocket tickets through a separate trusted host callback; never reuse the
   HTTP credential.
+- Send the child's platform requests through a trusted host sender that serves only the paths the
+  host chooses; the child never holds a platform credential.
 - Enforce authorization, target scope, expiry, CORS, and origin policy in the backend.
 - Dispose listeners and reject late or duplicate responses.
 
@@ -44,11 +46,14 @@ child                         host
   ── WebSocket ticket request →
   ← ticket response/error ─────
   ── native WebSocket ─────────────────────────→ FastAPI release
+  ── platform request ────────→  host sender ──→ platform, as the person
+  ← platform response/error ───
+  ── platform cancel ─────────→
 ```
 
-Request IDs are correlated and replay-protected. Handshake and credential work have bounded
-timeouts. Disposing either endpoint removes its ability to accept later work; active host resolver
-calls receive an aborted signal.
+Request IDs are correlated and replay-protected. Handshake, credential, and platform request work
+have bounded timeouts. Disposing either endpoint removes its ability to accept later work; active
+host resolver and sender calls receive an aborted signal.
 
 ## React host
 
@@ -63,6 +68,7 @@ import { StaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed/rea
   userUid={session?.user.publicUid ?? null}
   resolveFastApiCredential={resolveFastApiCredential}
   resolveFastApiWebSocketTicket={resolveFastApiWebSocketTicket}
+  sendPlatformRequest={sendPlatformRequest}
   onProtocolError={reportProtocolError}
 />;
 ```
@@ -119,9 +125,59 @@ the reserved ticket first and `mainsequence.ws-bridge.v1` second. It returns the
 exposing a raw ticket. Neither reserved protocol reaches the FastAPI application; `socket.protocol` is the
 application-selected protocol or the fixed acknowledgement. Reconnects require a new method call.
 
+## Platform requests
+
+An embedded application never holds a platform credential. It hands `sendPlatformRequest` a
+standard Fetch `Request`; the host sends it as the signed-in person and the child receives a
+standard Fetch `Response`:
+
+```ts
+const host = createStaticSiteIframeHost({
+  // ...
+  sendPlatformRequest: async (request, { signal }) => {
+    if (!servesPlatformPath(request.method, request.path)) {
+      throw new StaticSitePlatformRequestError("not_allowed");
+    }
+    // The host's own authenticated fetch: it adds the host's credential and renews it.
+    return platformFetch(request.path, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+      signal,
+    });
+  },
+});
+
+const response = await client.sendPlatformRequest(new Request("/api/projects/", { signal }));
+```
+
+- Wire: `platform-request` (`requestId`, `method`, `path`, optional `headers` limited to `accept`
+  and `content-type`, optional text `body`), `platform-response` (`requestId`, `status`,
+  `headers` limited to `content-type`, `body`, `bodyEncoding` of `text` or `base64`),
+  `platform-error` (`requestId`, `code`), and `platform-cancel` (`requestId`).
+- Caps: a path and query of 4,096 characters; header values of 1,024; a request body of 1 MiB of
+  UTF-8; a response body of 8 MiB decoded, past which the answer is `unsupported`; 16 requests in
+  flight per child, which the client queues past and the host refuses past. Platform requests and
+  responses are exempt from `maxPayloadBytes`, which still bounds every other message.
+- The host calls the sender only for the person in its current context (`access_denied` without
+  one, `unsupported` without a sender), and aborts the sender's signal on `platform-cancel`, a
+  person change, a new handshake, a replaced sender (answered `temporarily_unavailable`), and
+  disposal. Its timeout is 60 seconds.
+- The client upper-cases the method, sends the URL's pathname and search, drops every other
+  header, and refuses what the rules exclude before sending. It cancels on `request.signal`,
+  rejects pending requests with `access_denied` on a person change, and reports a host that never
+  answers as `unsupported` after 65 seconds.
+- JSON and UTF-8 `text/*` bodies travel as text and every other body as base64; the child's
+  `Response` holds the exact bytes, the status, and the content type, and nothing else.
+- The bridge does not stream: live streams are not bridged.
+
 ## Failure model
 
-Credential resolver failures are reduced to `StaticSiteFastApiCredentialError` codes. Transport
+Credential resolver failures are reduced to `StaticSiteFastApiCredentialError` codes, and platform
+request failures to `StaticSitePlatformRequestError` codes: `invalid_request`, `access_denied`,
+`not_allowed`, `temporarily_unavailable`, and `unsupported`. A sender's failure that is not a
+`StaticSitePlatformRequestError` becomes `temporarily_unavailable` without its message. A status
+below 200 cannot be a Fetch `Response` and is `unsupported` on the child. Transport
 state distinguishes authorization, runtime start, ready, expiry, authentication failure,
 forbidden, missing route, transient, cancelled, unavailable, unsupported, and invalid. Do not
 serialize raw credentials or backend diagnostic bodies into errors.
@@ -146,6 +202,9 @@ application/backend idempotency contract.
   disposal.
 - ADR SDK-005 defines the implemented WebSocket contract. Its message fields, reserved protocol
   constants, ordering, cancellation, and no-retry behavior are compatibility boundaries.
+- ADR SDK-013 defines the platform request bridge. Its message fields, error codes, caps, the
+  body-encoding rule, and the child's unsupported-on-silence behavior are compatibility
+  boundaries. The SDK names no platform path; the host's sender owns the allow-list.
 
 See `docs/static-site-embeds.md` for the complete integration guide and `THREAT_MODEL.md` for the
 assets, adversaries, and required controls.

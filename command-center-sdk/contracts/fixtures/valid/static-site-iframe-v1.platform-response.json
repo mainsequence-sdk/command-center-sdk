@@ -1,0 +1,14 @@
+{
+  "channel": "mainsequence.portfolio-dashboard",
+  "version": 1,
+  "type": "platform-response",
+  "payload": {
+    "requestId": "platform-request-1",
+    "status": 200,
+    "headers": {
+      "content-type": "application/json"
+    },
+    "body": "{\"results\":[]}",
+    "bodyEncoding": "text"
+  }
+}

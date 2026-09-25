@@ -22,6 +22,7 @@ owning application repositories; backend implementation decisions are out of sco
 - [SDK ADR 009: Opinionated Embedded Application Shell](./adr-sdk-009-opinionated-embedded-application-shell.md) — Accepted
 - [SDK ADR 010: Host Navigation Drawer and the Wide-Screen Embedded Frame](./adr-sdk-010-host-navigation-drawer-and-wide-screen-embedded-frame.md) — Accepted
 - [SDK ADR 011: Public Control and Form Primitives](./adr-sdk-011-public-control-and-form-primitives.md) — Accepted
+- [SDK ADR 013: Static-Site Platform Request Bridge](./adr-sdk-013-static-site-platform-request-bridge.md) — Accepted
 
 ## Rules
 

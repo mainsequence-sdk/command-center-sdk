@@ -4,5 +4,10 @@
     "noEmit": true,
     "rootDir": "../.."
   },
-  "include": ["./embed-websocket.ts", "./layout-playwright.ts", "./navigation-playwright.ts"]
+  "include": [
+    "./embed-platform-request.ts",
+    "./embed-websocket.ts",
+    "./layout-playwright.ts",
+    "./navigation-playwright.ts"
+  ]
 }

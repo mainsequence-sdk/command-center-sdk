@@ -1,6 +1,6 @@
 ---
 name: integrate-static-site-iframe
-description: Build, migrate, review, or secure a Command Center static site in local Vite/FastAPI development, a non-local trusted iframe, or a non-local direct link. Use to choose the API transport and identity source, set up the local runner and same-origin proxy, or implement the mainsequence.* handshake and delegated FastAPI access.
+description: Build, migrate, review, or secure a Command Center static site in local Vite/FastAPI development, a non-local trusted iframe, or a non-local direct link. Use to choose the API transport and identity source, set up the local runner and same-origin proxy, or implement the mainsequence.* handshake, delegated FastAPI access, and platform requests sent through the host.
 ---
 
 # Integrate A Static Site And Its API
@@ -141,6 +141,34 @@ Reject application protocol values beginning with the reserved `mainsequence.ws-
 targets. A direct-link or old-host timeout is `unsupported`; a CSP or native handshake failure is
 reported through WebSocket events after construction.
 
+### Send platform requests through the host
+
+When the child needs the platform itself rather than a FastAPI release, send the request through
+the host with `client.sendPlatformRequest(request)` after the first `onContext`. It takes a
+standard Fetch `Request` and resolves a standard Fetch `Response`; the host sends it as the
+signed-in person with its own credential:
+
+```ts
+const response = await client.sendPlatformRequest(
+  new Request("/api/projects/?limit=20", { headers: { accept: "application/json" }, signal }),
+);
+
+// For code that takes a fetch function:
+const fetchThroughHost = (input: RequestInfo | URL, init?: RequestInit) =>
+  client.sendPlatformRequest(new Request(input, init));
+```
+
+Never ask the host, the URL, storage, or configuration for a platform token, and never set an
+`Authorization` header: the SDK drops every header except `accept` and `content-type`. Only the
+method (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`), the path and query, and a text body of at most 1
+MiB cross; the response carries the status, `content-type`, and a body of at most 8 MiB, and no
+other header. Pass `signal` to cancel. Handle `StaticSitePlatformRequestError.code`:
+`not_allowed` (the host does not serve that path or method), `access_denied`,
+`temporarily_unavailable` (retry later), `invalid_request`, and `unsupported` (no sender, a
+response over 8 MiB, or an older host that never answers within 65 seconds; show the feature as
+unavailable and do not retry). An HTTP error status arrives as a normal `Response`. The bridge
+does not stream, so live streams need another transport.
+
 ## Build The Host
 
 Prefer `StaticSiteIframe` from `/embed/react`. Supply the authorized launch URL, current theme ID
@@ -167,6 +195,16 @@ retry. Validate the returned UID, Origin, path, WebSocket URL, RFC 3339 expiry, 
 `StaticSiteFastApiWebSocketTicket`. Map failures only to `StaticSiteFastApiWebSocketError` codes;
 never return raw backend bodies. Do not reuse the HTTP credential or a Command Center WebSocket
 ticket issued for another purpose.
+
+When child applications need the platform, inject `sendPlatformRequest(request, { signal,
+userUid })`. Serve only the paths and methods the child needs: compare the path before `?` against
+prefixes ending in `/`, throw `StaticSitePlatformRequestError("not_allowed")` for anything else,
+and send the rest with the host's own authenticated fetch against the platform, passing `method`,
+`headers`, `body`, and `signal` and adding the host's credential. Never return the host's
+credential or a raw failure to the child: throw `access_denied` when the host cannot send as the
+person, and let any other failure become `temporarily_unavailable`. Keep the sender stable (for
+example with `useCallback`); replacing it abandons the requests in flight. Omit it when the
+capability is unavailable, and the SDK answers `unsupported`.
 
 Review any change to the component's default sandbox. Add popups, downloads, modals, or navigation
 only when required and security-reviewed. Keep production origins on exact HTTPS values and align
@@ -211,3 +249,8 @@ protocols, acknowledgement fallback, application selection, omitted/duplicate re
 failure, bidirectional messages, close handling, and reconnect with a fresh ticket. Use a real
 browser and confirm the ticket never appears in URLs, storage, DOM, logs, analytics, errors, or the
 FastAPI-visible protocol list.
+
+For platform requests, test the host's allow-list (`not_allowed` for other paths and methods),
+JSON and binary responses, cancellation reaching the host's fetch, a user change, an older host's
+`unsupported`, and that the platform receives only the host's origin and credential while no
+platform credential reaches the child.

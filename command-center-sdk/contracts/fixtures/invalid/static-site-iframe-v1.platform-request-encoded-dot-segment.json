@@ -1,0 +1,10 @@
+{
+  "channel": "mainsequence.portfolio-dashboard",
+  "version": 1,
+  "type": "platform-request",
+  "payload": {
+    "requestId": "platform-request-1",
+    "method": "GET",
+    "path": "/api/projects/%2e%2e/users/"
+  }
+}

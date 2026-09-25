@@ -30,7 +30,17 @@
           "fixtures/valid/static-site-iframe-v1.fastapi-websocket-origin-not-allowed.json",
           "fixtures/valid/static-site-iframe-v1.fastapi-websocket-release-unavailable.json",
           "fixtures/valid/static-site-iframe-v1.fastapi-websocket-temporarily-unavailable.json",
-          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-unsupported.json"
+          "fixtures/valid/static-site-iframe-v1.fastapi-websocket-unsupported.json",
+          "fixtures/valid/static-site-iframe-v1.platform-request.json",
+          "fixtures/valid/static-site-iframe-v1.platform-request-with-body.json",
+          "fixtures/valid/static-site-iframe-v1.platform-response.json",
+          "fixtures/valid/static-site-iframe-v1.platform-response-base64.json",
+          "fixtures/valid/static-site-iframe-v1.platform-error-invalid-request.json",
+          "fixtures/valid/static-site-iframe-v1.platform-error-access-denied.json",
+          "fixtures/valid/static-site-iframe-v1.platform-error-not-allowed.json",
+          "fixtures/valid/static-site-iframe-v1.platform-error-temporarily-unavailable.json",
+          "fixtures/valid/static-site-iframe-v1.platform-error-unsupported.json",
+          "fixtures/valid/static-site-iframe-v1.platform-cancel.json"
         ],
         "invalid": [
           "fixtures/invalid/static-site-iframe-v1.wrong-version.json",
@@ -44,7 +54,17 @@
           "fixtures/invalid/static-site-iframe-v1.websocket-invalid-path.json",
           "fixtures/invalid/static-site-iframe-v1.websocket-invalid-url.json",
           "fixtures/invalid/static-site-iframe-v1.websocket-invalid-expiry.json",
-          "fixtures/invalid/static-site-iframe-v1.websocket-invalid-subprotocol.json"
+          "fixtures/invalid/static-site-iframe-v1.websocket-invalid-subprotocol.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-request-credential-header.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-request-absolute-url.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-request-dot-segment.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-request-encoded-dot-segment.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-request-get-with-body.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-request-unknown-method.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-response-extra-header.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-response-invalid-status.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-response-invalid-base64.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-error-unknown-code.json"
         ]
       }
     },

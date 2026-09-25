@@ -110,6 +110,7 @@ try {
   assert.equal(typeof embedModule.createStaticSiteIframeClient, "function");
   assert.equal(typeof embedModule.StaticSiteFastApiCredentialError, "function");
   assert.equal(typeof embedModule.StaticSiteFastApiWebSocketError, "function");
+  assert.equal(typeof embedModule.StaticSitePlatformRequestError, "function");
   assert.equal(
     embedModule.STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL,
     "mainsequence.ws-bridge.v1",
@@ -119,10 +120,12 @@ try {
     embedModule.STATIC_SITE_IFRAME_CONTRACT,
     "command-center.static_site_iframe@v1",
   );
-  assert.match(
-    await readFile(join(extractedPackage, "dist", "embed", "static-site.d.ts"), "utf8"),
-    /createFastApiWebSocket/u,
+  const embedDeclarations = await readFile(
+    join(extractedPackage, "dist", "embed", "static-site.d.ts"),
+    "utf8",
   );
+  assert.match(embedDeclarations, /createFastApiWebSocket/u);
+  assert.match(embedDeclarations, /sendPlatformRequest\(request: Request\): Promise<Response>/u);
   const resourceModule = await import(
     pathToFileURL(join(extractedPackage, "dist", "resource", "index.js")).href
   );

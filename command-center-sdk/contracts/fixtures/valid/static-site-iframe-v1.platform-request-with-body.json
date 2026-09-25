@@ -1,0 +1,15 @@
+{
+  "channel": "mainsequence.portfolio-dashboard",
+  "version": 1,
+  "type": "platform-request",
+  "payload": {
+    "requestId": "platform-request-2",
+    "method": "POST",
+    "path": "/api/projects/",
+    "headers": {
+      "accept": "application/json",
+      "content-type": "application/json"
+    },
+    "body": "{\"name\":\"Q3 review\"}"
+  }
+}

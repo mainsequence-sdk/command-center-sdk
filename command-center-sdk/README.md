@@ -134,7 +134,8 @@ error normalization stay outside the resource definition.
 - `/theme`, `/theme/presets`, and `/theme/data-viz`: presets, CSS variables, density, surfaces, and
   chart palettes.
 - `/embed` and `/embed/react`: application-owned static-site iframe APIs for public context,
-  delegated FastAPI HTTP access, and native one-time-ticket WebSocket connections.
+  delegated FastAPI HTTP access, native one-time-ticket WebSocket connections, and platform
+  requests the host sends as the signed-in person.
 - `/styles.css` and `/theme/*.css`: browser-ready styles.
 
 Import only declared package exports. Do not import `dist` files or repository source paths.

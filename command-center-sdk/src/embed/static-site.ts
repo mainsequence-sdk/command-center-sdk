@@ -31,6 +31,25 @@ const WEBSOCKET_TICKET_SUBPROTOCOL_PATTERN =
 const WEBSOCKET_APPLICATION_PROTOCOL_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/u;
 const FAST_API_STARTING_STATUSES = new Set([502, 503, 504]);
 const FAST_API_DEFAULT_RETRY_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
+const DEFAULT_PLATFORM_REQUEST_HOST_TIMEOUT_MS = 60_000;
+// Longer than the host's, so a client timeout means the host never answered: an older host.
+const DEFAULT_PLATFORM_REQUEST_CLIENT_TIMEOUT_MS = 65_000;
+// Per child. The client queues past it; the host refuses past it with temporarily_unavailable.
+const MAX_PLATFORM_REQUESTS_IN_FLIGHT = 16;
+const MAX_PLATFORM_PATH_LENGTH = 4_096;
+const MAX_PLATFORM_HEADER_VALUE_LENGTH = 1_024;
+const MAX_PLATFORM_REQUEST_BODY_BYTES = 1_048_576;
+const MAX_PLATFORM_RESPONSE_BODY_BYTES = 8_388_608;
+const MAX_PLATFORM_RESPONSE_BASE64_LENGTH = 4 * Math.ceil(MAX_PLATFORM_RESPONSE_BODY_BYTES / 3);
+// A multiple of three, so the base64 of consecutive chunks concatenates without inner padding.
+const BASE64_CHUNK_BYTES = 24_576;
+const PLATFORM_REQUEST_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
+const PLATFORM_REQUEST_HEADER_NAMES = ["accept", "content-type"] as const;
+const PLATFORM_RESPONSE_HEADER_NAMES = ["content-type"] as const;
+// Printable ASCII the URL parser leaves in a path or query, without `"`, `#`, `<`, `>`, or `\`.
+const PLATFORM_PATH_PATTERN = /^\/[A-Za-z0-9._~!$&'()*+,;=:@/?%\[\]^`{|}-]*$/u;
+const PLATFORM_HEADER_VALUE_PATTERN = /^[!-~](?:[ -~]*[!-~])?$/u;
+const PLATFORM_NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
 
 export type StaticSiteIframeChannel = `${typeof STATIC_SITE_IFRAME_CHANNEL_PREFIX}${string}`;
 export type StaticSiteIframeThemeMode = "dark" | "light";
@@ -171,6 +190,56 @@ export type ResolveStaticSiteFastApiWebSocketTicket = (
   context: StaticSiteFastApiWebSocketResolverContext,
 ) => Promise<StaticSiteFastApiWebSocketTicket>;
 
+export type StaticSitePlatformRequestMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+/** The only request headers that cross the bridge. A credential never does. */
+export type StaticSitePlatformRequestHeaders = {
+  accept?: string;
+  "content-type"?: string;
+};
+
+/** The only response header that crosses the bridge. */
+export type StaticSitePlatformResponseHeaders = {
+  "content-type"?: string;
+};
+
+/** `text` for JSON and UTF-8 `text/*` bodies, `base64` for every other body. */
+export type StaticSitePlatformResponseBodyEncoding = "text" | "base64";
+
+export type StaticSitePlatformRequestErrorCode =
+  | "invalid_request"
+  | "access_denied"
+  | "not_allowed"
+  | "temporarily_unavailable"
+  | "unsupported";
+
+/** A platform request from the child, as the host's sender receives it. */
+export interface StaticSitePlatformRequest {
+  method: StaticSitePlatformRequestMethod;
+  /** An absolute path with an optional query, such as `/api/items/?limit=20`. */
+  path: string;
+  headers: StaticSitePlatformRequestHeaders;
+  /** Text; absent when the request has no body. */
+  body?: string;
+}
+
+export interface StaticSitePlatformRequestSenderContext {
+  /** Aborted when the host abandons the request. */
+  signal: AbortSignal;
+  /** The signed-in person in the host's current context: send the request as them. */
+  userUid: string;
+}
+
+/**
+ * Sends a child's platform request as the signed-in person, typically with the host's own
+ * authenticated fetch, and returns the platform's response. It refuses a path or method the host
+ * does not serve by throwing `StaticSitePlatformRequestError("not_allowed")`.
+ */
+export type SendStaticSitePlatformRequest = (
+  request: StaticSitePlatformRequest,
+  context: StaticSitePlatformRequestSenderContext,
+) => Promise<Response>;
+
 export interface StaticSiteFastApiCredentialRequestMessage {
   channel: StaticSiteIframeChannel;
   version: typeof STATIC_SITE_IFRAME_PROTOCOL_VERSION;
@@ -253,6 +322,51 @@ export interface StaticSiteFastApiWebSocketTicketErrorMessage {
   };
 }
 
+export interface StaticSitePlatformRequestMessage {
+  channel: StaticSiteIframeChannel;
+  version: typeof STATIC_SITE_IFRAME_PROTOCOL_VERSION;
+  type: "platform-request";
+  payload: {
+    requestId: string;
+    method: StaticSitePlatformRequestMethod;
+    path: string;
+    headers?: StaticSitePlatformRequestHeaders;
+    body?: string;
+  };
+}
+
+export interface StaticSitePlatformResponseMessage {
+  channel: StaticSiteIframeChannel;
+  version: typeof STATIC_SITE_IFRAME_PROTOCOL_VERSION;
+  type: "platform-response";
+  payload: {
+    requestId: string;
+    status: number;
+    headers: StaticSitePlatformResponseHeaders;
+    body: string;
+    bodyEncoding: StaticSitePlatformResponseBodyEncoding;
+  };
+}
+
+export interface StaticSitePlatformErrorMessage {
+  channel: StaticSiteIframeChannel;
+  version: typeof STATIC_SITE_IFRAME_PROTOCOL_VERSION;
+  type: "platform-error";
+  payload: {
+    requestId: string;
+    code: StaticSitePlatformRequestErrorCode;
+  };
+}
+
+export interface StaticSitePlatformCancelMessage {
+  channel: StaticSiteIframeChannel;
+  version: typeof STATIC_SITE_IFRAME_PROTOCOL_VERSION;
+  type: "platform-cancel";
+  payload: {
+    requestId: string;
+  };
+}
+
 export type StaticSiteIframeMessage =
   | StaticSiteIframeReadyMessage
   | StaticSiteIframeInitializeMessage
@@ -262,7 +376,11 @@ export type StaticSiteIframeMessage =
   | StaticSiteFastApiWebSocketTicketRequestMessage
   | StaticSiteFastApiWebSocketTicketCancelMessage
   | StaticSiteFastApiWebSocketTicketResponseMessage
-  | StaticSiteFastApiWebSocketTicketErrorMessage;
+  | StaticSiteFastApiWebSocketTicketErrorMessage
+  | StaticSitePlatformRequestMessage
+  | StaticSitePlatformResponseMessage
+  | StaticSitePlatformErrorMessage
+  | StaticSitePlatformCancelMessage;
 
 export class StaticSiteFastApiCredentialError extends Error {
   readonly code: StaticSiteFastApiCredentialErrorCode;
@@ -284,16 +402,29 @@ export class StaticSiteFastApiWebSocketError extends Error {
   }
 }
 
+export class StaticSitePlatformRequestError extends Error {
+  readonly code: StaticSitePlatformRequestErrorCode;
+
+  constructor(code: StaticSitePlatformRequestErrorCode, message?: string) {
+    super(message ?? staticSitePlatformRequestErrorMessage(code));
+    this.name = "StaticSitePlatformRequestError";
+    this.code = code;
+  }
+}
+
 export interface StaticSiteIframeHostOptions {
   targetOrigin: string;
   targetWindow: Pick<Window, "postMessage">;
   context: StaticSiteIframeContextInput;
   resolveFastApiCredential?: ResolveStaticSiteFastApiCredential;
   resolveFastApiWebSocketTicket?: ResolveStaticSiteFastApiWebSocketTicket;
+  /** Sends the child's platform requests; without it, they are `unsupported`. */
+  sendPlatformRequest?: SendStaticSitePlatformRequest;
   maxPayloadBytes?: number;
   handshakeTimeoutMs?: number;
   credentialRequestTimeoutMs?: number;
   webSocketTicketRequestTimeoutMs?: number;
+  platformRequestTimeoutMs?: number;
   onReady?: (message: StaticSiteIframeReadyMessage) => void;
   onProtocolError?: (message: string) => void;
 }
@@ -305,6 +436,7 @@ export interface StaticSiteIframeHost {
   updateFastApiWebSocketTicketResolver(
     resolver?: ResolveStaticSiteFastApiWebSocketTicket,
   ): void;
+  updatePlatformRequestSender(sender?: SendStaticSitePlatformRequest): void;
   dispose(): void;
   readonly channel: StaticSiteIframeChannel | null;
   readonly ready: boolean;
@@ -317,6 +449,7 @@ export interface StaticSiteIframeClientOptions {
   maxPayloadBytes?: number;
   credentialRequestTimeoutMs?: number;
   webSocketTicketRequestTimeoutMs?: number;
+  platformRequestTimeoutMs?: number;
   credentialRefreshSkewMs?: number;
   fastApiRetryPolicy?: false | StaticSiteFastApiRetryPolicy;
   fetcher?: typeof fetch;
@@ -339,6 +472,13 @@ export interface StaticSiteIframeClient {
   ): Promise<WebSocket>;
   getFastApiState(resourceReleaseUid: string): StaticSiteFastApiTransportState;
   clearFastApiCredentials(): void;
+  /**
+   * Sends a platform request through the host, which sends it as the signed-in person and returns
+   * the platform's response. Only the method, the path and query, `accept`, `content-type`, and a
+   * text body cross the bridge; the response carries the status, `content-type`, and the body.
+   * Aborting `request.signal` cancels it.
+   */
+  sendPlatformRequest(request: Request): Promise<Response>;
   dispose(): void;
 }
 
@@ -371,6 +511,18 @@ interface ActiveHostWebSocketTicketRequest {
   targetUid: string;
   path: string;
 }
+
+interface PendingPlatformRequest {
+  requestId: string;
+  message: StaticSitePlatformRequestMessage;
+  /** Set once the request is sent; a queued request has none. */
+  timeout?: ReturnType<typeof setTimeout>;
+  removeAbortListener: () => void;
+  resolve: (response: Response) => void;
+  reject: (error: Error) => void;
+}
+
+type StaticSitePlatformResponse = Omit<StaticSitePlatformResponseMessage["payload"], "requestId">;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -526,6 +678,361 @@ function requireStaticSiteFastApiWebSocketPath(value: unknown): string {
     throw new Error("FastAPI WebSocket path must be a safe absolute ASCII path.");
   }
   return path;
+}
+
+function isPlatformRequestErrorCode(value: unknown): value is StaticSitePlatformRequestErrorCode {
+  return [
+    "invalid_request",
+    "access_denied",
+    "not_allowed",
+    "temporarily_unavailable",
+    "unsupported",
+  ].includes(String(value));
+}
+
+function staticSitePlatformRequestErrorMessage(code: StaticSitePlatformRequestErrorCode): string {
+  switch (code) {
+    case "invalid_request":
+      return "The platform request is invalid.";
+    case "access_denied":
+      return "The host cannot send this platform request as the signed-in person.";
+    case "not_allowed":
+      return "The host does not serve this platform path or method.";
+    case "temporarily_unavailable":
+      return "The platform request is temporarily unavailable.";
+    case "unsupported":
+      return "The host does not support this platform request.";
+  }
+}
+
+function isPlatformRequestMethod(value: unknown): value is StaticSitePlatformRequestMethod {
+  return typeof value === "string" && PLATFORM_REQUEST_METHODS.has(value);
+}
+
+function readPlatformRequestId(value: unknown): string | null {
+  // The length check first keeps an oversized value from being scanned.
+  return typeof value === "string" && value.length <= 128 ? readExactRequestId(value) : null;
+}
+
+/**
+ * An absolute path with an optional query, as the URL parser serializes one: printable ASCII, well
+ * formed percent-encoding, and no fragment or backslash. The path part has no empty segment (so
+ * no `//` prefix), no dot segment even percent-encoded, and no encoded slash or backslash, so a
+ * host allow-list that compares path prefixes compares the path the platform routes.
+ */
+function readStaticSitePlatformPath(value: unknown): string | null {
+  if (typeof value !== "string" || value.length > MAX_PLATFORM_PATH_LENGTH) return null;
+  if (!PLATFORM_PATH_PATTERN.test(value) || /%(?![0-9A-Fa-f]{2})/u.test(value)) return null;
+  const queryStart = value.indexOf("?");
+  const pathPart = queryStart === -1 ? value : value.slice(0, queryStart);
+  if (pathPart.includes("//") || /%(?:2f|5c)/iu.test(pathPart)) return null;
+  if (pathPart.split("/").some((segment) => /^(?:\.|%2e){1,2}$/iu.test(segment))) return null;
+  return value;
+}
+
+function readPlatformHeaderValue(value: unknown): string | null {
+  return typeof value === "string" &&
+    value.length <= MAX_PLATFORM_HEADER_VALUE_LENGTH &&
+    PLATFORM_HEADER_VALUE_PATTERN.test(value)
+    ? value
+    : null;
+}
+
+/** Only the named headers, each a printable ASCII value; an `undefined` value counts as absent. */
+function readPlatformHeaders<Name extends string>(
+  value: unknown,
+  names: readonly Name[],
+): Partial<Record<Name, string>> | null {
+  if (!isRecord(value) || !hasOnlyKeys(value, names)) return null;
+  const headers: Partial<Record<Name, string>> = {};
+  for (const name of names) {
+    if (value[name] === undefined) continue;
+    const header = readPlatformHeaderValue(value[name]);
+    if (!header) return null;
+    headers[name] = header;
+  }
+  return headers;
+}
+
+/** Whether the UTF-8 encoding of `value` fits in `maxBytes`, without encoding it. */
+function fitsUtf8ByteLength(value: string, maxBytes: number): boolean {
+  // Every UTF-16 code unit takes at least one UTF-8 byte.
+  if (value.length > maxBytes) return false;
+  let bytes = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code < 0x80) {
+      bytes += 1;
+    } else if (code < 0x800) {
+      bytes += 2;
+    } else if (code >= 0xd800 && code <= 0xdbff && index + 1 < value.length) {
+      const next = value.charCodeAt(index + 1);
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        bytes += 4;
+        index += 1;
+      } else {
+        bytes += 3;
+      }
+    } else {
+      bytes += 3;
+    }
+    if (bytes > maxBytes) return false;
+  }
+  return true;
+}
+
+function readPlatformRequestBody(value: unknown): string | null {
+  return typeof value === "string" && fitsUtf8ByteLength(value, MAX_PLATFORM_REQUEST_BODY_BYTES)
+    ? value
+    : null;
+}
+
+/** The decoded length of canonical padded base64, or null for anything else. */
+function readBase64DecodedLength(value: string): number | null {
+  if (value.length % 4 !== 0) return null;
+  const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
+  for (let index = 0; index < value.length - padding; index += 1) {
+    const code = value.charCodeAt(index);
+    const inAlphabet =
+      (code >= 0x41 && code <= 0x5a) ||
+      (code >= 0x61 && code <= 0x7a) ||
+      (code >= 0x30 && code <= 0x39) ||
+      code === 0x2b ||
+      code === 0x2f;
+    if (!inAlphabet) return null;
+  }
+  return (value.length / 4) * 3 - padding;
+}
+
+function readPlatformResponseBody(
+  value: unknown,
+  encoding: StaticSitePlatformResponseBodyEncoding,
+): string | null {
+  if (typeof value !== "string") return null;
+  if (encoding === "text") {
+    return fitsUtf8ByteLength(value, MAX_PLATFORM_RESPONSE_BODY_BYTES) ? value : null;
+  }
+  if (value.length > MAX_PLATFORM_RESPONSE_BASE64_LENGTH) return null;
+  const decodedLength = readBase64DecodedLength(value);
+  return decodedLength !== null && decodedLength <= MAX_PLATFORM_RESPONSE_BODY_BYTES ? value : null;
+}
+
+function isPlatformResponseStatus(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 100 && value <= 599;
+}
+
+function isPlatformResponseBodyEncoding(
+  value: unknown,
+): value is StaticSitePlatformResponseBodyEncoding {
+  return value === "text" || value === "base64";
+}
+
+/** Strict UTF-8 that keeps a byte-order mark, so re-encoding the text restores the exact bytes. */
+function decodeUtf8Exactly(bytes: Uint8Array): string | null {
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
+function encodeBase64(bytes: Uint8Array): string {
+  const chunks: string[] = [];
+  for (let offset = 0; offset < bytes.byteLength; offset += BASE64_CHUNK_BYTES) {
+    chunks.push(btoa(String.fromCharCode(...bytes.subarray(offset, offset + BASE64_CHUNK_BYTES))));
+  }
+  return chunks.join("");
+}
+
+function decodeBase64(value: string): Uint8Array<ArrayBuffer> {
+  const binary = atob(value);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+/** JSON and `text/*` travel as text when their charset is UTF-8 (or unstated); nothing else does. */
+function isTextualContentType(contentType: string | null): boolean {
+  if (!contentType) return false;
+  const [essence = "", ...parameters] = contentType.split(";");
+  const mediaType = essence.trim().toLowerCase();
+  if (
+    mediaType !== "application/json" &&
+    !/^application\/[^/\s]+\+json$/u.test(mediaType) &&
+    !/^text\/[^/\s]+$/u.test(mediaType)
+  ) {
+    return false;
+  }
+  return parameters.every((parameter) => {
+    const separator = parameter.indexOf("=");
+    if (separator === -1 || parameter.slice(0, separator).trim().toLowerCase() !== "charset") {
+      return true;
+    }
+    const charset = parameter
+      .slice(separator + 1)
+      .trim()
+      .replace(/^"(.*)"$/u, "$1")
+      .toLowerCase();
+    return charset === "utf-8" || charset === "utf8";
+  });
+}
+
+function isResponseLike(value: unknown): value is Response {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as Response).status === "number" &&
+    typeof (value as Response).headers?.get === "function" &&
+    typeof (value as Response).arrayBuffer === "function"
+  );
+}
+
+function discardResponseBody(value: unknown): void {
+  try {
+    if (isResponseLike(value) && value.body && !value.bodyUsed) {
+      void value.body.cancel().catch(() => undefined);
+    }
+  } catch {
+    // A body that cannot be cancelled is left to garbage collection.
+  }
+}
+
+/** The body's bytes, read up to the response cap; past it the answer is `unsupported`. */
+async function readPlatformResponseBytes(
+  response: Response,
+  signal: AbortSignal,
+): Promise<Uint8Array<ArrayBuffer>> {
+  const stream = response.body;
+  if (stream === null) return new Uint8Array(new ArrayBuffer(0));
+  if (!stream || typeof stream.getReader !== "function") {
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength > MAX_PLATFORM_RESPONSE_BODY_BYTES) {
+      throw new StaticSitePlatformRequestError("unsupported");
+    }
+    return new Uint8Array(buffer);
+  }
+  const reader = stream.getReader();
+  const cancel = () => {
+    void reader.cancel().catch(() => undefined);
+  };
+  signal.addEventListener("abort", cancel, { once: true });
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      if (signal.aborted) throw createAbortError("The platform request was cancelled.");
+      const { done, value } = await reader.read();
+      if (done) break;
+      // A realm-independent check: the Response may come from another frame.
+      if (!ArrayBuffer.isView(value)) throw new Error("The platform response body is not bytes.");
+      total += value.byteLength;
+      if (total > MAX_PLATFORM_RESPONSE_BODY_BYTES) {
+        cancel();
+        throw new StaticSitePlatformRequestError("unsupported");
+      }
+      chunks.push(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
+    }
+  } finally {
+    signal.removeEventListener("abort", cancel);
+  }
+  if (signal.aborted) throw createAbortError("The platform request was cancelled.");
+  const bytes = new Uint8Array(new ArrayBuffer(total));
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
+/** Reads the sender's Response into the wire answer, choosing the body encoding. */
+async function readStaticSitePlatformResponse(
+  value: unknown,
+  signal: AbortSignal,
+): Promise<StaticSitePlatformResponse> {
+  // A network error or an opaque response has status 0; neither is a platform answer.
+  if (
+    !isResponseLike(value) ||
+    !Number.isInteger(value.status) ||
+    value.status < 200 ||
+    value.status > 599
+  ) {
+    discardResponseBody(value);
+    throw new Error("The platform request sender did not return a usable Response.");
+  }
+  const contentType = readPlatformHeaderValue(value.headers.get("content-type"));
+  const bytes = await readPlatformResponseBytes(value, signal);
+  const text = isTextualContentType(contentType) ? decodeUtf8Exactly(bytes) : null;
+  return {
+    status: value.status,
+    headers: contentType ? { "content-type": contentType } : {},
+    ...(text === null
+      ? { body: encodeBase64(bytes), bodyEncoding: "base64" as const }
+      : { body: text, bodyEncoding: "text" as const }),
+  };
+}
+
+/** The Fetch Response the child receives: status, `content-type`, and the decoded body. */
+function createStaticSitePlatformResponse(answer: StaticSitePlatformResponse): Response {
+  const headers = new Headers();
+  const contentType = answer.headers["content-type"];
+  if (contentType) headers.set("content-type", contentType);
+  const body = PLATFORM_NULL_BODY_STATUSES.has(answer.status)
+    ? null
+    : answer.bodyEncoding === "base64"
+      ? decodeBase64(answer.body)
+      : answer.body;
+  // The Fetch API cannot represent a status below 200; the caller reports that as unsupported.
+  return new Response(body, { status: answer.status, headers });
+}
+
+/** The wire form of a child's Fetch Request, or `invalid_request`. */
+async function serializeStaticSitePlatformRequest(
+  request: Request,
+): Promise<StaticSitePlatformRequest> {
+  const invalid = () => new StaticSitePlatformRequestError("invalid_request");
+  if (
+    typeof request !== "object" ||
+    request === null ||
+    typeof request.url !== "string" ||
+    typeof request.method !== "string" ||
+    typeof request.headers?.get !== "function"
+  ) {
+    throw invalid();
+  }
+  // The Fetch API upper-cases only some methods; `patch` stays lower-case.
+  const method = request.method.toUpperCase();
+  if (!isPlatformRequestMethod(method)) throw invalid();
+  let url: URL;
+  try {
+    url = new URL(request.url);
+  } catch {
+    throw invalid();
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") throw invalid();
+  // The URL's origin and fragment stay behind: the host decides where the request goes.
+  const path = readStaticSitePlatformPath(`${url.pathname}${url.search}`);
+  if (!path) throw invalid();
+  const headers: StaticSitePlatformRequestHeaders = {};
+  for (const name of PLATFORM_REQUEST_HEADER_NAMES) {
+    const value = request.headers.get(name);
+    if (value === null) continue;
+    const header = readPlatformHeaderValue(value);
+    if (!header) throw invalid();
+    headers[name] = header;
+  }
+  if (method === "GET" || request.body === null) return { method, path, headers };
+  if (request.bodyUsed) throw invalid();
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await request.arrayBuffer());
+  } catch {
+    throw invalid();
+  }
+  if (bytes.byteLength > MAX_PLATFORM_REQUEST_BODY_BYTES) throw invalid();
+  const body = decodeUtf8Exactly(bytes);
+  if (body === null) throw invalid();
+  return { method, path, headers, body };
 }
 
 function readRfc3339FutureTimestamp(value: unknown, now = Date.now()): string | null {
@@ -704,11 +1211,11 @@ function normalizeFastApiRetryPolicy(
   };
 }
 
-function createAbortError(): Error {
+function createAbortError(message = "The FastAPI request was cancelled."): Error {
   if (typeof DOMException === "function") {
-    return new DOMException("The FastAPI request was cancelled.", "AbortError");
+    return new DOMException(message, "AbortError");
   }
-  const error = new Error("The FastAPI request was cancelled.");
+  const error = new Error(message);
   error.name = "AbortError";
   return error;
 }
@@ -1369,6 +1876,248 @@ export function readStaticSiteFastApiWebSocketTicketErrorMessage(
   });
 }
 
+function readStaticSitePlatformEnvelope(
+  value: unknown,
+  expectedChannel: StaticSiteIframeChannel,
+  type: StaticSiteIframeMessage["type"],
+  payloadKeys: readonly string[],
+): Record<string, unknown> | null {
+  if (!isRecord(value) || value.channel !== requireStaticSiteIframeChannel(expectedChannel)) {
+    return null;
+  }
+  if (
+    value.version !== STATIC_SITE_IFRAME_PROTOCOL_VERSION ||
+    value.type !== type ||
+    !isRecord(value.payload) ||
+    !hasOnlyKeys(value, ["channel", "version", "type", "payload"]) ||
+    !hasOnlyKeys(value.payload, payloadKeys)
+  ) {
+    return null;
+  }
+  return value.payload;
+}
+
+export function buildStaticSitePlatformRequestMessage({
+  channel,
+  requestId,
+  method,
+  path,
+  headers,
+  body,
+}: {
+  channel: StaticSiteIframeChannel;
+  requestId: string;
+  method: StaticSitePlatformRequestMethod;
+  path: string;
+  headers?: StaticSitePlatformRequestHeaders;
+  body?: string;
+}): StaticSitePlatformRequestMessage {
+  const normalizedRequestId = readPlatformRequestId(requestId);
+  if (!normalizedRequestId) throw new Error("Platform requestId is invalid.");
+  if (!isPlatformRequestMethod(method)) {
+    throw new Error("Platform request method must be GET, POST, PUT, PATCH, or DELETE.");
+  }
+  const normalizedPath = readStaticSitePlatformPath(path);
+  if (!normalizedPath) {
+    throw new Error("Platform request path must be a safe absolute path with an optional query.");
+  }
+  const normalizedHeaders = readPlatformHeaders(headers ?? {}, PLATFORM_REQUEST_HEADER_NAMES);
+  if (!normalizedHeaders) {
+    throw new Error("Platform request headers are limited to accept and content-type.");
+  }
+  if (body !== undefined && readPlatformRequestBody(body) === null) {
+    throw new Error("Platform request body must be text of at most 1 MiB.");
+  }
+  if (method === "GET" && body !== undefined) {
+    throw new Error("A GET platform request has no body.");
+  }
+  return {
+    channel: requireStaticSiteIframeChannel(channel),
+    version: STATIC_SITE_IFRAME_PROTOCOL_VERSION,
+    type: "platform-request",
+    payload: {
+      requestId: normalizedRequestId,
+      method,
+      path: normalizedPath,
+      ...(Object.keys(normalizedHeaders).length > 0 ? { headers: normalizedHeaders } : {}),
+      ...(body === undefined ? {} : { body }),
+    },
+  };
+}
+
+export function readStaticSitePlatformRequestMessage(
+  value: unknown,
+  expectedChannel: StaticSiteIframeChannel,
+): StaticSitePlatformRequestMessage | null {
+  const payload = readStaticSitePlatformEnvelope(value, expectedChannel, "platform-request", [
+    "requestId",
+    "method",
+    "path",
+    "headers",
+    "body",
+  ]);
+  if (!payload) return null;
+  const requestId = readPlatformRequestId(payload.requestId);
+  const method = isPlatformRequestMethod(payload.method) ? payload.method : null;
+  const path = readStaticSitePlatformPath(payload.path);
+  const headers =
+    payload.headers === undefined
+      ? {}
+      : readPlatformHeaders(payload.headers, PLATFORM_REQUEST_HEADER_NAMES);
+  const body = payload.body === undefined ? undefined : readPlatformRequestBody(payload.body);
+  if (!requestId || !method || !path || !headers || body === null) return null;
+  if (method === "GET" && body !== undefined) return null;
+  return buildStaticSitePlatformRequestMessage({
+    channel: expectedChannel,
+    requestId,
+    method,
+    path,
+    headers,
+    ...(body === undefined ? {} : { body }),
+  });
+}
+
+export function buildStaticSitePlatformResponseMessage({
+  channel,
+  requestId,
+  status,
+  headers,
+  body,
+  bodyEncoding,
+}: {
+  channel: StaticSiteIframeChannel;
+  requestId: string;
+  status: number;
+  headers?: StaticSitePlatformResponseHeaders;
+  body: string;
+  bodyEncoding: StaticSitePlatformResponseBodyEncoding;
+}): StaticSitePlatformResponseMessage {
+  const normalizedRequestId = readPlatformRequestId(requestId);
+  if (!normalizedRequestId) throw new Error("Platform requestId is invalid.");
+  if (!isPlatformResponseStatus(status)) {
+    throw new Error("Platform response status must be an integer from 100 to 599.");
+  }
+  const normalizedHeaders = readPlatformHeaders(headers ?? {}, PLATFORM_RESPONSE_HEADER_NAMES);
+  if (!normalizedHeaders) throw new Error("Platform response headers are limited to content-type.");
+  if (!isPlatformResponseBodyEncoding(bodyEncoding)) {
+    throw new Error('Platform response bodyEncoding must be "text" or "base64".');
+  }
+  if (readPlatformResponseBody(body, bodyEncoding) === null) {
+    throw new Error("Platform response body must be text or base64 of at most 8 MiB.");
+  }
+  return {
+    channel: requireStaticSiteIframeChannel(channel),
+    version: STATIC_SITE_IFRAME_PROTOCOL_VERSION,
+    type: "platform-response",
+    payload: {
+      requestId: normalizedRequestId,
+      status,
+      headers: normalizedHeaders,
+      body,
+      bodyEncoding,
+    },
+  };
+}
+
+export function readStaticSitePlatformResponseMessage(
+  value: unknown,
+  expectedChannel: StaticSiteIframeChannel,
+): StaticSitePlatformResponseMessage | null {
+  const payload = readStaticSitePlatformEnvelope(value, expectedChannel, "platform-response", [
+    "requestId",
+    "status",
+    "headers",
+    "body",
+    "bodyEncoding",
+  ]);
+  if (!payload) return null;
+  const requestId = readPlatformRequestId(payload.requestId);
+  const headers = readPlatformHeaders(payload.headers, PLATFORM_RESPONSE_HEADER_NAMES);
+  const bodyEncoding = isPlatformResponseBodyEncoding(payload.bodyEncoding)
+    ? payload.bodyEncoding
+    : null;
+  if (!requestId || !isPlatformResponseStatus(payload.status) || !headers || !bodyEncoding) {
+    return null;
+  }
+  const body = readPlatformResponseBody(payload.body, bodyEncoding);
+  if (body === null) return null;
+  return {
+    channel: expectedChannel,
+    version: STATIC_SITE_IFRAME_PROTOCOL_VERSION,
+    type: "platform-response",
+    payload: { requestId, status: payload.status, headers, body, bodyEncoding },
+  };
+}
+
+export function buildStaticSitePlatformErrorMessage({
+  channel,
+  requestId,
+  code,
+}: {
+  channel: StaticSiteIframeChannel;
+  requestId: string;
+  code: StaticSitePlatformRequestErrorCode;
+}): StaticSitePlatformErrorMessage {
+  const normalizedRequestId = readPlatformRequestId(requestId);
+  if (!normalizedRequestId) throw new Error("Platform requestId is invalid.");
+  if (!isPlatformRequestErrorCode(code)) throw new Error("Platform request error code is invalid.");
+  return {
+    channel: requireStaticSiteIframeChannel(channel),
+    version: STATIC_SITE_IFRAME_PROTOCOL_VERSION,
+    type: "platform-error",
+    payload: { requestId: normalizedRequestId, code },
+  };
+}
+
+export function readStaticSitePlatformErrorMessage(
+  value: unknown,
+  expectedChannel: StaticSiteIframeChannel,
+): StaticSitePlatformErrorMessage | null {
+  const payload = readStaticSitePlatformEnvelope(value, expectedChannel, "platform-error", [
+    "requestId",
+    "code",
+  ]);
+  if (!payload) return null;
+  const requestId = readPlatformRequestId(payload.requestId);
+  if (!requestId || !isPlatformRequestErrorCode(payload.code)) return null;
+  return buildStaticSitePlatformErrorMessage({
+    channel: expectedChannel,
+    requestId,
+    code: payload.code,
+  });
+}
+
+export function buildStaticSitePlatformCancelMessage({
+  channel,
+  requestId,
+}: {
+  channel: StaticSiteIframeChannel;
+  requestId: string;
+}): StaticSitePlatformCancelMessage {
+  const normalizedRequestId = readPlatformRequestId(requestId);
+  if (!normalizedRequestId) throw new Error("Platform requestId is invalid.");
+  return {
+    channel: requireStaticSiteIframeChannel(channel),
+    version: STATIC_SITE_IFRAME_PROTOCOL_VERSION,
+    type: "platform-cancel",
+    payload: { requestId: normalizedRequestId },
+  };
+}
+
+export function readStaticSitePlatformCancelMessage(
+  value: unknown,
+  expectedChannel: StaticSiteIframeChannel,
+): StaticSitePlatformCancelMessage | null {
+  const payload = readStaticSitePlatformEnvelope(value, expectedChannel, "platform-cancel", [
+    "requestId",
+  ]);
+  if (!payload) return null;
+  const requestId = readPlatformRequestId(payload.requestId);
+  return requestId
+    ? buildStaticSitePlatformCancelMessage({ channel: expectedChannel, requestId })
+    : null;
+}
+
 export function readStaticSiteIframeMessage(
   value: unknown,
   expectedChannel: StaticSiteIframeChannel,
@@ -1395,9 +2144,29 @@ export function readStaticSiteIframeMessage(
       return readStaticSiteFastApiWebSocketTicketResponseMessage(value, expectedChannel);
     case "fastapi-websocket-ticket-error":
       return readStaticSiteFastApiWebSocketTicketErrorMessage(value, expectedChannel);
+    case "platform-request":
+      return readStaticSitePlatformRequestMessage(value, expectedChannel);
+    case "platform-response":
+      return readStaticSitePlatformResponseMessage(value, expectedChannel);
+    case "platform-error":
+      return readStaticSitePlatformErrorMessage(value, expectedChannel);
+    case "platform-cancel":
+      return readStaticSitePlatformCancelMessage(value, expectedChannel);
     default:
       return null;
   }
+}
+
+/** A platform request or response carries a body past the default payload limit and has its own
+ * caps, which its reader enforces field by field. */
+function isPlatformBodyMessage(value: unknown, type: "platform-request" | "platform-response") {
+  return isRecord(value) && value.type === type;
+}
+
+function resolvePlatformRequestErrorCode(error: unknown): StaticSitePlatformRequestErrorCode {
+  return error instanceof StaticSitePlatformRequestError && isPlatformRequestErrorCode(error.code)
+    ? error.code
+    : "temporarily_unavailable";
 }
 
 function readCandidateRequestBinding(value: unknown): {
@@ -1431,14 +2200,18 @@ export function createStaticSiteIframeHost(
     options.credentialRequestTimeoutMs ?? DEFAULT_CREDENTIAL_TIMEOUT_MS;
   const webSocketTicketRequestTimeoutMs =
     options.webSocketTicketRequestTimeoutMs ?? DEFAULT_WEBSOCKET_TICKET_HOST_TIMEOUT_MS;
+  const platformRequestTimeoutMs =
+    options.platformRequestTimeoutMs ?? DEFAULT_PLATFORM_REQUEST_HOST_TIMEOUT_MS;
   let context = normalizeContext(options.context);
   let handshake: StaticSiteIframeReadyMessage | null = null;
   let generation = 0;
   let resolveFastApiCredential = options.resolveFastApiCredential;
   let resolveFastApiWebSocketTicket = options.resolveFastApiWebSocketTicket;
+  let platformRequestSender = options.sendPlatformRequest;
   let disposed = false;
   const activeCredentialRequests = new Map<string, ActiveHostCredentialRequest>();
   const activeWebSocketTicketRequests = new Map<string, ActiveHostWebSocketTicketRequest>();
+  const activePlatformRequests = new Map<string, ActiveHostCredentialRequest>();
   const seenRequestIds = new Set<string>();
   const handshakeTimeout = setTimeout(() => {
     if (!handshake && !disposed) {
@@ -1448,7 +2221,8 @@ export function createStaticSiteIframeHost(
 
   function postMessage(message: StaticSiteIframeMessage): void {
     if (disposed) return;
-    if (payloadSize(message) > maxPayloadBytes) {
+    // A platform response's builder already holds its body to the response cap.
+    if (message.type !== "platform-response" && payloadSize(message) > maxPayloadBytes) {
       options.onProtocolError?.("Static-site iframe payload exceeds the configured limit.");
       return;
     }
@@ -1491,9 +2265,30 @@ export function createStaticSiteIframeHost(
     activeWebSocketTicketRequests.clear();
   }
 
+  /**
+   * Aborts the sender's work for every platform request. With a code, the child is told, because
+   * the child is still waiting; without one, the child already knows (a person change or its own
+   * new handshake) or is gone.
+   */
+  function abortPlatformRequests(code?: StaticSitePlatformRequestErrorCode): void {
+    const requestIds = [...activePlatformRequests.keys()];
+    activePlatformRequests.forEach(({ controller, timeout }) => {
+      clearTimeout(timeout);
+      controller.abort();
+    });
+    activePlatformRequests.clear();
+    if (code) requestIds.forEach((requestId) => postPlatformError(requestId, code));
+  }
+
   function abortAllRequests(): void {
     abortCredentialRequests();
     abortWebSocketTicketRequests();
+    abortPlatformRequests();
+  }
+
+  function postPlatformError(requestId: string, code: StaticSitePlatformRequestErrorCode): void {
+    if (!handshake) return;
+    postMessage(buildStaticSitePlatformErrorMessage({ channel: handshake.channel, requestId, code }));
   }
 
   function postWebSocketError(
@@ -1699,6 +2494,99 @@ export function createStaticSiteIframeHost(
     activeRequest.controller.abort();
   }
 
+  function sendPlatformRequestForChild(message: StaticSitePlatformRequestMessage): void {
+    const { requestId } = message.payload;
+    if (!rememberRequestId(requestId)) {
+      postPlatformError(requestId, "invalid_request");
+      return;
+    }
+    const sender = platformRequestSender;
+    if (!sender) {
+      postPlatformError(requestId, "unsupported");
+      return;
+    }
+    const userUid = context.userUid;
+    if (!userUid) {
+      postPlatformError(requestId, "access_denied");
+      return;
+    }
+    if (activePlatformRequests.size >= MAX_PLATFORM_REQUESTS_IN_FLIGHT) {
+      postPlatformError(requestId, "temporarily_unavailable");
+      return;
+    }
+
+    const controller = new AbortController();
+    const requestGeneration = generation;
+    const activeRequest: ActiveHostCredentialRequest = {
+      controller,
+      generation: requestGeneration,
+      timeout: setTimeout(() => {
+        if (activePlatformRequests.get(requestId) !== activeRequest) return;
+        activePlatformRequests.delete(requestId);
+        controller.abort();
+        postPlatformError(requestId, "temporarily_unavailable");
+      }, platformRequestTimeoutMs),
+    };
+    activePlatformRequests.set(requestId, activeRequest);
+    const isCurrent = () =>
+      !disposed &&
+      !controller.signal.aborted &&
+      activePlatformRequests.get(requestId) === activeRequest &&
+      generation === requestGeneration;
+    const settle = () => {
+      clearTimeout(activeRequest.timeout);
+      activePlatformRequests.delete(requestId);
+    };
+    const { method, path, headers, body } = message.payload;
+    const request: StaticSitePlatformRequest = {
+      method,
+      path,
+      headers: { ...headers },
+      ...(body === undefined ? {} : { body }),
+    };
+
+    void Promise.resolve()
+      .then(() => sender(request, { signal: controller.signal, userUid }))
+      .then((response) => {
+        if (!isCurrent()) {
+          discardResponseBody(response);
+          return null;
+        }
+        return readStaticSitePlatformResponse(response, controller.signal);
+      })
+      .then(
+        (answer) => {
+          if (!answer || !isCurrent() || !handshake) return;
+          settle();
+          let response: StaticSitePlatformResponseMessage;
+          try {
+            response = buildStaticSitePlatformResponseMessage({
+              channel: handshake.channel,
+              requestId,
+              ...answer,
+            });
+          } catch {
+            postPlatformError(requestId, "temporarily_unavailable");
+            return;
+          }
+          postMessage(response);
+        },
+        (error) => {
+          if (!isCurrent()) return;
+          settle();
+          postPlatformError(requestId, resolvePlatformRequestErrorCode(error));
+        },
+      );
+  }
+
+  function cancelPlatformRequest(message: StaticSitePlatformCancelMessage): void {
+    const activeRequest = activePlatformRequests.get(message.payload.requestId);
+    if (!activeRequest || activeRequest.generation !== generation) return;
+    clearTimeout(activeRequest.timeout);
+    activePlatformRequests.delete(message.payload.requestId);
+    activeRequest.controller.abort();
+  }
+
   return {
     get channel() {
       return handshake?.channel ?? null;
@@ -1710,7 +2598,10 @@ export function createStaticSiteIframeHost(
       if (disposed || event.origin !== targetOrigin || event.source !== options.targetWindow) {
         return false;
       }
-      if (payloadSize(event.data) > maxPayloadBytes) {
+      if (
+        !isPlatformBodyMessage(event.data, "platform-request") &&
+        payloadSize(event.data) > maxPayloadBytes
+      ) {
         options.onProtocolError?.("Static-site iframe payload exceeds the configured limit.");
         return false;
       }
@@ -1758,6 +2649,26 @@ export function createStaticSiteIframeHost(
         cancelWebSocketTicket(webSocketCancel);
         return true;
       }
+      const platformRequest = readStaticSitePlatformRequestMessage(event.data, handshake.channel);
+      if (platformRequest) {
+        sendPlatformRequestForChild(platformRequest);
+        return true;
+      }
+      const platformCancel = readStaticSitePlatformCancelMessage(event.data, handshake.channel);
+      if (platformCancel) {
+        cancelPlatformRequest(platformCancel);
+        return true;
+      }
+      if (
+        isRecord(event.data) &&
+        event.data.type === "platform-request" &&
+        event.data.channel === handshake.channel &&
+        isRecord(event.data.payload)
+      ) {
+        // Answer a malformed request the child can correlate, so it does not wait for its timeout.
+        const requestId = readPlatformRequestId(event.data.payload.requestId);
+        if (requestId) postPlatformError(requestId, "invalid_request");
+      }
       const candidate = readCandidateRequestBinding(event.data);
       if (candidate && isRecord(event.data) && event.data.type === "fastapi-credential-request") {
         postCredentialError(candidate, "invalid_request");
@@ -1790,6 +2701,12 @@ export function createStaticSiteIframeHost(
       if (disposed) throw new Error("Static-site iframe host is disposed.");
       if (resolver !== resolveFastApiWebSocketTicket) abortWebSocketTicketRequests();
       resolveFastApiWebSocketTicket = resolver;
+    },
+    updatePlatformRequestSender(sender) {
+      if (disposed) throw new Error("Static-site iframe host is disposed.");
+      // The child is still waiting for these; it may retry them with the new sender.
+      if (sender !== platformRequestSender) abortPlatformRequests("temporarily_unavailable");
+      platformRequestSender = sender;
     },
     dispose() {
       disposed = true;
@@ -1837,15 +2754,121 @@ export function createStaticSiteIframeClient(
     options.webSocketTicketRequestTimeoutMs ?? DEFAULT_WEBSOCKET_TICKET_CLIENT_TIMEOUT_MS;
   const credentialRefreshSkewMs =
     options.credentialRefreshSkewMs ?? DEFAULT_CREDENTIAL_REFRESH_SKEW_MS;
+  const platformRequestTimeoutMs =
+    options.platformRequestTimeoutMs ?? DEFAULT_PLATFORM_REQUEST_CLIENT_TIMEOUT_MS;
   const credentialCache = new Map<string, StaticSiteFastApiCredential>();
   const pendingByRequestId = new Map<string, PendingCredentialRequest>();
   const pendingByTarget = new Map<string, Promise<StaticSiteFastApiCredential>>();
   const pendingWebSocketTickets = new Map<string, PendingWebSocketTicketRequest>();
   const activeWebSockets = new Set<WebSocket>();
   const fastApiStates = new Map<string, StaticSiteFastApiTransportState>();
+  const platformRequestsInFlight = new Map<string, PendingPlatformRequest>();
+  const queuedPlatformRequests: PendingPlatformRequest[] = [];
   let disposed = false;
   let initialized = false;
   let currentUserUid: string | null | undefined;
+
+  function postPlatformCancel(requestId: string): void {
+    options.parentWindow.postMessage(
+      buildStaticSitePlatformCancelMessage({ channel, requestId }),
+      hostOrigin,
+    );
+  }
+
+  /** Takes the request out of flight or out of the queue; returns whether it was in flight. */
+  function releasePlatformRequest(pending: PendingPlatformRequest): boolean {
+    clearTimeout(pending.timeout);
+    pending.removeAbortListener();
+    if (platformRequestsInFlight.get(pending.requestId) === pending) {
+      platformRequestsInFlight.delete(pending.requestId);
+      return true;
+    }
+    const queued = queuedPlatformRequests.indexOf(pending);
+    if (queued !== -1) queuedPlatformRequests.splice(queued, 1);
+    return false;
+  }
+
+  /** Sends queued requests while fewer than the host's cap are in flight. */
+  function dispatchPlatformRequests(): void {
+    while (
+      !disposed &&
+      platformRequestsInFlight.size < MAX_PLATFORM_REQUESTS_IN_FLIGHT &&
+      queuedPlatformRequests.length > 0
+    ) {
+      const pending = queuedPlatformRequests.shift()!;
+      platformRequestsInFlight.set(pending.requestId, pending);
+      pending.timeout = setTimeout(() => {
+        if (platformRequestsInFlight.get(pending.requestId) !== pending) return;
+        releasePlatformRequest(pending);
+        postPlatformCancel(pending.requestId);
+        // The host answers every request before its own timeout: silence means it predates the bridge.
+        pending.reject(new StaticSitePlatformRequestError("unsupported"));
+        dispatchPlatformRequests();
+      }, platformRequestTimeoutMs);
+      options.parentWindow.postMessage(pending.message, hostOrigin);
+    }
+  }
+
+  /** Rejects every queued and in-flight request, and tells the host to stop the ones in flight. */
+  function rejectPlatformRequests(code: StaticSitePlatformRequestErrorCode): void {
+    const inFlight = [...platformRequestsInFlight.values()];
+    const pending = [...inFlight, ...queuedPlatformRequests.splice(0)];
+    platformRequestsInFlight.clear();
+    pending.forEach((request) => {
+      clearTimeout(request.timeout);
+      request.removeAbortListener();
+    });
+    inFlight.forEach((request) => postPlatformCancel(request.requestId));
+    pending.forEach((request) => request.reject(new StaticSitePlatformRequestError(code)));
+  }
+
+  async function sendPlatformRequest(request: Request): Promise<Response> {
+    const notReady = () =>
+      new StaticSitePlatformRequestError("unsupported", "The static-site host handshake is not ready.");
+    if (disposed || !initialized) throw notReady();
+    const signal = typeof request === "object" && request !== null ? request.signal : undefined;
+    if (signal?.aborted) throw createAbortError("The platform request was cancelled.");
+    const userUid = currentUserUid;
+    if (!userUid) throw new StaticSitePlatformRequestError("access_denied");
+    const serialized = await serializeStaticSitePlatformRequest(request);
+    if (disposed || !initialized) throw notReady();
+    if (signal?.aborted) throw createAbortError("The platform request was cancelled.");
+    // Reading the body is asynchronous; the person may have changed meanwhile.
+    if (currentUserUid !== userUid) throw new StaticSitePlatformRequestError("access_denied");
+
+    const requestId = createRequestId();
+    const message = buildStaticSitePlatformRequestMessage({ channel, requestId, ...serialized });
+    return new Promise<Response>((resolve, reject) => {
+      const handleAbort = () => {
+        if (releasePlatformRequest(pending)) postPlatformCancel(requestId);
+        reject(createAbortError("The platform request was cancelled."));
+        dispatchPlatformRequests();
+      };
+      const pending: PendingPlatformRequest = {
+        requestId,
+        message,
+        removeAbortListener: () => signal?.removeEventListener("abort", handleAbort),
+        resolve,
+        reject,
+      };
+      signal?.addEventListener("abort", handleAbort, { once: true });
+      queuedPlatformRequests.push(pending);
+      dispatchPlatformRequests();
+    });
+  }
+
+  /** Settles the in-flight request an answer names; false when none is waiting for it. */
+  function settlePlatformAnswer(
+    requestId: string,
+    settle: (pending: PendingPlatformRequest) => void,
+  ): boolean {
+    const pending = platformRequestsInFlight.get(requestId);
+    if (!pending) return false;
+    releasePlatformRequest(pending);
+    settle(pending);
+    dispatchPlatformRequests();
+    return true;
+  }
 
   function emitFastApiState(state: StaticSiteFastApiTransportState): void {
     const previous = fastApiStates.get(state.resourceReleaseUid);
@@ -2132,7 +3155,10 @@ export function createStaticSiteIframeClient(
       if (disposed || event.origin !== hostOrigin || event.source !== options.parentWindow) {
         return false;
       }
-      if (payloadSize(event.data) > maxPayloadBytes) {
+      if (
+        !isPlatformBodyMessage(event.data, "platform-response") &&
+        payloadSize(event.data) > maxPayloadBytes
+      ) {
         options.onProtocolError?.("Static-site iframe payload exceeds the configured limit.");
         return false;
       }
@@ -2145,6 +3171,7 @@ export function createStaticSiteIframeClient(
           rejectPendingWebSocketTickets("access_denied");
           closeActiveWebSockets();
           fastApiStates.clear();
+          rejectPlatformRequests("access_denied");
         }
         currentUserUid = nextContext.userUid;
         initialized = true;
@@ -2234,6 +3261,56 @@ export function createStaticSiteIframeClient(
         pending.removeAbortListener();
         pending.reject(new StaticSiteFastApiWebSocketError(webSocketError.payload.code));
         return true;
+      }
+
+      const platformResponse = readStaticSitePlatformResponseMessage(event.data, channel);
+      if (platformResponse) {
+        const { requestId, ...answer } = platformResponse.payload;
+        if (
+          !settlePlatformAnswer(requestId, (pending) => {
+            let response: Response;
+            try {
+              response = createStaticSitePlatformResponse(answer);
+            } catch {
+              pending.reject(new StaticSitePlatformRequestError("unsupported"));
+              return;
+            }
+            pending.resolve(response);
+          })
+        ) {
+          options.onProtocolError?.("Rejected unmatched static-site platform response.");
+          return false;
+        }
+        return true;
+      }
+
+      const platformError = readStaticSitePlatformErrorMessage(event.data, channel);
+      if (platformError) {
+        const { requestId, code } = platformError.payload;
+        if (
+          !settlePlatformAnswer(requestId, (pending) =>
+            pending.reject(new StaticSitePlatformRequestError(code)),
+          )
+        ) {
+          options.onProtocolError?.("Rejected unmatched static-site platform error.");
+          return false;
+        }
+        return true;
+      }
+
+      if (
+        isRecord(event.data) &&
+        (event.data.type === "platform-response" || event.data.type === "platform-error") &&
+        event.data.channel === channel &&
+        isRecord(event.data.payload)
+      ) {
+        // A malformed answer to a request in flight fails that request instead of its timeout.
+        const requestId = readPlatformRequestId(event.data.payload.requestId);
+        if (requestId) {
+          settlePlatformAnswer(requestId, (pending) =>
+            pending.reject(new StaticSitePlatformRequestError("invalid_request")),
+          );
+        }
       }
 
       const candidate = readCandidateRequestBinding(event.data);
@@ -2507,7 +3584,9 @@ export function createStaticSiteIframeClient(
       closeActiveWebSockets();
       fastApiStates.clear();
     },
+    sendPlatformRequest,
     dispose() {
+      if (!disposed) rejectPlatformRequests("unsupported");
       disposed = true;
       initialized = false;
       currentUserUid = undefined;

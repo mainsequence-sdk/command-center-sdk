@@ -17,7 +17,9 @@ parsers additionally enforce unique action IDs and discovery fields, valid resou
 and exact iframe origins and windows. For `command-center.static_site_iframe@v1`, runtime checks
 also enforce WebSocket request/response correlation, exact ticket UID/Origin/path binding, future
 expiry, secure scheme, reserved protocol ordering, application-protocol limits, cancellation, and
-lifecycle invalidation. Tests keep those parsers aligned with indexed fixtures.
+lifecycle invalidation. For platform requests they count body caps in UTF-8 bytes and decoded
+base64 bytes where the schema bounds characters, and enforce correlation, cancellation, in-flight
+limits, and timeouts. Tests keep those parsers aligned with indexed fixtures.
 
 Schema filenames and contract IDs are immutable after release. Additive changes require fixtures;
 breaking semantics require a new versioned schema, a migration plan, mixed-version tests, and a

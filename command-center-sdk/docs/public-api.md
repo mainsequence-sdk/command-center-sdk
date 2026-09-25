@@ -45,7 +45,7 @@ framework integrations do not affect the application.
 | `/theme` | Framework-neutral; one DOM helper | Presets, tokens, CSS-variable generation/application, density, surfaces, breakpoints, and chart palettes |
 | `/theme/presets` | Framework-neutral | Individual built-in preset objects |
 | `/theme/data-viz` | Framework-neutral | Data-visualization palette types and resolvers |
-| `/embed` | Browser | Static-site message contracts, host/client lifecycle, delegated HTTP access, and native FastAPI WebSockets |
+| `/embed` | Browser | Static-site message contracts, host/client lifecycle, delegated HTTP access, native FastAPI WebSockets, and platform requests sent through the host |
 | `/embed/react` | React + DOM | Managed `StaticSiteIframe` host component |
 | `/contracts` | Framework-neutral | Ordered migration helper for versioned SDK payloads |
 | `/contracts/manifest.json` | JSON | Canonical backend contract catalog |
@@ -197,6 +197,8 @@ import {
   resolveStaticSiteIframeOrigin,
   STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL,
   StaticSiteFastApiWebSocketError,
+  StaticSitePlatformRequestError,
+  type SendStaticSitePlatformRequest,
 } from "@dev-mainsequence/command-center-sdk/embed";
 ```
 
@@ -209,9 +211,12 @@ import { StaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed/rea
 The surface includes the version-one context handshake, delegated FastAPI HTTP bridge, and the
 one-time WebSocket ticket bridge. Hosts inject `resolveFastApiWebSocketTicket`; children call
 `createFastApiWebSocket` and receive a native socket, not a raw ticket. The SDK reserves
-`mainsequence.ws-bridge.v1` as the non-secret successful-handshake acknowledgement. See
-[Static-site embeds](./static-site-embeds.md) for binding, cancellation, CSP, negotiation, and
-lifecycle rules.
+`mainsequence.ws-bridge.v1` as the non-secret successful-handshake acknowledgement. Hosts also
+inject `sendPlatformRequest`, which sends a child's platform requests as the signed-in person for
+the paths the host serves; children call `sendPlatformRequest(request)` with a Fetch `Request`,
+receive a Fetch `Response`, and never hold a platform credential. See
+[Static-site embeds](./static-site-embeds.md) for binding, cancellation, CSP, negotiation, caps,
+and lifecycle rules.
 
 ## Backend contract bundle
 

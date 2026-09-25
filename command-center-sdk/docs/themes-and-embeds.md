@@ -201,6 +201,12 @@ places the ticket first and `mainsequence.ws-bridge.v1` second in the native pro
 never receives either value, so `socket.protocol` is the FastAPI-selected application protocol or
 the fixed non-secret acknowledgement. Reconnect by calling the method again for a fresh ticket.
 
+For the platform itself, `sendPlatformRequest` is a third host adapter. It serves only the paths
+the host chooses, refuses the rest with `not_allowed`, and sends each request with the host's own
+authenticated fetch as the signed-in person. The child calls `client.sendPlatformRequest(request)`
+with a standard Fetch `Request` and receives a standard `Response`; it never holds a platform
+credential. See [Static-site embeds](./static-site-embeds.md#send-platform-requests-through-the-host).
+
 `StaticSiteIframe` defaults to `allow-forms allow-same-origin allow-scripts`. Any added popups,
 downloads, modals, or navigation require a security review. Production deployments must align the
 host's `frame-src`, the child's `frame-ancestors`, and an operator-controlled exact-origin allowlist.
@@ -222,3 +228,5 @@ host's `frame-src`, the child's `frame-ancestors`, and an operator-controlled ex
   negotiation, acknowledgement fallback, omitted/duplicate selection failure, bidirectional
   frames, close behavior, fresh-ticket reconnect, `connect-src`, and absence of tickets from URLs,
   storage, DOM, logs, analytics, and errors.
+- Platform requests: the host's allow-list, JSON and binary responses, cancellation, a user
+  change, an older host's `unsupported`, and no platform credential reaching the child.

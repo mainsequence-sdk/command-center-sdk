@@ -2,9 +2,27 @@
 
 ## Unreleased
 
-Compatibility axes: the packaged agent skills `general/use-command-center-sdk` and
-`general/build-command-center-application`, and two guides. No TypeScript API, contract ID, JSON
-Schema, fixture, theme, iframe protocol, or storage change.
+Compatibility axes: the `command-center.static_site_iframe@v1` protocol, with four additive
+messages; the `/embed` and `/embed/react` TypeScript API, additively; the protocol's JSON Schema and
+its valid and invalid fixtures, additively; the packaged agent skills
+`general/use-command-center-sdk`, `general/build-command-center-application`, and
+`embed/integrate-static-site-iframe`; and guides. No contract ID, protocol version, existing message,
+theme, or storage change, and no backend change.
+
+- **Platform requests through the host** (SDK ADR 013). An embedded application never holds a
+  platform credential: it hands `client.sendPlatformRequest()` a Fetch `Request`, and the host
+  sends it as the signed-in person, with its own credential, and returns the platform's `Response`.
+  The iframe protocol gains `platform-request`, `platform-response`, `platform-error`, and
+  `platform-cancel`. Hosts pass `sendPlatformRequest(request, { signal, userUid })` to
+  `createStaticSiteIframeHost` or `StaticSiteIframe`, serving only the paths they choose, and
+  replace it with `updatePlatformRequestSender()`. Failures are `StaticSitePlatformRequestError`
+  codes: `invalid_request`, `access_denied`, `not_allowed`, `temporarily_unavailable`, and
+  `unsupported`. Only the method, the path and query, `accept`, `content-type`, and a text body go
+  out, and only the status, `content-type`, and the body (text for JSON and UTF-8 `text/*`, base64
+  otherwise) come back. The caps are paths of 4,096 characters, request bodies of 1 MiB, responses
+  of 8 MiB, and 16 requests in flight per child, past which the child queues. The host times out
+  at 60 seconds and the child at 65, reporting an older host's silence as `unsupported`. Live
+  streams are not bridged.
 
 - An agent asked for a chat or AI capabilities in an SDK application is now sent to the Command
   Center AI package: the two general skills and their guides (`getting-started.md`,

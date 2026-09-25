@@ -9,6 +9,7 @@ import {
   type StaticSiteIframeThemeMode,
   type ResolveStaticSiteFastApiCredential,
   type ResolveStaticSiteFastApiWebSocketTicket,
+  type SendStaticSitePlatformRequest,
 } from "./static-site.js";
 
 export const STATIC_SITE_IFRAME_DEFAULT_SANDBOX =
@@ -21,6 +22,12 @@ export interface StaticSiteIframeProps {
   userUid: string | null;
   resolveFastApiCredential?: ResolveStaticSiteFastApiCredential;
   resolveFastApiWebSocketTicket?: ResolveStaticSiteFastApiWebSocketTicket;
+  /**
+   * Sends the child's platform requests as the signed-in person, restricted to the paths the host
+   * serves. Keep it stable (for example with `useCallback`): replacing it abandons the requests in
+   * flight, which the child receives as `temporarily_unavailable`.
+   */
+  sendPlatformRequest?: SendStaticSitePlatformRequest;
   allowedOrigin?: string;
   title?: string;
   className?: string;
@@ -29,6 +36,7 @@ export interface StaticSiteIframeProps {
   handshakeTimeoutMs?: number;
   credentialRequestTimeoutMs?: number;
   webSocketTicketRequestTimeoutMs?: number;
+  platformRequestTimeoutMs?: number;
   maxPayloadBytes?: number;
   onReady?: (message: StaticSiteIframeReadyMessage) => void;
   onProtocolError?: (message: string) => void;
@@ -41,6 +49,7 @@ export function StaticSiteIframe({
   userUid,
   resolveFastApiCredential,
   resolveFastApiWebSocketTicket,
+  sendPlatformRequest,
   allowedOrigin,
   title = "Static site",
   className,
@@ -49,6 +58,7 @@ export function StaticSiteIframe({
   handshakeTimeoutMs,
   credentialRequestTimeoutMs,
   webSocketTicketRequestTimeoutMs,
+  platformRequestTimeoutMs,
   maxPayloadBytes,
   onReady,
   onProtocolError,
@@ -57,10 +67,18 @@ export function StaticSiteIframe({
   const hostRef = useRef<StaticSiteIframeHost | null>(null);
   const contextRef = useRef<StaticSiteIframeContextInput>({ themeId, themeMode, userUid });
   const callbacksRef = useRef({ onReady, onProtocolError });
-  const resolversRef = useRef({ resolveFastApiCredential, resolveFastApiWebSocketTicket });
+  const resolversRef = useRef({
+    resolveFastApiCredential,
+    resolveFastApiWebSocketTicket,
+    sendPlatformRequest,
+  });
   contextRef.current = { themeId, themeMode, userUid };
   callbacksRef.current = { onReady, onProtocolError };
-  resolversRef.current = { resolveFastApiCredential, resolveFastApiWebSocketTicket };
+  resolversRef.current = {
+    resolveFastApiCredential,
+    resolveFastApiWebSocketTicket,
+    sendPlatformRequest,
+  };
 
   const targetOrigin = useMemo(
     () => resolveStaticSiteIframeOrigin(allowedOrigin ?? src),
@@ -86,9 +104,11 @@ export function StaticSiteIframe({
       context: contextRef.current,
       resolveFastApiCredential: resolversRef.current.resolveFastApiCredential,
       resolveFastApiWebSocketTicket: resolversRef.current.resolveFastApiWebSocketTicket,
+      sendPlatformRequest: resolversRef.current.sendPlatformRequest,
       handshakeTimeoutMs,
       credentialRequestTimeoutMs,
       webSocketTicketRequestTimeoutMs,
+      platformRequestTimeoutMs,
       maxPayloadBytes,
       onReady: (message) => callbacksRef.current.onReady?.(message),
       onProtocolError: (message) => callbacksRef.current.onProtocolError?.(message),
@@ -108,6 +128,7 @@ export function StaticSiteIframe({
     credentialRequestTimeoutMs,
     handshakeTimeoutMs,
     maxPayloadBytes,
+    platformRequestTimeoutMs,
     src,
     targetOrigin,
     webSocketTicketRequestTimeoutMs,
@@ -116,7 +137,8 @@ export function StaticSiteIframe({
   useEffect(() => {
     hostRef.current?.updateFastApiCredentialResolver(resolveFastApiCredential);
     hostRef.current?.updateFastApiWebSocketTicketResolver(resolveFastApiWebSocketTicket);
-  }, [resolveFastApiCredential, resolveFastApiWebSocketTicket]);
+    hostRef.current?.updatePlatformRequestSender(sendPlatformRequest);
+  }, [resolveFastApiCredential, resolveFastApiWebSocketTicket, sendPlatformRequest]);
 
   useEffect(() => {
     hostRef.current?.updateContext({ themeId, themeMode, userUid });

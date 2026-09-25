@@ -12,6 +12,9 @@ import {
 import {
   buildStaticSiteFastApiWebSocketTicketRequestMessage,
   buildStaticSiteIframeReadyMessage,
+  buildStaticSitePlatformErrorMessage,
+  buildStaticSitePlatformRequestMessage,
+  type SendStaticSitePlatformRequest,
 } from "./static-site";
 
 describe("StaticSiteIframe", () => {
@@ -129,6 +132,66 @@ describe("StaticSiteIframe", () => {
       }),
     );
     await vi.waitFor(() => expect(secondResolver).toHaveBeenCalledOnce());
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("sends platform requests through the sender prop and abandons them when it is replaced", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    let firstSignal: AbortSignal | undefined;
+    const firstSender = vi.fn<SendStaticSitePlatformRequest>(
+      (_request, { signal }) =>
+        new Promise<Response>(() => {
+          firstSignal = signal;
+        }),
+    );
+    const secondSender = vi.fn<SendStaticSitePlatformRequest>(async () => new Response("{}"));
+    const render = (sendPlatformRequest: SendStaticSitePlatformRequest) => (
+      <StaticSiteIframe
+        src="https://site.example.com/app"
+        themeId="graphite"
+        themeMode="dark"
+        userUid="user-1"
+        sendPlatformRequest={sendPlatformRequest}
+      />
+    );
+
+    await act(async () => root.render(render(firstSender)));
+    const iframe = container.querySelector("iframe")!;
+    const childWindow = iframe.contentWindow!;
+    const posted = vi.spyOn(childWindow, "postMessage");
+    const dispatch = (data: unknown) =>
+      window.dispatchEvent(
+        new MessageEvent("message", { origin: "https://site.example.com", source: childWindow, data }),
+      );
+    dispatch(buildStaticSiteIframeReadyMessage("mainsequence.react-test"));
+    const request = (requestId: string) =>
+      buildStaticSitePlatformRequestMessage({
+        channel: "mainsequence.react-test",
+        requestId,
+        method: "GET",
+        path: "/api/items/",
+      });
+    dispatch(request("react-platform-1"));
+    await vi.waitFor(() => expect(firstSender).toHaveBeenCalledOnce());
+    expect(firstSender.mock.calls[0]![1].userUid).toBe("user-1");
+
+    await act(async () => root.render(render(secondSender)));
+    expect(container.querySelector("iframe")).toBe(iframe);
+    expect(firstSignal?.aborted).toBe(true);
+    expect(posted).toHaveBeenCalledWith(
+      buildStaticSitePlatformErrorMessage({
+        channel: "mainsequence.react-test",
+        requestId: "react-platform-1",
+        code: "temporarily_unavailable",
+      }),
+      "https://site.example.com",
+    );
+    dispatch(request("react-platform-2"));
+    await vi.waitFor(() => expect(secondSender).toHaveBeenCalledOnce());
 
     await act(async () => root.unmount());
     container.remove();

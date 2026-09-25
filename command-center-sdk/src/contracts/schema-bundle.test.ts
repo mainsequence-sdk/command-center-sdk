@@ -206,4 +206,79 @@ describe("published contract schema bundle", () => {
       ).toBeNull();
     });
   });
+
+  it("keeps the schema's platform request rules aligned with the public runtime parser", () => {
+    const validate = createValidator().getSchema(STATIC_SITE_IFRAME_SCHEMA_ID)!;
+    const channel = "mainsequence.portfolio-dashboard";
+    const messages: unknown[] = [];
+    for (const path of [
+      "/",
+      "/api/projects/?limit=20&search=a%20b",
+      "/api/projects/.../",
+      "/api/projects/?next=//elsewhere/../x",
+      "/api/projects/?filter[name]=a|b^{c}`d",
+      "/api/%E2%9C%93/",
+      `/${"a".repeat(4_095)}`,
+      `/${"a".repeat(4_096)}`,
+      "",
+      "api/projects/",
+      "https://platform.example.com/api/projects/",
+      "//platform.example.com/api/projects/",
+      "/api//projects/",
+      "/api/projects/#top",
+      "/api\\projects/",
+      "/api/projects/?q=a\\b",
+      "/api/../admin/",
+      "/api/./projects/",
+      "/..",
+      "/a/..?x",
+      "/a/%2e?x",
+      "/api/.%2E/admin/",
+      "/api/projects%2Fadmin/",
+      "/api/projects%5cadmin/",
+      "/a?%2f%2e%2e",
+      "/api/projects/%zz",
+      "/api/projects/?discount=50%",
+      "/api/projects/ with space",
+      "/api/projects/é",
+      '/api/projects/?q="x"',
+    ]) {
+      messages.push({
+        channel,
+        version: 1,
+        type: "platform-request",
+        payload: { requestId: "platform-parity", method: "GET", path },
+      });
+    }
+    for (const [method, body] of [["POST", "{}"], ["DELETE", ""], ["GET", "{}"]]) {
+      messages.push({
+        channel,
+        version: 1,
+        type: "platform-request",
+        payload: { requestId: "platform-parity", method, path: "/api/projects/", body },
+      });
+    }
+    for (const [status, body, bodyEncoding] of [
+      [100, "x", "text"],
+      [599, "", "text"],
+      [99, "", "text"],
+      [200, "", "base64"],
+      [200, "QQ==", "base64"],
+      [200, "QUJD", "base64"],
+      [200, "QQ=", "base64"],
+      [200, "Q Q=", "base64"],
+    ]) {
+      messages.push({
+        channel,
+        version: 1,
+        type: "platform-response",
+        payload: { requestId: "platform-parity", status, headers: {}, body, bodyEncoding },
+      });
+    }
+    const disagreements = messages.filter(
+      (message) =>
+        validate(message) !== (readStaticSiteIframeMessage(message, channel) !== null),
+    );
+    expect(disagreements).toEqual([]);
+  });
 });

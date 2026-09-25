@@ -13,7 +13,11 @@
     { "$ref": "#/$defs/fastApiWebSocketTicketRequest" },
     { "$ref": "#/$defs/fastApiWebSocketTicketCancel" },
     { "$ref": "#/$defs/fastApiWebSocketTicketResponse" },
-    { "$ref": "#/$defs/fastApiWebSocketTicketError" }
+    { "$ref": "#/$defs/fastApiWebSocketTicketError" },
+    { "$ref": "#/$defs/platformRequest" },
+    { "$ref": "#/$defs/platformResponse" },
+    { "$ref": "#/$defs/platformError" },
+    { "$ref": "#/$defs/platformCancel" }
   ],
   "$defs": {
     "channel": {
@@ -32,6 +36,18 @@
       "type": "string",
       "maxLength": 2048,
       "pattern": "^(?=.{1,2048}$)/(?!_healthz$)(?!logos/)(?!.*//)(?!.*(?:/\\.\\.?)(?:/|$))[A-Za-z0-9._~!$&'()*+,;=:@/-]*$"
+    },
+    "platformPath": {
+      "description": "An absolute path with an optional query, as the URL parser serializes one. Before the query: no empty segment, no dot segment even percent-encoded, and no encoded slash or backslash. Nowhere: a fragment, a backslash, or malformed percent-encoding.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^(?![^?]*//)(?![^?]*/(?:\\.|%2[eE]){1,2}(?:[/?]|$))(?![^?]*%(?:2[fF]|5[cC]))(?!.*%(?![0-9A-Fa-f]{2}))/[A-Za-z0-9._~!$&'()*+,;=:@/?%\\[\\]^`{|}-]*$"
+    },
+    "platformHeaderValue": {
+      "type": "string",
+      "maxLength": 1024,
+      "pattern": "^[!-~](?:[ -~]*[!-~])?$"
     },
     "messageBase": {
       "type": "object",
@@ -296,6 +312,148 @@
                 }
               ],
               "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "platformRequest": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "platform-request" },
+            "payload": {
+              "type": "object",
+              "required": ["requestId", "method", "path"],
+              "properties": {
+                "requestId": { "$ref": "#/$defs/requestId" },
+                "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+                "path": { "$ref": "#/$defs/platformPath" },
+                "headers": {
+                  "type": "object",
+                  "properties": {
+                    "accept": { "$ref": "#/$defs/platformHeaderValue" },
+                    "content-type": { "$ref": "#/$defs/platformHeaderValue" }
+                  },
+                  "additionalProperties": false
+                },
+                "body": {
+                  "description": "Text of at most 1 MiB (1,048,576 bytes) of UTF-8. The schema bounds characters; the runtime counts bytes.",
+                  "type": "string",
+                  "maxLength": 1048576
+                }
+              },
+              "additionalProperties": false,
+              "if": {
+                "type": "object",
+                "required": ["method"],
+                "properties": { "method": { "const": "GET" } }
+              },
+              "then": { "properties": { "body": false } }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "platformResponse": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "platform-response" },
+            "payload": {
+              "type": "object",
+              "required": ["requestId", "status", "headers", "body", "bodyEncoding"],
+              "properties": {
+                "requestId": { "$ref": "#/$defs/requestId" },
+                "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+                "headers": {
+                  "type": "object",
+                  "properties": {
+                    "content-type": { "$ref": "#/$defs/platformHeaderValue" }
+                  },
+                  "additionalProperties": false
+                },
+                "body": {
+                  "description": "At most 8 MiB (8,388,608 bytes) once decoded: UTF-8 text, or canonical padded base64.",
+                  "type": "string"
+                },
+                "bodyEncoding": { "enum": ["text", "base64"] }
+              },
+              "additionalProperties": false,
+              "if": {
+                "type": "object",
+                "required": ["bodyEncoding"],
+                "properties": { "bodyEncoding": { "const": "base64" } }
+              },
+              "then": {
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "maxLength": 11184812,
+                    "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "body": { "type": "string", "maxLength": 8388608 }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "platformError": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "platform-error" },
+            "payload": {
+              "type": "object",
+              "required": ["requestId", "code"],
+              "properties": {
+                "requestId": { "$ref": "#/$defs/requestId" },
+                "code": {
+                  "enum": [
+                    "invalid_request",
+                    "access_denied",
+                    "not_allowed",
+                    "temporarily_unavailable",
+                    "unsupported"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "platformCancel": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "platform-cancel" },
+            "payload": {
+              "type": "object",
+              "required": ["requestId"],
+              "properties": {
+                "requestId": { "$ref": "#/$defs/requestId" }
+              },
+              "additionalProperties": false
             }
           }
         }

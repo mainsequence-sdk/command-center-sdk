@@ -1,6 +1,6 @@
 ---
 title: Static-site embeds
-description: Integrate an application-owned iframe with strict origin, lifecycle, theme, user, delegated HTTP, and native WebSocket boundaries.
+description: Integrate an application-owned iframe with strict origin, lifecycle, theme, user, delegated HTTP, native WebSocket, and platform request boundaries.
 ---
 
 # Static-site embeds
@@ -21,11 +21,13 @@ Non-local deployment alone does not grant the iframe bridge. A release UID, buil
 working.
 
 The embed API connects a trusted host application to an application-owned static site in a
-sandboxed iframe. It solves two problems without sharing the host session:
+sandboxed iframe. It solves three problems without sharing the host session:
 
-- synchronize public theme and user context; and
+- synchronize public theme and user context;
 - make narrowly delegated HTTP requests and native WebSocket connections to an authorized FastAPI
-  runtime.
+  runtime; and
+- [send the platform requests the site needs through the host](#send-platform-requests-through-the-host),
+  which sends them as the signed-in person.
 
 It is not a general-purpose cross-origin RPC framework. The host owns authorization and credential
 resolution; the child receives only the smallest versioned contract required for its own UI.
@@ -39,6 +41,7 @@ authenticated session                     no host session
 approved child origin       postMessage    exact host origin
 credential resolver       ←────────────→   versioned SDK client
 backend API client                        delegated fetch helper
+platform request sender                   sendPlatformRequest(Request)
 ```
 
 The child is allowed to be application code, but it is not allowed to impersonate the host. Treat
@@ -325,6 +328,10 @@ If the host replaces an authenticated session while retaining the same public UI
 application must still recreate or otherwise invalidate the resolver boundary. Same-user session
 replacement can change credentials and permissions even when the visible UID is unchanged.
 
+Platform requests follow the same lifecycle. The host aborts its sender's work on a user change, a
+repeated `ready`, a replaced sender, and disposal; the child rejects its pending platform requests
+with `access_denied` on a user change and with `unsupported` on disposal.
+
 ## Open a native FastAPI WebSocket
 
 The host injects a separate one-time ticket resolver. It accepts only the exact target and path
@@ -426,6 +433,113 @@ segment, or dot segment. `/_healthz` and `/logos/...` are reserved by the platfo
 must be unique valid WebSocket tokens; the `mainsequence.ws-ticket.` and
 `mainsequence.ws-bridge.` prefixes are reserved for the platform.
 
+## Send platform requests through the host
+
+An embedded site that needs the platform itself, not a FastAPI release, never receives a platform
+credential. It hands the SDK a standard Fetch `Request`; the host sends it as the signed-in person,
+with the host's own credential and renewal, if the host serves that path; the site receives a
+standard Fetch `Response` ([SDK ADR 013](./adr/adr-sdk-013-static-site-platform-request-bridge.md)).
+
+The host passes `sendPlatformRequest`. The SDK calls it with `{ method, path, headers, body }` and
+`{ signal, userUid }`, only for the person in the host's current context, and the host decides
+which paths it serves. That allow-list is the control: whatever the host serves, the site can
+reach as the person.
+
+```tsx
+import { useCallback } from "react";
+import { StaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed/react";
+import {
+  StaticSitePlatformRequestError,
+  type SendStaticSitePlatformRequest,
+} from "@dev-mainsequence/command-center-sdk/embed";
+
+const servedPlatformPaths = ["/api/projects/", "/api/reports/"];
+
+export function ReportEmbed() {
+  const sendPlatformRequest = useCallback<SendStaticSitePlatformRequest>(
+    async (request, { signal }) => {
+      const [pathname = ""] = request.path.split("?");
+      if (!servedPlatformPaths.some((prefix) => pathname.startsWith(prefix))) {
+        throw new StaticSitePlatformRequestError("not_allowed");
+      }
+      return platformFetch(request.path, {
+        method: request.method,
+        headers: request.headers,
+        body: request.body,
+        signal,
+      });
+    },
+    [],
+  );
+
+  return <StaticSiteIframe {...viewerProps} sendPlatformRequest={sendPlatformRequest} />;
+}
+```
+
+`platformFetch` is the host's own authenticated fetch against the platform, an application
+adapter rather than an SDK export: it adds the host's credential and renews it. Compare the path
+before `?` against prefixes that end in `/`, and check the method too where a path is read-only.
+The SDK's path rules make that comparison sound: the path the host compares is the path the
+platform routes.
+
+- Keep the sender stable, for example with `useCallback`. Replacing it abandons the requests in
+  flight, which the site receives as `temporarily_unavailable`. Without a sender, every platform
+  request is `unsupported`.
+- Throw `StaticSitePlatformRequestError("not_allowed")` for a path or method you do not serve, and
+  `access_denied` when you cannot send as the person. Any other failure reaches the site as
+  `temporarily_unavailable`, without its message. An HTTP error status is a response, not an
+  error.
+- The platform sees the host's requests, from the host's origin with the host's credential. It
+  needs no CORS for the site's origin, and the site's `connect-src` needs nothing for it.
+
+The site sends requests after the first `onContext`:
+
+```ts
+const response = await client.sendPlatformRequest(
+  new Request("/api/projects/?limit=20", { headers: { accept: "application/json" }, signal }),
+);
+if (response.ok) renderProjects(await response.json());
+
+// A fetch-shaped function for code that takes one.
+const fetchThroughHost = (input: RequestInfo | URL, init?: RequestInit) =>
+  client.sendPlatformRequest(new Request(input, init));
+```
+
+| From the site | To the site |
+| --- | --- |
+| The method: `GET`, `POST`, `PUT`, `PATCH`, or `DELETE` | The status |
+| The URL's path and query, at most 4,096 characters | `content-type` |
+| `accept` and `content-type` | The body, at most 8 MiB once decoded |
+| A text body, at most 1 MiB of UTF-8 | |
+
+- The URL's origin and fragment stay behind. Every other request header is dropped, including any
+  credential the site sets, and no other response header, status text, or URL comes back: a design
+  that needs a response header, such as a pagination link, does not work through the bridge.
+- Paths are printable ASCII with well-formed percent-encoding, without a fragment or backslash;
+  before the query they have no empty segment, no `.` or `..` segment even percent-encoded, and no
+  percent-encoded slash or backslash. The SDK refuses any other path, any other method, a binary or
+  oversized body, and a body already read with `invalid_request`, and sends nothing.
+- JSON and UTF-8 `text/*` bodies travel as text, and everything else, images included, as base64.
+  Either way the `Response` holds the platform's exact bytes; `204`, `205`, and `304` have no body.
+- Abort `request.signal` to cancel: the SDK tells the host, which aborts its work, and rejects with
+  an `AbortError`. The site keeps at most 16 requests in flight and queues the rest in order.
+- The bridge carries one request and one complete response. Live streams, the Agent runtime's
+  included, are not bridged, and neither is a binary upload.
+
+Failures are `StaticSitePlatformRequestError` codes:
+
+| Code | Meaning |
+| --- | --- |
+| `invalid_request` | The request breaks the rules above and was not sent, or reused a request ID. |
+| `access_denied` | No person is signed in, the person changed, or the host cannot send as the person. |
+| `not_allowed` | The host does not serve this path or method. |
+| `temporarily_unavailable` | The platform was unreachable, the host timed out (60 seconds), already had 16 of the site's requests in flight, or replaced its sender. A retry can succeed. |
+| `unsupported` | The host has no sender or never answered within 65 seconds, as an older host does, or the response exceeds 8 MiB. Do not retry. |
+
+The first request to an older host fails only after the child's 65-second timeout. If you override
+`platformRequestTimeoutMs`, keep the host's value shorter than the child's, so that only a host that
+never answers reaches the child's timeout.
+
 ## Production test matrix
 
 Use a real cross-origin browser setup. Unit tests around `postMessage` parsing do not exercise CSP,
@@ -449,7 +563,11 @@ Cover at least:
   native close behavior, and reconnect with a fresh ticket;
 - WebSocket request cancellation, resolver timeout/replacement, repeated-ready generation change,
   strict result binding, user/disposal socket closure, mixed-version timeout, CSP `connect-src`, and
-  absence of tickets in URLs, storage, DOM, logs, analytics, or errors.
+  absence of tickets in URLs, storage, DOM, logs, analytics, or errors;
+- platform requests: the host's allow-list refusing other paths and methods with `not_allowed`,
+  JSON and binary responses, request and response caps, cancellation reaching the host's fetch,
+  sender timeout and replacement, a user change, an older host's timeout, and the platform seeing
+  only the host's origin and credential, never one from the site.
 
 The shorter [Themes and embeds](./themes-and-embeds.md) page remains as a compatibility overview.
 The threat model is maintained beside the implementation in `src/embed/THREAT_MODEL.md`.
