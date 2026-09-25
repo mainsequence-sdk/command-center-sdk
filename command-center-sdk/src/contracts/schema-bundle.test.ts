@@ -247,7 +247,7 @@ describe("published contract schema bundle", () => {
         channel,
         version: 1,
         type: "platform-request",
-        payload: { requestId: "platform-parity", method: "GET", path },
+        payload: { requestId: "platform-parity", userUid: "user-1", method: "GET", path },
       });
     }
     for (const [method, body] of [["POST", "{}"], ["DELETE", ""], ["GET", "{}"]]) {
@@ -255,7 +255,30 @@ describe("published contract schema bundle", () => {
         channel,
         version: 1,
         type: "platform-request",
-        payload: { requestId: "platform-parity", method, path: "/api/projects/", body },
+        payload: {
+          requestId: "platform-parity",
+          userUid: "user-1",
+          method,
+          path: "/api/projects/",
+          body,
+        },
+      });
+    }
+    for (const userUid of [
+      "user public uid",
+      "x".repeat(1_024),
+      "x".repeat(1_025),
+      "😀".repeat(1_024),
+      "😀".repeat(1_025),
+      "",
+      null,
+      undefined,
+    ]) {
+      messages.push({
+        channel,
+        version: 1,
+        type: "platform-request",
+        payload: { requestId: "platform-parity", userUid, method: "GET", path: "/api/projects/" },
       });
     }
     for (const [status, body, bodyEncoding] of [

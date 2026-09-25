@@ -38,6 +38,7 @@ const DEFAULT_PLATFORM_REQUEST_CLIENT_TIMEOUT_MS = 65_000;
 const MAX_PLATFORM_REQUESTS_IN_FLIGHT = 16;
 const MAX_PLATFORM_PATH_LENGTH = 4_096;
 const MAX_PLATFORM_HEADER_VALUE_LENGTH = 1_024;
+const MAX_PLATFORM_USER_UID_LENGTH = 1_024;
 const MAX_PLATFORM_REQUEST_BODY_BYTES = 1_048_576;
 const MAX_PLATFORM_RESPONSE_BODY_BYTES = 8_388_608;
 const MAX_PLATFORM_RESPONSE_BASE64_LENGTH = 4 * Math.ceil(MAX_PLATFORM_RESPONSE_BODY_BYTES / 3);
@@ -328,6 +329,8 @@ export interface StaticSitePlatformRequestMessage {
   type: "platform-request";
   payload: {
     requestId: string;
+    /** The person the child believes is signed in, from its current host context. */
+    userUid: string;
     method: StaticSitePlatformRequestMethod;
     path: string;
     headers?: StaticSitePlatformRequestHeaders;
@@ -714,6 +717,14 @@ function readPlatformRequestId(value: unknown): string | null {
   return typeof value === "string" && value.length <= 128 ? readExactRequestId(value) : null;
 }
 
+/** A person's public uid: non-empty, at most 1,024 code points (JSON Schema's count). */
+function readPlatformUserUid(value: unknown): string | null {
+  // A code point takes one or two UTF-16 code units; the first check keeps the count bounded.
+  if (typeof value !== "string" || value.length === 0) return null;
+  if (value.length > MAX_PLATFORM_USER_UID_LENGTH * 2) return null;
+  return [...value].length <= MAX_PLATFORM_USER_UID_LENGTH ? value : null;
+}
+
 /**
  * An absolute path with an optional query, as the URL parser serializes one: printable ASCII, well
  * formed percent-encoding, and no fragment or backslash. The path part has no empty segment (so
@@ -851,7 +862,7 @@ function decodeBase64(value: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-/** JSON and `text/*` travel as text when their charset is UTF-8 (or unstated); nothing else does. */
+/** JSON and `text/*` travel as text when their charset is UTF-8 or unstated; nothing else does. */
 function isTextualContentType(contentType: string | null): boolean {
   if (!contentType) return false;
   const [essence = "", ...parameters] = contentType.split(";");
@@ -1900,6 +1911,7 @@ function readStaticSitePlatformEnvelope(
 export function buildStaticSitePlatformRequestMessage({
   channel,
   requestId,
+  userUid,
   method,
   path,
   headers,
@@ -1907,6 +1919,7 @@ export function buildStaticSitePlatformRequestMessage({
 }: {
   channel: StaticSiteIframeChannel;
   requestId: string;
+  userUid: string;
   method: StaticSitePlatformRequestMethod;
   path: string;
   headers?: StaticSitePlatformRequestHeaders;
@@ -1914,6 +1927,12 @@ export function buildStaticSitePlatformRequestMessage({
 }): StaticSitePlatformRequestMessage {
   const normalizedRequestId = readPlatformRequestId(requestId);
   if (!normalizedRequestId) throw new Error("Platform requestId is invalid.");
+  const normalizedUserUid = readPlatformUserUid(userUid);
+  if (!normalizedUserUid) {
+    throw new Error(
+      "Platform request userUid must be a non-empty string of at most 1,024 characters.",
+    );
+  }
   if (!isPlatformRequestMethod(method)) {
     throw new Error("Platform request method must be GET, POST, PUT, PATCH, or DELETE.");
   }
@@ -1937,6 +1956,7 @@ export function buildStaticSitePlatformRequestMessage({
     type: "platform-request",
     payload: {
       requestId: normalizedRequestId,
+      userUid: normalizedUserUid,
       method,
       path: normalizedPath,
       ...(Object.keys(normalizedHeaders).length > 0 ? { headers: normalizedHeaders } : {}),
@@ -1951,6 +1971,7 @@ export function readStaticSitePlatformRequestMessage(
 ): StaticSitePlatformRequestMessage | null {
   const payload = readStaticSitePlatformEnvelope(value, expectedChannel, "platform-request", [
     "requestId",
+    "userUid",
     "method",
     "path",
     "headers",
@@ -1958,6 +1979,7 @@ export function readStaticSitePlatformRequestMessage(
   ]);
   if (!payload) return null;
   const requestId = readPlatformRequestId(payload.requestId);
+  const userUid = readPlatformUserUid(payload.userUid);
   const method = isPlatformRequestMethod(payload.method) ? payload.method : null;
   const path = readStaticSitePlatformPath(payload.path);
   const headers =
@@ -1965,11 +1987,12 @@ export function readStaticSitePlatformRequestMessage(
       ? {}
       : readPlatformHeaders(payload.headers, PLATFORM_REQUEST_HEADER_NAMES);
   const body = payload.body === undefined ? undefined : readPlatformRequestBody(payload.body);
-  if (!requestId || !method || !path || !headers || body === null) return null;
+  if (!requestId || !userUid || !method || !path || !headers || body === null) return null;
   if (method === "GET" && body !== undefined) return null;
   return buildStaticSitePlatformRequestMessage({
     channel: expectedChannel,
     requestId,
+    userUid,
     method,
     path,
     headers,
@@ -2288,7 +2311,9 @@ export function createStaticSiteIframeHost(
 
   function postPlatformError(requestId: string, code: StaticSitePlatformRequestErrorCode): void {
     if (!handshake) return;
-    postMessage(buildStaticSitePlatformErrorMessage({ channel: handshake.channel, requestId, code }));
+    postMessage(
+      buildStaticSitePlatformErrorMessage({ channel: handshake.channel, requestId, code }),
+    );
   }
 
   function postWebSocketError(
@@ -2505,8 +2530,10 @@ export function createStaticSiteIframeHost(
       postPlatformError(requestId, "unsupported");
       return;
     }
+    // The request names the person the child believed was signed in when it sent it. Sending only
+    // for the host's current person means a person change in between never sends it as another.
     const userUid = context.userUid;
-    if (!userUid) {
+    if (!userUid || message.payload.userUid !== userUid) {
       postPlatformError(requestId, "access_denied");
       return;
     }
@@ -2801,7 +2828,7 @@ export function createStaticSiteIframeClient(
         if (platformRequestsInFlight.get(pending.requestId) !== pending) return;
         releasePlatformRequest(pending);
         postPlatformCancel(pending.requestId);
-        // The host answers every request before its own timeout: silence means it predates the bridge.
+        // The host answers every request before its own timeout; silence means an older host.
         pending.reject(new StaticSitePlatformRequestError("unsupported"));
         dispatchPlatformRequests();
       }, platformRequestTimeoutMs);
@@ -2824,7 +2851,10 @@ export function createStaticSiteIframeClient(
 
   async function sendPlatformRequest(request: Request): Promise<Response> {
     const notReady = () =>
-      new StaticSitePlatformRequestError("unsupported", "The static-site host handshake is not ready.");
+      new StaticSitePlatformRequestError(
+        "unsupported",
+        "The static-site host handshake is not ready.",
+      );
     if (disposed || !initialized) throw notReady();
     const signal = typeof request === "object" && request !== null ? request.signal : undefined;
     if (signal?.aborted) throw createAbortError("The platform request was cancelled.");
@@ -2837,7 +2867,18 @@ export function createStaticSiteIframeClient(
     if (currentUserUid !== userUid) throw new StaticSitePlatformRequestError("access_denied");
 
     const requestId = createRequestId();
-    const message = buildStaticSitePlatformRequestMessage({ channel, requestId, ...serialized });
+    let message: StaticSitePlatformRequestMessage;
+    try {
+      message = buildStaticSitePlatformRequestMessage({
+        channel,
+        requestId,
+        userUid,
+        ...serialized,
+      });
+    } catch {
+      // A person's uid the wire cannot carry.
+      throw new StaticSitePlatformRequestError("invalid_request");
+    }
     return new Promise<Response>((resolve, reject) => {
       const handleAbort = () => {
         if (releasePlatformRequest(pending)) postPlatformCancel(requestId);

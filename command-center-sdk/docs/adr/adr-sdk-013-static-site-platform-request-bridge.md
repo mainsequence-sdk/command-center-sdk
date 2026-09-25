@@ -15,9 +15,9 @@
 An application embedded in a host as a static site never holds a platform credential. When it
 needs the platform, it asks its host to send the request. The child gives the SDK a standard Fetch
 `Request`; the host sends it as the signed-in person, with its own credential and renewal, if the
-path is one the host chooses to serve; the child receives a standard Fetch `Response`. The iframe
-protocol gains four additive version-one messages. The SDK knows no platform path: the host
-decides which ones it serves.
+path is one the host chooses to serve and the request names the person the host has signed in; the
+child receives a standard Fetch `Response`. The iframe protocol gains four additive version-one
+messages. The SDK knows no platform path: the host decides which ones it serves.
 
 ## Context
 
@@ -41,6 +41,7 @@ revocation. The application that owns the person's session should send the reque
 - The host, not the SDK and not the child, decides which platform paths an embedded application
   can use.
 - The child works with standard Fetch objects, so an existing transport adapts in one line.
+- A request the child sends for one person is never sent for another.
 - Every request is bounded in size, concurrency, and time, can be cancelled, and is parsed
   strictly. The protocol version does not change.
 - The platform does not change.
@@ -51,11 +52,14 @@ revocation. The application that owns the person's session should send the reque
 
 | Message | Direction | Payload |
 | --- | --- | --- |
-| `platform-request` | child to host | `requestId`; `method`; `path`; optional `headers`; optional `body` |
+| `platform-request` | child to host | `requestId`; `userUid`; `method`; `path`; optional `headers`; optional `body` |
 | `platform-response` | host to child | `requestId`; `status`; `headers`; `body`; `bodyEncoding` |
 | `platform-error` | host to child | `requestId`; `code` |
 | `platform-cancel` | child to host | `requestId` |
 
+- `userUid` is the person the child believes is signed in, from its current host context: the
+  public uid the host sends in `initialize`, a non-empty string of at most 1,024 characters. It
+  identifies a person and proves nothing; the host compares it with its own current person.
 - `method` is `GET`, `POST`, `PUT`, `PATCH`, or `DELETE`.
 - `path` is an absolute path with an optional query, as the URL parser serializes one, of at most
   4,096 characters. It is printable ASCII with well-formed percent-encoding and has no scheme,
@@ -84,8 +88,11 @@ revocation. The application that owns the person's session should send the reque
 returns `Promise<Response>`, typically the host's own authenticated fetch after it checks the path
 and method against the ones it serves.
 
-- It calls the sender only for the person in its current context. It answers `access_denied`
-  without a person and `unsupported` without a sender.
+- It calls the sender only when the request's `userUid` is the person in its current context, and
+  passes that person to the sender. It answers `access_denied` when the request names anyone else
+  or the host has no person, and `unsupported` without a sender. A request the child sent just
+  before a person change therefore reaches the host naming the previous person and is refused,
+  never sent for the new one.
 - It reads the Response's status, content type, and body, choosing the encoding above. A body past
   8 MiB is `unsupported`. A network error or an opaque response (status 0) is
   `temporarily_unavailable`. An HTTP error status is a response, not an error.
@@ -103,12 +110,13 @@ and method against the ones it serves.
 
 `createStaticSiteIframeClient(...)` gains `sendPlatformRequest(request: Request): Promise<Response>`.
 
-- It sends the method (upper-cased), the URL's pathname and search, `accept`, `content-type`, and
-  the body as text. The URL's origin and fragment stay behind: the host decides where the request
-  goes. Every other header is dropped, including any credential the child sets.
+- It sends the person in its current host context as `userUid`, the method (upper-cased), the URL's
+  pathname and search, `accept`, `content-type`, and the body as text. The URL's origin and
+  fragment stay behind: the host decides where the request goes. Every other header is dropped,
+  including any credential the child sets.
 - It refuses, locally and with `invalid_request`, a request the rules exclude: another method, an
-  unsafe path, a header value out of bounds, a body past 1 MiB or not UTF-8, or a body already
-  read.
+  unsafe path, a header value out of bounds, a body past 1 MiB or not UTF-8, a body already read,
+  or a person's uid past 1,024 characters.
 - It resolves `new Response(body, { status, headers })` with the content type, decoding base64
   into bytes. A null-body status (204, 205, 304) has no body. A status below 200 cannot be a Fetch
   `Response` and is `unsupported`. The status text, the URL, and every other header are not
@@ -138,7 +146,10 @@ platform are text; a binary upload is refused.
   request to an older host therefore takes the full client timeout to fail; a child treats
   `unsupported` as final for the session.
 - A new host without a sender: `unsupported`, at once.
-- A person change: the host aborts the sender's work, and the child rejects the pending requests.
+- A person change: the host aborts the sender's work and refuses every request that names the
+  previous person, and the child rejects its pending requests. The `userUid` field is part of
+  `platform-request` from the first release that has the message, so no host or child exists
+  without it.
 
 No existing message, field, channel rule, version, or context changes. The `/embed` and
 `/embed/react` TypeScript API, the JSON Schema, and the fixtures change additively.
@@ -171,10 +182,9 @@ No existing message, field, channel rule, version, or context changes. The `/emb
   reach as the person. Hosts keep it to what their embedded applications need.
 - Every request crosses two `postMessage` hops and the host's fetch. The caps bound the memory it
   costs the host.
-- A request the child posts just before a person change can reach the host after it, and the host
-  then sends it for the new person. The child cancels it when it learns of the change and drops
-  any answer, but a fast mutation can complete. Hosts dispose the viewer on a session transition
-  (`src/embed/THREAT_MODEL.md`), which closes that window.
-- The `platform-request`, `platform-response`, `platform-error`, and `platform-cancel` fields, the
-  error codes, the caps, and the child's unsupported-on-silence behaviour are compatibility
-  boundaries.
+- A request is sent only for the person it names. When the person changes between the child's
+  sending and the host's receiving, the host refuses the request with `access_denied` instead of
+  sending it for the new person, and the child, told of the change, has already rejected it.
+- The `platform-request` fields, `userUid` among them, the `platform-response`,
+  `platform-error`, and `platform-cancel` fields, the error codes, the caps, the host's person
+  check, and the child's unsupported-on-silence behaviour are compatibility boundaries.

@@ -4,6 +4,7 @@
   "type": "platform-request",
   "payload": {
     "requestId": "platform-request-1",
+    "userUid": "user-public-uid",
     "method": "GET",
     "path": "/api/projects/?limit=20",
     "headers": {

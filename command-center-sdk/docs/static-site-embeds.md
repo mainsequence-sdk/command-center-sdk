@@ -329,8 +329,9 @@ application must still recreate or otherwise invalidate the resolver boundary. S
 replacement can change credentials and permissions even when the visible UID is unchanged.
 
 Platform requests follow the same lifecycle. The host aborts its sender's work on a user change, a
-repeated `ready`, a replaced sender, and disposal; the child rejects its pending platform requests
-with `access_denied` on a user change and with `unsupported` on disposal.
+repeated `ready`, a replaced sender, and disposal, and refuses a request that names a user other
+than its current one; the child rejects its pending platform requests with `access_denied` on a
+user change and with `unsupported` on disposal.
 
 ## Open a native FastAPI WebSocket
 
@@ -441,9 +442,11 @@ with the host's own credential and renewal, if the host serves that path; the si
 standard Fetch `Response` ([SDK ADR 013](./adr/adr-sdk-013-static-site-platform-request-bridge.md)).
 
 The host passes `sendPlatformRequest`. The SDK calls it with `{ method, path, headers, body }` and
-`{ signal, userUid }`, only for the person in the host's current context, and the host decides
-which paths it serves. That allow-list is the control: whatever the host serves, the site can
-reach as the person.
+`{ signal, userUid }`, and the host decides which paths it serves. That allow-list is the control:
+whatever the host serves, the site can reach as the person. Each request names the person the site
+believes is signed in, and the SDK calls the sender only when that is the person in the host's
+current context; otherwise it answers `access_denied`. A request the site sent just before a
+person change is therefore refused, never sent for the new person.
 
 ```tsx
 import { useCallback } from "react";
@@ -507,9 +510,10 @@ const fetchThroughHost = (input: RequestInfo | URL, init?: RequestInit) =>
 
 | From the site | To the site |
 | --- | --- |
-| The method: `GET`, `POST`, `PUT`, `PATCH`, or `DELETE` | The status |
-| The URL's path and query, at most 4,096 characters | `content-type` |
-| `accept` and `content-type` | The body, at most 8 MiB once decoded |
+| The person in its current context (`userUid`), which the SDK adds | The status |
+| The method: `GET`, `POST`, `PUT`, `PATCH`, or `DELETE` | `content-type` |
+| The URL's path and query, at most 4,096 characters | The body, at most 8 MiB once decoded |
+| `accept` and `content-type` | |
 | A text body, at most 1 MiB of UTF-8 | |
 
 - The URL's origin and fragment stay behind. Every other request header is dropped, including any
@@ -531,7 +535,7 @@ Failures are `StaticSitePlatformRequestError` codes:
 | Code | Meaning |
 | --- | --- |
 | `invalid_request` | The request breaks the rules above and was not sent, or reused a request ID. |
-| `access_denied` | No person is signed in, the person changed, or the host cannot send as the person. |
+| `access_denied` | No person is signed in, the request names a person other than the host's current one (the person changed), or the host cannot send as the person. |
 | `not_allowed` | The host does not serve this path or method. |
 | `temporarily_unavailable` | The platform was unreachable, the host timed out (60 seconds), already had 16 of the site's requests in flight, or replaced its sender. A retry can succeed. |
 | `unsupported` | The host has no sender or never answered within 65 seconds, as an older host does, or the response exceeds 8 MiB. Do not retry. |

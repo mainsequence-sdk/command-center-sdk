@@ -54,10 +54,11 @@ The v1 schema also includes the platform request messages of SDK ADR 013: `platf
 `platform-response`, `platform-error`, and `platform-cancel`. They cross only between the host and
 the iframe. The host sends each request to the platform itself, with its own credential, so no
 backend implements or validates these messages and no platform route changes. The request carries
-a method, an absolute path and query, `accept` and `content-type`, and a text body; the response
-carries a status, `content-type`, and a text or base64 body. Runtime checks additionally count the
-1 MiB request and 8 MiB response caps in bytes, correlate answers, cancel, time out, and limit a
-child to 16 requests in flight.
+the public uid of the person the child believes is signed in, a method, an absolute path and
+query, `accept` and `content-type`, and a text body; the response carries a status,
+`content-type`, and a text or base64 body. Runtime checks additionally refuse a request whose
+`userUid` is not the host's current person, count the 1 MiB request and 8 MiB response caps in
+bytes, correlate answers, cancel, time out, and limit a child to 16 requests in flight.
 
 The normalized collection is not automatically a requirement for every raw product endpoint. An
 existing `{count, results}` API can keep that envelope when its frontend adapter maps it to

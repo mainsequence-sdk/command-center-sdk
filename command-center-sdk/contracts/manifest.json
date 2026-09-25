@@ -61,6 +61,8 @@
           "fixtures/invalid/static-site-iframe-v1.platform-request-encoded-dot-segment.json",
           "fixtures/invalid/static-site-iframe-v1.platform-request-get-with-body.json",
           "fixtures/invalid/static-site-iframe-v1.platform-request-unknown-method.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-request-missing-user-uid.json",
+          "fixtures/invalid/static-site-iframe-v1.platform-request-no-person.json",
           "fixtures/invalid/static-site-iframe-v1.platform-response-extra-header.json",
           "fixtures/invalid/static-site-iframe-v1.platform-response-invalid-status.json",
           "fixtures/invalid/static-site-iframe-v1.platform-response-invalid-base64.json",

@@ -44,6 +44,12 @@
       "maxLength": 4096,
       "pattern": "^(?![^?]*//)(?![^?]*/(?:\\.|%2[eE]){1,2}(?:[/?]|$))(?![^?]*%(?:2[fF]|5[cC]))(?!.*%(?![0-9A-Fa-f]{2}))/[A-Za-z0-9._~!$&'()*+,;=:@/?%\\[\\]^`{|}-]*$"
     },
+    "platformUserUid": {
+      "description": "The public uid of the person the child believes is signed in, from its current host context. The host sends the request only when this is the person in its own current context.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
     "platformHeaderValue": {
       "type": "string",
       "maxLength": 1024,
@@ -327,9 +333,10 @@
             "type": { "const": "platform-request" },
             "payload": {
               "type": "object",
-              "required": ["requestId", "method", "path"],
+              "required": ["requestId", "userUid", "method", "path"],
               "properties": {
                 "requestId": { "$ref": "#/$defs/requestId" },
+                "userUid": { "$ref": "#/$defs/platformUserUid" },
                 "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
                 "path": { "$ref": "#/$defs/platformPath" },
                 "headers": {

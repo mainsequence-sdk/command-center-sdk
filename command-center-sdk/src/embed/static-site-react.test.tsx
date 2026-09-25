@@ -172,6 +172,7 @@ describe("StaticSiteIframe", () => {
       buildStaticSitePlatformRequestMessage({
         channel: "mainsequence.react-test",
         requestId,
+        userUid: "user-1",
         method: "GET",
         path: "/api/items/",
       });

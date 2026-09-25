@@ -1420,6 +1420,7 @@ function platformRequest(
   return buildStaticSitePlatformRequestMessage({
     channel,
     requestId,
+    userUid: "user-1",
     method: "GET",
     path: "/api/items/",
     ...fields,
@@ -1531,6 +1532,7 @@ describe("static-site platform request protocol", () => {
       type: "platform-request",
       payload: {
         requestId: "platform-1",
+        userUid: "user-1",
         method: "POST",
         path: "/api/items/?limit=20",
         headers: { accept: "application/json", "content-type": "application/json" },
@@ -1541,10 +1543,25 @@ describe("static-site platform request protocol", () => {
     expect(readStaticSiteIframeMessage(request, channel)).toEqual(request);
     expect(platformRequest("platform-2").payload).toEqual({
       requestId: "platform-2",
+      userUid: "user-1",
       method: "GET",
       path: "/api/items/",
     });
+    const { userUid: _userUid, ...withoutPerson } = request.payload;
+    for (const userUid of ["x".repeat(1_024), "😀".repeat(1_024), "user public uid"]) {
+      expect(
+        readStaticSitePlatformRequestMessage({ ...request, payload: { ...request.payload, userUid } }, channel)
+          ?.payload.userUid,
+      ).toBe(userUid);
+    }
     for (const payload of [
+      withoutPerson,
+      { ...request.payload, userUid: null },
+      { ...request.payload, userUid: "" },
+      { ...request.payload, userUid: 42 },
+      { ...request.payload, userUid: { user_uid: "user-1" } },
+      { ...request.payload, userUid: "x".repeat(1_025) },
+      { ...request.payload, userUid: "😀".repeat(1_025) },
       { ...request.payload, token: "must-not-cross" },
       { ...request.payload, headers: { authorization: "Bearer must-not-cross" } },
       { ...request.payload, headers: { cookie: "session=must-not-cross" } },
@@ -1564,6 +1581,7 @@ describe("static-site platform request protocol", () => {
     expect(readStaticSitePlatformRequestMessage({ ...request, extra: true }, channel)).toBeNull();
     expect(readStaticSitePlatformRequestMessage(request, "mainsequence.other")).toBeNull();
     expect(() => platformRequest("platform-3", { body: "x" })).toThrow("no body");
+    expect(() => platformRequest("platform-4", { userUid: "" })).toThrow("userUid");
 
     const response = buildStaticSitePlatformResponseMessage({
       channel,
@@ -1632,7 +1650,7 @@ describe("static-site platform request protocol", () => {
           channel,
           version: 1,
           type: "platform-request",
-          payload: { requestId: "platform-path", method: "GET", path },
+          payload: { requestId: "platform-path", userUid: "user-1", method: "GET", path },
         },
         channel,
       )?.payload.path ?? null;
@@ -1687,7 +1705,13 @@ describe("static-site platform request protocol", () => {
           channel,
           version: 1,
           type: "platform-request",
-          payload: { requestId: "platform-body", method: "POST", path: "/api/items/", body },
+          payload: {
+            requestId: "platform-body",
+            userUid: "user-1",
+            method: "POST",
+            path: "/api/items/",
+            body,
+          },
         },
         channel,
       );
@@ -1875,7 +1899,12 @@ describe("static-site platform request host", () => {
     expect(
       deliver({
         ...platformRequest("platform-malformed"),
-        payload: { requestId: "platform-malformed", method: "GET", path: "/api/../admin/" },
+        payload: {
+          requestId: "platform-malformed",
+          userUid: "user-1",
+          method: "GET",
+          path: "/api/../admin/",
+        },
       }),
     ).toBe(false);
     expect(answers().at(-1)).toEqual(
@@ -1887,6 +1916,33 @@ describe("static-site platform request host", () => {
     );
     expect(onProtocolError).toHaveBeenCalledWith("Rejected malformed static-site iframe message.");
     expect(sender).toHaveBeenCalledOnce();
+  });
+
+  it("sends only for the person the request names, and refuses one sent before a person change", async () => {
+    const sender = vi.fn<SendStaticSitePlatformRequest>(async () => new Response("{}"));
+    const { host, deliver, waitForAnswer } = createPlatformHost({ sendPlatformRequest: sender });
+    const refused = (requestId: string) =>
+      buildStaticSitePlatformErrorMessage({ channel, requestId, code: "access_denied" });
+
+    deliver(platformRequest("platform-other-person", { userUid: "user-2" }));
+    expect(await waitForAnswer("platform-other-person")).toEqual(refused("platform-other-person"));
+
+    // The child sends for user-1; the host's person changes before the message arrives.
+    const inTransit = platformRequest("platform-in-transit");
+    host.updateContext({ themeId: "graphite", themeMode: "dark", userUid: "user-2" });
+    deliver(inTransit);
+    expect(await waitForAnswer("platform-in-transit")).toEqual(refused("platform-in-transit"));
+
+    host.updateContext({ themeId: "graphite", themeMode: "dark", userUid: null });
+    deliver(platformRequest("platform-signed-out", { userUid: "user-2" }));
+    expect(await waitForAnswer("platform-signed-out")).toEqual(refused("platform-signed-out"));
+    expect(sender).not.toHaveBeenCalled();
+
+    host.updateContext({ themeId: "graphite", themeMode: "dark", userUid: "user-2" });
+    deliver(platformRequest("platform-current-person", { userUid: "user-2" }));
+    expect((await waitForAnswer("platform-current-person")).type).toBe("platform-response");
+    expect(sender).toHaveBeenCalledOnce();
+    expect(sender.mock.calls[0]![1].userUid).toBe("user-2");
   });
 
   it("refuses a request past 16 in flight for its child", async () => {
@@ -1942,14 +1998,14 @@ describe("static-site platform request host", () => {
     host.updateContext({ themeId: "graphite", themeMode: "dark", userUid: "user-2" });
     expect(signals[1]!.aborted).toBe(true);
 
-    deliver(platformRequest("platform-handshake"));
+    deliver(platformRequest("platform-handshake", { userUid: "user-2" }));
     await vi.waitFor(() => expect(signals).toHaveLength(3));
     host.updateContext({ themeId: "quartz-light", themeMode: "light", userUid: "user-2" });
     expect(signals[2]!.aborted).toBe(false);
     deliver(buildStaticSiteIframeReadyMessage(channel));
     expect(signals[2]!.aborted).toBe(true);
 
-    deliver(platformRequest("platform-sender"));
+    deliver(platformRequest("platform-sender", { userUid: "user-2" }));
     await vi.waitFor(() => expect(signals).toHaveLength(4));
     host.updatePlatformRequestSender(sender);
     expect(signals[3]!.aborted).toBe(false);
@@ -1964,7 +2020,7 @@ describe("static-site platform request host", () => {
     );
     host.updatePlatformRequestSender(sender);
 
-    deliver(platformRequest("platform-disposed"));
+    deliver(platformRequest("platform-disposed", { userUid: "user-2" }));
     await vi.waitFor(() => expect(signals).toHaveLength(5));
     host.dispose();
     expect(signals[4]!.aborted).toBe(true);
@@ -2065,6 +2121,7 @@ describe("static-site platform request client", () => {
       type: "platform-request",
       payload: {
         requestId: expect.stringMatching(/^[A-Za-z0-9._:-]{1,128}$/u),
+        userUid: "user-1",
         method: "PATCH",
         path: "/api/items/?limit=20",
         headers: { accept: "application/json", "content-type": "application/json" },
@@ -2092,6 +2149,7 @@ describe("static-site platform request client", () => {
     await vi.waitFor(() => expect(sent()).toHaveLength(3));
     expect(sent()[2]!.payload).toEqual({
       requestId: expect.any(String),
+      userUid: "user-1",
       method: "DELETE",
       path: "/api/items/",
     });
@@ -2182,6 +2240,13 @@ describe("static-site platform request client", () => {
     });
     expect(sent()).toEqual([]);
     client.dispose();
+
+    const unrepresentable = createPlatformClient({ userUid: "u".repeat(1_025) });
+    await expect(unrepresentable.client.sendPlatformRequest(new Request(url))).rejects.toMatchObject({
+      code: "invalid_request",
+    });
+    expect(unrepresentable.sent()).toEqual([]);
+    unrepresentable.client.dispose();
   });
 
   it("sends platform-cancel and rejects with an AbortError when the request's signal aborts", async () => {
@@ -2261,6 +2326,7 @@ describe("static-site platform request client", () => {
 
     const next = client.sendPlatformRequest(new Request(url));
     await vi.waitFor(() => expect(sent()).toHaveLength(17));
+    expect(sent()[16]!.payload.userUid).toBe("user-2");
     respond(sent()[16]!.payload.requestId);
     await expect(next).resolves.toBeInstanceOf(Response);
     client.dispose();
@@ -2400,6 +2466,79 @@ describe("static-site platform request bridge", () => {
     expect(platformCalls).toHaveLength(2);
     expect(JSON.stringify(hostWindow.postMessage.mock.calls)).not.toContain("host-held-credential");
     expect(JSON.stringify(childWindow.postMessage.mock.calls)).not.toContain("host-held-credential");
+
+    client.dispose();
+    host.dispose();
+  });
+
+  it("refuses, and never sends, a request whose person changes while it is in transit", async () => {
+    const hostWindow = { postMessage: vi.fn() };
+    const childWindow = { postMessage: vi.fn() };
+    const toHost: unknown[] = [];
+    const toChild: unknown[] = [];
+    hostWindow.postMessage.mockImplementation((message: unknown) => toHost.push(message));
+    childWindow.postMessage.mockImplementation((message: unknown) => toChild.push(message));
+    const sender = vi.fn<SendStaticSitePlatformRequest>(async () => new Response("{}"));
+    const host = createStaticSiteIframeHost({
+      targetOrigin: platformSiteOrigin,
+      targetWindow: childWindow,
+      context: { themeId: "graphite", themeMode: "dark", userUid: "user-1" },
+      sendPlatformRequest: sender,
+    });
+    const onProtocolError = vi.fn();
+    const client = createStaticSiteIframeClient({
+      channel,
+      hostOrigin: platformHostOrigin,
+      parentWindow: hostWindow,
+      onContext: vi.fn(),
+      onProtocolError,
+    });
+    const deliverToHost = () =>
+      toHost.splice(0).forEach((data) =>
+        host.handleMessage({
+          origin: platformSiteOrigin,
+          source: childWindow as unknown as MessageEventSource,
+          data: structuredClone(data),
+        }),
+      );
+    const deliverToChild = () =>
+      toChild.splice(0).forEach((data) =>
+        client.handleMessage({
+          origin: platformHostOrigin,
+          source: hostWindow as unknown as MessageEventSource,
+          data: structuredClone(data),
+        }),
+      );
+    client.announceReady();
+    deliverToHost();
+    deliverToChild();
+
+    const pending = client.sendPlatformRequest(new Request(`${platformSiteOrigin}/api/items/`));
+    pending.catch(() => undefined);
+    await vi.waitFor(() => expect(toHost).toHaveLength(1));
+    expect(toHost[0]).toMatchObject({ type: "platform-request", payload: { userUid: "user-1" } });
+    host.updateContext({ themeId: "graphite", themeMode: "dark", userUid: "user-2" });
+    deliverToHost();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(sender).not.toHaveBeenCalled();
+    expect(toChild.map((message) => (message as { type: string }).type)).toEqual([
+      "initialize",
+      "platform-error",
+    ]);
+    deliverToChild();
+    await expect(pending).rejects.toMatchObject({ code: "access_denied" });
+
+    // The child told the host to stop the refused request; its next request names the new person.
+    expect(toHost).toEqual([expect.objectContaining({ type: "platform-cancel" })]);
+    const next = client.sendPlatformRequest(new Request(`${platformSiteOrigin}/api/items/`));
+    await vi.waitFor(() => expect(toHost).toHaveLength(2));
+    expect(toHost[1]).toMatchObject({ type: "platform-request", payload: { userUid: "user-2" } });
+    deliverToHost();
+    await vi.waitFor(() => expect(toChild).toHaveLength(1));
+    deliverToChild();
+    await expect(next).resolves.toBeInstanceOf(Response);
+    expect(sender).toHaveBeenCalledOnce();
+    expect(sender.mock.calls[0]![1].userUid).toBe("user-2");
 
     client.dispose();
     host.dispose();

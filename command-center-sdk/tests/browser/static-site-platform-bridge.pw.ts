@@ -138,7 +138,9 @@ const client = createStaticSiteIframeClient({
     const controller = new AbortController();
     setTimeout(() => controller.abort(), 300);
     try {
-      await client.sendPlatformRequest(new Request("/api/projects/slow", { signal: controller.signal }));
+      await client.sendPlatformRequest(
+        new Request("/api/projects/slow", { signal: controller.signal }),
+      );
     } catch (error) {
       cancelled = failure(error);
     }
@@ -242,7 +244,7 @@ test.describe("static-site platform request browser bridge", () => {
     await Promise.all(closeServers.map((close) => close()));
   });
 
-  test("sends the child's requests as the host's person and returns JSON, images, refusals, and cancellations", async ({
+  test("sends the child's requests as the host's person and relays every kind of answer", async ({
     page,
   }) => {
     const consoleMessages: string[] = [];

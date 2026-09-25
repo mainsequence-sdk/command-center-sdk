@@ -17,9 +17,11 @@ theme, or storage change, and no backend change.
   `createStaticSiteIframeHost` or `StaticSiteIframe`, serving only the paths they choose, and
   replace it with `updatePlatformRequestSender()`. Failures are `StaticSitePlatformRequestError`
   codes: `invalid_request`, `access_denied`, `not_allowed`, `temporarily_unavailable`, and
-  `unsupported`. Only the method, the path and query, `accept`, `content-type`, and a text body go
-  out, and only the status, `content-type`, and the body (text for JSON and UTF-8 `text/*`, base64
-  otherwise) come back. The caps are paths of 4,096 characters, request bodies of 1 MiB, responses
+  `unsupported`. Each request names the person in the child's current context (`userUid`), and the
+  host sends it only for its own current person, so a request sent just before a person change is
+  refused with `access_denied` rather than sent for the new person. Only that uid, the method, the
+  path and query, `accept`, `content-type`, and a text body go out, and only the status,
+  `content-type`, and the body (text for JSON and UTF-8 `text/*`, base64 otherwise) come back. The caps are paths of 4,096 characters, request bodies of 1 MiB, responses
   of 8 MiB, and 16 requests in flight per child, past which the child queues. The host times out
   at 60 seconds and the child at 65, reporting an older host's silence as `unsupported`. Live
   streams are not bridged.

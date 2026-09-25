@@ -4,8 +4,10 @@
   "type": "platform-request",
   "payload": {
     "requestId": "platform-request-1",
-    "userUid": "user-public-uid",
     "method": "GET",
-    "path": "https://platform.example.com/api/projects/"
+    "path": "/api/projects/",
+    "headers": {
+      "accept": "application/json"
+    }
   }
 }

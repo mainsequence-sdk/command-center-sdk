@@ -151,20 +151,22 @@ const host = createStaticSiteIframeHost({
 const response = await client.sendPlatformRequest(new Request("/api/projects/", { signal }));
 ```
 
-- Wire: `platform-request` (`requestId`, `method`, `path`, optional `headers` limited to `accept`
-  and `content-type`, optional text `body`), `platform-response` (`requestId`, `status`,
+- Wire: `platform-request` (`requestId`, `userUid`, `method`, `path`, optional `headers` limited
+  to `accept` and `content-type`, optional text `body`), `platform-response` (`requestId`, `status`,
   `headers` limited to `content-type`, `body`, `bodyEncoding` of `text` or `base64`),
   `platform-error` (`requestId`, `code`), and `platform-cancel` (`requestId`).
 - Caps: a path and query of 4,096 characters; header values of 1,024; a request body of 1 MiB of
   UTF-8; a response body of 8 MiB decoded, past which the answer is `unsupported`; 16 requests in
   flight per child, which the client queues past and the host refuses past. Platform requests and
   responses are exempt from `maxPayloadBytes`, which still bounds every other message.
-- The host calls the sender only for the person in its current context (`access_denied` without
-  one, `unsupported` without a sender), and aborts the sender's signal on `platform-cancel`, a
-  person change, a new handshake, a replaced sender (answered `temporarily_unavailable`), and
-  disposal. Its timeout is 60 seconds.
-- The client upper-cases the method, sends the URL's pathname and search, drops every other
-  header, and refuses what the rules exclude before sending. It cancels on `request.signal`,
+- The host calls the sender only when the request's `userUid` is the person in its current context
+  (`access_denied` when it names anyone else or the host has none, `unsupported` without a
+  sender), so a request sent before a person change is refused rather than sent for the new person.
+  It aborts the sender's signal on `platform-cancel`, a person change, a new handshake, a replaced
+  sender (answered `temporarily_unavailable`), and disposal. Its timeout is 60 seconds.
+- The client names its current person as `userUid`, upper-cases the method, sends the URL's
+  pathname and search, drops every other header, and refuses what the rules exclude before
+  sending. It cancels on `request.signal`,
   rejects pending requests with `access_denied` on a person change, and reports a host that never
   answers as `unsupported` after 65 seconds.
 - JSON and UTF-8 `text/*` bodies travel as text and every other body as base64; the child's

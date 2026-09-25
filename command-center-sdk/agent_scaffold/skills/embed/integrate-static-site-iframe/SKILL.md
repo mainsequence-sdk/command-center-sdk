@@ -160,10 +160,11 @@ const fetchThroughHost = (input: RequestInfo | URL, init?: RequestInit) =>
 
 Never ask the host, the URL, storage, or configuration for a platform token, and never set an
 `Authorization` header: the SDK drops every header except `accept` and `content-type`. Only the
-method (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`), the path and query, and a text body of at most 1
-MiB cross; the response carries the status, `content-type`, and a body of at most 8 MiB, and no
-other header. Pass `signal` to cancel. Handle `StaticSitePlatformRequestError.code`:
-`not_allowed` (the host does not serve that path or method), `access_denied`,
+method (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`), the path and query, a text body of at most 1 MiB,
+and the public uid of the person in the child's current context, which the SDK adds, cross; the
+response carries the status, `content-type`, and a body of at most 8 MiB, and no other header. Pass `signal` to cancel. Handle `StaticSitePlatformRequestError.code`:
+`not_allowed` (the host does not serve that path or method), `access_denied` (no person, or the
+person changed before the host received the request),
 `temporarily_unavailable` (retry later), `invalid_request`, and `unsupported` (no sender, a
 response over 8 MiB, or an older host that never answers within 65 seconds; show the feature as
 unavailable and do not retry). An HTTP error status arrives as a normal `Response`. The bridge
@@ -197,7 +198,8 @@ never return raw backend bodies. Do not reuse the HTTP credential or a Command C
 ticket issued for another purpose.
 
 When child applications need the platform, inject `sendPlatformRequest(request, { signal,
-userUid })`. Serve only the paths and methods the child needs: compare the path before `?` against
+userUid })`. The SDK calls it only when the request names the person in the host's current
+context, and passes that person as `userUid`. Serve only the paths and methods the child needs: compare the path before `?` against
 prefixes ending in `/`, throw `StaticSitePlatformRequestError("not_allowed")` for anything else,
 and send the rest with the host's own authenticated fetch against the platform, passing `method`,
 `headers`, `body`, and `signal` and adding the host's credential. Never return the host's

@@ -41,6 +41,9 @@
   platform path;
 - platform requests sent by the host with its own credential and renewal, so the child never
   receives a platform credential and a credential header the child sets never crosses the bridge;
+- each platform request names the person the child believes is signed in, and the host sends it
+  only when that is the person in its current context (`access_denied` otherwise), so a person
+  change between the child's sending and the host's receiving never sends it for the new person;
 - strict platform paths (no scheme, host, fragment, backslash, empty segment, dot segment, or
   percent-encoded dot segment, slash, or backslash), so the path an allow-list compares is the
   path the platform routes;
@@ -53,6 +56,5 @@ The public SDK cannot prove that a configured origin is trustworthy. Deployment 
 the child origin, content security policy, requested backend capabilities, and data classification.
 The SDK cannot continuously revoke an upgraded connection; the host must dispose the viewer on
 authentication-session transitions, and applications own reconnect and resynchronization policy.
-The same disposal closes a window platform requests leave open: a request the child posts just
-before a person change can reach the host after it and be sent for the new person. The SDK cannot
-judge an allow-list either; whatever paths the host serves, the child can reach as the person.
+The SDK cannot judge a platform path allow-list: whatever paths the host serves, the child can
+reach as the person.
