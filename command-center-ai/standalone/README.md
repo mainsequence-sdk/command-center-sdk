@@ -27,7 +27,7 @@ It may read its own environment; the package in `../src` may not.
 
 ## Trying It
 
-With a platform: `npm run chat:dev` from the repository root serves the application on
+With a platform: `npm run ai:dev` from the repository root serves the application on
 `http://localhost:5183`. That origin is not on the platform's allow-list, so a direct call is
 refused by the browser. Put the platform API URL in `command-center-ai/.env.local`:
 

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Manage Model Providers"
-  short_description: "Connect providers and custom models for the chat"
-  default_prompt: "Use $manage-model-providers to add the chat's model provider settings, connect providers, and verify custom models and the test conversation."

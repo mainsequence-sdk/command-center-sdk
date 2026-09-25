@@ -4,12 +4,12 @@ import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { listPackagedSkills } from "../../cli/install-skills.mjs";
+import { listPackagedSkills } from "../../cli/install-agent-skills.mjs";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const docsRoot = join(packageRoot, "docs");
 
-/** The rows of the documentation map: each names a skill and links its human guide. */
+/** The rows of the documentation map: each names a skill by its lane path and links its human guide. */
 async function readSkillMap() {
   const index = await readFile(join(docsRoot, "README.md"), "utf8");
   const section = index.split(/^## Task and agent-skill map$/mu)[1] ?? "";
@@ -17,13 +17,15 @@ async function readSkillMap() {
     .split("\n")
     .filter((line) => line.startsWith("|") && !/^\|\s*(?:Task|-+)\s*\|/u.test(line))
     .map((line) => ({
-      skills: [...line.matchAll(/`([a-z0-9-]+)`/gu)].map((match) => match[1]),
+      skills: [...line.matchAll(/`([a-z0-9-]+\/[a-z0-9-]+)`/gu)].map((match) => match[1]),
       guides: [...line.matchAll(/\]\((\.\/[^)#]+\.md)\)/gu)].map((match) => match[1]),
     }));
 }
 
 test("every packaged skill has a human guide in the documentation map", async () => {
-  const skills = await listPackagedSkills(join(packageRoot, "agent_scaffold", "skills"));
+  const skills = (await listPackagedSkills(join(packageRoot, "agent_scaffold", "skills"))).map(
+    (skill) => skill.relativePath,
+  );
   const rows = await readSkillMap();
 
   assert.ok(skills.length > 0);
@@ -42,9 +44,10 @@ test("every guide names its skill, and every skill names its guide", async () =>
   const rows = await readSkillMap();
 
   for (const { skills: [skill], guides: [guide] } of rows) {
+    const name = skill.split("/").at(-1);
     const guideText = await readFile(join(docsRoot, guide), "utf8");
-    const skillText = await readFile(join(packageRoot, "agent_scaffold", "skills", skill, "SKILL.md"), "utf8");
-    assert.match(guideText, new RegExp(`\`${skill}\``, "u"), `${guide} does not name ${skill}`);
+    const skillText = await readFile(join(packageRoot, "agent_scaffold", "skills", ...skill.split("/"), "SKILL.md"), "utf8");
+    assert.match(guideText, new RegExp(`\`${name}\``, "u"), `${guide} does not name ${name}`);
     assert.ok(skillText.includes(`docs/${guide.replace("./", "")}`), `${skill} does not name ${guide}`);
   }
 });

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Model Providers"
+  short_description: "Connect providers and custom models for Command Center AI"
+  default_prompt: "Use $manage-model-providers to add Command Center AI's model provider settings, connect providers, and verify custom models and the test conversation."

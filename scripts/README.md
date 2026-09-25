@@ -18,15 +18,16 @@ npm run boundaries:test
 
 ## Package Direction Validation
 
-The chat depends on the SDK, and the SDK knows nothing about the chat
-([SDK ADR 012](../docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)).
+Command Center AI depends on the SDK, and the SDK depends on nothing of it
+([SDK ADR 012](../docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md), as amended).
 
 - `check-package-direction.mjs` reads every file under `command-center-sdk/`, whatever its type,
-  except build output and installed dependencies. It fails when one contains
-  `@dev-mainsequence/command-center-ai`, holds a path that resolves into `command-center-ai/`, links into `command-center-ai/` on the
+  except build output and installed dependencies. It fails when one names
+  `@dev-mainsequence/command-center-ai` outside the allowlist in the script (the SDK's two general
+  skills and their guides, each with an exact count), imports it, holds a path that resolves into `command-center-ai/`, links into `command-center-ai/` on the
   repository's GitHub, or is a symbolic link into `command-center-ai/`, and when the SDK's `package.json` lists
-  the chat in a dependency field. It reads text: a path that code assembles at run time from
-  separate segments is left to review. The rule holds before the chat's workspace exists.
+  the package in a dependency field, and when an allowlisted file does not exist. It reads text: a path that code assembles at run time from
+  separate segments is left to review. The rule holds before the package's workspace exists.
 - `check-package-direction.node.mjs` tests the check against fixtures under
   `fixtures/package-direction/`.
 

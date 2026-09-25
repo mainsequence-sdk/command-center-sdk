@@ -1,6 +1,6 @@
 ---
 name: use-command-center-sdk
-description: Set up, inspect, upgrade, or troubleshoot a TypeScript or React application that consumes @dev-mainsequence/command-center-sdk. Use when locating the installed SDK, choosing a published entrypoint, loading packaged styles, checking peer dependencies, or establishing the boundary between SDK contracts and consumer-owned behavior.
+description: Set up, inspect, upgrade, or troubleshoot a TypeScript or React application that consumes @dev-mainsequence/command-center-sdk. Use when locating the installed SDK, choosing a published entrypoint, loading packaged styles, checking peer dependencies, or establishing the boundary between SDK contracts and consumer-owned behavior. Also use when the person wants to add a chat or AI capabilities (a conversation with a Main Sequence Agent, agent sessions, model providers) to an SDK application; those come from @dev-mainsequence/command-center-ai, not from this SDK.
 ---
 
 # Use Command Center SDK
@@ -117,6 +117,33 @@ of the consumer's check/CI command.
 Use `$build-command-center-application` to make the application-level architecture decision and
 route each internal surface to its focused implementation skill.
 
+## Add AI Capabilities With Command Center AI
+
+The SDK has no AI capabilities: no chat with a Main Sequence Agent, no agent sessions, and no model
+provider settings. When the person wants any of them, use `@dev-mainsequence/command-center-ai`, a
+separate package that takes this SDK as a peer. Do not compose a chat from SDK primitives, and do
+not call the platform's agent session, Agent runtime, or model provider routes from application
+code.
+
+1. Confirm the registry has a version whose peer range includes the installed SDK:
+
+   ```bash
+   npm view @dev-mainsequence/command-center-ai peerDependencies --json
+   ```
+
+   If none does, stop and report it. Never install a second SDK and never pass
+   `--legacy-peer-deps`.
+2. Install it next to the SDK, then refresh its skills explicitly, because lifecycle scripts may be
+   disabled:
+
+   ```bash
+   npm install @dev-mainsequence/command-center-ai
+   npx command-center-ai skills install --path .
+   ```
+
+3. Confirm `.agents/skills/command-center-ai/PINNED_FROM.txt` names the installed version, then
+   load `$use-command-center-ai` and follow it. This skill says nothing more about AI capabilities.
+
 ## Preserve The Package Boundary
 
 Use the SDK for reusable contracts, normalized lifecycle, controlled views, themes, and embeds.
@@ -126,7 +153,8 @@ persistence choice, and domain behavior behind injected callbacks or adapters.
 If the installed SDK does not expose a required capability, do not edit `node_modules` or import an
 internal implementation. Record the installed version, exact missing capability, expected public
 inputs and outputs, and whether serialized compatibility is affected. Stop and hand that gap to a
-separate SDK-source maintenance task when it is genuinely reusable.
+separate SDK-source maintenance task when it is genuinely reusable. AI capabilities are not an SDK
+gap: follow Add AI Capabilities With Command Center AI.
 
 Use the dedicated implementation skills selected by `$build-command-center-application` for
 resource views, static-site embeds, and language-neutral contract

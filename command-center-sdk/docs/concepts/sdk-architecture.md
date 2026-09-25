@@ -199,6 +199,13 @@ import { defineResourceApplication } from "@dev-mainsequence/command-center-sdk/
 CSS is opt-in and must be imported once by the browser application. JavaScript imports do not
 silently install global styles.
 
+## AI capabilities are a separate package
+
+A chat with a Main Sequence Agent, agent sessions, and model provider settings are not an SDK layer.
+They live in `@dev-mainsequence/command-center-ai`, which takes this SDK as a peer and draws with its
+controls and theme; the SDK does not depend on it. An application that needs them installs that
+package next to the SDK, as [Getting started](../getting-started.md#add-ai-capabilities) describes.
+
 ## What to read next
 
 - [Resource applications](./resource-applications.md) explains definition, adapter, discovery,

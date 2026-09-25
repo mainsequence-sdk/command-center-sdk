@@ -8,7 +8,9 @@ it, resolves runtime access, and enables sending. The same contract applies to e
 the values it exposes are listed in its [README](../src/engine/README.md).
 
 An application fills the engine's inputs from its own settings and routes, as Command Center does
-with its Agent shortcut and its `?session=` route.
+with its Agent shortcut and its `?session=` route. Its agent skill is `manage-agent-sessions`,
+which also covers the session explorer and archiving, deleting, and starting sessions through the
+engine's value (`useChatEngine()`).
 
 ## Identities
 

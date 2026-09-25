@@ -1,16 +1,16 @@
-// npm's postinstall: installs the chat's skills into the repository that installed the package
-// (npm's INIT_CWD). A global install, and an install inside this package's own source repository,
-// install nothing.
+// npm's postinstall: installs the package's agent skills into the repository that installed it
+// (npm's INIT_CWD), as the Command Center SDK's postinstall installs its own. A global install, and
+// an install anywhere inside this package's own source repository, install nothing.
 import { readFileSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { installChatSkills } from "./install-skills.mjs";
+import { AGENT_SKILL_NAMESPACE, installAgentSkills } from "./install-agent-skills.mjs";
 
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
 
-/** Whether `projectDir` is inside this package's source repository, whose workspaces hold the chat. */
-export function isChatSourceRepository(projectDir, repositoryRoot = resolve(packageRoot, "..")) {
+/** Whether `projectDir` is inside the source repository whose workspaces hold this package. */
+export function isCommandCenterAiSourceRepository(projectDir, repositoryRoot = resolve(packageRoot, "..")) {
   try {
     const root = realpathSync(repositoryRoot);
     const fromRoot = relative(root, realpathSync(projectDir));
@@ -28,7 +28,9 @@ export function isChatSourceRepository(projectDir, repositoryRoot = resolve(pack
 
 export async function runPostinstall({ env = process.env, logger = console, repositoryRoot } = {}) {
   if (env.npm_config_global === "true") {
-    logger.log("[command-center-ai] Global install detected; run `command-center-ai skills install --path .` inside a repository.");
+    logger.log(
+      "[command-center-ai] Global install detected; run the explicit skills install command inside a repository.",
+    );
     return { skipped: "global-install" };
   }
 
@@ -39,13 +41,18 @@ export async function runPostinstall({ env = process.env, logger = console, repo
     );
   }
 
-  if (isChatSourceRepository(projectDir, repositoryRoot)) {
+  if (isCommandCenterAiSourceRepository(projectDir, repositoryRoot)) {
     logger.log("[command-center-ai] Source repository install detected; skipped consumer agent skill installation.");
     return { skipped: "source-repository" };
   }
 
-  const result = await installChatSkills({ projectDir, command: "npm postinstall" });
-  logger.log(`[command-center-ai] Installed ${result.installed.length} agent skill(s) in ${result.destinationRoot}.`);
+  const result = await installAgentSkills({ projectDir, command: "npm postinstall" });
+  logger.log(`[command-center-ai] Installed ${result.copied.length} agent skill(s) in ${result.destinationRoot}.`);
+  if (result.removed.length > 0) {
+    logger.log(
+      `[command-center-ai] Pruned ${result.removed.length} unauthorized ${AGENT_SKILL_NAMESPACE} namespace entr${result.removed.length === 1 ? "y" : "ies"}.`,
+    );
+  }
   return result;
 }
 

@@ -182,6 +182,7 @@ Choose the highest-level surface that already owns the workflow:
 | Theme presets, tokens, and chart colors | `/theme` | [Themes](./themes.md) |
 | Application-owned cross-origin UI | `/embed`, `/embed/react` | [Static-site embeds](./static-site-embeds.md) |
 | Language-neutral backend payloads | Contract manifest and schemas | [Backend contracts](./backend-contracts.md) |
+| A chat or AI capabilities | Not in the SDK: `@dev-mainsequence/command-center-ai` | [Add AI capabilities](#add-ai-capabilities) |
 
 Definitions, adapters, controlled props, and narrow renderers are the normal extension seams.
 Change SDK source only when missing behavior is reusable, backend-neutral, and useful across
@@ -242,6 +243,23 @@ different `.agents/skills` namespace. Other namespaces are not changed.
 
 Use `skills sync` when backend-owned platform guidance must also be refreshed. Credential and
 ownership details are in [Application operations](./application-operations.md).
+
+## Add AI capabilities
+
+The SDK has no AI capabilities: no chat with a Main Sequence Agent, no agent sessions, and no model
+provider settings. They come from `@dev-mainsequence/command-center-ai`, a separate package that
+takes this SDK as a peer, so the application keeps exactly one SDK. Install it only when its peer
+range includes the installed SDK, and refresh its agent skills explicitly:
+
+```bash
+npm view @dev-mainsequence/command-center-ai peerDependencies --json
+npm install @dev-mainsequence/command-center-ai
+npx command-center-ai skills install --path .
+```
+
+Its skills install into `.agents/skills/command-center-ai/`, starting with `use-command-center-ai`;
+they cover the right rail, the expanded page, sessions, model providers, and the platform
+connection. Never install a second SDK or pass `--legacy-peer-deps`.
 
 ## Initialize application documentation
 

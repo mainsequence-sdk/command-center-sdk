@@ -1,6 +1,6 @@
 ---
 name: build-command-center-application
-description: Design, build, migrate, or review a complete Command Center-compatible application and select the correct @dev-mainsequence/command-center-sdk surfaces before implementation. Use when deciding production embedding, application-shell and navigation depth, startup readiness, resource lists, actions, details, themes, backend contracts, and iframe integration. Route each selected surface to its focused implementation skill without redefining SDK contracts.
+description: Design, build, migrate, or review a complete Command Center-compatible application and select the correct @dev-mainsequence/command-center-sdk surfaces before implementation. Use when deciding production embedding, application-shell and navigation depth, startup readiness, resource lists, actions, details, themes, backend contracts, iframe integration, and whether the application needs a chat or AI capabilities, which come from @dev-mainsequence/command-center-ai. Route each selected surface to its focused implementation skill without redefining SDK contracts.
 ---
 
 # Build A Command Center Application
@@ -61,6 +61,7 @@ Choose the highest-level composition that owns the required lifecycle:
 | One domain object with summary, actions, and sections | `ResourceDetailShell` | `$build-resource-detail` |
 | Searchable single or multiple choice | `ResourcePicker` | `$build-resource-picker` |
 | List, row, detail, or bulk operation | Resource action contracts | `$add-resource-actions` |
+| A chat or AI capabilities: a conversation with a Main Sequence Agent, agent sessions, model providers | None in the SDK; install `@dev-mainsequence/command-center-ai` as `$use-command-center-sdk` describes | `$use-command-center-ai` |
 
 Do not select a primitive because it can display similar pixels. Select the composition whose
 contract owns the behavior, state, and reuse boundary.
@@ -158,6 +159,7 @@ Resource collections:
 Resource details:
 Action placement:
 Backend adapters/contracts:
+AI capabilities (none, or Command Center AI with its right rail or expanded page):
 Selected focused skills:
 Rejected alternatives and reasons:
 ```
@@ -183,6 +185,8 @@ contracts or rebuild their owned behavior in this general skill.
   an application-owned control kit; every action, badge, and labelled field comes from `/controls`
   so the application renders its controls exactly like every other Command Center site.
 - Do not duplicate canonical contracts or modify an installed SDK.
+- Do not build a chat from SDK primitives or call the platform's agent session, Agent runtime, or
+  model provider routes from the application; AI capabilities come from Command Center AI.
 - Do not invent theme variables, literal fallbacks, or application-owned replacements for
   published semantic visual tokens.
 

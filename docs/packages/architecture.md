@@ -29,12 +29,14 @@ credential ([SDK ADR 012](./adr/adr-sdk-012-chat-as-a-second-public-package.md))
 
 ## Dependency direction
 
-- The chat depends on the SDK as a peer dependency, never a regular one, so an application has
+- Command Center AI depends on the SDK as a peer dependency, never a regular one, so an application has
   exactly one SDK: one stylesheet and one set of `cc-*` classes.
-- The SDK knows nothing about the chat. Nothing under `command-center-sdk/` names
-  `@dev-mainsequence/command-center-ai`, reaches into `command-center-ai/`, or tests, verifies or installs the chat, and the
-  SDK's manifest lists it in no dependency field. `npm run direction:check`, part of
-  `npm run check`, enforces this.
+- The SDK depends on nothing of Command Center AI. Nothing under `command-center-sdk/` imports it,
+  reaches into `command-center-ai/`, or tests, verifies or installs it, and the SDK's manifest lists
+  it in no dependency field. The SDK's two general skills and their guides name
+  `@dev-mainsequence/command-center-ai`, so an agent or a person who needs AI capabilities in an SDK
+  application installs it; no other SDK file does. `npm run direction:check`, part of
+  `npm run check`, enforces this with an allowlist of those files and their exact counts.
 
 ## Boundary rules
 

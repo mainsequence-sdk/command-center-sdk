@@ -1,0 +1,4 @@
+interface:
+  display_name: "Connect Command Center AI To The Platform"
+  short_description: "Reach the platform and the Agent runtime"
+  default_prompt: "Use $connect-command-center-ai-to-the-platform to reach the platform through the application's origin and handle its tokens, errors, and failure states."

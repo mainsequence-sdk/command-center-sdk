@@ -1,4 +1,0 @@
-interface:
-  display_name: "Design Agent Conversation Capabilities"
-  short_description: "Design Agent answers for what the chat can show"
-  default_prompt: "Use $design-agent-conversation-capabilities to design and review an Agent's streamed answers against what the chat draws, keeps after a reload, and ignores."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Agent Sessions"
+  short_description: "Open, list, archive, and link Agent sessions"
+  default_prompt: "Use $manage-agent-sessions to open requested sessions, build the session explorer, and archive, delete, or start sessions through the engine."

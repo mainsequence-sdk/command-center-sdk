@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Command Center AI"
+  short_description: "Install Command Center AI and choose its skill"
+  default_prompt: "Use $use-command-center-ai to install Command Center AI next to the SDK, refresh its skills, and route this AI work to the right focused skill."

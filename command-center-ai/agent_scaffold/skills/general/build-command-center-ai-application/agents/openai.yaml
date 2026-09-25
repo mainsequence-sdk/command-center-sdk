@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Command Center AI Application"
+  short_description: "Decide where AI lives and route each piece"
+  default_prompt: "Use $build-command-center-ai-application to decide where Command Center AI lives in this application and route each piece to its focused skill."

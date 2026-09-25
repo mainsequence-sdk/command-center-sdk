@@ -6,7 +6,7 @@ application navigation, responsive layout, resource views, feedback, themes, sta
 integration, backend schemas, consumer skills, and package verification tooling.
 
 Product applications, authentication, persistence, and deployment configuration are outside this
-repository. Product routes and backend transports are outside the SDK package; the chat package is
+repository. Product routes and backend transports are outside the SDK package; Command Center AI is
 bound to the platform's routes by design.
 
 ## Install
@@ -29,7 +29,7 @@ files.
 - [Local Vite/FastAPI example](./examples/static-site-vite-fastapi/README.md)
 - [Backend contracts](./command-center-sdk/docs/backend-contracts.md)
 - [Extending and releasing](./command-center-sdk/docs/extending-and-releasing.md)
-- [The chat](./command-center-ai/README.md) and [its guides](./command-center-ai/docs/README.md)
+- [Command Center AI](./command-center-ai/README.md) and [its guides](./command-center-ai/docs/README.md)
 
 ## Development
 
@@ -41,7 +41,8 @@ npm run docs:build
 ```
 
 The repository publishes two public packages: the SDK and `@dev-mainsequence/command-center-ai`, in `command-center-ai/`
-([SDK ADR 012](./docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)). The chat
-depends on the SDK as a peer; the SDK knows nothing about the chat. Root checks validate each
+([SDK ADR 012](./docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)). Command Center AI
+depends on the SDK as a peer; the SDK depends on nothing of it and names it only where its general
+skills and their guides send someone who needs AI capabilities to it. Root checks validate each
 package's public boundary and that one-way dependency, compile the consumer fixtures, run package
 tests, build declarations, and enforce size budgets.

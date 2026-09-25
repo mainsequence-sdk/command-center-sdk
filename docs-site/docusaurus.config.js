@@ -54,12 +54,12 @@ const config = {
       "@docusaurus/plugin-content-docs",
       /** @type {import('@docusaurus/plugin-content-docs').Options} */
       ({
-        // The chat package's documentation, as its own section. Its guides link to the module
+        // Command Center AI's documentation, as its own section. Its guides link to the module
         // READMEs beside the code, so the section reads from the package root and publishes
         // those files too; every relative link then resolves here as it does on GitHub.
-        id: "chat",
+        id: "command-center-ai",
         path: "../command-center-ai",
-        routeBasePath: "chat",
+        routeBasePath: "command-center-ai",
         include: [
           "README.md",
           "docs/**/*.md",
@@ -69,7 +69,7 @@ const config = {
           "agent_scaffold/README.md",
           "cli/README.md",
         ],
-        sidebarPath: require.resolve("./chat-sidebars.js"),
+        sidebarPath: require.resolve("./command-center-ai-sidebars.js"),
         editUrl: ({ docPath }) =>
           `https://github.com/mainsequence-sdk/command-center-sdk/tree/main/command-center-ai/${docPath}`,
       }),
@@ -90,10 +90,10 @@ const config = {
           },
           {
             type: "docSidebar",
-            sidebarId: "chatSidebar",
-            docsPluginId: "chat",
+            sidebarId: "commandCenterAiSidebar",
+            docsPluginId: "command-center-ai",
             position: "left",
-            label: "Chat",
+            label: "Command Center AI",
           },
           {
             href: "https://www.npmjs.com/package/@dev-mainsequence/command-center-sdk",

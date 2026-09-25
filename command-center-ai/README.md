@@ -1,6 +1,6 @@
-# Chat
+# Command Center AI
 
-The chat as one independent package: everything a chat application needs to talk to the same
+Command Center AI as one independent package: everything an AI application needs to talk to the same
 backend Command Center talks to. It is independent of the Command Center application, not of the
 backend. See [ADR 096](./docs/adr/adr-096-independent-chat-package.md).
 
@@ -87,7 +87,8 @@ platform API or to the Agent's runtime. Whether and when to rewrite is the appli
 - No dependency on an application package, no router, no host store, no `import.meta.env` in
   `src/`.
 - The Command Center SDK is its one Command Center dependency, as a peer, for its controls and
-  theme (SDK ADR 012). The dependency goes one way only: the SDK knows nothing about this package.
+  theme (SDK ADR 012). The dependency goes one way only: the SDK depends on nothing of this package, and its
+  general skills name it only to send an agent that needs AI capabilities here.
 - `npm run check` runs the boundary check, which fails on a dependency outside the allowlist, a
   peer (the SDK or React) listed as a regular dependency, an `@/` import, an import that leaves
   the package, or an environment read, and then type-checks the package and the standalone
@@ -95,42 +96,45 @@ platform API or to the Agent's runtime. Whether and when to rewrite is the appli
 
 ## Agent Skills
 
-The package ships four agent skills, each with a human guide in `docs/`:
-`build-chat-application`, `connect-chat-to-the-platform`, `manage-model-providers`, and
-`design-agent-conversation-capabilities` ([the map](./docs/README.md#task-and-agent-skill-map)).
-Installing the package installs them into `.agents/skills/command-center-ai/` of the repository that runs
-`npm install`; install or refresh them explicitly with:
+The package ships eight agent skills in lanes, each with a human guide in `docs/`
+([the map](./docs/README.md#task-and-agent-skill-map)). `general/use-command-center-ai` is the way
+in: it installs the package, refreshes the skills, and routes to the focused skill; the right rail
+and the expanded rail are in `ui/compose-command-center-ai-rail`. The Command Center SDK's general
+skills send an agent here when an SDK application needs a chat or AI capabilities.
+
+Installing the package installs the skills into `.agents/skills/command-center-ai/` of the
+repository that runs `npm install`, the way the SDK installs its own into
+`.agents/skills/command-center/`. Install or refresh them explicitly with:
 
 ```bash
+npx command-center-ai skills install --path . --dry-run
 npx command-center-ai skills install --path .
 ```
 
-The package owns `.agents/skills/command-center-ai/` alone: every install replaces it and records the package
-version in `PINNED_FROM.txt`, and no other namespace is touched, the Command Center SDK's
-`.agents/skills/command-center/` included. The skills may refer to the SDK's skills; the SDK's
-never refer to these. See the [agent scaffold](./agent_scaffold/README.md) and the
-[CLI](./cli/README.md).
+The package owns `.agents/skills/command-center-ai/` alone: every install prunes what it does not ship
+and records the package version in `PINNED_FROM.txt`, and no other namespace is touched. See the
+[agent scaffold](./agent_scaffold/README.md) and the [CLI](./cli/README.md).
 
 ## Commands
 
 From the repository root:
 
 ```bash
-npm run chat:check
-npm run chat:test
-npm run chat:build
-npm run chat:dev
+npm run ai:check
+npm run ai:test
+npm run ai:build
+npm run ai:dev
 ```
 
-`chat:check` runs the boundary check and the SDK's theme audit over the stylesheet, and
-type-checks the package, its NodeNext library build, and the standalone application. `chat:build`
+`ai:check` runs the boundary check and the SDK's theme audit over the stylesheet, and
+type-checks the package, its NodeNext library build, and the standalone application. `ai:build`
 builds the library into `dist/` with `tsc`;
 `npm --workspace @dev-mainsequence/command-center-ai run build:standalone` bundles the standalone application
 into `standalone/dist/`. `npm --workspace @dev-mainsequence/command-center-ai run test:browser` runs the
 standalone application on the stand-in in Chromium with Playwright (`tests/browser/`): it connects,
 sends a message and watches the reply stream in, and opens the model provider settings.
 
-`chat:dev` serves the standalone application on port 5183. Open `/?stand-in` to run it on the
+`ai:dev` serves the standalone application on port 5183. Open `/?stand-in` to run it on the
 scripted stand-in, with no platform and no token. To reach a platform that does not allow
 that origin, put the platform API URL in `command-center-ai/.env.local`:
 

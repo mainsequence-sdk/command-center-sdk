@@ -1,6 +1,6 @@
 # SDK ADR 012: The Chat as a Second Public Package
 
-- Status: Accepted
+- Status: Accepted; amended 2026-09-25 (see [Amendment](#amendment-2026-09-25-the-sdk-routes-ai-capabilities))
 - Date: 2026-09-23
 - Implementation: `@dev-mainsequence/command-center-ai` 0.0.1, with `@dev-mainsequence/command-center-sdk`
   0.5.3
@@ -26,9 +26,10 @@ publishes `--warning-tint` (section 5).
 The repository publishes a second public package, `@dev-mainsequence/command-center-ai`, from a workspace at
 `command-center-ai/` next to `command-center-sdk/`. It is the chat that talks to the Main Sequence platform: a
 backend connection, a session engine, the chat UI and the model-provider screens, with a
-standalone example. It depends on the SDK as a peer dependency. The SDK knows nothing about it:
-nothing under `command-center-sdk/` names it, imports, tests, verifies or installs it, and
-`npm run check` fails when something does. The chat ships and installs its own skills. The rule
+standalone example. It depends on the SDK as a peer dependency. The SDK depends on nothing of it:
+nothing under `command-center-sdk/` imports, tests, verifies or installs it, only the SDK's two
+general skills and their guides name it (amended 2026-09-25), and `npm run check` fails when
+something else does. The chat ships and installs its own skills. The rule
 that keeps backend transports and product routes out of the repository becomes a rule of the SDK
 package; the chat is bound to the platform's routes by design.
 
@@ -79,8 +80,9 @@ install anything of the chat.
   repository's GitHub, or is a symbolic link into `command-center-ai/`, and when the SDK's `package.json` lists
   the chat in a dependency field. It reads text: a path that code assembles at run time from
   separate segments is left to review.
-- The SDK's changelog, guides, ADR catalog, skills and tests do not mention the chat, and the
-  SDK's skill installer is unchanged: it keeps owning only its own namespace. This record lives in
+- The SDK's changelog, guides, ADR catalog, skills and tests do not mention the package, except the
+  two general skills and their guides that send someone who needs AI capabilities to it (amended
+  2026-09-25). The SDK's skill installer is unchanged: it keeps owning only its own namespace. This record lives in
   `docs/packages/adr/` because `command-center-sdk/docs/` ships inside the SDK package.
 
 **The boundary, per package.** The exclusion of product routes and backend transports stays for
@@ -223,8 +225,9 @@ The chat ships its consumer skills and installs them itself: its own postinstall
 own provenance file, `PINNED_FROM.txt`. Like the SDK's
 installer it owns only its namespace, leaves every other one untouched, the SDK's
 `command-center/` included, and skips installation inside this source repository. The chat's
-skills may refer to the SDK's skills, which every chat application has installed; the SDK's skills
-never refer to the chat's.
+skills may refer to the SDK's skills, which every chat application has installed. Since the
+2026-09-25 amendment, the SDK's general skills refer to exactly one of the chat's skills,
+`use-command-center-ai`, the way in.
 
 | Skill | What it teaches |
 | --- | --- |
@@ -306,11 +309,45 @@ of authorization, session ownership, and which Agents an Environment exposes.
   the chat's skills from the chat package.
 - The repository goes from one public package to two, and every lane of its tooling runs per
   package.
-- The SDK's documentation, skills and changelog stay free of the chat. A reader finds the chat
-  through the repository's README and `docs/packages/`, not through the SDK.
+- The SDK's documentation, skills and changelog stay free of the chat, except the pointer of the
+  2026-09-25 amendment: an agent or a person who needs AI capabilities in an SDK application is
+  sent to the package by the SDK's general skills and their guides.
 - The rule about backend transports and product routes becomes a per-package rule.
 - While the SDK is 0.x, a new SDK minor ships with a chat release that widens the peer range.
 - Every chat release states the SDK range it accepts and the platform routes and version it
   expects.
 - The direction check reads text. A path that code assembles at run time is caught by review, not
   by the check.
+
+## Amendment 2026-09-25: The SDK Routes AI Capabilities
+
+**Problem.** An agent works from the skills installed in the application it changes. In an
+application with only the SDK, nothing it could read named `@dev-mainsequence/command-center-ai`,
+and the SDK's rule for a missing capability told it to record an SDK gap and stop. Asked for a chat
+or AI capabilities, it either stopped or built a conversation from SDK primitives against the
+platform's agent routes, which is what the package exists to own.
+
+**Decision.**
+
+- `general/use-command-center-sdk` and `general/build-command-center-application`, and the guides
+  mapped to them (`docs/getting-started.md` and `docs/concepts/sdk-architecture.md`), name the
+  package: the SDK has no AI capabilities, so install the package next to the SDK when its peer
+  range includes the installed SDK, refresh its skills with `command-center-ai skills install`, and
+  continue with its `use-command-center-ai` skill. The `use-command-center-sdk` description carries
+  the trigger, so the skill loads for such a request.
+- `scripts/check-package-direction.mjs` allows the package name in exactly those four files, each
+  exactly as often as its allowlist says, and never in an import. Paths, links and symbolic links
+  into `command-center-ai/`, and a dependency on the package, still fail anywhere.
+- `use-command-center-ai` is the one skill of the package that the SDK names. Its name is a
+  compatibility boundary of the package, and a release of the package that introduces it precedes the
+  SDK release that names it.
+
+**What does not change.** The SDK does not depend on, import, test, verify or install the package,
+its installer owns only `command-center/`, and no SDK release waits on the package.
+
+**The package's skills follow the SDK's.** Its skills sit in lanes with a router
+(`use-command-center-ai`), an architecture skill (`build-command-center-ai-application`), and
+focused skills, including `compose-command-center-ai-rail` for the right rail and the expanded rail.
+They route with `$skill-name`, and its installer is the SDK's installer for its namespace, with the
+same dry run, checks, and provenance fields.
+

@@ -5,12 +5,15 @@
 - This repository owns two public packages, `@dev-mainsequence/command-center-sdk` and
   `@dev-mainsequence/command-center-ai` (SDK ADR 012 in `docs/packages/adr/`), with their examples, contracts,
   documentation, tests, skills, and release tooling.
-- The chat depends on the SDK as a peer. The SDK knows nothing about the chat: nothing under
-  `command-center-sdk/` may name `@dev-mainsequence/command-center-ai` or reach into `command-center-ai/`, and
-  `npm run check` fails if it does.
+- Command Center AI depends on the SDK as a peer. The SDK depends on nothing of it: nothing under
+  `command-center-sdk/` may import it or reach into `command-center-ai/`, and only the SDK's two
+  general skills and their guides may name `@dev-mainsequence/command-center-ai`, to send someone who
+  needs AI capabilities to it, as often as the allowlist of `scripts/check-package-direction.mjs`
+  says. `npm run check` fails otherwise.
 - Do not add Command Center product application code, authentication, persistence policy,
   deployment configuration, or application environment files. Product routes and backend
-  transports stay out of the SDK package; the chat is bound to the platform's routes by design.
+  transports stay out of the SDK package; Command Center AI is bound to the platform's routes by
+  design.
 - Consumers must use declared package exports. Do not introduce aliases into repository source or
   imports from `dist`.
 
@@ -25,7 +28,8 @@
 
 ## SDK Maintenance
 
-- Follow `command-center-sdk/.agents/skills/maintenance/SKILL.md` after every SDK change.
+- Follow `command-center-sdk/.agents/skills/maintenance/SKILL.md` after every SDK change, and
+  `command-center-ai/AGENTS.md` after every Command Center AI change.
 - Run package boundary validation, type checking, tests, packed-consumer verification, and package
   size checks before release.
 - Framework-neutral modules must not import React or browser-only code.

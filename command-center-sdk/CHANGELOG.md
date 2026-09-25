@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the packaged agent skills `general/use-command-center-sdk` and
+`general/build-command-center-application`, and two guides. No TypeScript API, contract ID, JSON
+Schema, fixture, theme, iframe protocol, or storage change.
+
+- An agent asked for a chat or AI capabilities in an SDK application is now sent to the Command
+  Center AI package: the two general skills and their guides (`getting-started.md`,
+  `concepts/sdk-architecture.md`) say to install it next to the SDK, refresh its skills, and
+  continue with its `use-command-center-ai` skill. Before, the SDK's gap rule told the agent to
+  record a missing SDK capability and stop.
+
 ## 0.5.4
 
 Compatibility axes: documentation shipped in the package (guides, ADRs, skills, and module

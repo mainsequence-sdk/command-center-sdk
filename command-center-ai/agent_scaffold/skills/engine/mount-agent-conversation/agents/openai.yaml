@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mount Agent Conversation"
+  short_description: "Mount the engine, thread, and settings"
+  default_prompt: "Use $mount-agent-conversation to load the stylesheets, mount ChatEngineProvider with its inputs, and verify the conversation on the stand-in and in a browser."

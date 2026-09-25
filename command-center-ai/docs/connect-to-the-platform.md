@@ -1,9 +1,9 @@
-# Connect the Chat to the Platform
+# Connect to the Platform
 
-The chat talks to two backends: the Main Sequence platform's API, for sessions, history, runtime
+Command Center AI talks to two backends: the Main Sequence platform's API, for sessions, history, runtime
 access, model providers, and agent icons; and the Agent runtime, for the chat request, the check
 that the Agent answers, and cancel. This guide explains how a browser application reaches both.
-Its agent skill is `connect-chat-to-the-platform`.
+Its agent skill is `connect-command-center-ai-to-the-platform`.
 
 ## The connection
 

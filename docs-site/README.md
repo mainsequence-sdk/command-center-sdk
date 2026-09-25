@@ -11,8 +11,9 @@ its guides link to.
   Pages-aware `url`/`baseUrl` resolution.
 - `sdk-sidebars.js`: deliberate concept-based navigation for the Markdown docs under
   `../command-center-sdk/docs`.
-- `chat-sidebars.js`: the chat section's navigation. The chat's docs plugin instance (`id: "chat"`)
-  in `docusaurus.config.js` lists the files it publishes in `include`.
+- `command-center-ai-sidebars.js`: the Command Center AI section's navigation, published under
+  `/command-center-ai/`. Its docs plugin instance (`id: "command-center-ai"`) in
+  `docusaurus.config.js` lists the files it publishes in `include`.
 - `src/css/custom.css`: docs-site-specific theming and layout overrides.
 - `package.json`: local development, build, and preview scripts for the docs site.
 

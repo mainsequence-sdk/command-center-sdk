@@ -59,6 +59,77 @@ function run(command, args, cwd = repositoryRoot) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
+function fail(message) {
+  console.error(`Packed skills verification failed: ${message}`);
+  process.exit(1);
+}
+
+/** Every skill leaf under a packaged `agent_scaffold/skills`, by its path in its lane. */
+function listPackagedSkillPaths(skillsRoot) {
+  const paths = [];
+  function visit(directory, relativePath) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (entry.name.startsWith(".") || entry.name.startsWith("__")) continue;
+      const entryPath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) visit(path.join(directory, entry.name), entryPath);
+      else if (entry.isFile() && entry.name === "SKILL.md" && relativePath) paths.push(relativePath);
+    }
+  }
+  visit(skillsRoot, "");
+  return paths.sort();
+}
+
+// The consumer installs with --ignore-scripts, so the packages' postinstalls have not run. Run each
+// installed package's postinstall into the consumer, as npm does for an application, with the SDK's
+// network lane off, and prove every packaged skill landed in the namespace its provenance claims.
+function verifyPackedSkills(consumerRoot, name) {
+  const packageRoot = path.join(consumerRoot, "node_modules", ...name.split("/"));
+  const manifest = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"));
+  const skillsRoot = path.join(packageRoot, "agent_scaffold", "skills");
+  if (!fs.existsSync(skillsRoot)) return;
+
+  const script = /^node\s+(\S+)$/u.exec(manifest.scripts?.postinstall ?? "")?.[1];
+  if (!script) fail(`${name} ships agent skills but no "node <script>" postinstall.`);
+  const result = spawnSync(process.execPath, [path.join(packageRoot, script)], {
+    cwd: packageRoot,
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      COMMAND_CENTER_SDK_MCP_POSTINSTALL: "0",
+      INIT_CWD: consumerRoot,
+      npm_config_global: "false",
+    },
+  });
+  if (result.status !== 0) fail(`${name}'s postinstall exited with ${result.status}.`);
+
+  const skillsParent = path.join(consumerRoot, ".agents", "skills");
+  const namespaces = (fs.existsSync(skillsParent) ? fs.readdirSync(skillsParent) : [])
+    .map((namespace) => path.join(skillsParent, namespace))
+    .filter((namespace) => {
+      const provenance = path.join(namespace, "PINNED_FROM.txt");
+      return fs.existsSync(provenance) && fs.readFileSync(provenance, "utf8").split("\n").includes(`library_name=${name}`);
+    });
+  if (namespaces.length !== 1) fail(`${name} owns ${namespaces.length} skill namespaces instead of one.`);
+
+  const provenance = fs.readFileSync(path.join(namespaces[0], "PINNED_FROM.txt"), "utf8").split("\n");
+  if (!provenance.includes(`pinned_version=${manifest.version}`)) {
+    fail(`${name}'s PINNED_FROM.txt does not record version ${manifest.version}.`);
+  }
+  const expected = listPackagedSkillPaths(skillsRoot);
+  const recorded = provenance.filter((line) => line.startsWith("skill_path=")).map((line) => line.slice(11)).sort();
+  if (expected.length === 0 || expected.join("\n") !== recorded.join("\n")) {
+    fail(`${name}'s PINNED_FROM.txt records [${recorded.join(", ")}] instead of [${expected.join(", ")}].`);
+  }
+  for (const skillPath of expected) {
+    if (!fs.existsSync(path.join(namespaces[0], ...skillPath.split("/"), "SKILL.md"))) {
+      fail(`${name}'s skill ${skillPath} is missing from ${namespaces[0]}.`);
+    }
+  }
+  console.log(
+    `Packed skills verified for ${name}: ${expected.length} skill(s) in ${path.relative(consumerRoot, namespaces[0])}.`,
+  );
+}
+
 // Build and pack every public package, a package after the packages it depends on.
 const tarballs = new Map();
 packages.forEach((entry) => {
@@ -92,5 +163,6 @@ packages.forEach((entry) => {
   );
   run("npm", ["install", "--ignore-scripts"], consumerRoot);
   run("npm", ["run", "check"], consumerRoot);
+  installedNames.forEach((name) => verifyPackedSkills(consumerRoot, name));
   console.log(`Packed consumer verified for ${installedNames.join(" with ")} in ${consumerRoot}.`);
 });

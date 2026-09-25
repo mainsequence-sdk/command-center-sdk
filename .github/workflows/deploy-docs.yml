@@ -18,7 +18,7 @@ on:
       - "command-center-ai/cli/README.md"
       - "docs-site/docusaurus.config.js"
       - "docs-site/sdk-sidebars.js"
-      - "docs-site/chat-sidebars.js"
+      - "docs-site/command-center-ai-sidebars.js"
       - "docs-site/package.json"
       - "docs-site/package-lock.json"
       - "docs-site/src/**"

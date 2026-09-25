@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the packaged agent skills (renamed, moved into lanes, and three added), the
+`command-center-ai` command line, and the skills' provenance file (schema 2). No API, route,
+payload, stylesheet, or storage change, and no platform rollout.
+
+- **Skills in lanes, as the SDK's are.** An upgrade replaces the namespace and removes the old
+  names by itself; update anything that routes to them:
+  - `build-chat-application` is split into `general/build-command-center-ai-application`, the
+    decisions, and `engine/mount-agent-conversation`, the engine;
+  - `connect-chat-to-the-platform` is `backend/connect-command-center-ai-to-the-platform`, which now
+    also covers the errors;
+  - `manage-model-providers` and `design-agent-conversation-capabilities` move into the
+    `model-providers/` and `contracts/` lanes.
+- **Added:** `general/use-command-center-ai`, the router the Command Center SDK's skills send an
+  agent to; `ui/compose-command-center-ai-rail`, the right rail and the expanded rail and their
+  design; and `sessions/manage-agent-sessions`. Every skill routes with `$skill-name`.
+- **The installer is the SDK's.** `command-center-ai skills install` takes `--dry-run`, `--json`,
+  `-p`, and `--path=`; it refuses a namespace whose `PINNED_FROM.txt` names another package, a skill
+  folder that differs from its skill's name, and a name used twice; and it records `skills_path` in
+  `PINNED_FROM.txt`. Schema 1 files are read as before.
+- **Guides:** `docs/getting-started.md` and `docs/rail-and-expanded-rail.md` are new, and
+  `docs/build-a-chat-application.md` is now `docs/build-an-ai-application.md`.
+
 ## 0.0.2
 
 Compatibility axes: documentation, source comments, one user-facing message, and one input

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Compose Command Center AI Rail"
+  short_description: "Build the right rail and the expanded rail"
+  default_prompt: "Use $compose-command-center-ai-rail to build Command Center AI's right rail and expanded rail over one engine, styled with SDK tokens."

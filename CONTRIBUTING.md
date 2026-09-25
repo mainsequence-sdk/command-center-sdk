@@ -4,8 +4,9 @@ Thanks for contributing.
 
 This repository owns two public packages: `@dev-mainsequence/command-center-sdk` and
 `@dev-mainsequence/command-center-ai`, in `command-center-ai/`
-([SDK ADR 012](./docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)). The chat
-depends on the SDK as a peer; the SDK knows nothing about the chat. Changes should preserve each
+([SDK ADR 012](./docs/packages/adr/adr-sdk-012-chat-as-a-second-public-package.md)). Command Center AI
+depends on the SDK as a peer; the SDK depends on nothing of it and names it only where its general
+skills and their guides send someone who needs AI capabilities to it. Changes should preserve each
 package's public entrypoints, consumer compatibility, documentation, and package boundary.
 
 ## Before You Start
@@ -56,10 +57,12 @@ npm run docs:dev
 
 - Keep reusable contracts, views, themes, embeds, and navigation in the SDK.
 - Keep product routes, authentication, backend transports, permissions, and deployment outside.
-  This exclusion of routes and transports applies to the SDK package; the chat is bound to the
-  platform's routes by design.
-- Keep the SDK unaware of the chat: nothing under `command-center-sdk/` may name
-  `@dev-mainsequence/command-center-ai` or reach into `command-center-ai/`. `npm run check` fails if it does.
+  This exclusion of routes and transports applies to the SDK package; Command Center AI is bound to
+  the platform's routes by design.
+- Keep the SDK independent of Command Center AI: nothing under `command-center-sdk/` may import,
+  depend on, or reach into `command-center-ai/`, and only the files on the allowlist of
+  `scripts/check-package-direction.mjs` may name `@dev-mainsequence/command-center-ai`, each as often
+  as the allowlist says. `npm run check` fails otherwise.
 - Treat schema IDs, protocol IDs, theme IDs, and persisted fields as compatibility boundaries.
 
 ### Document compatibility impact
