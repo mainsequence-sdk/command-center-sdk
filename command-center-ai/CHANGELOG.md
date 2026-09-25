@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.4
 
 Compatibility axes: the packaged agent skills and one guide. No API, route, payload, stylesheet,
 storage, or skill-namespace change, and no platform rollout.
