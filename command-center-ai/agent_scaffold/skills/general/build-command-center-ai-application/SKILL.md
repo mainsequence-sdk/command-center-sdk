@@ -52,12 +52,11 @@ Before implementation, write:
 ```text
 Purpose of the AI capability:
 Deployment (embedded in Command Center, or standalone):
-Source of the person's AI access (the host's delegation when embedded):
 Where the conversation lives (right rail and expanded rail, or a conversation-only page):
 Rail modes (docked from 1400px, overlay below):
 Agent and handle (default session), requested sessions, or launch targets:
 Session explorer, search, archive, new session:
-Platform request sender (the credential and its renewal):
+Platform request sender (embedded: the static-site client; standalone: credential and renewal):
 Environment source:
 Forwarder for the platform and the Agent runtime:
 Model provider settings location:
