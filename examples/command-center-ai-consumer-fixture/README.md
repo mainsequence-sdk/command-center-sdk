@@ -3,12 +3,17 @@
 Standalone TypeScript consumer used to prove that `@dev-mainsequence/command-center-ai` installs next to the
 Command Center SDK as an application installs them, and works through the published export maps of
 both. Release CI installs the chat and SDK tarballs together in a temporary directory, as
-`scripts/verify-packed-consumer.mjs` does, and compiles `src/consumer.tsx`.
+`scripts/verify-packed-consumer.mjs` does, and compiles `src/consumer.tsx` and `src/embedded.tsx`.
 
 `src/consumer.tsx` loads the SDK's theme, component, and markdown stylesheets and then the chat's,
 builds a connection with a request-URL rewrite, mounts `ChatEngineProvider` with an Agent's default
 session behind a stable handle, and renders `ChatThread`, `ModelProviderSettings`, and
-`AgentConnectingState` with the SDK's `Button`.
+`AgentConnectingState` with the SDK's `Button`. Its connection's `sendPlatformRequest` adds the
+application's own credential and renews it once after a `401`.
+
+`src/embedded.tsx` is an application embedded in Command Center: it holds no platform credential,
+and its connection sends platform requests through the SDK static-site client's
+`sendPlatformRequest`, so the host sends them as the person named in the host's context.
 
 This fixture must not import `@/`, `src/`, `dist`, or a path inside either package.
 
