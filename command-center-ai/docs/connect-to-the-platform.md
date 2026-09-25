@@ -135,6 +135,59 @@ Command Center SDK's
 describes the bridge. The Agent's live reply goes straight to the Agent runtime with the session's
 runtime token, which works when the runtime accepts the application's origin.
 
+### In local development
+
+Build for the embedded path above: it is how the application runs deployed. A top-level page under
+`vite serve` has no host, so during local development only, the Command Center SDK's Vite plugin
+sends the platform requests with the developer's token (SDK `^0.5.6`). The dev server reads the
+token from its environment; the page never holds it:
+
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { platformRequestProxy } from "@dev-mainsequence/command-center-sdk/vite";
+
+export default defineConfig({ plugins: [react(), platformRequestProxy()] });
+```
+
+```bash
+export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
+export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
+npm run dev
+```
+
+The sender uses the dev server only under `vite serve` on a top-level page. A production build
+replaces `import.meta.env.DEV` with `false`, so it always sends through the host:
+
+```ts
+const runsWithoutHost = import.meta.env.DEV && window.parent === window;
+
+const connection = createChatBackendConnection({
+  apiBaseUrl: window.location.origin,
+  sendPlatformRequest: runsWithoutHost
+    ? sendThroughDevServer
+    : (request) => client.sendPlatformRequest(request),
+});
+
+// Local development only: the dev server adds the developer's token.
+async function sendThroughDevServer(request: Request): Promise<Response> {
+  const { pathname, search } = new URL(request.url);
+  return fetch(`/__mainsequence__${pathname}${search}`, {
+    method: request.method,
+    headers: request.headers,
+    body: request.method === "GET" ? undefined : await request.text(),
+    signal: request.signal,
+  });
+}
+```
+
+Without a host there is no context: `auth.userUid` is the `uid` from
+`/__mainsequence__/api/v1/users/me/`. The dev server forwards any platform route, while Command
+Center serves only the chat's, so test the application embedded before release. The SDK's
+[static-site guide](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/command-center-sdk/docs/static-site-embeds.md#send-platform-requests-in-local-development)
+lists the plugin's answers, such as `503` when a variable is missing.
+
 ## Failure states
 
 | What happens | What it means | What to do |

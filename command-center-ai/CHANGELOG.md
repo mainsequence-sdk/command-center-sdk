@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the connect guide and the `connect-command-center-ai-to-the-platform` skill. No
+API, route, payload, stylesheet, storage, or skill-namespace change.
+
+- **Local development.** A top-level page under `vite serve` has no host, so the Command Center
+  SDK's `platformRequestProxy()` (SDK 0.5.6) sends its platform requests with the developer's
+  `MAINSEQUENCE_ACCESS_TOKEN`, read by the dev server; the page never holds it. The guide and the
+  skill show the sender that uses it only when `import.meta.env.DEV` is true on a top-level page, and
+  the uid from `users/me`. The embedded path is unchanged and stays the one a deployed application
+  takes.
+
 ## 0.0.4
 
 Compatibility axes: the packaged agent skills and one guide. No API, route, payload, stylesheet,

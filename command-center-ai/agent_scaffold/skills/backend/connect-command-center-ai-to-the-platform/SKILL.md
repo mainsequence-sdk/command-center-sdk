@@ -104,6 +104,13 @@ const connection = createChatBackendConnection({
   the application holds no platform credential. Its `apiBaseUrl` only builds request paths, so the
   page's own origin works. This needs SDK `^0.5.5`, the first release with
   `client.sendPlatformRequest`; upgrade an older one.
+- In local development, a top-level page under `vite serve` has no host. Add `platformRequestProxy()`
+  from `@dev-mainsequence/command-center-sdk/vite` (SDK `^0.5.6`) to the dev server; the developer
+  exports `MAINSEQUENCE_ENDPOINT` and `MAINSEQUENCE_ACCESS_TOKEN` before `npm run dev`. Only when
+  `import.meta.env.DEV` is true and `window.parent === window`, the sender fetches
+  `/__mainsequence__` plus the request's path and query; otherwise it stays
+  `client.sendPlatformRequest`. `auth.userUid` comes from `/__mainsequence__/api/v1/users/me/`. Never
+  read the token in page code or give it a `VITE_` name.
 - Never put a credential in a build variable (`VITE_*`), an environment file, the bundle, or browser
   storage. The standalone application keeps its token in memory only.
 - The runtime token: the package resolves runtime access for the session, through the sender, and
