@@ -53,6 +53,10 @@
       "types": "./dist/embed/react.d.ts",
       "import": "./dist/embed/react.js"
     },
+    "./vite": {
+      "types": "./dist/vite/index.d.ts",
+      "import": "./dist/vite/index.js"
+    },
     "./feedback": {
       "types": "./dist/feedback/index.d.ts",
       "import": "./dist/feedback/index.js"

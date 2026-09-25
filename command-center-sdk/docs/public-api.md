@@ -47,6 +47,7 @@ framework integrations do not affect the application.
 | `/theme/data-viz` | Framework-neutral | Data-visualization palette types and resolvers |
 | `/embed` | Browser | Static-site message contracts, host/client lifecycle, delegated HTTP access, native FastAPI WebSockets, and platform requests sent through the host |
 | `/embed/react` | React + DOM | Managed `StaticSiteIframe` host component |
+| `/vite` | Node, in a Vite dev server | `platformRequestProxy()`: a top-level local page's platform requests, sent with the developer's token during local development |
 | `/contracts` | Framework-neutral | Ordered migration helper for versioned SDK payloads |
 | `/contracts/manifest.json` | JSON | Canonical backend contract catalog |
 | `/contracts/schemas/*` | JSON Schema | Versioned language-neutral contract schemas |
@@ -217,6 +218,23 @@ the paths the host serves; children call `sendPlatformRequest(request)` with a F
 receive a Fetch `Response`, and never hold a platform credential. See
 [Static-site embeds](./static-site-embeds.md) for binding, cancellation, CSP, negotiation, caps,
 and lifecycle rules.
+
+## Vite dev server API
+
+A top-level page on a local dev server has no host to send its platform requests. For local
+development only, `/vite` gives the dev server a plugin that sends them with the developer's
+`MAINSEQUENCE_ACCESS_TOKEN` to `MAINSEQUENCE_ENDPOINT`, both read from the dev server's environment:
+
+```ts
+// vite.config.ts
+import { platformRequestProxy } from "@dev-mainsequence/command-center-sdk/vite";
+
+export default { plugins: [platformRequestProxy()] };
+```
+
+The page sends to `/__mainsequence__/api/...` only when it runs under `vite serve` without a host; a
+deployed site sends through the host. The entry runs in Node and is never imported by browser code.
+See [Send platform requests in local development](./static-site-embeds.md#send-platform-requests-in-local-development).
 
 ## Backend contract bundle
 

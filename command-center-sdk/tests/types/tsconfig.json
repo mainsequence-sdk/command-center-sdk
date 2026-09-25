@@ -8,6 +8,7 @@
     "./embed-platform-request.ts",
     "./embed-websocket.ts",
     "./layout-playwright.ts",
-    "./navigation-playwright.ts"
+    "./navigation-playwright.ts",
+    "./vite-platform-request-proxy.ts"
   ]
 }

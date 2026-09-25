@@ -136,6 +136,8 @@ error normalization stay outside the resource definition.
 - `/embed` and `/embed/react`: application-owned static-site iframe APIs for public context,
   delegated FastAPI HTTP access, native one-time-ticket WebSocket connections, and platform
   requests the host sends as the signed-in person.
+- `/vite`: `platformRequestProxy()`, a Vite dev-server plugin that sends a top-level local page's
+  platform requests with the developer's `MAINSEQUENCE_ACCESS_TOKEN`, during local development only.
 - `/styles.css` and `/theme/*.css`: browser-ready styles.
 
 Import only declared package exports. Do not import `dist` files or repository source paths.

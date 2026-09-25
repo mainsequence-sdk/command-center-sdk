@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: a new `/vite` entry point (Node, for the Vite dev server), the packaged
+`embed/integrate-static-site-iframe` skill and its local reference, and guides. No change to an
+existing export, contract ID, JSON Schema, fixture, iframe protocol, theme, or storage, and no
+backend change.
+
+- **Platform requests in local development** (SDK ADR 014). A deployed site keeps sending its
+  platform requests through the host. A top-level page under `vite serve` has none, so
+  `platformRequestProxy()` from `@dev-mainsequence/command-center-sdk/vite` stands in for it during
+  local development only: the page sends a platform request to `/__mainsequence__/api/...`, and the
+  dev server sends it to `MAINSEQUENCE_ENDPOINT` with the developer's `MAINSEQUENCE_ACCESS_TOKEN`,
+  read from its environment, so the page never holds the token. It forwards the bridge's request
+  shape and serves only same-origin requests from this machine through a localhost name
+  (`403 cross_site_request` or `not_local` otherwise). A missing variable is
+  `503 platform_not_configured`, an unreachable platform `502 platform_unreachable`, and a `401`
+  passes through with one warning to refresh the token.
+
 ## 0.5.5
 
 Compatibility axes: the `command-center.static_site_iframe@v1` protocol, with four additive

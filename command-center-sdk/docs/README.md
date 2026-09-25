@@ -104,7 +104,7 @@ view.
 | Resource model | `/resource`, `/resource/react`, `/views` |
 | Application chrome | `/navigation`, `/navigation/testing`, `/layout`, `/layout/testing`, `/feedback`, `/controls` |
 | Visual language | `/theme`, `/theme/presets`, `/theme/data-viz`, theme CSS exports |
-| Static-site integration | `/embed`, `/embed/react` |
+| Static-site integration | `/embed`, `/embed/react`, `/vite` |
 | Language-neutral contracts | `/contracts`, `/contracts/manifest.json`, schemas and fixtures |
 
 The package root is a compatibility re-export of the resource surface. Prefer explicit subpaths in

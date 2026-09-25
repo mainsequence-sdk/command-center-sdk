@@ -180,7 +180,7 @@ Choose the highest-level surface that already owns the workflow:
 | Startup, retry, or terminal failure | `/feedback` | [Application feedback](./application-feedback.md) |
 | Buttons, badges, and labelled fields | `/controls` | [Application controls](./application-controls.md) |
 | Theme presets, tokens, and chart colors | `/theme` | [Themes](./themes.md) |
-| Application-owned cross-origin UI | `/embed`, `/embed/react` | [Static-site embeds](./static-site-embeds.md) |
+| Application-owned cross-origin UI | `/embed`, `/embed/react`, and `/vite` for local development | [Static-site embeds](./static-site-embeds.md) |
 | Language-neutral backend payloads | Contract manifest and schemas | [Backend contracts](./backend-contracts.md) |
 | A chat or AI capabilities | Not in the SDK: `@dev-mainsequence/command-center-ai` | [Add AI capabilities](#add-ai-capabilities) |
 

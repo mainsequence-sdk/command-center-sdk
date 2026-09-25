@@ -1,6 +1,6 @@
 ---
 name: integrate-static-site-iframe
-description: Build, migrate, review, or secure a Command Center static site in local Vite/FastAPI development, a non-local trusted iframe, or a non-local direct link. Use to choose the API transport and identity source, set up the local runner and same-origin proxy, or implement the mainsequence.* handshake, delegated FastAPI access, and platform requests sent through the host.
+description: Build, migrate, review, or secure a Command Center static site in local Vite/FastAPI development, a non-local trusted iframe, or a non-local direct link. Use to choose the API transport and identity source, set up the local runner and same-origin proxy, or implement the mainsequence.* handshake, delegated FastAPI access, and platform requests sent through the host (or, on a top-level local page, through the dev server).
 ---
 
 # Integrate A Static Site And Its API
@@ -170,6 +170,45 @@ response over 8 MiB, or an older host that never answers within 65 seconds; show
 unavailable and do not retry). An HTTP error status arrives as a normal `Response`. The bridge
 does not stream, so live streams need another transport.
 
+### Send platform requests in local development
+
+Build for the host path: it is how a deployed site reaches the platform. A top-level page under
+`vite serve` has no host, so for local development only, add the SDK's Vite plugin to the dev
+server and send the page's platform requests to it:
+
+```ts
+// vite.config.ts
+import { platformRequestProxy } from "@dev-mainsequence/command-center-sdk/vite";
+
+export default { plugins: [platformRequestProxy()] };
+```
+
+```ts
+const runsWithoutHost = import.meta.env.DEV && window.parent === window;
+
+async function sendPlatformRequest(request: Request): Promise<Response> {
+  if (!runsWithoutHost) return client.sendPlatformRequest(request);
+  const { pathname, search } = new URL(request.url);
+  return fetch(`/__mainsequence__${pathname}${search}`, {
+    method: request.method,
+    headers: request.headers,
+    body: request.method === "GET" ? undefined : await request.text(),
+    signal: request.signal,
+  });
+}
+```
+
+The developer exports `MAINSEQUENCE_ENDPOINT` and `MAINSEQUENCE_ACCESS_TOKEN` before `npm run dev`;
+the dev server adds the token, and the page never holds it. Never give the token a `VITE_` name,
+never read it in page code, and never select the local path from anything but
+`import.meta.env.DEV` and a top-level window. Without a host there is no `onContext`: read the
+developer's `uid` from `/__mainsequence__/api/v1/users/me/`. The dev server forwards the bridge's
+request shape (the five methods, the platform's `/api/` paths, `accept`, `content-type`, a body up
+to 1 MiB) but has no allow-list, so a path that works locally can be `not_allowed` embedded. Handle
+`503` (`platform_not_configured`: a variable is missing), `502` (`platform_unreachable`), `401`
+(refresh the token and restart the dev server), and `403` (`cross_site_request` or `not_local`:
+only the page itself, on this machine through a localhost name, can use the route).
+
 ## Build The Host
 
 Prefer `StaticSiteIframe` from `/embed/react`. Supply the authorized launch URL, current theme ID
@@ -251,6 +290,10 @@ protocols, acknowledgement fallback, application selection, omitted/duplicate re
 failure, bidirectional messages, close handling, and reconnect with a fresh ticket. Use a real
 browser and confirm the ticket never appears in URLs, storage, DOM, logs, analytics, errors, or the
 FastAPI-visible protocol list.
+
+For platform requests in local development, confirm with the variables exported that
+`/__mainsequence__/api/v1/users/me/` returns the developer's `uid`, that without them it returns
+`503 platform_not_configured`, and that no token appears in the page, the bundle, or the URL.
 
 For platform requests, test the host's allow-list (`not_allowed` for other paths and methods),
 JSON and binary responses, cancellation reaching the host's fetch, a user change, an older host's

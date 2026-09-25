@@ -544,6 +544,69 @@ The first request to an older host fails only after the child's 65-second timeou
 `platformRequestTimeoutMs`, keep the host's value shorter than the child's, so that only a host that
 never answers reaches the child's timeout.
 
+## Send platform requests in local development
+
+Build for the host path above: it is how a deployed site reaches the platform. A top-level page on
+a local Vite dev server has no host, so during local development only, the SDK's Vite plugin stands
+in for it. The dev server sends each platform request with the developer's token, which it reads
+from its own environment; the page never holds it, and a build never contains it.
+
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+import { platformRequestProxy } from "@dev-mainsequence/command-center-sdk/vite";
+
+export default defineConfig({
+  plugins: [platformRequestProxy()],
+});
+```
+
+```bash
+export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
+export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
+npm run dev
+```
+
+These are the process-only variables the SDK's CLI reads. Never give the token a `VITE_` name:
+Vite writes those into the bundle.
+
+The page sends a platform request to `/__mainsequence__` plus the platform path, and only when it
+runs under `vite serve` without a host. A production build replaces `import.meta.env.DEV` with
+`false`, so it always takes the host path:
+
+```ts
+// Deployed or embedded, the host sends it; a top-level page under `vite serve`, the dev server.
+const runsWithoutHost = import.meta.env.DEV && window.parent === window;
+
+async function sendPlatformRequest(request: Request): Promise<Response> {
+  if (!runsWithoutHost) return client.sendPlatformRequest(request);
+  const { pathname, search } = new URL(request.url);
+  return fetch(`/__mainsequence__${pathname}${search}`, {
+    method: request.method,
+    headers: request.headers,
+    body: request.method === "GET" ? undefined : await request.text(),
+    signal: request.signal,
+  });
+}
+```
+
+Without a host there is no `onContext`: read the developer's uid from
+`/__mainsequence__/api/v1/users/me/` (its `uid`) and use the default theme.
+
+- The dev server forwards what the host bridge carries: the method (`GET`, `POST`, `PUT`, `PATCH`,
+  `DELETE`), the path and query under the platform's `/api/`, `accept`, `content-type`, and a body
+  of at most 1 MiB. The status, `content-type`, and the body come back.
+- It has no allow-list. The host serves only the paths it chooses, so a request that works locally
+  can be `not_allowed` embedded; test the site embedded before release.
+- A missing or invalid variable answers `503` (`platform_not_configured`, naming the variable) and
+  warns when the dev server starts. A platform that does not answer is `502`
+  (`platform_unreachable`). A `401` from the platform passes through, and the dev server warns once
+  to refresh `MAINSEQUENCE_ACCESS_TOKEN` and restart.
+- Only the page the dev server serves can use the route: another site gets `403`
+  (`cross_site_request`), and another computer, or a request through any name other than
+  `localhost`, `*.localhost`, `127.x.x.x`, or `[::1]`, gets `403` (`not_local`).
+- `platformRequestProxy({ path })` changes the route. The plugin runs only under `vite serve`.
+
 ## Production test matrix
 
 Use a real cross-origin browser setup. Unit tests around `postMessage` parsing do not exercise CSP,

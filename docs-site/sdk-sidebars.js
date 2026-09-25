@@ -63,6 +63,7 @@ const sdkSidebars = {
             "adr/adr-sdk-010-host-navigation-drawer-and-wide-screen-embedded-frame",
             "adr/adr-sdk-011-public-control-and-form-primitives",
             "adr/adr-sdk-013-static-site-platform-request-bridge",
+            "adr/adr-sdk-014-local-platform-request-proxy",
           ],
         },
       ],

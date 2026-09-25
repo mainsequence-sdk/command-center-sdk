@@ -2,8 +2,10 @@
 
 Use this procedure when a static site is opened directly from Vite and calls a local FastAPI API.
 The Vite app and FastAPI module belong to the consuming application. The SDK supplies no local
-authentication middleware or proxy. Complete the runner, identity, readiness, proxy, and direct
-transport before declaring the local page functional.
+authentication middleware or proxy for FastAPI. Complete the runner, identity, readiness, proxy, and
+direct transport before declaring the local page functional. Platform requests, which reach the
+platform itself rather than this API, go through the SDK's `platformRequestProxy()` instead; see
+"Send platform requests in local development" in the skill.
 
 ## 1. Serve A Loopback API With Server-Side Developer Identity
 
