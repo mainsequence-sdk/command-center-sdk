@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.6
 
 Compatibility axes: a new `/vite` entry point (Node, for the Vite dev server), the packaged
 `embed/integrate-static-site-iframe` skill and its local reference, and guides. No change to an

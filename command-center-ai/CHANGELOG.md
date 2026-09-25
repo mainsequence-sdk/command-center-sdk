@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.5
 
 Compatibility axes: the connect guide and the `connect-command-center-ai-to-the-platform` skill. No
 API, route, payload, stylesheet, storage, or skill-namespace change.
