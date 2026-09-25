@@ -30,6 +30,7 @@ import {
   createChatBackendConnection,
   resolvePlatformApiUrl,
   resolveRequestUrl,
+  type ChatBackendConnection,
   type ChatBackendRequestTarget,
 } from "./connection.js";
 import {
@@ -57,109 +58,25 @@ const userUid = "00000000-0000-4000-8000-000000000123";
 const environmentUid = "env-1";
 const sessionUid = "00000000-0000-4000-8000-0000000000aa";
 
-describe("chat backend connection", () => {
-  it("requires an absolute http(s) platform API base URL", () => {
-    expect(() => createChatBackendConnection({ apiBaseUrl: "" })).toThrow("absolute http(s)");
-    expect(() => createChatBackendConnection({ apiBaseUrl: "/api" })).toThrow("absolute http(s)");
-    expect(() => createChatBackendConnection({ apiBaseUrl: "ftp://platform.test" })).toThrow(
-      "absolute http(s)",
-    );
-    expect(createChatBackendConnection({ apiBaseUrl: ` ${apiBaseUrl} ` }).apiBaseUrl).toBe(
-      apiBaseUrl,
-    );
-  });
+const modelInput: CustomModelProviderModelInput = {
+  model: "alpha",
+  displayName: "Alpha",
+  api: "openai-completions",
+  input: ["text"],
+  reasoning: false,
+  thinkingLevels: [],
+  contextWindow: null,
+  maxTokens: null,
+  isDefault: true,
+  position: 0,
+  metadata: {},
+};
 
-  it("requests the platform directly when the application has no rewrite", () => {
-    const connection = createChatBackendConnection({ apiBaseUrl });
-
-    expect(resolvePlatformApiUrl(connection, "/api/v1/model-providers/")).toBe(
-      `${apiBaseUrl}/api/v1/model-providers/`,
-    );
-    expect(resolveRequestUrl(connection, "https://agent.test/api/chat", "agent-runtime")).toBe(
-      "https://agent.test/api/chat",
-    );
-  });
-
-  it("gives the rewrite the full URL and where the request is going", () => {
-    const rewriteRequestUrl = vi.fn(
-      (url: URL, target: ChatBackendRequestTarget) => `/__${target}__${url.pathname}${url.search}`,
-    );
-    const connection = createChatBackendConnection({ apiBaseUrl, rewriteRequestUrl });
-    const url = buildPlatformApiUrl(connection, "/api/v1/agent-sessions/");
-    url.searchParams.set("limit", "20");
-
-    expect(resolveRequestUrl(connection, url, "platform")).toBe(
-      "/__platform__/api/v1/agent-sessions/?limit=20",
-    );
-    expect(resolveRequestUrl(connection, "https://agent.test/rpc/api/chat", "agent-runtime")).toBe(
-      "/__agent-runtime__/rpc/api/chat",
-    );
-    expect(rewriteRequestUrl.mock.calls[0]?.[0].href).toBe(
-      `${apiBaseUrl}/api/v1/agent-sessions/?limit=20`,
-    );
-  });
-
-  it("leaves an address on the application's own origin alone", () => {
-    const rewriteRequestUrl = vi.fn(() => "/rewritten");
-    const connection = createChatBackendConnection({ apiBaseUrl, rewriteRequestUrl });
-
-    expect(resolveRequestUrl(connection, "/already/same-origin", "platform")).toBe(
-      "/already/same-origin",
-    );
-    expect(rewriteRequestUrl).not.toHaveBeenCalled();
-  });
-});
-
-// An application served from an origin the platform does not allow reaches the backend only
-// through its own address. One client that skipped the rewrite would break that application, so
-// every client is held to it here.
-describe("every request goes through the application's rewrite", () => {
-  const fetchMock = vi.fn();
-  const targets: ChatBackendRequestTarget[] = [];
-  const connection = createChatBackendConnection({
-    apiBaseUrl,
-    rewriteRequestUrl: (url, target) => {
-      targets.push(target);
-      return target === "platform"
-        ? `/__platform__${url.pathname}${url.search}`
-        : `/__agent__/${url.host}${url.pathname}${url.search}`;
-    },
-  });
-  const auth = { connection, token: "jwt" };
-  const modelInput: CustomModelProviderModelInput = {
-    model: "alpha",
-    displayName: "Alpha",
-    api: "openai-completions",
-    input: ["text"],
-    reasoning: false,
-    thinkingLevels: [],
-    contextWindow: null,
-    maxTokens: null,
-    isDefault: true,
-    position: 0,
-    metadata: {},
-  };
-
-  beforeEach(() => {
-    targets.length = 0;
-    fetchMock.mockReset();
-    fetchMock.mockImplementation(
-      async () =>
-        new Response(JSON.stringify({}), {
-          headers: { "Content-Type": "application/json" },
-          status: 200,
-        }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    clearMainSequenceAiResolvedRuntimeAccess();
-    resetAgentRuntimeServingState();
-  });
-
-  const platformRequests: Array<[string, () => Promise<unknown>]> = [
+function platformRequestsFor(auth: {
+  connection: ChatBackendConnection;
+  token?: string;
+}): Array<[string, () => Promise<unknown>]> {
+  return [
     [
       "latest sessions",
       () =>
@@ -314,6 +231,98 @@ describe("every request goes through the application's rewrite", () => {
         }),
     ],
   ];
+}
+
+describe("chat backend connection", () => {
+  it("requires an absolute http(s) platform API base URL", () => {
+    expect(() => createChatBackendConnection({ apiBaseUrl: "" })).toThrow("absolute http(s)");
+    expect(() => createChatBackendConnection({ apiBaseUrl: "/api" })).toThrow("absolute http(s)");
+    expect(() => createChatBackendConnection({ apiBaseUrl: "ftp://platform.test" })).toThrow(
+      "absolute http(s)",
+    );
+    expect(createChatBackendConnection({ apiBaseUrl: ` ${apiBaseUrl} ` }).apiBaseUrl).toBe(
+      apiBaseUrl,
+    );
+  });
+
+  it("requests the platform directly when the application has no rewrite", () => {
+    const connection = createChatBackendConnection({ apiBaseUrl });
+
+    expect(resolvePlatformApiUrl(connection, "/api/v1/model-providers/")).toBe(
+      `${apiBaseUrl}/api/v1/model-providers/`,
+    );
+    expect(resolveRequestUrl(connection, "https://agent.test/api/chat", "agent-runtime")).toBe(
+      "https://agent.test/api/chat",
+    );
+  });
+
+  it("gives the rewrite the full URL and where the request is going", () => {
+    const rewriteRequestUrl = vi.fn(
+      (url: URL, target: ChatBackendRequestTarget) => `/__${target}__${url.pathname}${url.search}`,
+    );
+    const connection = createChatBackendConnection({ apiBaseUrl, rewriteRequestUrl });
+    const url = buildPlatformApiUrl(connection, "/api/v1/agent-sessions/");
+    url.searchParams.set("limit", "20");
+
+    expect(resolveRequestUrl(connection, url, "platform")).toBe(
+      "/__platform__/api/v1/agent-sessions/?limit=20",
+    );
+    expect(resolveRequestUrl(connection, "https://agent.test/rpc/api/chat", "agent-runtime")).toBe(
+      "/__agent-runtime__/rpc/api/chat",
+    );
+    expect(rewriteRequestUrl.mock.calls[0]?.[0].href).toBe(
+      `${apiBaseUrl}/api/v1/agent-sessions/?limit=20`,
+    );
+  });
+
+  it("leaves an address on the application's own origin alone", () => {
+    const rewriteRequestUrl = vi.fn(() => "/rewritten");
+    const connection = createChatBackendConnection({ apiBaseUrl, rewriteRequestUrl });
+
+    expect(resolveRequestUrl(connection, "/already/same-origin", "platform")).toBe(
+      "/already/same-origin",
+    );
+    expect(rewriteRequestUrl).not.toHaveBeenCalled();
+  });
+});
+
+// An application served from an origin the platform does not allow reaches the backend only
+// through its own address. One client that skipped the rewrite would break that application, so
+// every client is held to it here.
+describe("every request goes through the application's rewrite", () => {
+  const fetchMock = vi.fn();
+  const targets: ChatBackendRequestTarget[] = [];
+  const connection = createChatBackendConnection({
+    apiBaseUrl,
+    rewriteRequestUrl: (url, target) => {
+      targets.push(target);
+      return target === "platform"
+        ? `/__platform__${url.pathname}${url.search}`
+        : `/__agent__/${url.host}${url.pathname}${url.search}`;
+    },
+  });
+  const auth = { connection, token: "jwt" };
+
+  beforeEach(() => {
+    targets.length = 0;
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(
+      async () =>
+        new Response(JSON.stringify({}), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    clearMainSequenceAiResolvedRuntimeAccess();
+    resetAgentRuntimeServingState();
+  });
+
+  const platformRequests = platformRequestsFor(auth);
 
   it.each(platformRequests)("platform: %s", async (_name, request) => {
     // The empty stand-in answer fails some parsers; the request itself is what is checked.
@@ -390,5 +399,108 @@ describe("every request goes through the application's rewrite", () => {
       true,
     );
     expect(requested.length).toBeGreaterThan(1);
+  });
+});
+
+describe("with the application's sender, every platform request goes through it", () => {
+  const fetchMock = vi.fn();
+  const sent: Request[] = [];
+  const runtimeAccess = {
+    mode: "token",
+    rpc_url: "https://agent.test/rpc",
+    token: "runtime-token",
+    session_uid: sessionUid,
+    is_ready: true,
+    runtime_interaction: {
+      state: "ready",
+      can_submit: true,
+      notice: null,
+      operation: null,
+      retry_after_ms: null,
+    },
+    runtime_presence: {
+      phase: "serving",
+      replicas: { desired: 1, actual: 1 },
+      detail: "The agent is running.",
+      observed_at: "2026-09-03T10:00:00Z",
+      wake: null,
+    },
+  };
+  const connection = createChatBackendConnection({
+    apiBaseUrl,
+    sendPlatformRequest: async (request) => {
+      sent.push(request);
+      const body = new URL(request.url).pathname.endsWith("/resolve-runtime-access/")
+        ? runtimeAccess
+        : {};
+      return new Response(JSON.stringify(body), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    },
+  });
+
+  beforeEach(() => {
+    sent.length = 0;
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async () => new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    clearMainSequenceAiResolvedRuntimeAccess();
+    resetAgentRuntimeServingState();
+  });
+
+  it.each(platformRequestsFor({ connection, token: "caller-token" }))(
+    "platform: %s",
+    async (_name, request) => {
+      await request().catch(() => undefined);
+
+      expect(sent.length).toBeGreaterThan(0);
+      expect(fetchMock).not.toHaveBeenCalled();
+      sent.forEach((request) => {
+        expect(request.url.startsWith(`${apiBaseUrl}/api/v1/`)).toBe(true);
+        // The application owns authentication: no credential of the caller's reaches it.
+        expect(request.headers.get("Authorization")).toBeNull();
+      });
+    },
+  );
+
+  it("sends a caller's body and method as they are", async () => {
+    await patchAgentSessionModelConfig({
+      connection,
+      sessionId: sessionUid,
+      llmProvider: "openai",
+      llmModel: "gpt",
+      llmThinking: "medium",
+    }).catch(() => undefined);
+
+    const [request] = sent;
+    expect(request?.method).toBe("PATCH");
+    const body = await request?.text();
+    expect(body).toContain("openai");
+    expect(body).toContain("gpt");
+  });
+
+  it("agent runtime: the chat request keeps the runtime token and the package's own fetch", async () => {
+    await fetchMainSequenceAiAssistantResponse({
+      connection,
+      currentSessionId: sessionUid,
+      method: "POST",
+      organizationEnvironmentUid: environmentUid,
+      requestPath: "/api/chat",
+    });
+
+    expect(sent.map((request) => new URL(request.url).pathname)).toEqual([
+      `/api/v1/agent-sessions/${sessionUid}/resolve-runtime-access/`,
+    ]);
+    const agentCalls = fetchMock.mock.calls as Array<[string, RequestInit]>;
+    expect(agentCalls.length).toBeGreaterThan(0);
+    agentCalls.forEach(([url, init]) => {
+      expect(String(url)).toBe("https://agent.test/rpc/api/chat");
+      expect(new Headers(init.headers).get("Authorization")).toBe("Bearer runtime-token");
+    });
   });
 });

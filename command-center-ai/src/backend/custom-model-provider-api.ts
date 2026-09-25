@@ -1,4 +1,5 @@
 import { resolvePlatformApiUrl, type ChatBackendConnection } from "./connection.js";
+import { requestPlatform } from "./platform-request.js";
 import { buildRuntimeHttpErrorMessage } from "./http-error.js";
 import { requireCreatedByUserUid } from "./user-scope.js";
 
@@ -236,7 +237,7 @@ async function requestJson({
 }) {
   requireCreatedByUserUid(options.createdByUserUid, "Custom model providers");
   const url = resolvePlatformApiUrl(options.connection, path);
-  const response = await fetch(url, {
+  const response = await requestPlatform(options.connection, url, {
     method,
     headers: buildHeaders(options.token, options.tokenType),
     body: payload === undefined ? undefined : JSON.stringify(payload),
@@ -261,7 +262,7 @@ async function requestJson({
 async function requestDelete(path: string, options: CustomModelProviderRequestOptions) {
   requireCreatedByUserUid(options.createdByUserUid, "Custom model providers");
   const url = resolvePlatformApiUrl(options.connection, path);
-  const response = await fetch(url, {
+  const response = await requestPlatform(options.connection, url, {
     method: "DELETE",
     headers: buildHeaders(options.token, options.tokenType),
     signal: options.signal,

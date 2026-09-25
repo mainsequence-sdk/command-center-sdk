@@ -3,6 +3,7 @@ import {
   resolveRequestUrl,
   type ChatBackendConnection,
 } from "./connection.js";
+import { requestPlatform } from "./platform-request.js";
 
 /**
  * Command Center agent icons, which the platform owns and delivers (ADR 090).
@@ -79,7 +80,7 @@ export async function fetchCommandCenterAgentIcons({
   if (token) {
     headers.set("Authorization", `${tokenType} ${token}`);
   }
-  const response = await fetch(buildCommandCenterAgentIconsUrl(connection, environmentUid), {
+  const response = await requestPlatform(connection, buildCommandCenterAgentIconsUrl(connection, environmentUid), {
     method: "GET",
     headers,
     signal,
@@ -118,7 +119,7 @@ export async function fetchCommandCenterAgentIconBytes({
   // Default cache mode: the browser revalidates with If-None-Match against the
   // delivery ETag, so an unchanged icon costs a 304 on later loads.
   // The delivery URL comes from the platform, so it takes the same route as any platform request.
-  const response = await fetch(resolveRequestUrl(connection, url, "platform"), {
+  const response = await requestPlatform(connection, resolveRequestUrl(connection, url, "platform"), {
     method: "GET",
     headers,
     referrerPolicy: "no-referrer",

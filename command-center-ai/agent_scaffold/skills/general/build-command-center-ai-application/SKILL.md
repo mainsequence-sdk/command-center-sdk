@@ -12,7 +12,7 @@ Make the application-level decisions here, then follow the focused skills. The h
 
 Command Center AI draws the conversation and the application places it. The package owns the
 session engine, the thread, the composer and its model picker, readiness, the message queue, and
-the provider screens. The application owns sign-in and the token, which Agent, the frame around the
+the provider screens. The application owns sign-in and the credential, sending the platform requests itself, which Agent, the frame around the
 thread (the right rail and the expanded rail), routing, notifications, and the forwarder to the
 platform. The SDK owns the application's shell, pages, controls, and theme.
 
@@ -25,18 +25,19 @@ platform. The SDK owns the application's shell, pages, controls, and theme.
 2. **Which Agent and which session.** One Agent's default session behind a stable handle is the
    usual start (`$mount-agent-conversation`). A session explorer, search, archive, a new-session
    action, or a session in the URL needs `$manage-agent-sessions`.
-3. **How it reaches the platform.** The application passes the person's token and the Environment,
+3. **How it reaches the platform.** The application sends the platform requests, with its own
+   credential and renewal, through the connection's `sendPlatformRequest`; passes the Environment;
    and forwards requests from its own origin when the platform does not allow that origin. Follow
    `$connect-command-center-ai-to-the-platform`.
 4. **Where model provider settings live.** In the application's settings, reached from the thread's
    picker. Follow `$manage-model-providers`.
 5. **Which deployment.** The production case is an application embedded in Command Center through
-   the SDK's static-site iframe, with Command Center AI running inside it. The engine needs the
-   person's AI access from the host: a token, the platform URL, and the Environment. The SDK's embed
-   protocol does not deliver that yet; it is being added. Until the installed SDK exposes it, stop
-   and report that piece as missing, and never pass another credential, such as a FastAPI release
-   token, as the person's token. A standalone application on its own origin, with the forwarder,
-   works today.
+   the SDK's static-site iframe, with Command Center AI running inside it. It holds no platform
+   credential: its sender is the SDK's static-site client, `(request) =>
+   client.sendPlatformRequest(request)`, and Command Center sends each request as the person. If
+   the installed SDK has no `client.sendPlatformRequest`, stop and report that piece as missing,
+   and never pass another credential, such as a FastAPI release token, as the person's. A
+   standalone application on its own origin sends the requests itself, with the forwarder.
 6. **Controls, pages, and theme.** The application's own buttons, badges, and fields come from the
    SDK's `/controls` (`$compose-command-center-controls`), its pages from `/layout`
    (`$compose-command-center-page`), and its styling from SDK tokens checked by
@@ -56,7 +57,7 @@ Where the conversation lives (right rail and expanded rail, or a conversation-on
 Rail modes (docked from 1400px, overlay below):
 Agent and handle (default session), requested sessions, or launch targets:
 Session explorer, search, archive, new session:
-Token source and refresh:
+Platform request sender (the credential and its renewal):
 Environment source:
 Forwarder for the platform and the Agent runtime:
 Model provider settings location:
@@ -76,7 +77,7 @@ Then load only the focused skills the decision selects. Do not restate their con
   application code.
 - Do not mount a second `ChatEngineProvider` for the expanded rail: one engine serves the rail and
   the page, so the conversation survives the switch.
-- Do not put a token in a build variable, an environment file, the bundle, or browser storage.
+- Do not put a credential in a build variable, an environment file, the bundle, or browser storage.
 - Do not load the package's stylesheet before the SDK's, copy its CSS, or restyle it with literal
   colours, gradients, or glows; override it with SDK tokens only.
 - Do not write raw `<button>`, `<input>`, `<textarea>`, or `<label>` elements around the thread;

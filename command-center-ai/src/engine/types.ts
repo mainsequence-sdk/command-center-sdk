@@ -2,8 +2,13 @@
 // no application store; everything it needs from the application arrives through these.
 
 /** The signed-in person: the platform token sent with every request and the person's user uid. */
+/**
+ * Who is signed in, and, for an application without a platform request sender on the connection,
+ * the token its clients send. With a sender the package never reads `token`: the application owns
+ * authentication.
+ */
 export interface ChatAuth {
-  token: string | null;
+  token?: string | null;
   tokenType?: string;
   userUid: string | null;
 }

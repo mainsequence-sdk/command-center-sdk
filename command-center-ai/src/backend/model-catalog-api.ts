@@ -1,4 +1,5 @@
 import { resolvePlatformApiUrl, type ChatBackendConnection } from "./connection.js";
+import { requestPlatform } from "./platform-request.js";
 import { buildRuntimeHttpErrorMessage } from "./http-error.js";
 import { requireCreatedByUserUid } from "./user-scope.js";
 
@@ -455,7 +456,7 @@ export async function fetchModelProviderCatalog({
   }
 
   const url = resolvePlatformApiUrl(connection, modelProviderCatalogPath);
-  const response = await fetch(url, {
+  const response = await requestPlatform(connection, url, {
     method: "GET",
     headers,
     signal,

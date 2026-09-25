@@ -29,7 +29,7 @@ connection and passes it to `ChatEngineProvider` and `ModelProviderSettings`.
 
 | Backend | Requests | Credentials |
 | --- | --- | --- |
-| The platform API | Every route under `apiBaseUrl`: sessions, history, insights, runtime access, the model catalog and providers, agent icons | The person's token, from the engine's `auth` input |
+| The platform API | Every route under `apiBaseUrl`: sessions, history, insights, runtime access, the model catalog and providers, agent icons | The application's credential for the person, added by its `sendPlatformRequest` |
 | The Agent runtime | `POST` and `GET` on `{rpc_url}/api/chat`, and `POST {rpc_url}/api/chat/session/cancel` | The runtime token the platform issues with `rpc_url` for the session |
 | A custom provider's own endpoint | Only the direct test conversation of the model provider settings | The provider key the person types; never the platform token |
 
@@ -74,22 +74,69 @@ The Agent runtime is at the `rpc_url` the platform returns. A direct call works 
 trusts the application's origin; otherwise the application forwards it too, from the
 `agent-runtime` target.
 
-## Tokens
+## Authentication
 
-- The application passes the person's current token in `auth`, and a new `auth` with the new token
-  when it refreshes it. There is no refresh callback: the package never refreshes the person's
-  token. With no token, the chat makes no platform request.
-- A token never goes into a build variable, an environment file, the bundle, or browser storage.
-  The standalone application keeps it in memory.
-- The runtime token is the package's concern: it resolves runtime access for the session, sends that
-  token only to the runtime, and on a `401` or `403` from the runtime resolves access again and
-  retries once.
+The application owns authentication: signing the person in, keeping and renewing their credential,
+and what happens when they must sign in again. The package only sends requests.
+
+Give the connection `sendPlatformRequest(request)`. The package hands it every platform request, a
+standard `Request` without any credential, and uses the `Response` it returns as it comes. The
+application adds the person's credential and, when the platform answers `401`, renews it and sends
+the request again:
+
+```ts
+const connection = createChatBackendConnection({
+  apiBaseUrl: "https://platform.example.com",
+  async sendPlatformRequest(request) {
+    // A request's body can be sent once, so the retry needs its own copy.
+    const retry = request.clone();
+    const response = await fetch(withCredential(request));
+    if (response.status !== 401 || !(await renewCredential())) {
+      return response;
+    }
+    return fetch(withCredential(retry));
+  },
+});
+```
+
+`withCredential` and `renewCredential` are the application's own, for example adding
+`Authorization: Bearer <access token>` from its sign-in, and a refresh-token exchange.
+
+- `auth` then carries only who is signed in: `{ userUid }`.
+- The Agent runtime never sees the application's credential. Its requests carry the runtime token
+  the platform issues for the session; on a `401` or `403` from the runtime the package resolves
+  runtime access again, through the sender, and retries once.
+- Without a sender, the package's clients send `auth.token` themselves, and nothing can renew it:
+  an expired token stops the chat until the application passes a new `auth`.
+- A credential never goes into a build variable, an environment file, the bundle, or browser
+  storage. The standalone application keeps its token in memory.
+
+### Inside an application embedded in Command Center
+
+An application embedded in Command Center holds no platform credential. Its host sends its platform
+requests as the person: the SDK's static-site client passes each request to Command Center, which
+sends it with its own credential and renewal and returns the response. Give the connection the
+client's sender. The base URL only builds the request paths, which the host sends to its platform:
+
+```ts
+const connection = createChatBackendConnection({
+  apiBaseUrl: window.location.origin,
+  sendPlatformRequest: (request) => client.sendPlatformRequest(request),
+});
+```
+
+`client` is the application's `createStaticSiteIframeClient(...)`, and `auth` is `{ userUid }` with
+the person's uid from the host's context. The host decides which platform paths it sends; the
+Command Center SDK's
+[static-site guide](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/command-center-sdk/docs/static-site-embeds.md)
+describes the bridge. The Agent's live reply goes straight to the Agent runtime with the session's
+runtime token, which works when the runtime accepts the application's origin.
 
 ## Failure states
 
 | What happens | What it means | What to do |
 | --- | --- | --- |
-| `401` or `403` from the platform | The token is missing, expired, or not allowed | Refresh the token in the application and pass the new one through `auth`. A `403` that persists is the platform's decision. |
+| `401` or `403` from the platform | The credential is missing, expired, or not allowed | Renew it in the application's `sendPlatformRequest` and send the request again. A `403` that persists is the platform's decision. |
 | A network error on every platform request | The platform is unreachable, or the browser refused the request | Check the network panel. A CORS rejection looks exactly like an unreachable host to the page. |
 | Requests to the platform's own origin from another origin | The rewrite or the forwarder is missing | Add the rewrite and the forwarder, or ask for the origin on the platform's allow-list. |
 | The composer stays locked with a starting or waking notice | The Agent does not answer its check yet | Wait: the chat sends nothing on the person's behalf, keeps the draft, and unlocks when the Agent answers. |

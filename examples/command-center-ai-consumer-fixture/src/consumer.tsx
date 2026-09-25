@@ -23,12 +23,45 @@ import "@dev-mainsequence/command-center-sdk/styles.css";
 import "@dev-mainsequence/command-center-sdk/theme/markdown.css";
 import "@dev-mainsequence/command-center-ai/styles.css";
 
+// The application's own sign-in state. The chat never sees it: the application owns authentication.
+let accessToken: string | null = null;
+
+/** The application's own renewal, for example a refresh-token exchange. */
+async function renewAccessToken(): Promise<boolean> {
+  return false;
+}
+
+function withAccessToken(request: Request) {
+  const headers = new Headers(request.headers);
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+  return new Request(request, { headers });
+}
+
+/** Sends the chat's platform requests as the signed-in person, renewing once when refused. */
+async function sendPlatformRequest(request: Request): Promise<Response> {
+  // A request's body can be sent once, so the retry needs its own copy.
+  const retry = request.clone();
+  const response = await fetch(withAccessToken(request));
+  if (response.status !== 401 || !(await renewAccessToken())) {
+    return response;
+  }
+  return fetch(withAccessToken(retry));
+}
+
 // The application's own origin forwards platform requests; the Agent's runtime is called directly.
 const connection = createChatBackendConnection({
   apiBaseUrl: "https://platform.example.com",
   rewriteRequestUrl: (url, target) =>
     target === "platform" ? `/__platform__${url.pathname}${url.search}` : url.toString(),
+  sendPlatformRequest,
 });
+
+/** The application signed someone in, or renewed their token. */
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
 
 const defaultSession: ChatDefaultSession = {
   agentUid: "00000000-0000-4000-8000-000000000003",
@@ -47,9 +80,10 @@ const copy: Partial<ChatThreadCopy> = {
  * A chat application built only from the packed chat and SDK tarballs: the engine with the
  * Agent's default session, the thread, and the model provider settings.
  */
-export function PackedChatApplication({ token, userUid }: { token: string | null; userUid: string }) {
-  // A refreshed token arrives here as a new value; the engine uses it for the next request.
-  const auth = useMemo<ChatAuth>(() => ({ token, tokenType: "Bearer", userUid }), [token, userUid]);
+export function PackedChatApplication({ userUid }: { userUid: string }) {
+  // The connection sends every platform request with the application's authentication, so the
+  // chat only needs to know who is signed in.
+  const auth = useMemo<ChatAuth>(() => ({ userUid }), [userUid]);
   const [view, setView] = useState<"chat" | "providers">("chat");
   const [notices, setNotices] = useState<ChatNotice[]>([]);
   const notify: ChatNotify = (notice) => setNotices((current) => [...current, notice]);

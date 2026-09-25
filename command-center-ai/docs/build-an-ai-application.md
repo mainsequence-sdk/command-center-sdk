@@ -15,14 +15,15 @@ Settle these before writing code:
   a conversation shows the expanded rail as its main route.
 - **Which Agent and session.** One Agent's default session behind a stable handle, or several
   sessions; see [AgentSession resolution](./agent-session-resolution.md).
-- **How it reaches the platform.** The person's token, the Environment, and a forwarder on the
-  application's origin; see [Connect to the platform](./connect-to-the-platform.md).
+- **How it reaches the platform.** The application's platform request sender, which adds the
+  person's credential and renews it, the Environment, and, on its own origin, a forwarder; see
+  [Connect to the platform](./connect-to-the-platform.md).
 - **Where the model provider settings live.** See [Model providers](./model-providers.md).
 - **Which deployment.** The production case is an application embedded in Command Center through
-  the SDK's static-site iframe, with Command Center AI running inside it. It needs the person's AI
-  access (a token, the platform URL, and the Environment) from the host, which the SDK's embed
-  protocol does not deliver yet; it is being added. A standalone application on its own origin works
-  today.
+  the SDK's static-site iframe, with Command Center AI running inside it. Its host sends its
+  platform requests as the person through the SDK's embed protocol; see
+  [Connect to the platform](./connect-to-the-platform.md#inside-an-application-embedded-in-command-center).
+  A standalone application on its own origin sends them itself.
 
 ## Install
 
@@ -74,18 +75,23 @@ import {
   type ChatNotify,
 } from "@dev-mainsequence/command-center-ai";
 
-const connection = createChatBackendConnection({ apiBaseUrl: "https://platform.example.com" });
+// The application's own authentication: it adds the person's credential and renews it.
+import { sendAuthenticatedRequest } from "./auth";
+
+const connection = createChatBackendConnection({
+  apiBaseUrl: "https://platform.example.com",
+  sendPlatformRequest: sendAuthenticatedRequest,
+});
 
 interface AssistantProps {
   agentUid: string;
   environmentUid: string;
   notify: ChatNotify;
-  token: string | null;
   userUid: string;
 }
 
-export function Assistant({ agentUid, environmentUid, notify, token, userUid }: AssistantProps) {
-  const auth = useMemo<ChatAuth>(() => ({ token, tokenType: "Bearer", userUid }), [token, userUid]);
+export function Assistant({ agentUid, environmentUid, notify, userUid }: AssistantProps) {
+  const auth = useMemo<ChatAuth>(() => ({ userUid }), [userUid]);
   const defaultSession = useMemo<ChatDefaultSession>(
     () => ({ agentUid, handleUniqueId: "my_application_assistant", name: "My application assistant", status: "ready" }),
     [agentUid],
@@ -122,7 +128,7 @@ The engine's inputs:
 | Input | What the application passes |
 | --- | --- |
 | `connection` | The connection to the platform; see [Connect to the platform](./connect-to-the-platform.md). |
-| `auth` | The person's current token, its type, and their user uid. When the application refreshes the token it passes the new one; there is no refresh callback. With no token the engine makes no platform request. |
+| `auth` | Who is signed in: `{ userUid }`. The connection's `sendPlatformRequest` adds the credential and renews it. |
 | `environmentUid` | The active Organization Environment. |
 | `defaultSession`, `showsDefaultSession` | The Agent and a stable handle. The platform returns the same session for the same person, Agent, and handle, so every visit continues the same conversation. |
 | `notify` | Shows a short notice (`title`, `description`, `variant`) the application's way; the package has no toaster. |
@@ -147,8 +153,8 @@ model providers" button do not appear. The frame around it is in
 The package ships a standalone application, [`standalone/`](../standalone/README.md): a form for the
 platform, the person, and the Agent, then the engine with the Agent's default session, the thread,
 the model provider settings, and a small stack for notices. It is the reference for every step
-above. Its form is only for trying the package; a real application gets the token from its own
-sign-in and keeps it out of storage and out of the build.
+above. Its form is only for trying the package; a real application sends the platform requests with its
+own sign-in and keeps the credential out of storage and out of the build.
 
 ## Verify
 

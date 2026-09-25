@@ -4,6 +4,7 @@ import {
   resolveRequestUrl,
   type ChatBackendConnection,
 } from "./connection.js";
+import { requestPlatform } from "./platform-request.js";
 import { MainSequenceAiError, withMainSequenceAiErrorSource } from "./error-source.js";
 import { buildRuntimeHttpErrorMessage } from "./http-error.js";
 
@@ -634,7 +635,7 @@ export async function fetchLatestAgentSessions({
     agentId,
     organizationEnvironmentUid,
   });
-  const response = await fetch(requestUrl, {
+  const response = await requestPlatform(connection, requestUrl, {
     method: "GET",
     headers,
     signal,
@@ -703,7 +704,7 @@ export async function fetchArchivedAgentSessions({
     limit: Math.max(1, Math.min(100, Math.floor(limit))),
     organizationEnvironmentUid,
   });
-  const response = await fetch(requestUrl, {
+  const response = await requestPlatform(connection, requestUrl, {
     method: "GET",
     headers,
     signal,
@@ -772,7 +773,7 @@ export async function searchAgentSessions({
     organizationEnvironmentUid,
     query: normalizedQuery,
   });
-  const response = await fetch(requestUrl, {
+  const response = await requestPlatform(connection, requestUrl, {
     method: "GET",
     headers,
     signal,
@@ -815,7 +816,7 @@ export async function deleteAgentSessionRequest({
   }
 
   const requestUrl = buildDeleteAgentSessionUrl(connection, sessionId);
-  const response = await fetch(requestUrl, {
+  const response = await requestPlatform(connection, requestUrl, {
     method: "DELETE",
     headers,
     signal,
@@ -858,7 +859,7 @@ async function mutateAgentSessionArchiveState({
   }
 
   const requestUrl = buildAgentSessionArchiveActionUrl(connection, sessionId, action);
-  const response = await fetch(requestUrl, {
+  const response = await requestPlatform(connection, requestUrl, {
     method: "POST",
     headers,
     signal,
@@ -921,7 +922,7 @@ export async function fetchAgentSessionDetail({
   }
 
   const requestUrl = buildAgentSessionDetailUrl(connection, sessionId);
-  const response = await fetch(requestUrl, {
+  const response = await requestPlatform(connection, requestUrl, {
     method: "GET",
     headers,
     signal,
@@ -984,7 +985,7 @@ export async function startNewAgentSessionRequest({
   const normalizedThreadId = normalizeIdentifier(threadId) ?? createClientThreadId();
 
   const requestUrl = buildStartNewAgentSessionUrl(connection, agentId);
-  const response = await fetch(requestUrl, {
+  const response = await requestPlatform(connection, requestUrl, {
     method: "POST",
     body: JSON.stringify({
       thread_id: normalizedThreadId,
@@ -1115,7 +1116,7 @@ export async function getOrCreateAgentSessionRequest({
   }
 
   const requestUrl = buildGetOrCreateAgentSessionUrl(connection, agentUid);
-  const response = await fetch(requestUrl, {
+  const response = await requestPlatform(connection, requestUrl, {
     method: "POST",
     body: JSON.stringify(body),
     headers,
@@ -1194,7 +1195,7 @@ export async function patchAgentSessionModelConfig({
   }
 
   const requestUrl = buildAgentSessionModelConfigUrl(connection, sessionId);
-  const response = await fetch(requestUrl, {
+  const response = await requestPlatform(connection, requestUrl, {
     method: "PATCH",
     headers,
     body: JSON.stringify({

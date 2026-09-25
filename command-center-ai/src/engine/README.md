@@ -25,8 +25,8 @@ the same for every Agent, is in [AgentSession Resolution](../../docs/agent-sessi
 
 | Input | What it is |
 | --- | --- |
-| `connection` | The connection to the platform: base URL and request-URL rewrite. |
-| `auth` | The person's token, token type, and user uid (`ChatAuth`). The token goes with every platform request. |
+| `connection` | The connection to the platform: base URL, request-URL rewrite, and the application's `sendPlatformRequest`. |
+| `auth` | Who is signed in (`ChatAuth.userUid`). With a sender on the connection that is all; an application without one also passes `token`, which the package cannot renew. |
 | `environmentUid` | The active Organization Environment. Session lists and detail are scoped by it. |
 | `notify` | Shows the person a short notice (`ChatNotice`: title, description, variant), in place of a toaster. |
 | `viewContext` | Sent with every chat request as its `context`. Opaque to the engine. |
@@ -102,8 +102,8 @@ An application may layer its own fields over the engine's value, as Command Cent
   from the provenance the platform's history stamps on each message, for the thread's avatars and
   names.
 - `agent-icons-context.tsx` and `agent-icon-cache.ts`: the agent icon projection, one per
-  Environment and trusted for five minutes, and the icon bytes cache, both cleared when the token
-  goes (ADR 090).
+  Environment and trusted for five minutes, and the icon bytes cache, both cleared when no one is
+  signed in (ADR 090).
 
 ## The Model Catalog Store
 

@@ -28,8 +28,8 @@ const connection = createChatBackendConnection({
 
 ## Know Where Each Request Goes
 
-- **The platform API**: every route under `apiBaseUrl`, with the person's token as
-  `Authorization: <tokenType> <token>` from the engine's `auth` input. Session collection reads are
+- **The platform API**: every route under `apiBaseUrl`, sent by the application's
+  `sendPlatformRequest` on the connection, which adds the person's credential. Session collection reads are
   scoped by the Organization Environment, and user-scoped lists by the person.
 - **The Agent runtime**: `POST {rpc_url}/api/chat` (a message; the answer streams back),
   `GET {rpc_url}/api/chat` (the check that the Agent answers), and
@@ -76,20 +76,44 @@ The Agent runtime is at `rpc_url`. The standalone application calls it directly,
 the runtime's trusted origins include the application's origin; otherwise forward it too, from the
 `"agent-runtime"` target.
 
-## Handle The Tokens
+## Own The Authentication
 
-- The person's token: the application passes the current one in `auth`, and passes the new one
-  when it refreshes it. There is no refresh callback; the package never refreshes the person's
-  token, and with a `null` token it makes no platform request.
-- Never put a token in a build variable (`VITE_*`), an environment file, the bundle, or browser
-  storage. The standalone application keeps it in memory only.
-- The runtime token: the package resolves runtime access for the session and sends its token only
-  to the runtime. On a `401` or `403` from the runtime it resolves access again and retries once.
+- The application owns sign-in, the credential, and its renewal. Give the connection
+  `sendPlatformRequest(request)`: it receives every platform request as a standard `Request` with
+  no credential, adds the person's credential, and on a `401` renews it and sends the request
+  again. Keep `request.clone()` for the retry, because a body can be sent once:
+
+```ts
+const connection = createChatBackendConnection({
+  apiBaseUrl: "https://platform.example.com",
+  async sendPlatformRequest(request) {
+    // A request's body can be sent once, so the retry needs its own copy.
+    const retry = request.clone();
+    const response = await fetch(withCredential(request));
+    if (response.status !== 401 || !(await renewCredential())) {
+      return response;
+    }
+    return fetch(withCredential(retry));
+  },
+});
+```
+
+- `auth` is then `{ userUid }`; the package never needs the credential.
+- Inside an application embedded in Command Center, the sender is the SDK's static-site client,
+  `(request) => client.sendPlatformRequest(request)`. Command Center sends the request as the person;
+  the application holds no platform credential. Its `apiBaseUrl` only builds request paths, so the
+  page's own origin works.
+- Never put a credential in a build variable (`VITE_*`), an environment file, the bundle, or browser
+  storage. The standalone application keeps its token in memory only.
+- The runtime token: the package resolves runtime access for the session, through the sender, and
+  sends that token only to the runtime. On a `401` or `403` from the runtime it resolves access again
+  and retries once.
+- Without a sender, clients send `auth.token` themselves and nothing can renew it; use a sender.
 
 ## Read The Failure States
 
-- **`401` or `403` from the platform**: the token is missing, expired, or not allowed. Refresh it in
-  the application and pass the new one through `auth`. A `403` that persists is the platform's
+- **`401` or `403` from the platform**: the credential is missing, expired, or not allowed. Renew
+  it in the application's `sendPlatformRequest` and send the request again. A `403` that persists is the platform's
   authorization decision; the package does not work around it.
 - **An unreachable platform**: requests fail with a network error and the thread shows its error
   states; nothing is retried behind the person's back.
@@ -117,6 +141,6 @@ the runtime's trusted origins include the application's origin; otherwise forwar
 1. On the scripted stand-in (`$mount-agent-conversation`), connect and send a message with no
    platform.
 2. Against the platform, through the forwarder: in the browser's network panel, every platform
-   request goes to the application's own origin, carries the person's token, and succeeds; the
-   runtime requests go to `rpc_url` or through the forwarder.
-3. Expire or revoke the token and confirm the application refreshes it and passes the new one.
+   request goes to the application's own origin, carries the credential the sender added, and
+   succeeds; the runtime requests go to `rpc_url` or through the forwarder.
+3. Expire or revoke the credential and confirm the sender renews it and the request succeeds.

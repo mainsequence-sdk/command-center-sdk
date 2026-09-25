@@ -43,15 +43,17 @@ The package reads no environment variable and no configuration file. Whoever mou
 
 - the platform API base URL and, when the application is not served from an origin the platform
   allows, a request-URL rewrite (`createChatBackendConnection`);
-- the person's token, on every call;
+- how platform requests are sent: the application's `sendPlatformRequest` on the connection, which
+  adds the person's credential and renews it. Authentication is the application's; see
+  [Connect to the platform](./docs/connect-to-the-platform.md);
 - the active Organization Environment and the signed-in user, where a call is scoped by them;
 - to the session engine, a notification callback, the view context of each request, whether the
   chat is on screen, and which session to show: a requested one, a default session behind a
   stable handle, or a launch target. The [engine README](./src/engine/README.md) lists them;
 - to the thread, its words, the signed-in person, and how to open the application's model
   provider settings. The [UI README](./src/ui/README.md) lists them;
-- to the model provider settings, the connection, the person's token and user uid, and a
-  notification callback.
+- to the model provider settings, the connection, the signed-in user, and a notification
+  callback.
 
 An application also loads the SDK's stylesheets and then this package's:
 

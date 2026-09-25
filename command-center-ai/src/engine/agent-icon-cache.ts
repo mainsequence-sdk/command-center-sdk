@@ -93,7 +93,7 @@ export function ensureAgentIcon({
   tokenType?: string;
   url: string;
 }) {
-  if (!token || inFlight.has(url)) {
+  if ((!token && !connection.sendPlatformRequest) || inFlight.has(url)) {
     return;
   }
   const existing = entries.get(url);

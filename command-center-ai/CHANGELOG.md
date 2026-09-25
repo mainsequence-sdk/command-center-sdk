@@ -2,9 +2,19 @@
 
 ## Unreleased
 
-Compatibility axes: the packaged agent skills (renamed, moved into lanes, and three added), the
-`command-center-ai` command line, and the skills' provenance file (schema 2). No API, route,
-payload, stylesheet, or storage change, and no platform rollout.
+Compatibility axes: the npm public API, additively (the connection's `sendPlatformRequest`, the
+`ChatPlatformRequestSender` type, and an optional `ChatAuth.token`); the packaged agent skills
+(renamed, moved into lanes, and three added); the `command-center-ai` command line; and the
+skills' provenance file (schema 2). No route, payload, stylesheet, or storage change, and no
+platform rollout.
+
+- The application owns authentication. `createChatBackendConnection` takes `sendPlatformRequest`:
+  every platform request goes to it as a standard `Request` without any credential, and the
+  application adds the person's credential, renews it after a `401`, and returns the response.
+  With a sender, `auth` needs only `userUid`. Requests to the Agent's runtime keep the session's
+  runtime token and never go through it. An application embedded in Command Center passes the
+  SDK static-site client's `sendPlatformRequest`, so its host sends the requests as the person.
+  Without a sender, clients send `auth.token` as before.
 
 - **Skills in lanes, as the SDK's are.** An upgrade replaces the namespace and removes the old
   names by itself; update anything that routes to them:

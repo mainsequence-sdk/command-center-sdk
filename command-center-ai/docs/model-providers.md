@@ -16,7 +16,7 @@ import { ModelProviderSettings } from "@dev-mainsequence/command-center-ai";
 | Input | What it is |
 | --- | --- |
 | `connection` | The connection the application gives the engine. |
-| `auth` | The person's token and user uid. Credentials and custom providers are read and written as that person. |
+| `auth` | Who is signed in. Credentials and custom providers are read and written as that person, with the application's credential from the connection's `sendPlatformRequest`. |
 | `notify` | Optional. Reports that a custom provider or model was created, updated, or deleted. |
 
 Place it where the application keeps its settings, and pass `onOpenModelProviderSettings` to

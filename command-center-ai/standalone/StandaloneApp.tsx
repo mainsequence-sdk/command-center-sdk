@@ -133,11 +133,12 @@ export function StandaloneApp() {
 
 function StandaloneChat({ chat, onDisconnect }: { chat: ConnectedChat; onDisconnect: () => void }) {
   const { agentUid, apiBaseUrl, environmentUid, userUid } = chat.settings;
-  const connection = useMemo(() => createStandaloneConnection(apiBaseUrl), [apiBaseUrl]);
-  const auth = useMemo<ChatAuth>(
-    () => ({ token: chat.token, tokenType: "Bearer", userUid }),
-    [chat.token, userUid],
+  const connection = useMemo(
+    () => createStandaloneConnection(apiBaseUrl, chat.token),
+    [apiBaseUrl, chat.token],
   );
+  // The connection sends the platform requests with the token; the chat only needs who it is.
+  const auth = useMemo<ChatAuth>(() => ({ userUid }), [userUid]);
   const defaultSession = useMemo<ChatDefaultSession>(
     () => ({
       agentUid,

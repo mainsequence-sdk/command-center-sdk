@@ -35,7 +35,7 @@ same state:
 - `refreshSessionDetail()` and `refreshSessionInsights()`.
 
 Outside the provider, for example on a page that only lists sessions, the package's functions call
-the same platform routes with the connection and the person's token: `fetchLatestAgentSessions`,
+the same platform routes through the connection, whose sender adds the person's credential: `fetchLatestAgentSessions`,
 `searchAgentSessions`, `fetchArchivedAgentSessions`, `startNewAgentSessionRequest`,
 `archiveAgentSessionRequest`, `unarchiveAgentSessionRequest`, `deleteAgentSessionRequest`, and
 `fetchAgentSessionDetail`. Lists are scoped by the Environment and the person. `useAgentSessionDetail()`

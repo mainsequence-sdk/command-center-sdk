@@ -23,6 +23,7 @@ no configuration file; whoever mounts the chat builds a connection and passes it
 const connection = createChatBackendConnection({
   apiBaseUrl: "https://api.example.com",
   rewriteRequestUrl: (url, target) => url.toString(),
+  sendPlatformRequest: (request) => sendAsThePerson(request),
 });
 ```
 
@@ -30,6 +31,12 @@ const connection = createChatBackendConnection({
 - `rewriteRequestUrl` is optional. It receives the full URL the package is about to request and
   where the request is going (`"platform"` or `"agent-runtime"`), and returns the address the
   browser should request instead.
+- `sendPlatformRequest` is optional and is how an application owns authentication. Every platform
+  request goes to it as a standard `Request` without any credential (`platform-request.ts`
+  removes the `Authorization` a client set), and its `Response` is used as it comes: the
+  application adds the person's credential, renews it after a `401`, and sends the request again.
+  Without it, clients send the `token` their caller passes. Requests to the Agent's runtime never
+  go through it.
 
 The rewrite exists because the platform API and the Agent's runtime answer browser requests only
 from the origins on their allow-lists. An application served from another origin reaches them
@@ -38,7 +45,8 @@ which one. Command Center uses it for its development proxy, and the standalone 
 its own (`/__platform__`). The package never detects a
 development build and never knows about a proxy.
 
-Every request goes through it. `connection.test.ts` holds each client to that, because one client
+Every request goes through the rewrite. `connection.test.ts` holds each client to that, and to
+the sender when there is one, because one client
 that skipped the rewrite would break an application that depends on it. The only request that does
 not is the direct test turn to a custom provider's own endpoint, which must never pass through a
 proxy.

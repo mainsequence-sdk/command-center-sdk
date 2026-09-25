@@ -9,7 +9,7 @@ import {
   type AgentSessionRuntimeAccess,
 } from "./agent-session-runtime-access.js";
 import { normalizeAgentSessionLookupId } from "./agent-sessions-api.js";
-import { resolveRequestUrl, type ChatBackendConnection } from "./connection.js";
+import { hasPlatformRequestSender, resolveRequestUrl, type ChatBackendConnection } from "./connection.js";
 import { MainSequenceAiError } from "./error-source.js";
 import {
   RuntimeInteractionBlockedError,
@@ -366,7 +366,7 @@ export async function fetchMainSequenceAiAgentRuntimeHandle({
     });
   }
 
-  if (!sessionToken) {
+  if (!sessionToken && !hasPlatformRequestSender(connection)) {
     throw new MainSequenceAiError(
       "No authenticated session token is available for dynamic assistant access.",
       {
@@ -423,7 +423,7 @@ async function refreshDynamicAssistantAccess({
     return raceWithAbortSignal(inFlightDynamicAssistantAccessRefresh, signal);
   }
 
-  if (!sessionToken) {
+  if (!sessionToken && !hasPlatformRequestSender(connection)) {
     throw new MainSequenceAiError(
       "No authenticated session token is available for dynamic assistant access.",
       {

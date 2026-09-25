@@ -25,20 +25,39 @@ export type ChatBackendRequestUrlRewrite = (
   target: ChatBackendRequestTarget,
 ) => string;
 
+/**
+ * Sends a platform request for the package.
+ *
+ * The application owns authentication: it adds the person's credential, or has its host send the
+ * request, renews the credential when the platform refuses it, and returns the platform's
+ * response. The package hands it every platform request without any credential and uses the
+ * response as it comes. Requests to the Agent's runtime never go through it: they carry the
+ * session's runtime token, which the platform issues, and stream straight from the runtime.
+ */
+export type ChatPlatformRequestSender = (request: Request) => Promise<Response>;
+
 export interface ChatBackendConnectionInput {
   /** The platform API base URL, absolute, for example `https://api.example.com`. */
   apiBaseUrl: string;
   rewriteRequestUrl?: ChatBackendRequestUrlRewrite | null;
+  /**
+   * Sends the package's platform requests, with the application's authentication. Without it,
+   * clients send the requests themselves with the `token` their callers pass, which the package
+   * cannot renew.
+   */
+  sendPlatformRequest?: ChatPlatformRequestSender | null;
 }
 
 export interface ChatBackendConnection {
   readonly apiBaseUrl: string;
   readonly rewriteRequestUrl: ChatBackendRequestUrlRewrite | null;
+  readonly sendPlatformRequest: ChatPlatformRequestSender | null;
 }
 
 export function createChatBackendConnection({
   apiBaseUrl,
   rewriteRequestUrl = null,
+  sendPlatformRequest = null,
 }: ChatBackendConnectionInput): ChatBackendConnection {
   const trimmed = typeof apiBaseUrl === "string" ? apiBaseUrl.trim() : "";
   let parsed: URL | null = null;
@@ -58,6 +77,7 @@ export function createChatBackendConnection({
   return Object.freeze({
     apiBaseUrl: trimmed,
     rewriteRequestUrl: rewriteRequestUrl ?? null,
+    sendPlatformRequest: sendPlatformRequest ?? null,
   });
 }
 
@@ -82,6 +102,11 @@ export function resolveRequestUrl(
   }
 
   return connection.rewriteRequestUrl(new URL(url.toString()), target);
+}
+
+/** Whether the application sends the package's platform requests, with its own authentication. */
+export function hasPlatformRequestSender(connection: ChatBackendConnection) {
+  return Boolean(connection.sendPlatformRequest);
 }
 
 /** The address to request for a platform API path. */

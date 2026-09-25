@@ -11,8 +11,8 @@ sign-off for the built-in providers, with the models the platform's catalog publ
 The package exports `ModelProviderSettings`. Its inputs:
 
 - `connection`: the connection to the platform;
-- `auth`: the person's token, token type, and user uid (`ChatAuth`). Credentials and custom
-  providers are read and written as that person;
+- `auth`: who is signed in (`ChatAuth`). Credentials and custom providers are read and written as
+  that person, with the application's credential from the connection's sender;
 - `notify`: optional; shows the person a short notice, for example a toast, after a custom
   provider or model is created, updated, or deleted.
 
@@ -61,8 +61,8 @@ The screens hold their own state; nothing here needs a query client.
 - Provider auth state is the source of truth for sign-in/sign-off controls. Do not infer provider
   authentication only from model presence.
 - The platform's model catalog and provider sign-in operations require `session.user.uid` only as a
-  local identity sanity check. Requests send the person's token and no user, Agent, or AgentSession
-  uid; the platform derives the User. Numeric legacy ids are rejected before network I/O.
+  local identity sanity check. Requests carry the application's credential for the person and no user,
+  Agent, or AgentSession uid; the platform derives the User. Numeric legacy ids are rejected before network I/O.
 - The canonical catalog includes providers with missing credentials. Render its `authenticated`,
   `credential_status`, and `sign_in_available` fields directly rather than merging a second
   runtime-owned provider list.

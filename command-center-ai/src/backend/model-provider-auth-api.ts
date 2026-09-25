@@ -1,4 +1,5 @@
 import { resolvePlatformApiUrl, type ChatBackendConnection } from "./connection.js";
+import { requestPlatform } from "./platform-request.js";
 import {
   buildRuntimeHttpErrorMessage,
   formatRuntimeHttpStatus,
@@ -204,7 +205,7 @@ export async function startModelProviderSignIn({
 }): Promise<ProviderSignInStartResult> {
   requireCreatedByUserUid(createdByUserUid, "Model provider sign-in");
   const url = resolvePlatformApiUrl(connection, signInAttemptCollectionPath);
-  const response = await fetch(url, {
+  const response = await requestPlatform(connection, url, {
     method: "POST",
     headers: buildHeaders(token, tokenType),
     body: JSON.stringify({ provider }),
@@ -257,7 +258,7 @@ export async function fetchModelProviderSignInAttempt({
 }) {
   requireCreatedByUserUid(createdByUserUid, "Model provider sign-in attempt");
   const url = resolvePlatformApiUrl(connection, buildSignInAttemptPath(attemptId));
-  const response = await fetch(url, {
+  const response = await requestPlatform(connection, url, {
     method: "GET",
     headers: buildHeaders(token, tokenType),
     signal,
@@ -303,7 +304,7 @@ export async function cancelModelProviderSignIn({
 }) {
   requireCreatedByUserUid(createdByUserUid, "Model provider sign-in cancellation");
   const url = resolvePlatformApiUrl(connection, `${buildSignInAttemptPath(attemptId)}cancel/`);
-  const response = await fetch(url, {
+  const response = await requestPlatform(connection, url, {
     method: "POST",
     headers: buildHeaders(token, tokenType),
     body: "{}",
@@ -347,7 +348,7 @@ export async function signOffModelProvider({
 }) {
   requireCreatedByUserUid(createdByUserUid, "Model provider sign-off");
   const url = resolvePlatformApiUrl(connection, credentialRevokePath);
-  const response = await fetch(url, {
+  const response = await requestPlatform(connection, url, {
     method: "POST",
     headers: buildHeaders(token, tokenType),
     body: JSON.stringify({ provider, reason: "user_signoff" }),

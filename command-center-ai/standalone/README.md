@@ -45,8 +45,9 @@ request from the stand-in and prefills the form; any token works.
 ## Maintenance Notes
 
 - Import the chat only from `../src` (the public exports), never from a path inside it.
-- The token stays in memory. The other fields are remembered in `localStorage` under
-  `chat-standalone.settings`.
+- The token stays in memory, and the connection's `sendPlatformRequest` sends the platform requests
+  with it (`connection.ts`); `auth` carries only the person. The other fields are remembered in
+  `localStorage` under `chat-standalone.settings`.
 - Never put a token in an environment file.
 - `npm run build:standalone` bundles the application into `standalone/dist/`; `dist/` at the package
   root is the library build.

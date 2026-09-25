@@ -10,6 +10,7 @@ export {
   type ChatBackendConnectionInput,
   type ChatBackendRequestTarget,
   type ChatBackendRequestUrlRewrite,
+  type ChatPlatformRequestSender,
 } from "./backend/connection.js";
 
 // Agent sessions

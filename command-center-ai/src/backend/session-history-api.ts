@@ -1,5 +1,6 @@
 import { requireAgentSessionLookupId } from "./agent-sessions-api.js";
 import { resolvePlatformApiUrl, type ChatBackendConnection } from "./connection.js";
+import { requestPlatform } from "./platform-request.js";
 import { MainSequenceAiError } from "./error-source.js";
 import { buildRuntimeHttpErrorMessage } from "./http-error.js";
 import {
@@ -64,7 +65,7 @@ export async function fetchSessionHistory({
   let response: Response;
 
   try {
-    response = await fetch(requestUrl, {
+    response = await requestPlatform(connection, requestUrl, {
       method: "GET",
       headers,
       signal,

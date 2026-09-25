@@ -1178,7 +1178,7 @@ export interface CustomModelProviderSettingsProps {
  * providers and models. Stored secrets never come back to the browser.
  */
 export function CustomModelProviderSettings({ auth, connection, notify }: CustomModelProviderSettingsProps) {
-  const sessionToken = auth.token;
+  const sessionToken = auth.token ?? null;
   const sessionTokenType = auth.tokenType ?? "Bearer";
   const sessionUserUid = auth.userUid;
   const [providerEditor, setProviderEditor] = useState<{ provider: CustomModelProvider | null; draft: ProviderDraft } | null>(null);

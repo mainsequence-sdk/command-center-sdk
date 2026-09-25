@@ -716,6 +716,11 @@ export function ChatEngineProvider({
   const sessionUserUid = auth.userUid ?? null;
   const sessionToken = auth.token ?? null;
   const sessionTokenType = auth.tokenType ?? "Bearer";
+  // The person can reach the platform: through the application's sender on the connection, or
+  // with the token the application passed.
+  const canReachPlatform = connection.sendPlatformRequest
+    ? Boolean(sessionUserUid)
+    : Boolean(sessionToken);
   const activeEnvironmentUid = environmentUid ?? null;
   const defaultSessionAgentUid = defaultSession?.agentUid?.trim() || null;
   const defaultSessionHandleUniqueId = defaultSession?.handleUniqueId ?? "";
@@ -1181,7 +1186,7 @@ export function ChatEngineProvider({
   const hasRequestedAvailableModels = shouldResolveAvailableModels;
   const availableRunConfigQuery = useRunConfigOptions({
     connection,
-    enabled: shouldResolveAvailableModels && Boolean(sessionToken && sessionUserUid),
+    enabled: shouldResolveAvailableModels && canReachPlatform && Boolean(sessionUserUid),
     token: sessionToken,
     tokenType: sessionTokenType,
     userUid: sessionUserUid,
@@ -1262,7 +1267,7 @@ export function ChatEngineProvider({
   // its deadline, and the return from a long-hidden tab, both use it.
   const refreshActiveSessionRuntimeAccess = useCallback(async () => {
     const sessionLookupId = resolveAgentSessionLookupId(activeSession);
-    if (!activeSession?.id || !sessionLookupId || !sessionToken) {
+    if (!activeSession?.id || !sessionLookupId || !canReachPlatform) {
       return;
     }
     sessionRuntimeAccessMetaRequestRef.current?.abort();
@@ -1287,7 +1292,7 @@ export function ChatEngineProvider({
     } finally {
       setRuntimeAccessPollerEpoch((epoch) => epoch + 1);
     }
-  }, [activeSession, sessionToken, sessionTokenType, updateSessionRuntimeAccessMeta]);
+  }, [activeSession, canReachPlatform, sessionToken, sessionTokenType, updateSessionRuntimeAccessMeta]);
   const refreshActiveSessionRuntimeAccessRef = useRef(refreshActiveSessionRuntimeAccess);
   refreshActiveSessionRuntimeAccessRef.current = refreshActiveSessionRuntimeAccess;
   // An Agent that answered a while ago may have gone idle since. Going to write is the moment to
@@ -1564,13 +1569,13 @@ export function ChatEngineProvider({
   }, [requestedChatSessionId, shouldAvoidImplicitSessionSelection]);
 
   useEffect(() => {
-    if (!sessionToken) {
+    if (!canReachPlatform) {
       clearMainSequenceAiResolvedRuntimeAccess();
     }
-  }, [sessionToken]);
+  }, [canReachPlatform]);
 
   useEffect(() => {
-    if (!shouldResolveAvailableModels || !sessionToken || !sessionUserUid) {
+    if (!shouldResolveAvailableModels || !canReachPlatform || !sessionUserUid) {
       setAvailableModels([]);
       setAvailableProviders([]);
       setAvailableReasoningEfforts([]);
@@ -1600,6 +1605,7 @@ export function ChatEngineProvider({
       );
     }
   }, [
+    canReachPlatform,
     availableRunConfigQuery.data,
     availableRunConfigQuery.error,
     availableRunConfigQuery.isLoading,
@@ -1614,7 +1620,7 @@ export function ChatEngineProvider({
 
     if (
       !shouldHydrateChatRuntime ||
-      !sessionToken ||
+      !canReachPlatform ||
       !activeSession?.id ||
       !activeSessionLookupId
     ) {
@@ -1766,6 +1772,7 @@ export function ChatEngineProvider({
       controller.abort();
     };
   }, [
+    canReachPlatform,
     activeSession?.id,
     activeSession?.runtimeSessionId,
     activeRuntimeInteraction?.operation?.status,
@@ -1781,7 +1788,7 @@ export function ChatEngineProvider({
   useEffect(() => {
     if (
       !shouldHydrateChatRuntime ||
-      !sessionToken ||
+      !canReachPlatform ||
       !activeEnvironmentUid ||
       shouldSuppressDirectLaunchRuntimePrefetch
     ) {
@@ -1994,6 +2001,7 @@ export function ChatEngineProvider({
       controller.abort();
     };
   }, [
+    canReachPlatform,
     activeEnvironmentUid,
     latestSessionsAgentFilterId,
     latestSessionsRefreshNonce,
@@ -2059,7 +2067,7 @@ export function ChatEngineProvider({
     const bootstrapKey = `${sessionUserUid ?? "anonymous"}:${activeEnvironmentUid}:${defaultSessionAgentUid}:${defaultSessionHandleUniqueId}`;
 
     if (
-      !sessionToken ||
+      !canReachPlatform ||
       !sessionUserUid ||
       isCreatingAgentSession ||
       defaultSessionRequestRef.current ||
@@ -2127,6 +2135,7 @@ export function ChatEngineProvider({
       }
     })();
   }, [
+    canReachPlatform,
     agentSessions,
     activeEnvironmentUid,
     cancelDefaultSessionRequest,
@@ -3968,7 +3977,7 @@ export function ChatEngineProvider({
       !currentQueueWaiting ||
       threadRunning ||
       !activeSessionWorking ||
-      !sessionToken ||
+      !canReachPlatform ||
       !activeEnvironmentUid
     ) {
       return;
@@ -4002,6 +4011,7 @@ export function ChatEngineProvider({
       window.clearInterval(interval);
     };
   }, [
+    canReachPlatform,
     activeEnvironmentUid,
     activeSessionWorking,
     currentQueueWaiting,
@@ -4427,6 +4437,7 @@ export function ChatEngineProvider({
   return (
     <AgentIconsProvider
       connection={connection}
+      enabled={canReachPlatform}
       environmentUid={activeEnvironmentUid}
       token={sessionToken}
       tokenType={sessionTokenType}

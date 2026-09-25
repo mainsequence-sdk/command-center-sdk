@@ -67,7 +67,7 @@ function load({
 }: {
   connection: ChatBackendConnection;
   force: boolean;
-  token: string;
+  token: string | null;
   tokenType: string;
   userUid: string;
 }) {
@@ -142,17 +142,18 @@ export function useModelProviderCatalog({
 }) {
   const catalogVersion = useSyncExternalStore(subscribe, getVersion, getVersion);
   const [refetchNonce, setRefetchNonce] = useState(0);
-  const key = enabled && token && userUid ? userUid : null;
+  const canRequest = Boolean(token) || Boolean(connection.sendPlatformRequest);
+  const key = enabled && canRequest && userUid ? userUid : null;
 
   useEffect(() => {
-    if (!key || !token) {
+    if (!key) {
       return;
     }
     load({ connection, force: false, token, tokenType, userUid: key });
   }, [catalogVersion, connection, key, token, tokenType]);
 
   useEffect(() => {
-    if (!key || !token || refetchNonce === 0) {
+    if (!key || refetchNonce === 0) {
       return;
     }
     load({ connection, force: true, token, tokenType, userUid: key });

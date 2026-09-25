@@ -302,7 +302,7 @@ function wait(ms: number, signal: AbortSignal) {
  * same catalog store as the chat's model pickers, so a change here refreshes them too.
  */
 export function ModelProviderSettings({ auth, connection, notify }: ModelProviderSettingsProps) {
-  const sessionToken = auth.token;
+  const sessionToken = auth.token ?? null;
   const sessionTokenType = auth.tokenType ?? "Bearer";
   const sessionUserUid = auth.userUid;
   const hasSessionUserUid = Boolean(sessionUserUid);

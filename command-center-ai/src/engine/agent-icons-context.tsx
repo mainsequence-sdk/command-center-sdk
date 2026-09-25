@@ -72,22 +72,29 @@ export function clearAgentIconProjections() {
 export function AgentIconsProvider({
   children,
   connection,
+  enabled,
   environmentUid,
   token,
   tokenType = "Bearer",
 }: {
   children: ReactNode;
   connection: ChatBackendConnection;
+  /**
+   * Whether the person can reach the platform. Defaults to having a token or the application's
+   * sender on the connection; the engine passes whether someone is signed in.
+   */
+  enabled?: boolean;
   environmentUid: string | null;
   token: string | null;
   tokenType?: string;
 }) {
+  const canRequest = enabled ?? (Boolean(token) || Boolean(connection.sendPlatformRequest));
   const [icons, setIcons] = useState<AgentIconProjection | null>(() =>
-    token ? readFreshProjection(environmentUid) : null,
+    canRequest ? readFreshProjection(environmentUid) : null,
   );
 
   useEffect(() => {
-    if (!token || !environmentUid) {
+    if (!canRequest || !environmentUid) {
       setIcons(null);
       return;
     }
@@ -124,14 +131,14 @@ export function AgentIconsProvider({
     return () => {
       controller.abort();
     };
-  }, [connection, environmentUid, token, tokenType]);
+  }, [canRequest, connection, environmentUid, token, tokenType]);
 
   useEffect(() => {
-    if (!token) {
+    if (!canRequest) {
       clearAgentIconCache();
       clearAgentIconProjections();
     }
-  }, [token]);
+  }, [canRequest]);
 
   const lookup = useCallback<AgentIconLookup>(
     (agentUid) => {

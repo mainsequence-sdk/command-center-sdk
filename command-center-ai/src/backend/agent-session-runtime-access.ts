@@ -1,5 +1,6 @@
 import { normalizeAgentSessionLookupId, requireAgentSessionLookupId } from "./agent-sessions-api.js";
 import { resolvePlatformApiUrl, type ChatBackendConnection } from "./connection.js";
+import { requestPlatform } from "./platform-request.js";
 import { MainSequenceAiError } from "./error-source.js";
 import { buildRuntimeHttpErrorMessage } from "./http-error.js";
 import {
@@ -219,7 +220,7 @@ export async function fetchAgentSessionRuntimeAccess({
   const requestUrl = buildAgentSessionRuntimeAccessUrl(connection, sessionId);
   let response: Response;
   try {
-    response = await fetch(requestUrl, {
+    response = await requestPlatform(connection, requestUrl, {
       method: "POST",
       headers,
       body: JSON.stringify({}),

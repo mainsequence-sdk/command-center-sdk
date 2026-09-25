@@ -50,18 +50,23 @@ import {
   type ChatNotify,
 } from "@dev-mainsequence/command-center-ai";
 
-const connection = createChatBackendConnection({ apiBaseUrl: "https://platform.example.com" });
+// The application's own authentication: it adds the person's credential and renews it.
+import { sendAuthenticatedRequest } from "./auth";
+
+const connection = createChatBackendConnection({
+  apiBaseUrl: "https://platform.example.com",
+  sendPlatformRequest: sendAuthenticatedRequest,
+});
 
 interface AssistantProps {
   agentUid: string;
   environmentUid: string;
   notify: ChatNotify;
-  token: string | null;
   userUid: string;
 }
 
-export function Assistant({ agentUid, environmentUid, notify, token, userUid }: AssistantProps) {
-  const auth = useMemo<ChatAuth>(() => ({ token, tokenType: "Bearer", userUid }), [token, userUid]);
+export function Assistant({ agentUid, environmentUid, notify, userUid }: AssistantProps) {
+  const auth = useMemo<ChatAuth>(() => ({ userUid }), [userUid]);
   const defaultSession = useMemo<ChatDefaultSession>(
     () => ({ agentUid, handleUniqueId: "my_application_assistant", name: "My application assistant", status: "ready" }),
     [agentUid],
@@ -95,13 +100,11 @@ export function Assistant({ agentUid, environmentUid, notify, token, userUid }: 
 
 Rules for the inputs:
 
-- `connection`: from `createChatBackendConnection`. When the application is not served from an
+- `connection`: from `createChatBackendConnection`, with the application's `sendPlatformRequest`,
+  which adds the person's credential and renews it. When the application is not served from an
   origin the platform allows, it also takes a request-URL rewrite; follow
   `$connect-command-center-ai-to-the-platform`.
-- `auth`: the person's current token, its type, and their user uid. When the application refreshes
-  the token, it passes the new one in a new `auth` value; there is no refresh callback, and the
-  package never refreshes the person's token. With a `null` token the engine makes no platform
-  request.
+- `auth`: who is signed in, `{ userUid }`. The package never needs the credential.
 - `environmentUid`: the active Organization Environment. Session lists and details are scoped by it.
 - `defaultSession` with `showsDefaultSession`: the Agent (`agentUid`), a stable `handleUniqueId`,
   the `name` a new session gets, `status` (`loading` until the application knows the Agent), and
@@ -138,13 +141,15 @@ The package ships its standalone application in
 - `connection.ts` and `platform-proxy.ts`: the connection and its request-URL rewrite.
 
 Read it before writing and follow its structure. Its form is only for trying the package: a real
-application takes the token from its own sign-in and keeps it out of storage and the build.
+application sends the platform requests with its own sign-in and keeps the credential out of
+storage and the build.
 
 ## Do Not Rebuild Owned Behavior
 
 - The package owns the session engine, the thread and composer, the queue of messages written while
   the Agent works, readiness, the model picker, the provider screens, and its stylesheet.
-- The application owns sign-in and token refresh, which Agent and which handle, where the
+- The application owns sign-in, the credential and its renewal (the connection's sender), which
+  Agent and which handle, where the
   conversation sits, notifications, routing, and the forwarder.
 - The platform owns authorization, sessions, and which Agents an Environment exposes; the Agent
   runtime owns the answers.
