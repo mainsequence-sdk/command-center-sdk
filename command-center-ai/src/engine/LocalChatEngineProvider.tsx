@@ -90,6 +90,10 @@ const READINESS_RETRY_MS = 5_000;
 const DEFAULT_LOCAL_SESSION_ID = "default";
 // The model option shown when the runtime cannot list providers: the runtime's configured model.
 const RUNTIME_CONFIGURED_MODEL_ID = "local::configured";
+const RUNTIME_CONFIGURED_PROVIDER: AvailableChatProviderOption = Object.freeze({
+  label: "Local Agent",
+  value: "local",
+});
 
 export interface LocalChatEngineProviderProps {
   children: ReactNode;
@@ -452,6 +456,10 @@ export function LocalChatEngineProvider({
   queuesRef.current = queues;
   const [queueDrainTick, setQueueDrainTick] = useState(0);
   const drainArmedSessionIdRef = useRef<string | null>(null);
+  // Bumped when a run ends, so the session's model is read again once the runtime is idle.
+  const [modelRefreshTick, setModelRefreshTick] = useState(0);
+  // A model chosen before the session exists on the runtime, applied once it does.
+  const pendingModelRef = useRef<{ sessionId: string; modelId: string; thinkingLevel: string | null } | null>(null);
 
   const updateQueue = useCallback((sessionId: string, update: (queue: MessageQueue) => MessageQueue) => {
     setQueues((current) => ({ ...current, [sessionId]: update(current[sessionId] ?? EMPTY_MESSAGE_QUEUE) }));
@@ -480,6 +488,9 @@ export function LocalChatEngineProvider({
       return { ...rest, [toId]: { ...session, id: toId } };
     });
     if (runSessionIdRef.current === fromId) runSessionIdRef.current = toId;
+    if (pendingModelRef.current?.sessionId === fromId) {
+      pendingModelRef.current = { ...pendingModelRef.current, sessionId: toId };
+    }
     if (currentSessionIdRef.current === fromId) {
       currentSessionIdRef.current = toId;
       setCurrentSessionId(toId);
@@ -506,6 +517,7 @@ export function LocalChatEngineProvider({
       }
       runSessionIdRef.current = null;
       setSessionsRefreshTick((tick) => tick + 1);
+      setModelRefreshTick((tick) => tick + 1);
     },
     [holdQueue],
   );
@@ -672,14 +684,15 @@ export function LocalChatEngineProvider({
     setIsLoadingAvailableModels(true);
     void fetchLocalRunConfigOptions(baseUrl)
       .then((options) => {
-        setAvailableProviders(options.providers);
-        setAvailableModels(options.models.length > 0 ? options.models : [runtimeConfiguredModel()]);
+        // The runtime's own model leads the list: it is what a session runs until one is chosen.
+        setAvailableProviders([RUNTIME_CONFIGURED_PROVIDER, ...options.providers]);
+        setAvailableModels([runtimeConfiguredModel(), ...options.models]);
         setAvailableReasoningEfforts(options.reasoningEfforts);
         setAvailableModelsError(null);
       })
       .catch(() => {
         // The runtime still answers with its configured model; only the picker is lost.
-        setAvailableProviders([]);
+        setAvailableProviders([RUNTIME_CONFIGURED_PROVIDER]);
         setAvailableModels([runtimeConfiguredModel()]);
         setAvailableReasoningEfforts([]);
         setAvailableModelsError(null);
@@ -693,33 +706,89 @@ export function LocalChatEngineProvider({
     }
   }, [hasRequestedAvailableModels, isVisible, requestAvailableModels, runtimeState.status]);
 
-  // The session's own model, once the runtime has the session.
+  const selectConfiguredModel = useCallback(() => {
+    setSelectedProviderValueState(RUNTIME_CONFIGURED_PROVIDER.value);
+    setSelectedModelValueState(RUNTIME_CONFIGURED_MODEL_ID);
+    setSelectedReasoningEffortValueState(null);
+  }, []);
+
+  // The session's own model, read while the runtime is idle: a runtime answers only for a session
+  // that has had a turn, so a new one shows the runtime's configured model.
   useEffect(() => {
-    if (!isVisible || runtimeState.status !== "ready" || !runtimeKnownSessionIds.has(currentSessionId)) {
+    if (!isVisible || runtimeState.status !== "ready" || threadRunning) {
       return undefined;
     }
     const controller = new AbortController();
-    void fetchLocalSessionModel(baseUrl, currentSessionId, controller.signal).then((model) => {
-      if (controller.signal.aborted || !model?.provider || !model.model) return;
-      setSelectedProviderValueState(model.provider);
-      setSelectedModelValueState(modelOptionId(model.provider, model.model));
-      setSelectedReasoningEffortValueState(model.thinkingLevel);
-    });
+    const sessionId = currentSessionId;
+    void fetchLocalSessionModel(baseUrl, sessionId, controller.signal)
+      .then(async (model) => {
+        if (controller.signal.aborted) return;
+        const pending = pendingModelRef.current?.sessionId === sessionId ? pendingModelRef.current : null;
+        if (model?.provider && model.model) {
+          setRuntimeKnownSessionIds((current) => (current.has(sessionId) ? current : new Set([...current, sessionId])));
+          if (pending) {
+            pendingModelRef.current = null;
+            const parsed = splitModelOptionId(pending.modelId);
+            if (parsed) {
+              try {
+                const applied = await updateLocalSessionModel(baseUrl, {
+                  sessionUid: sessionId,
+                  provider: parsed.provider,
+                  model: parsed.model,
+                  thinkingLevel: pending.thinkingLevel,
+                });
+                if (applied.provider && applied.model) {
+                  setSelectedProviderValueState(applied.provider);
+                  setSelectedModelValueState(modelOptionId(applied.provider, applied.model));
+                  setSelectedReasoningEffortValueState(applied.thinkingLevel);
+                  return;
+                }
+              } catch (error) {
+                notify({
+                  title: "The model did not change",
+                  description: error instanceof Error ? error.message : undefined,
+                  variant: "error",
+                });
+              }
+            }
+          }
+          setSelectedProviderValueState(model.provider);
+          setSelectedModelValueState(modelOptionId(model.provider, model.model));
+          setSelectedReasoningEffortValueState(model.thinkingLevel);
+          return;
+        }
+        if (!pending) selectConfiguredModel();
+      })
+      .catch(() => undefined);
     return () => controller.abort();
-  }, [baseUrl, currentSessionId, isVisible, runtimeKnownSessionIds, runtimeState.status]);
+  }, [
+    baseUrl,
+    currentSessionId,
+    isVisible,
+    modelRefreshTick,
+    notify,
+    runtimeState.status,
+    selectConfiguredModel,
+    threadRunning,
+  ]);
 
   const applySessionModel = useCallback(
     async (modelId: string | null, thinkingLevel: string | null) => {
-      const parsed = modelId ? splitModelOptionId(modelId) : null;
-      if (!parsed || modelId === RUNTIME_CONFIGURED_MODEL_ID) return;
       const sessionId = currentSessionIdRef.current;
+      const parsed = modelId ? splitModelOptionId(modelId) : null;
+      if (!parsed || modelId === RUNTIME_CONFIGURED_MODEL_ID) {
+        if (pendingModelRef.current?.sessionId === sessionId) pendingModelRef.current = null;
+        return;
+      }
       if (!runtimeKnownSessionIds.has(sessionId)) {
+        // The runtime changes the model only of a session it has; this one gets it after its first answer.
+        pendingModelRef.current = { sessionId, modelId: modelId!, thinkingLevel };
         if (!firstTurnModelNoticeRef.current) {
           firstTurnModelNoticeRef.current = true;
           notify({
             title: "The first message uses the local Agent's model",
             description:
-              "A new local conversation starts with the model the Agent was started with. Your choice applies once it has answered.",
+              "A new local conversation starts with the model the Agent was started with. Your choice applies from the next message.",
             variant: "info",
           });
         }

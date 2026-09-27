@@ -260,4 +260,55 @@ describe("a local Agent source", () => {
       expect(put?.body).toMatchObject({ sessionUid: engineSessionId, provider: "stand-in-cloud" });
     });
   });
+
+  it("shows the runtime's model for a new conversation and applies a choice made before its first answer", async () => {
+    await openChat();
+    await waitFor(() => expect(composerState?.status).toBe("ready"));
+
+    const modelPicker = () => {
+      const select = Array.from(container.querySelectorAll("select")).find((candidate) =>
+        Array.from(candidate.options).some((option) => option.value === "local::configured"),
+      );
+      if (!select) throw new Error("No model picker.");
+      return select;
+    };
+    await waitFor(() => expect(modelPicker().value).toBe("local::configured"));
+
+    // A person picks a provider, then one of its models.
+    const providerPicker = Array.from(container.querySelectorAll("select")).find((candidate) =>
+      Array.from(candidate.options).some((option) => option.value === "stand-in-cloud"),
+    )!;
+    await act(async () => {
+      providerPicker.value = "stand-in-cloud";
+      providerPicker.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    const cloudModelPicker = () => {
+      const select = Array.from(container.querySelectorAll("select")).find((candidate) =>
+        Array.from(candidate.options).some((option) => option.value.startsWith("stand-in-cloud::")),
+      );
+      if (!select) throw new Error("No model picker for the provider.");
+      return select;
+    };
+    const choice = await waitFor(() => {
+      const option = Array.from(cloudModelPicker().options).find(
+        (candidate) => candidate.value.startsWith("stand-in-cloud::") && !candidate.disabled,
+      );
+      if (!option) throw new Error("No model to choose.");
+      return option;
+    });
+    await act(async () => {
+      cloudModelPicker().value = choice.value;
+      cloudModelPicker().dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    // Not yet: the runtime has no session to change.
+    expect(runtime.requests.some((request) => request.method === "PUT")).toBe(false);
+
+    await sendWithEnter("First message.");
+    await waitFor(() => expect(container.textContent).toContain('You wrote: "First message.".'));
+    await waitFor(() => {
+      const put = runtime.requests.find((request) => request.method === "PUT" && request.path === "/api/chat/session-model");
+      expect(put?.body).toMatchObject({ sessionUid: engineSessionId, provider: "stand-in-cloud", model: choice.value.split("::")[1] });
+    });
+    await waitFor(() => expect(cloudModelPicker().value).toBe(choice.value));
+  });
 });

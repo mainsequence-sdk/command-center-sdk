@@ -67,7 +67,7 @@ build has no `/__agent__`.
 | Sessions | The platform's AgentSessions | The runtime's sessions; the page's first one is the runtime's default conversation, and New session starts another |
 | Reload | The platform's history | The runtime's history, once it serves it (`ms-tau-sdk` issue #47). Until then a reload starts over and the thread says so |
 | Readiness | The platform's runtime decision, then the Agent's check | `/ready`, then the Agent's check. An Agent that is not running is unavailable, and the chat looks for it again every few seconds |
-| Model picker | The session's model on the platform | The session's model on the runtime. A new conversation's first message uses the model the runtime was started with |
+| Model picker | The session's model on the platform | The session's model on the runtime. A new conversation shows "Configured by the local Agent" and its first message uses the model the runtime was started with; a model chosen before then applies from the next message |
 | Archive, search, insights, provider settings, Agent icons | Yes | Not offered; the explorer and footer hide them |
 
 `useChatEngine().capabilities` says which of these the mounted source offers.
