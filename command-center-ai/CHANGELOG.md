@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.6
 
 Compatibility axes: the npm public API, additively; the stylesheet, additively (new `ms-chat-rail`,
 `ms-chat-launcher`, `ms-chat-explorer`, `ms-chat-page`, and `ms-chat-composer-stack` classes); and
