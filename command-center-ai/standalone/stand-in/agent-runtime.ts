@@ -27,7 +27,7 @@ export const STAND_IN_TOOL_NAME = "stand_in_search";
 const HOLD = "hold" as const;
 type PlannedFrame = Record<string, unknown> | typeof HOLD;
 
-function planReply(number: number, input: string, modelLabel: string): PlannedFrame[] {
+export function planReply(number: number, input: string, modelLabel: string): PlannedFrame[] {
   const reasoningId = `reasoning-${number}`;
   const textId = `text-${number}`;
   const toolCallId = `call-${number}`;
@@ -80,7 +80,7 @@ function planFailure(number: number, errorText: string): PlannedFrame[] {
 }
 
 /** The transcript parts of what was streamed: reasoning, the tool call, and the text. */
-function transcriptParts(frames: ReadonlyArray<Record<string, unknown>>) {
+export function transcriptParts(frames: ReadonlyArray<Record<string, unknown>>) {
   const parts: Array<Record<string, unknown>> = [];
   const byKind = new Map<string, Record<string, unknown>>();
   const part = (kind: string, create: () => Record<string, unknown>) => {
@@ -125,7 +125,7 @@ function transcriptParts(frames: ReadonlyArray<Record<string, unknown>>) {
   return parts;
 }
 
-function readInput(body: Record<string, unknown>) {
+export function readInput(body: Record<string, unknown>) {
   const messages = Array.isArray(body.messages) ? body.messages.map(asRecord) : [];
   const latest = [...messages].reverse().find((message) => message.role === "user");
   const content = Array.isArray(latest?.content) ? latest.content.map(asRecord) : [];

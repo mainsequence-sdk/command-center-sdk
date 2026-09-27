@@ -188,6 +188,13 @@ Center serves only the chat's, so test the application embedded before release. 
 [static-site guide](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/command-center-sdk/docs/static-site-embeds.md#send-platform-requests-in-local-development)
 lists the plugin's answers, such as `503` when a variable is missing.
 
+### An Agent on your machine
+
+An Agent run with `ms-tau` in local mode needs no platform connection at all: mount
+`ChatEngineProvider source={createLocalAgentSource({ baseUrl: "/__agent__", displayName })}` and add
+the SDK's `localAgentProxy()` to the dev server. [An Agent on your machine](./local-agents.md) has
+the steps.
+
 ## Failure states
 
 | What happens | What it means | What to do |

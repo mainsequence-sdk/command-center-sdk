@@ -14,7 +14,9 @@ Command Center draws its own with the same components. Its agent skill is
 | `AgentSessionExplorer` | The person's sessions under their Agents, with search, archive, and archived sessions. `ChatPageLayout` draws it from its `explorer` props. |
 | `ChatThread` | The conversation, with `surface="overlay"` in the rail and `surface="page"` in the expanded rail. |
 
-Mount one `ChatEngineProvider` above both, so switching between them keeps the conversation.
+Mount one `ChatEngineProvider` above both, so switching between them keeps the conversation. The
+same rail and expanded rail work over an Agent on the developer's machine
+([An Agent on your machine](./local-agents.md)).
 
 ## The right rail
 

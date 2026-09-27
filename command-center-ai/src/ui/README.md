@@ -54,7 +54,9 @@ The frame Command Center draws around the thread, so every application looks lik
   with search, the working and queued marks, archive, and archived sessions on request. It reads the
   engine and calls the platform with the engine's `connection`, `auth`, and `environmentUid`.
   Opening a session (`onOpenSession`) and its details (`onOpenSessionDetails`) are the
-  application's; `agents` adds the Agents without recent sessions. The grouping is
+  application's; `agents` adds the Agents without recent sessions. It follows the engine's
+  `capabilities`: without `archiveSessions` it shows no archive action or archived sessions, and
+  without `searchSessions` it searches only the sessions it has. The grouping is
   `groupAgentSessions` in the engine.
 
 The thread draws text, reasoning, tool calls, errors, and notices. `data-<name>` parts reach the

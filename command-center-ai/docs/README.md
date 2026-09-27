@@ -12,6 +12,7 @@ section 7).
 - [ADR 093: Client-Verified Agent Readiness](./adr/adr-093-client-verified-agent-readiness.md)
 - [ADR 096: The Chat as One Independent Package](./adr/adr-096-independent-chat-package.md)
 - [ADR 098: One Communication Contract for Every Agent](./adr/adr-098-one-communication-contract-for-every-agent.md)
+- [ADR 099: Local Agents Through the Same Engine](./adr/adr-099-local-agents-through-the-same-engine.md)
 
 These records moved here from Command Center and keep their numbers and titles, because the code
 cites them. New decisions about the package are `SDK ADR` records in `adr/` with
@@ -28,6 +29,8 @@ cites them. New decisions about the package are `SDK ADR` records in `adr/` with
   in the application, and how it looks.
 - [Connect to the platform](./connect-to-the-platform.md): the connection, the request-URL rewrite
   and the forwarder, tokens, and the failure states.
+- [An Agent on your machine](./local-agents.md): the same chat over an Agent run with `ms-tau` in
+  local mode, through the dev server's `localAgentProxy()`.
 - [Model providers](./model-providers.md): built-in provider sign-in, Organization custom providers,
   and the test conversation.
 - [The conversation contract](./conversation-contract.md): what the package sends an Agent, what

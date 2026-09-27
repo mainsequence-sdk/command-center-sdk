@@ -80,6 +80,7 @@ and update workflow is in `$use-command-center-sdk`.
 | The right rail, the expanded rail, and how they look | `$compose-command-center-ai-rail` |
 | Several sessions: a session explorer, search, archive, a new session, a session in the URL | `$manage-agent-sessions` |
 | Reach the platform and the Agent runtime, tokens, and failure states | `$connect-command-center-ai-to-the-platform` |
+| Talk to an Agent the developer runs with `ms-tau` in local mode, in development | `$connect-command-center-ai-to-the-platform` (An Agent On This Machine) |
 | Model provider sign-in, custom providers, and the test conversation | `$manage-model-providers` |
 | Design an Agent's answers for what the thread shows | `$design-agent-conversation-capabilities` |
 

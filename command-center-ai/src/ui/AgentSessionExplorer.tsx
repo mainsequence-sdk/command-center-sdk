@@ -104,6 +104,7 @@ export function AgentSessionExplorer({
     agentSessions,
     archiveAgentSession,
     auth,
+    capabilities,
     connection,
     currentSessionId,
     environmentUid,
@@ -136,7 +137,7 @@ export function AgentSessionExplorer({
   );
   const trimmedQuery = searchValue.trim();
   const sessionArchiveBusy = hasActiveChatStream || isActiveSessionLoading || isCreatingAgentSession;
-  const canListArchived = Boolean(userUid && organizationEnvironmentUid);
+  const canListArchived = Boolean(capabilities.archiveSessions && userUid && organizationEnvironmentUid);
 
   const loadArchived = useCallback(
     (group: AgentSessionGroup) => {
@@ -231,6 +232,12 @@ export function AgentSessionExplorer({
       agentSessionMatchesNavigationQuery(session, trimmedQuery),
     );
     setConversationResults(localMatches);
+    // A source that cannot search its server searches the sessions it has.
+    if (!capabilities.searchSessions) {
+      setSearchError(null);
+      setIsSearching(false);
+      return;
+    }
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
       setIsSearching(true);
@@ -287,6 +294,7 @@ export function AgentSessionExplorer({
     };
   }, [
     agentSessions,
+    capabilities.searchSessions,
     connection,
     organizationEnvironmentUid,
     searchOpen,
@@ -511,22 +519,24 @@ export function AgentSessionExplorer({
                                 ) : null}
                               </button>
                               {renderDetailsButton(session, sessionTitle, false)}
-                              <button
-                                type="button"
-                                className="ms-chat-explorer__row-action"
-                                disabled={sessionArchiveBusy || archiveBusyIds[session.id]}
-                                title="Archive session"
-                                aria-label={`Archive session ${sessionTitle}`}
-                                onClick={() => {
-                                  void changeArchive(session.id, true);
-                                }}
-                              >
-                                {archiveBusyIds[session.id] ? (
-                                  <Loader2 className="ms-chat-icon-sm ms-chat-spin" />
-                                ) : (
-                                  <Archive className="ms-chat-icon-sm" />
-                                )}
-                              </button>
+                              {capabilities.archiveSessions ? (
+                                <button
+                                  type="button"
+                                  className="ms-chat-explorer__row-action"
+                                  disabled={sessionArchiveBusy || archiveBusyIds[session.id]}
+                                  title="Archive session"
+                                  aria-label={`Archive session ${sessionTitle}`}
+                                  onClick={() => {
+                                    void changeArchive(session.id, true);
+                                  }}
+                                >
+                                  {archiveBusyIds[session.id] ? (
+                                    <Loader2 className="ms-chat-icon-sm ms-chat-spin" />
+                                  ) : (
+                                    <Archive className="ms-chat-icon-sm" />
+                                  )}
+                                </button>
+                              ) : null}
                             </div>
                           );
                         })}

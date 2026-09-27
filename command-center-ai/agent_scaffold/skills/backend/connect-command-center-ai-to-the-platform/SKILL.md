@@ -118,6 +118,43 @@ const connection = createChatBackendConnection({
   and retries once.
 - Without a sender, clients send `auth.token` themselves and nothing can renew it; use a sender.
 
+## An Agent On This Machine
+
+An Agent the developer runs with `ms-tau` in local mode has no platform session, so the platform
+connection does not apply. Use the local source instead of writing a second chat (ADR 099; the
+human guide is `docs/local-agents.md` in the installed package):
+
+```ts
+// vite.config.ts: forward the chat's routes to the runtime on 127.0.0.1:8787, dev server only.
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { localAgentProxy } from "@dev-mainsequence/command-center-sdk/vite";
+
+export default defineConfig({ plugins: [react(), localAgentProxy()] });
+```
+
+```tsx
+import { ChatEngineProvider, ChatThread, createLocalAgentSource } from "@dev-mainsequence/command-center-ai";
+
+const localAgent = createLocalAgentSource({ baseUrl: "/__agent__", displayName: "CRM assistant" });
+
+<ChatEngineProvider source={localAgent} isVisible={visible} notify={notify} viewContext={context}>
+  <ChatThread surface="page" />
+</ChatEngineProvider>
+```
+
+- `localAgentProxy()` needs Command Center SDK `^0.5.7`; the local source needs Command Center AI
+  `^0.0.7`. Upgrade rather than proxying `/tau` by hand.
+- Never call the runtime from the browser directly or across origins: it has no authentication and
+  answers every caller as the developer. `createLocalAgentSource` refuses another origin.
+- Do not speak A2A (`message:send`) for the chat: it carries text only, so reasoning, tool calls,
+  and streaming markdown are lost.
+- Choose the source in the application (for example from its bootstrap, in development only); the
+  package never falls back from one source to the other. A production build uses the platform.
+- Until the runtime serves `ms-tau-sdk#47`, a reload starts a new conversation and the thread says
+  so. Archive, server search, insights, and provider settings are hidden for a local source
+  (`useChatEngine().capabilities`).
+
 ## Read The Failure States
 
 - **`401` or `403` from the platform**: the credential is missing, expired, or not allowed. Renew

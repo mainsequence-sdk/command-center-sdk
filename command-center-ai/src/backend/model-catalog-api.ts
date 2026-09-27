@@ -309,7 +309,7 @@ function normalizeModel(
   };
 }
 
-function normalizeModelProviderCatalog(payload: unknown): ModelProviderCatalog {
+export function normalizeModelProviderCatalog(payload: unknown): ModelProviderCatalog {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("The platform's model catalog response was invalid.");
   }

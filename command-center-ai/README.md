@@ -26,6 +26,9 @@ exports (`src/index.ts`).
   Command Center draws around the thread (`ChatRail`, `ChatLauncher`, `ChatPageLayout`, and
   `AgentSessionExplorer`); `AgentConnectingState`; and `AgentIcon`. See its
   [README](./src/ui/README.md).
+- An Agent on the developer's machine: `ChatEngineProvider source={createLocalAgentSource(...)}`
+  talks to `ms-tau` in local mode instead of the platform, with the same chat
+  ([guide](./docs/local-agents.md), ADR 099).
 - `src/model-providers/`: the model provider settings, `ModelProviderSettings`: custom providers,
   built-in provider sign-in, and the direct test conversation. See its
   [README](./src/model-providers/README.md).

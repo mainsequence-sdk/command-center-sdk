@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import react from "@vitejs/plugin-react";
+import { localAgentProxy } from "@dev-mainsequence/command-center-sdk/vite";
 import { loadEnv, type ProxyOptions } from "vite";
 import { defineConfig } from "vitest/config";
 
@@ -44,7 +45,9 @@ export default defineConfig(({ mode }) => {
   return {
     root: packageRoot,
     envDir: packageRoot,
-    plugins: [react()],
+    // `/?local` talks to an Agent run with `ms-tau` in local mode on this machine (ADR 099), through
+    // `/__agent__` on this dev server. `MAINSEQUENCE_TAU_LOCAL_ORIGIN` points it elsewhere.
+    plugins: [react(), localAgentProxy()],
     server: {
       port: 5183,
       proxy,

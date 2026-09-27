@@ -14,7 +14,7 @@ import "@dev-mainsequence/command-center-sdk/theme/markdown.css";
 import "../styles.css";
 import "./standalone.css";
 
-import { StandaloneApp } from "./StandaloneApp";
+import { LocalStandaloneChat, StandaloneApp } from "./StandaloneApp";
 
 const container = document.getElementById("root");
 
@@ -33,14 +33,22 @@ async function start(root: HTMLElement) {
 
   // In development, `?stand-in` answers every platform and Agent runtime request from the scripted
   // stand-in the tests use, so the chat can be tried without a platform or a token.
-  if (import.meta.env.DEV && new URLSearchParams(window.location.search).has("stand-in")) {
+  if (import.meta.env.DEV && search.has("stand-in")) {
     const { installStandIn } = await import("./stand-in");
-    installStandIn();
+    const standIn = installStandIn();
+    // `?stand-in&local` also answers the local Agent's routes (ADR 099).
+    if (search.has("local")) {
+      const { createLocalRuntimeStandIn } = await import("./stand-in/local-runtime");
+      window.fetch = createLocalRuntimeStandIn({
+        chunkDelayMs: 40,
+        passThrough: standIn.fetch,
+      }).fetch;
+    }
   }
 
   createRoot(root).render(
     <StrictMode>
-      <StandaloneApp />
+      {search.has("local") ? <LocalStandaloneChat /> : <StandaloneApp />}
     </StrictMode>,
   );
 }

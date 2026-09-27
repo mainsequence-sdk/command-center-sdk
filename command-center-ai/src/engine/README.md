@@ -83,7 +83,18 @@ An application may layer its own fields over the engine's value, as Command Cent
 
 ## Modules
 
-- `ChatEngineProvider.tsx`: the provider, its contexts, and the hooks.
+- `ChatEngineProvider.tsx`: the provider and the hooks. `ChatEngineProvider` mounts the platform
+  engine, or, given `source`, the local engine (ADR 099); both publish `ChatEngineValue`, including
+  `capabilities` (`ChatEngineCapabilities`), which says what the source offers.
+- `engine-context.ts`: the two contexts both engines provide.
+- `local-agent-source.ts`: `createLocalAgentSource`, which accepts only a same-origin path.
+- `LocalChatEngineProvider.tsx`: the engine for an Agent on the developer's machine. It calls only
+  the runtime (`backend/local-agent-api.ts`) through the source's path, and reuses the stream
+  adapter, the request body builder, the history and catalog parsers, and the queue reducer. Its
+  sessions are the runtime's (the page's first is the runtime's default conversation); the
+  runtime's canonical id from `X-Agent-Session-Uid` replaces the page's after the first answer; its
+  selection is kept under `ms.command-center-ai.local-session:<baseUrl>`; a runtime that is not up
+  is `unavailable` and looked for again every five seconds.
 - `types.ts`: `ChatAuth`, `ChatNotice`, `ChatNotify`, `ChatDefaultSession`,
   `DefaultSessionStatus`, and `ChatLaunchTarget`.
 - `agent-sessions.ts`: session records (`AgentSessionRecord`), their normalization from the
@@ -130,6 +141,7 @@ a session waits for a model choice; `requestAvailableModels()` reads it again at
 | --- | --- | --- |
 | `sessionStorage` | `main_sequence_ai.message_queue.{session}` | One session's queued messages (`id`, `text`, `createdAt`). Written on every change, removed when the queue empties, read when the session comes on screen. Rows read back after a reload are held. |
 | `localStorage` | `ms.main-sequence-ai.agent-sessions:{user}:{environment}` | One person's session list in one Environment, as summaries: no messages, no serialized session, never `working`. Read when the person or the Environment changes, written when the list changes. |
+| `localStorage` | `ms.command-center-ai.local-session:{baseUrl}` | The local source's selected session (ADR 099), so a reload opens the same conversation. No transcript: the runtime owns it. The local source keeps its queue in memory only. |
 
 A missing user or Environment is stored as `anonymous` or `no-environment`. A storage failure is
 ignored; the state in memory is the truth. The keys and shapes are the ones Command Center stored

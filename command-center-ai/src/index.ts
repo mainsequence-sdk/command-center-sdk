@@ -161,11 +161,19 @@ export {
   useChatEngine,
   useChatRunStatus,
   useOptionalChatEngine,
+  type ChatEngineCapabilities,
   type ChatEngineProviderProps,
   type ChatEngineValue,
   type ChatRunStatus,
   type ChatRunStatusValue,
 } from "./engine/ChatEngineProvider.js";
+// An Agent on the developer's machine (ADR 099)
+export {
+  createLocalAgentSource,
+  type LocalAgentSource,
+  type LocalAgentSourceOptions,
+} from "./engine/local-agent-source.js";
+export { type LocalChatEngineProviderProps } from "./engine/LocalChatEngineProvider.js";
 export {
   type ChatAuth,
   type ChatDefaultSession,

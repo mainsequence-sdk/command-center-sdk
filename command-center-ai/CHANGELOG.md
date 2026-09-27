@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the npm public API, additively (`createLocalAgentSource`, `LocalAgentSource`,
+`LocalAgentSourceOptions`, `LocalChatEngineProviderProps`, `ChatEngineCapabilities`, the provider's
+`source` prop, and `capabilities` on `useChatEngine()`); browser storage, additively (a local
+source keeps its selected session under `ms.command-center-ai.local-session:{baseUrl}`); and the
+packaged agent skills (`connect-command-center-ai-to-the-platform`, `mount-agent-conversation`, and
+`use-command-center-ai` cover a local Agent). No platform route, payload, stylesheet, or SDK peer
+change; the platform engine is unchanged.
+
+- **An Agent on the developer's machine** ([ADR 099](./docs/adr/adr-099-local-agents-through-the-same-engine.md)).
+  `ChatEngineProvider source={createLocalAgentSource({ baseUrl: "/__agent__", displayName })}`
+  talks to an Agent run with `ms-tau` in local mode, through the dev server's `localAgentProxy()`
+  (Command Center SDK `^0.5.7`), instead of the platform. It uses the same `POST /api/chat` stream
+  deployed Agents serve, so the rail, the expanded rail, the thread, streaming markdown, reasoning,
+  tool calls, the queue, Stop, and the model picker are the same. Before, an application wrote its
+  own chat for local development (the CRM's showed plain text over A2A).
+  - The runtime's sessions and history come from the routes requested in
+    [ms-tau-sdk#47](https://github.com/mainsequence-sdk/ms-tau-sdk/issues/47). Until a runtime
+    serves them, a local conversation is live-only and the thread says so.
+  - A new local conversation's first message uses the runtime's configured model; the picker
+    applies from the next one.
+  - `useChatEngine().capabilities` says what the mounted source offers. The explorer hides archive
+    and archived sessions and searches only loaded sessions when the source cannot; a local source
+    offers no archive, server search, insights, or provider settings.
+- The standalone application runs the local source: `/?local` against `ms-tau` on
+  `127.0.0.1:8787`, and `/?stand-in&local` against a scripted local runtime.
+- Guide: [An Agent on your machine](./docs/local-agents.md).
+
 ## 0.0.6
 
 Compatibility axes: the npm public API, additively; the stylesheet, additively (new `ms-chat-rail`,

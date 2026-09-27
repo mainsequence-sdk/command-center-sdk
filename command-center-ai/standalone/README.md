@@ -22,6 +22,10 @@ It may read its own environment; the package in `../src` may not.
   the chat appear in a small stack in the corner.
 - `main.tsx` applies the Main Sequence theme with `applyThemePresetToRoot`, or the preset named by
   `?theme=<id>` (for example `?stand-in&theme=quartz-light`).
+- `?local` shows `LocalStandaloneChat`: the same screens over a local Agent source (ADR 099), through
+  `/__agent__`, which `vite.config.ts` forwards with the SDK's `localAgentProxy()` to `ms-tau` on
+  `127.0.0.1:8787`. `?stand-in&local` answers it from `stand-in/local-runtime.ts` instead, a scripted
+  `ms-tau` in local mode, which `LocalAgent.client.test.tsx` also runs the thread against.
 - `connection.ts` builds the application's connection to the backend, including its request-URL
   rewrite.
 - `platform-proxy.ts` holds the proxy prefix shared with `../vite.config.ts`.

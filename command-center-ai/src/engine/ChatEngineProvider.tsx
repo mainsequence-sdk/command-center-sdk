@@ -70,6 +70,8 @@ import {
 } from "../session-detail/model.js";
 import { useAgentSessionDetail } from "../session-detail/useAgentSessionDetail.js";
 import { AgentIconsProvider } from "./agent-icons-context.js";
+import { ChatEngineContext, ChatRunStatusContext } from "./engine-context.js";
+import { LocalChatEngineProvider, type LocalChatEngineProviderProps } from "./LocalChatEngineProvider.js";
 import {
   EMPTY_MESSAGE_QUEUE,
   MESSAGE_QUEUE_FULL_MESSAGE,
@@ -137,6 +139,31 @@ const RUNTIME_ACCESS_REVALIDATE_AFTER_IDLE_MS = RUNTIME_ACCESS_RECHECK_AFTER_MS;
 
 export type ChatRunStatus = "idle" | "queued" | "thinking" | "responding" | "complete" | "error";
 
+/**
+ * What the mounted Agent source can do (ADR 099). A capability the source lacks is hidden by the
+ * chat's components, never shown disabled.
+ */
+export interface ChatEngineCapabilities {
+  /** Archive and unarchive sessions, and list an Agent's archived sessions. */
+  archiveSessions: boolean;
+  /** Search every session on the server, beyond those loaded. */
+  searchSessions: boolean;
+  /** Reload a session's earlier messages. */
+  sessionHistory: boolean;
+  /** Context usage for the session. */
+  sessionInsights: boolean;
+  /** Provider sign-in and custom providers (`ModelProviderSettings`). */
+  modelProviderSettings: boolean;
+}
+
+export const PLATFORM_CHAT_ENGINE_CAPABILITIES: ChatEngineCapabilities = Object.freeze({
+  archiveSessions: true,
+  searchSessions: true,
+  sessionHistory: true,
+  sessionInsights: true,
+  modelProviderSettings: true,
+});
+
 export interface ChatEngineValue {
   activeAgentLabel: string;
   /** The active session's agent name as recorded on the session; null while no session is selected. */
@@ -160,6 +187,8 @@ export interface ChatEngineValue {
   archiveAgentSession: (sessionId: string) => Promise<boolean>;
   /** The signed-in person the application passed, for parts that call the platform themselves. */
   auth: ChatAuth;
+  /** What the mounted Agent source can do. */
+  capabilities: ChatEngineCapabilities;
   /** The active Organization Environment the application passed. */
   environmentUid: string | null;
   cancelActiveSession: () => Promise<void>;
@@ -238,7 +267,6 @@ interface SessionRuntimeAccessUiMeta {
   runtimePresence: AgentRuntimePresence | null;
 }
 
-const ChatEngineContext = createContext<ChatEngineValue | null>(null);
 
 // Live run progress is intentionally kept OUT of ChatFeatureContext:
 // thinkingSummary changes on every reasoning delta, and putting it in the
@@ -252,7 +280,6 @@ export interface ChatRunStatusValue {
   thinkingSummary: string | null;
 }
 
-const ChatRunStatusContext = createContext<ChatRunStatusValue | null>(null);
 
 function extractAgentId(data: unknown) {
   if (typeof data === "string") {
@@ -669,6 +696,8 @@ function getAgentLookupKey(agent: Pick<AgentSessionAgentSource, "id" | "uid">) {
 }
 
 export interface ChatEngineProviderProps {
+  /** Absent for the platform. A local Agent source mounts the local engine instead (ADR 099). */
+  source?: undefined;
   children: ReactNode;
   /** The connection to the platform (base URL and request-URL rewrite). */
   connection: ChatBackendConnection;
@@ -698,7 +727,7 @@ export interface ChatEngineProviderProps {
   onRequestedSessionRemoved?: (sessionId: string) => void;
 }
 
-export function ChatEngineProvider({
+function PlatformChatEngineProvider({
   auth,
   avoidImplicitSessionSelection = false,
   children,
@@ -4301,6 +4330,7 @@ export function ChatEngineProvider({
       agentSessions: sortedAgentSessions,
       archiveAgentSession,
       auth,
+      capabilities: PLATFORM_CHAT_ENGINE_CAPABILITIES,
       environmentUid: activeEnvironmentUid,
       cancelActiveSession,
       clearThread: clearRuntimeThread,
@@ -4457,6 +4487,19 @@ export function ChatEngineProvider({
       </ChatEngineContext.Provider>
     </AgentIconsProvider>
   );
+}
+
+/**
+ * The chat's engine. With the platform's inputs (`connection`, `auth`, `environmentUid`) it reaches
+ * Agents through the platform (ADR 098); with `source={createLocalAgentSource(...)}` it talks to an
+ * Agent on the developer's machine (ADR 099). Both publish the same value, so every part of the
+ * chat works with either.
+ */
+export function ChatEngineProvider(props: ChatEngineProviderProps | LocalChatEngineProviderProps) {
+  if (props.source !== undefined) {
+    return <LocalChatEngineProvider {...props} />;
+  }
+  return <PlatformChatEngineProvider {...props} />;
 }
 
 export function useChatEngine() {

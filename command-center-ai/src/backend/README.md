@@ -70,6 +70,11 @@ proxy.
   and handle-based get-or-create transport.
 - `agent-session-readiness.ts` defines the shared detail, insights, and history readiness model.
 - `agent-session-request.ts` builds session-bound assistant request payloads (ADR 060).
+- `local-agent-api.ts` owns the routes of an Agent on the developer's machine (ADR 099), under the
+  local source's same-origin path: `/ready` and `/health` (local mode only), the chat check, the
+  session list and history (`ms-tau-sdk#47`; a 404 means live-only), the Agent's identity, the
+  provider catalog (the platform's shape, parsed by `model-catalog-api.ts`), the session's model,
+  and cancel. It never calls a platform route and never sends a credential.
 - `session-history-api.ts`, `session-insights-api.ts`, and `session-cancel-api.ts` own their
   respective AgentSession operations. `session-history.ts`, `session-insights.ts`, and
   `message-provenance.ts` normalize what they return.

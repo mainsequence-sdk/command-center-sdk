@@ -155,7 +155,12 @@ storage and the build.
   runtime owns the answers.
 - The package keeps two browser keys, `main_sequence_ai.message_queue.{session}` in
   `sessionStorage` and `ms.main-sequence-ai.agent-sessions:{user}:{environment}` in
-  `localStorage`, and reads no environment variable.
+  `localStorage`, and reads no environment variable. A local Agent source adds
+  `ms.command-center-ai.local-session:{baseUrl}` in `localStorage`.
+- For an Agent the developer runs with `ms-tau` in local mode, pass
+  `source={createLocalAgentSource(...)}` instead of the platform inputs and keep every other part of
+  this skill; `$connect-command-center-ai-to-the-platform` covers the dev-server proxy. Never write a
+  second chat for local development.
 
 ## Verify
 

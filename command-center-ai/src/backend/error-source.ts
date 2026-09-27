@@ -11,6 +11,7 @@ const SOURCE_LABELS: Record<string, string> = {
   assistant_backend_http: "Agent runtime HTTP",
   assistant_runtime_access: "Main Sequence AgentSession runtime access",
   assistant_runtime_stream: "Agent runtime stream",
+  local_agent_runtime: "Local Agent runtime",
   frontend: "Command Center",
   frontend_request_not_sent: "Request was never sent",
   frontend_runtime_guard: "Request was never sent",

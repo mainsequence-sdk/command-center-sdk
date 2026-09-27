@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { Button, Input } from "@dev-mainsequence/command-center-sdk/controls";
 
@@ -8,10 +8,12 @@ import {
   ChatPageLayout,
   ChatRail,
   ChatThread,
+  createLocalAgentSource,
   ModelProviderSettings,
   type ChatAuth,
   type ChatDefaultSession,
   type ChatNotice,
+  type ChatViewer,
 } from "../src";
 import { createStandaloneConnection } from "./connection";
 
@@ -134,6 +136,22 @@ export function StandaloneApp() {
   );
 }
 
+type StandaloneView = "chat" | "rail" | "app" | "providers";
+
+function useNotices() {
+  const [notices, setNotices] = useState<Array<ChatNotice & { id: number }>>([]);
+  const nextNoticeId = useRef(0);
+  const notify = useCallback((notice: ChatNotice) => {
+    nextNoticeId.current += 1;
+    const id = nextNoticeId.current;
+    setNotices((current) => [...current, { ...notice, id }]);
+    window.setTimeout(() => {
+      setNotices((current) => current.filter((entry) => entry.id !== id));
+    }, noticeLifetimeMs);
+  }, []);
+  return { notices, notify };
+}
+
 function StandaloneChat({ chat, onDisconnect }: { chat: ConnectedChat; onDisconnect: () => void }) {
   const { agentUid, apiBaseUrl, environmentUid, userUid } = chat.settings;
   const connection = useMemo(
@@ -152,23 +170,10 @@ function StandaloneChat({ chat, onDisconnect }: { chat: ConnectedChat; onDisconn
     }),
     [agentUid],
   );
-  const viewer = useMemo(() => ({ uid: userUid }), [userUid]);
   const viewContext = useMemo(() => ({ app: "standalone-chat" }), []);
-  // The expanded rail, the application with the rail open over it, the application alone (with
-  // the launcher), or the model provider settings.
-  const [view, setView] = useState<"chat" | "rail" | "app" | "providers">("chat");
+  const [view, setView] = useState<StandaloneView>("chat");
   const [requestedSessionId, setRequestedSessionId] = useState<string | null>(null);
-  const [notices, setNotices] = useState<Array<ChatNotice & { id: number }>>([]);
-  const nextNoticeId = useRef(0);
-
-  const notify = useCallback((notice: ChatNotice) => {
-    nextNoticeId.current += 1;
-    const id = nextNoticeId.current;
-    setNotices((current) => [...current, { ...notice, id }]);
-    window.setTimeout(() => {
-      setNotices((current) => current.filter((entry) => entry.id !== id));
-    }, noticeLifetimeMs);
-  }, []);
+  const { notices, notify } = useNotices();
 
   return (
     <ChatEngineProvider
@@ -184,10 +189,85 @@ function StandaloneChat({ chat, onDisconnect }: { chat: ConnectedChat; onDisconn
       onRequestVisible={() => setView("chat")}
       onRequestedSessionRemoved={() => setRequestedSessionId(null)}
     >
-      <div className="standalone-chat">
-        <header className="standalone-chat__header">
-          <div className="standalone-chat__title">Chat</div>
-          <nav className="standalone-chat__nav">
+      <ChatScreens
+        notices={notices}
+        onDisconnect={onDisconnect}
+        onOpenSession={setRequestedSessionId}
+        providers={<ModelProviderSettings auth={auth} connection={connection} notify={notify} />}
+        setView={setView}
+        title="Standalone chat"
+        view={view}
+        viewer={{ uid: userUid }}
+      />
+    </ChatEngineProvider>
+  );
+}
+
+/**
+ * The same chat over an Agent run on this machine with `ms-tau` in local mode (ADR 099), through
+ * this dev server's `/__agent__` (`localAgentProxy()` in `vite.config.ts`). No platform, token, or
+ * form: the runtime acts as the developer who started it.
+ */
+export function LocalStandaloneChat() {
+  const source = useMemo(
+    () => createLocalAgentSource({ baseUrl: "/__agent__", displayName: "Local Agent" }),
+    [],
+  );
+  const viewContext = useMemo(() => ({ app: "standalone-chat", source: "local" }), []);
+  const [view, setView] = useState<StandaloneView>("chat");
+  const [requestedSessionId, setRequestedSessionId] = useState<string | null>(null);
+  const { notices, notify } = useNotices();
+
+  return (
+    <ChatEngineProvider
+      source={source}
+      isVisible
+      notify={notify}
+      requestedSessionId={requestedSessionId}
+      viewContext={viewContext}
+      onRequestVisible={() => setView("chat")}
+    >
+      <ChatScreens
+        notices={notices}
+        onOpenSession={setRequestedSessionId}
+        providers={null}
+        setView={setView}
+        title="Local Agent"
+        view={view}
+        viewer={null}
+      />
+    </ChatEngineProvider>
+  );
+}
+
+function ChatScreens({
+  notices,
+  onDisconnect,
+  onOpenSession,
+  providers,
+  setView,
+  title,
+  view,
+  viewer,
+}: {
+  notices: Array<ChatNotice & { id: number }>;
+  onDisconnect?: () => void;
+  onOpenSession: (sessionId: string | null) => void;
+  /** The model provider settings; null for a source without them. */
+  providers: ReactNode;
+  setView: (view: StandaloneView) => void;
+  title: string;
+  view: StandaloneView;
+  viewer: ChatViewer | null;
+}) {
+  const openProviders = providers ? () => setView("providers") : undefined;
+
+  return (
+    <div className="standalone-chat">
+      <header className="standalone-chat__header">
+        <div className="standalone-chat__title">Chat</div>
+        <nav className="standalone-chat__nav">
+          {providers ? (
             <Button
               aria-pressed={view === "providers"}
               size="small"
@@ -196,58 +276,54 @@ function StandaloneChat({ chat, onDisconnect }: { chat: ConnectedChat; onDisconn
             >
               {view === "providers" ? "Back to chat" : "Model providers"}
             </Button>
+          ) : null}
+          {onDisconnect ? (
             <Button size="small" variant="ghost" onClick={onDisconnect}>
               Disconnect
             </Button>
-          </nav>
-        </header>
-        <main className="standalone-chat__main">
-          {view === "chat" ? (
-            <ChatPageLayout
-              explorer={{ onOpenSession: setRequestedSessionId }}
-              onCreateSession={() => setRequestedSessionId(null)}
-              onMinimize={() => setView("rail")}
-            >
-              <ChatThread surface="page" viewer={viewer} onOpenModelProviderSettings={() => setView("providers")} />
-            </ChatPageLayout>
-          ) : view === "rail" || view === "app" ? (
-            <>
-              <div className="standalone-chat__app">
-                <p>The application's own page. The rail opens over it.</p>
-              </div>
-              {view === "rail" ? (
-                <ChatRail
-                  title="Standalone chat"
-                  subtitle="Assistant rail."
-                  mode="overlay"
-                  onExpand={() => setView("chat")}
-                  onClose={() => setView("app")}
-                >
-                  <ChatThread
-                    surface="overlay"
-                    viewer={viewer}
-                    onOpenModelProviderSettings={() => setView("providers")}
-                  />
-                </ChatRail>
-              ) : (
-                <ChatLauncher label="Ask the assistant" onClick={() => setView("rail")} />
-              )}
-            </>
-          ) : (
-            <div className="standalone-chat__settings">
-              <ModelProviderSettings auth={auth} connection={connection} notify={notify} />
+          ) : null}
+        </nav>
+      </header>
+      <main className="standalone-chat__main">
+        {view === "chat" ? (
+          <ChatPageLayout
+            explorer={{ onOpenSession }}
+            onCreateSession={() => onOpenSession(null)}
+            onMinimize={() => setView("rail")}
+          >
+            <ChatThread surface="page" viewer={viewer} onOpenModelProviderSettings={openProviders} />
+          </ChatPageLayout>
+        ) : view === "rail" || view === "app" ? (
+          <>
+            <div className="standalone-chat__app">
+              <p>The application's own page. The rail opens over it.</p>
             </div>
-          )}
-        </main>
-        <div className="standalone-chat__notices" role="status" aria-live="polite">
-          {notices.map((notice) => (
-            <div key={notice.id} className={`standalone-chat__notice standalone-chat__notice--${notice.variant ?? "info"}`}>
-              <strong>{notice.title}</strong>
-              {notice.description ? <span>{notice.description}</span> : null}
-            </div>
-          ))}
-        </div>
+            {view === "rail" ? (
+              <ChatRail
+                title={title}
+                subtitle="Assistant rail."
+                mode="overlay"
+                onExpand={() => setView("chat")}
+                onClose={() => setView("app")}
+              >
+                <ChatThread surface="overlay" viewer={viewer} onOpenModelProviderSettings={openProviders} />
+              </ChatRail>
+            ) : (
+              <ChatLauncher label="Ask the assistant" onClick={() => setView("rail")} />
+            )}
+          </>
+        ) : (
+          <div className="standalone-chat__settings">{providers}</div>
+        )}
+      </main>
+      <div className="standalone-chat__notices" role="status" aria-live="polite">
+        {notices.map((notice) => (
+          <div key={notice.id} className={`standalone-chat__notice standalone-chat__notice--${notice.variant ?? "info"}`}>
+            <strong>{notice.title}</strong>
+            {notice.description ? <span>{notice.description}</span> : null}
+          </div>
+        ))}
       </div>
-    </ChatEngineProvider>
+    </div>
   );
 }

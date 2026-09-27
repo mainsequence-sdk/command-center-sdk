@@ -51,6 +51,13 @@ const engine = {
   ],
   archiveAgentSession: vi.fn(async (_id: string) => true),
   auth: { userUid: "user-1", token: null },
+  capabilities: {
+    archiveSessions: true,
+    searchSessions: true,
+    sessionHistory: true,
+    sessionInsights: true,
+    modelProviderSettings: true,
+  },
   connection: { apiBaseUrl: "https://platform.test" },
   currentSessionId: "s1" as string | null,
   environmentUid: "env-1" as string | null,
@@ -94,6 +101,7 @@ describe("AgentSessionExplorer", () => {
     engine.unarchiveAgentSession.mockClear();
     fetchArchivedAgentSessions.mockClear();
     searchAgentSessions.mockClear();
+    engine.capabilities = { ...engine.capabilities, archiveSessions: true, searchSessions: true };
   });
 
   afterEach(() => {
@@ -204,5 +212,31 @@ describe("AgentSessionExplorer", () => {
     });
     expect(onOpenSession).toHaveBeenCalledWith("remote-1");
     expect(document.body.querySelector("input[aria-label='Search conversations']")).toBeNull();
+  });
+
+  it("hides archive and searches only loaded sessions for a source without them", async () => {
+    vi.useFakeTimers();
+    engine.capabilities = { ...engine.capabilities, archiveSessions: false, searchSessions: false };
+    render(<AgentSessionExplorer onOpenSession={() => {}} />);
+
+    expect(button("Archive session Quarterly review")).toBeNull();
+    expect([...container.querySelectorAll("button")].some((item) => item.textContent === "Show more")).toBe(false);
+
+    act(() => {
+      button("Search conversations")!.click();
+    });
+    const input = document.body.querySelector<HTMLInputElement>("input[aria-label='Search conversations']")!;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    act(() => {
+      setter?.call(input, "quarterly");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    expect(searchAgentSessions).not.toHaveBeenCalled();
+    expect(
+      [...document.body.querySelectorAll("[data-search-result]")].map((item) => item.getAttribute("data-search-result")),
+    ).toEqual(["s2"]);
   });
 });
