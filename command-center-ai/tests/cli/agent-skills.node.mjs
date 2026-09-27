@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdtemp, mkdir, readdir, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
+import { hostname, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import {
   AGENT_SKILL_NAMESPACE,
   AgentSkillInstallBlocked,
+  INSTALL_LOCK_FILENAME,
   installAgentSkills,
   listPackagedSkills,
   PINNED_FROM_FILENAME,
@@ -20,6 +21,7 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const repositoryRoot = resolve(packageRoot, "..");
 const skillsRoot = join(packageRoot, "agent_scaffold", "skills");
 const cliPath = join(packageRoot, "cli", "command-center-ai.mjs");
+const postinstallPath = join(packageRoot, "cli", "postinstall.mjs");
 const manifest = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"));
 const expectedSkills = [
   "backend/connect-command-center-ai-to-the-platform",
@@ -49,6 +51,26 @@ async function writeSkill(root, relativePath, content = "skill", name = relative
   const skillRoot = join(root, ...relativePath.split("/"));
   await writeFileAt(join(skillRoot, "SKILL.md"), `---\nname: ${name}\ndescription: ${content}\n---\n\n# ${name}\n`);
   await writeFileAt(join(skillRoot, "agents", "openai.yaml"), `interface:\n  display_name: "${name}"\n`);
+}
+
+function runNode(args, env) {
+  return new Promise((resolveRun, rejectRun) => {
+    const child = spawn(process.execPath, args, { env: { ...process.env, ...env } });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.on("error", rejectRun);
+    child.on("close", (status) => resolveRun({ status, stdout, stderr }));
+  });
+}
+
+async function filesUnder(root) {
+  const entries = await readdir(root, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name).slice(root.length + 1))
+    .sort();
 }
 
 function skillText(relativePath) {
@@ -300,4 +322,63 @@ test("postinstall skips this source repository and global installs, and installs
   const result = await runPostinstall({ env: { INIT_CWD: application }, logger: silent });
   assert.deepEqual(result.copied.map((item) => item.relativePath), expectedSkills);
   assert.match(await readFile(result.sentinelPath, "utf8"), /^command=npm postinstall$/mu);
+});
+
+test("concurrent postinstalls into one repository both succeed and leave one intact namespace", async (t) => {
+  // npm runs one postinstall per workspace that nests its own copy, all into the same INIT_CWD. An
+  // upgrade, which backs up the namespace an earlier version installed, is where they collided.
+  for (let round = 0; round < 3; round += 1) {
+    const application = await temporaryDirectory(t, "concurrent");
+    await installAgentSkills({ projectDir: application, packageMetadata: { ...packageMetadata, version: "0.0.1" } });
+    await writeSkill(join(application, ".agents", "skills", "command-center-ai"), "retired-skill");
+    const runs = await Promise.all(
+      [0, 1].map(() => runNode([postinstallPath], { INIT_CWD: application, npm_config_global: "false" })),
+    );
+    for (const run of runs) {
+      assert.equal(run.status, 0, run.stderr);
+      assert.match(run.stdout, /Installed 8 agent skill\(s\)/u);
+    }
+
+    assert.deepEqual(await readdir(join(application, ".agents", "skills")), ["command-center-ai"]);
+    const managed = join(application, ".agents", "skills", "command-center-ai");
+    const sentinel = await readFile(join(managed, PINNED_FROM_FILENAME), "utf8");
+    assert.match(sentinel, /^command=npm postinstall$/mu);
+    assert.deepEqual(
+      sentinel.split("\n").filter((line) => line.startsWith("skill_path=")).map((line) => line.slice("skill_path=".length)),
+      expectedSkills,
+    );
+    const installedFiles = [];
+    for (const skill of expectedSkills) {
+      const source = join(skillsRoot, ...skill.split("/"));
+      const installed = join(managed, ...skill.split("/"));
+      const files = await filesUnder(source);
+      assert.deepEqual(await filesUnder(installed), files, `${skill} is incomplete`);
+      for (const file of files) {
+        assert.equal(await readFile(join(installed, file), "utf8"), await readFile(join(source, file), "utf8"), `${skill}/${file}`);
+        installedFiles.push(join(...skill.split("/"), file));
+      }
+    }
+    assert.deepEqual(await filesUnder(managed), [PINNED_FROM_FILENAME, ...installedFiles].sort());
+  }
+});
+
+test("an install waits for a held lock and clears one its exited holder left", async (t) => {
+  const project = await temporaryDirectory(t, "lock");
+  const lockPath = join(project, ".agents", "skills", INSTALL_LOCK_FILENAME);
+  await writeFileAt(lockPath, `pid=${process.pid}\nhost=${hostname()}\n`);
+  let finished = false;
+  const install = installAgentSkills({ projectDir: project }).then((result) => {
+    finished = true;
+    return result;
+  });
+  await new Promise((resolveWait) => setTimeout(resolveWait, 300));
+  assert.equal(finished, false, "the install did not wait for the held lock");
+  await rm(lockPath);
+  assert.deepEqual((await install).copied.map((item) => item.relativePath), expectedSkills);
+  assert.deepEqual(await readdir(join(project, ".agents", "skills")), ["command-center-ai"]);
+
+  const exited = spawnSync(process.execPath, ["-e", ""]);
+  await writeFileAt(lockPath, `pid=${exited.pid}\nhost=${hostname()}\n`);
+  await installAgentSkills({ projectDir: project });
+  assert.deepEqual(await readdir(join(project, ".agents", "skills")), ["command-center-ai"]);
 });

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the skill installer's behavior only. No export, contract ID, JSON Schema,
+packaged skill, provenance field, iframe protocol, theme, or storage change, and no backend change.
+
+- **Concurrent installs no longer fail.** npm runs one postinstall per workspace that nests its own
+  copy of the SDK, all at once and into the same repository; one install renamed entries another
+  was moving and failed the whole `npm install` with `ENOENT` or `ENOTEMPTY`. Installs of the
+  packaged skills now take turns through `.agents/skills/.command-center.lock`: the first installs,
+  the others wait, then install against what it left. A lock left by an install that exited is
+  cleared. Command Center AI's installer has the same fix.
+
 ## 0.5.7
 
 Compatibility axes: the `/vite` entry point, additively (`localAgentProxy()`, `LocalAgentProxyOptions`,

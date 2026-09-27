@@ -5,11 +5,13 @@
 // entry under `.agents/skills/` is read or written. Node's standard library only: the installer
 // runs from npm's postinstall, before anything else is built.
 import { cp, lstat, mkdir, mkdtemp, readdir, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { hostname } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const AGENT_SKILL_NAMESPACE = "command-center-ai";
 export const PINNED_FROM_FILENAME = "PINNED_FROM.txt";
+export const INSTALL_LOCK_FILENAME = `.${AGENT_SKILL_NAMESPACE}.lock`;
 // Schema 1 (0.0.1 and 0.0.2) had the same fields without `skills_path`; it is read the same way.
 export const PINNED_FROM_SCHEMA = "2";
 
@@ -343,6 +345,76 @@ async function listUnauthorizedNamespaceEntries(destinationRoot, authorizedDesti
   return unauthorized;
 }
 
+// Installs into one repository take turns. npm runs one postinstall per workspace that nests its
+// own copy of the package, all at once and into the same `INIT_CWD`; without the lock, one install
+// renames entries another is moving. The lock is a file beside the namespace, created exclusively;
+// the others wait for it, then validate and install against what the first one left.
+const installLockPollMs = 50;
+const installLockTimeoutMs = 60_000;
+// An install holds the lock for well under a second; one this old was left by an install that died.
+const installLockAbandonedAfterMs = 10 * 60_000;
+
+function processIsRunning(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === "EPERM";
+  }
+}
+
+// Whether the lock's holder can no longer release it: a process on this machine that has exited,
+// or a lock older than any install takes. A lock just created, whose fields are not written yet,
+// is held.
+async function isAbandonedInstallLock(lockPath) {
+  let state;
+  let text;
+  try {
+    state = await lstat(lockPath);
+    text = await readFile(lockPath, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
+  }
+  if (Date.now() - state.mtimeMs > installLockAbandonedAfterMs) return true;
+  const fields = new Map();
+  for (const line of text.split("\n")) {
+    const separator = line.indexOf("=");
+    if (separator > 0) fields.set(line.slice(0, separator), line.slice(separator + 1));
+  }
+  const pid = Number(fields.get("pid"));
+  return fields.get("host") === hostname() && Number.isInteger(pid) && pid > 0 && !processIsRunning(pid);
+}
+
+/** Waits for the namespace's install lock in `skillsParent` and returns the function that releases it. */
+async function acquireInstallLock(skillsParent) {
+  await mkdir(skillsParent, { recursive: true });
+  const lockPath = join(skillsParent, INSTALL_LOCK_FILENAME);
+  const claim = `pid=${process.pid}\nhost=${hostname()}\nacquired_at_utc=${new Date().toISOString()}\n`;
+  const deadline = Date.now() + installLockTimeoutMs;
+  for (;;) {
+    try {
+      await writeFile(lockPath, claim, { encoding: "utf8", flag: "wx" });
+      return async () => {
+        const held = await readFile(lockPath, "utf8").catch(() => null);
+        if (held === claim) await rm(lockPath, { force: true }).catch(() => {});
+      };
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+    }
+    if (await isAbandonedInstallLock(lockPath)) {
+      await rm(lockPath, { force: true });
+      continue;
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `Another ${AGENT_SKILL_NAMESPACE} agent skill install still holds ${lockPath} after ${installLockTimeoutMs / 1000}s. If no install is running, remove that file and install again.`,
+      );
+    }
+    await new Promise((resolveWait) => setTimeout(resolveWait, installLockPollMs));
+  }
+}
+
 async function rollbackInstall({ destinationRoot, backupRoot, installed, backedUp, previousSentinel }) {
   await rm(join(destinationRoot, PINNED_FROM_FILENAME), { force: true }).catch(() => {});
   for (const destination of installed.reverse()) {
@@ -404,6 +476,30 @@ export async function installAgentSkills({
     assertNoOverlap(item.source, item.destination, `source skill ${item.name}`, `destination skill ${item.name}`);
   }
   await assertSafeSkillsParents(resolvedProjectDir);
+  const plan = { metadata, resolvedProjectDir, resolvedSkillsPath, destinationRoot, sentinelPath, copied, dryRun, command };
+  if (dryRun) {
+    return installIntoNamespace(plan);
+  }
+  const releaseInstallLock = await acquireInstallLock(dirname(destinationRoot));
+  try {
+    return await installIntoNamespace(plan);
+  } finally {
+    await releaseInstallLock();
+  }
+}
+
+// Validates the namespace and, unless this is a dry run, replaces it. An install that writes holds
+// the install lock, so nothing else moves the namespace's entries while this reads or writes them.
+async function installIntoNamespace({
+  metadata,
+  resolvedProjectDir,
+  resolvedSkillsPath,
+  destinationRoot,
+  sentinelPath,
+  copied,
+  dryRun,
+  command,
+}) {
   await validateDestination(destinationRoot, copied, []);
   await assertOwnedSentinel(sentinelPath, metadata);
   const stale = await listUnauthorizedNamespaceEntries(
@@ -429,7 +525,6 @@ export async function installAgentSkills({
   }
 
   const skillsParent = dirname(destinationRoot);
-  await mkdir(skillsParent, { recursive: true });
   const stageRoot = await mkdtemp(join(skillsParent, `.${AGENT_SKILL_NAMESPACE}-stage-`));
   const backupRoot = await mkdtemp(join(skillsParent, `.${AGENT_SKILL_NAMESPACE}-backup-`));
   const installed = [];

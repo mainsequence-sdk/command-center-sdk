@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { spawn, spawnSync } from "node:child_process";
+import { mkdtemp, mkdir, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { hostname, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -9,15 +9,38 @@ import test from "node:test";
 import {
   AGENT_SKILL_NAMESPACE,
   AgentSkillInstallBlocked,
+  INSTALL_LOCK_FILENAME,
   installAgentSkills,
+  PINNED_FROM_FILENAME,
 } from "../../cli/install-agent-skills.mjs";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const cliPath = join(packageRoot, "cli", "command-center-sdk.mjs");
 const postinstallPath = join(packageRoot, "cli", "postinstall.mjs");
+const packagedSkillsRoot = join(packageRoot, "agent_scaffold", "skills");
 
 async function temporaryDirectory(label) {
   return mkdtemp(join(tmpdir(), `command-center-sdk-${label}-`));
+}
+
+function runNode(args, env) {
+  return new Promise((resolveRun, rejectRun) => {
+    const child = spawn(process.execPath, args, { env: { ...process.env, ...env } });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.on("error", rejectRun);
+    child.on("close", (status) => resolveRun({ status, stdout, stderr }));
+  });
+}
+
+async function filesUnder(root) {
+  const entries = await readdir(root, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name).slice(root.length + 1))
+    .sort();
 }
 
 async function writeSkill(skillsRoot, relativePath, content = "skill") {
@@ -343,4 +366,90 @@ test("postinstall skips consumer scaffolding in the SDK source repository", () =
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /Source repository install detected/u);
+});
+
+test("concurrent postinstalls into one repository both succeed and leave one intact namespace", async () => {
+  // npm runs one postinstall per workspace that nests its own copy, all into the same INIT_CWD. An
+  // upgrade, which backs up the namespace an earlier version installed, is where they collided.
+  for (let round = 0; round < 3; round += 1) {
+    const projectRoot = await temporaryDirectory("concurrent");
+    try {
+      const { copied } = await installAgentSkills({ projectDir: projectRoot, dryRun: true });
+      const expectedSkills = copied.map((item) => item.relativePath);
+      await installAgentSkills({
+        projectDir: projectRoot,
+        packageMetadata: { name: "@dev-mainsequence/command-center-sdk", version: "0.0.1" },
+      });
+      const managedRoot = join(projectRoot, ".agents", "skills", AGENT_SKILL_NAMESPACE);
+      await writeSkill(managedRoot, "retired/retired-skill");
+      const runs = await Promise.all(
+        [0, 1].map(() =>
+          runNode([postinstallPath], {
+            INIT_CWD: projectRoot,
+            npm_config_global: "false",
+            COMMAND_CENTER_SDK_MCP_POSTINSTALL: "0",
+          }),
+        ),
+      );
+      for (const run of runs) {
+        assert.equal(run.status, 0, run.stderr);
+        assert.match(run.stdout, new RegExp(`Installed ${expectedSkills.length} agent skill`, "u"));
+      }
+
+      assert.deepEqual(await readdir(join(projectRoot, ".agents", "skills")), [AGENT_SKILL_NAMESPACE]);
+      const sentinel = await readFile(join(managedRoot, PINNED_FROM_FILENAME), "utf8");
+      assert.match(sentinel, /^command=npm postinstall$/mu);
+      assert.deepEqual(
+        sentinel
+          .split("\n")
+          .filter((line) => line.startsWith("skill_path="))
+          .map((line) => line.slice("skill_path=".length)),
+        expectedSkills,
+      );
+      const installedFiles = [];
+      for (const skill of expectedSkills) {
+        const source = join(packagedSkillsRoot, ...skill.split("/"));
+        const installed = join(managedRoot, ...skill.split("/"));
+        const files = await filesUnder(source);
+        assert.deepEqual(await filesUnder(installed), files, `${skill} is incomplete`);
+        for (const file of files) {
+          assert.equal(
+            await readFile(join(installed, file), "utf8"),
+            await readFile(join(source, file), "utf8"),
+            `${skill}/${file}`,
+          );
+          installedFiles.push(join(...skill.split("/"), file));
+        }
+      }
+      assert.deepEqual(await filesUnder(managedRoot), [PINNED_FROM_FILENAME, ...installedFiles].sort());
+    } finally {
+      await rm(projectRoot, { recursive: true, force: true });
+    }
+  }
+});
+
+test("an install waits for a held lock and clears one its exited holder left", async () => {
+  const projectRoot = await temporaryDirectory("lock");
+  try {
+    const lockPath = join(projectRoot, ".agents", "skills", INSTALL_LOCK_FILENAME);
+    await mkdir(dirname(lockPath), { recursive: true });
+    await writeFile(lockPath, `pid=${process.pid}\nhost=${hostname()}\n`, "utf8");
+    let finished = false;
+    const install = installAgentSkills({ projectDir: projectRoot }).then((result) => {
+      finished = true;
+      return result;
+    });
+    await new Promise((resolveWait) => setTimeout(resolveWait, 300));
+    assert.equal(finished, false, "the install did not wait for the held lock");
+    await rm(lockPath);
+    assert.ok((await install).copied.length > 0);
+    assert.deepEqual(await readdir(join(projectRoot, ".agents", "skills")), [AGENT_SKILL_NAMESPACE]);
+
+    const exited = spawnSync(process.execPath, ["-e", ""]);
+    await writeFile(lockPath, `pid=${exited.pid}\nhost=${hostname()}\n`, "utf8");
+    await installAgentSkills({ projectDir: projectRoot });
+    assert.deepEqual(await readdir(join(projectRoot, ".agents", "skills")), [AGENT_SKILL_NAMESPACE]);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
 });

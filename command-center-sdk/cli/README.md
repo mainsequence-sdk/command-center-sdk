@@ -23,6 +23,14 @@ consumer skill installation so it cannot create managed consumer files in the SD
 and destination overlap, symbolic links, invalid skill roots, and unresolved package versions block
 writes.
 
+Installs of the packaged skills into one repository take turns. npm runs one postinstall per
+workspace that nests its own copy of the SDK, all at once and into the same `INIT_CWD`. An install
+that writes first creates `.agents/skills/.command-center.lock` exclusively and holds it while it
+validates and replaces the namespace; the others wait for it, then install against what it left. A
+lock whose process on this machine has exited, or that is older than ten minutes, is cleared; after
+a minute of waiting on a live one, the install fails and names the file. `--dry-run` takes no lock.
+The Command Center AI package's installer uses the same lock for its own namespace.
+
 ## Platform MCP Skills
 
 `command-center-sdk skills sync --path .` is the explicit, strict dual-source command. It refreshes

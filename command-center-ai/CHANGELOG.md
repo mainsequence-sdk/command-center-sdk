@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the skill installer's behavior only. No export, packaged skill, provenance
+field, platform route, or storage change.
+
+- **Concurrent installs no longer fail.** Installing the package into several workspaces at once
+  (`npm install @dev-mainsequence/command-center-ai --workspace a --workspace b`) nests one copy per
+  workspace, and npm runs their postinstalls together into the same repository. One install renamed
+  entries another was moving, failed with `ENOENT` or `ENOTEMPTY`, and failed the whole `npm
+  install`. Installs now take turns through `.agents/skills/.command-center-ai.lock`: the first
+  installs, the others wait, then install against what it left, and every one succeeds. A lock left
+  by an install that exited is cleared. The SDK's installer has the same fix, for parity.
+
 ## 0.0.8
 
 Compatibility axes: none beyond behaviour; no API, route, payload, stylesheet, storage, skill, or

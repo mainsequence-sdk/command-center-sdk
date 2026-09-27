@@ -21,7 +21,14 @@ library only.
 
 - The destination is `<repository-root>/.agents/skills/command-center-ai/`, with every skill in its
   lane. The namespace is authoritative: every file or folder the installed package does not ship is
-  pruned. No other entry under `.agents/skills/` is read or written.
+  pruned. No other entry under `.agents/skills/` is read or written, beside the namespace's own
+  lock and its staging and backup folders.
+- Installs into one repository take turns. npm runs one postinstall per workspace that nests its own
+  copy of the package, all at once and into the same `INIT_CWD`. An install that writes first
+  creates `.agents/skills/.command-center-ai.lock` exclusively and holds it while it reads and
+  replaces the namespace; the others wait for it, then install against what it left. A lock whose
+  process on this machine has exited, or that is older than ten minutes, is cleared; after a minute
+  of waiting on a live one, the install fails and names the file. `--dry-run` takes no lock.
 - Each skill is staged, the replaced entries are backed up, and `PINNED_FROM.txt` is written last
   and atomically; on a failure the previous skills and provenance are put back.
 - `PINNED_FROM.txt` (schema 2) records the package name and version, the namespace, the ownership
@@ -37,7 +44,8 @@ library only.
 
 `../tests/cli/agent-skills.node.mjs` installs into temporary repositories: pruning and provenance,
 the dry run, every refusal above, other namespaces left untouched, the command's options and JSON,
-and the postinstall's skips. It also validates every packaged skill, its `$` routes, and the
+the postinstall's skips, two postinstalls upgrading one repository at once, and the lock's wait and
+recovery. It also validates every packaged skill, its `$` routes, and the
 conventions it shares with the SDK's skills. Run them with
 `npm --workspace @dev-mainsequence/command-center-ai run test`. The repository's packed-consumer
 verification installs the skills from the published tarball.
