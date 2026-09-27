@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.8
+
+Compatibility axes: none beyond behaviour; no API, route, payload, stylesheet, storage, skill, or
+SDK peer change.
+
+- **The local source's model picker tells the truth.** Found against a real `ms-tau` in the CRM:
+  before a local conversation's first answer the picker showed the catalog's first model while the
+  runtime answered with its configured one, and after the answer it kept showing it, because the
+  session's model was read while the turn was still running. The picker now leads with "Local
+  Agent / Configured by the local Agent" until the runtime reports the session's model, reads it
+  again whenever a run ends, and applies a model chosen before the first answer as soon as the
+  session exists.
+
 ## 0.0.7
 
 Compatibility axes: the npm public API, additively (`createLocalAgentSource`, `LocalAgentSource`,
