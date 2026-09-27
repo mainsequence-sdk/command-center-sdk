@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.7
 
 Compatibility axes: the npm public API, additively (`createLocalAgentSource`, `LocalAgentSource`,
 `LocalAgentSourceOptions`, `LocalChatEngineProviderProps`, `ChatEngineCapabilities`, the provider's

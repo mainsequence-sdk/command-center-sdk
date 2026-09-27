@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.7
 
 Compatibility axes: the `/vite` entry point, additively (`localAgentProxy()`, `LocalAgentProxyOptions`,
 `LocalAgentProxyPlugin`). No change to an existing export, contract ID, JSON Schema, fixture,

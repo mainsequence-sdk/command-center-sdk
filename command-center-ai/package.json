@@ -1,6 +1,6 @@
 {
   "name": "@dev-mainsequence/command-center-ai",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "private": false,
   "description": "A chat for Main Sequence Agents: the connection to the platform, a session engine, the chat UI, and model provider settings, built on the Command Center SDK.",
   "type": "module",
@@ -71,7 +71,7 @@
     "react-dom": ">=18 <20"
   },
   "devDependencies": {
-    "@dev-mainsequence/command-center-sdk": "^0.5.3",
+    "@dev-mainsequence/command-center-sdk": "^0.5.7",
     "@playwright/test": "^1.62.1",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
