@@ -6,48 +6,31 @@
  * variables the SDK's CLI reads. The page never holds the token, and a build never contains it.
  */
 
+import {
+  isLoopbackAddress,
+  isLoopbackHost,
+  isSameOriginRequest,
+  readBody,
+  readHeader,
+  readMountPath,
+  sendError,
+  type ProxyDevServer,
+  type ProxyIncomingMessage,
+  type ProxyServerResponse,
+} from "./proxy-guards.js";
+
 const DEFAULT_PLATFORM_REQUEST_PROXY_PATH = "/__mainsequence__";
 
 // The request shape matches what the host bridge carries (SDK ADR 013), so a request that works
 // locally also crosses the bridge when the site is embedded.
 const PROXIED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 const FORWARDED_REQUEST_HEADERS = ["accept", "content-type"] as const;
-const MAX_REQUEST_BODY_BYTES = 1024 * 1024;
-
-const LOOPBACK_IPV4 = /^127(?:\.\d{1,3}){3}$/u;
 
 export interface PlatformRequestProxyOptions {
   /** Where the page sends platform requests on its dev server. Defaults to `/__mainsequence__`. */
   path?: string;
 }
 
-/** The request as Vite's dev server passes it to a middleware; only what the proxy reads. */
-interface ProxyIncomingMessage extends AsyncIterable<Uint8Array | string> {
-  method?: string;
-  url?: string;
-  headers: Record<string, string | string[] | undefined>;
-  socket: { remoteAddress?: string };
-}
-
-/** The response as Vite's dev server passes it to a middleware; only what the proxy writes. */
-interface ProxyServerResponse {
-  statusCode: number;
-  setHeader(name: string, value: string): unknown;
-  end(body?: Uint8Array | string): unknown;
-  on(event: "close", listener: () => void): unknown;
-}
-
-type ProxyMiddleware = (
-  request: ProxyIncomingMessage,
-  response: ProxyServerResponse,
-  next: (error?: unknown) => void,
-) => void;
-
-/** The parts of Vite's dev server the plugin uses. */
-interface ProxyDevServer {
-  middlewares: { use(middleware: ProxyMiddleware): unknown };
-  config: { logger: { warn(message: string): void } };
-}
 
 /** A Vite plugin; pass it in `plugins`. It runs only under `vite serve`. */
 export interface PlatformRequestProxyPlugin {
@@ -67,7 +50,7 @@ type PlatformConfiguration = { endpoint: string; token: string } | { problem: st
 export function platformRequestProxy(
   options: PlatformRequestProxyOptions = {},
 ): PlatformRequestProxyPlugin {
-  const mountPath = readMountPath(options.path);
+  const mountPath = readMountPath(options.path ?? DEFAULT_PLATFORM_REQUEST_PROXY_PATH, "platformRequestProxy");
 
   return {
     name: "command-center-sdk:platform-request-proxy",
@@ -179,15 +162,6 @@ async function proxyPlatformRequest(
   }
 }
 
-function readMountPath(path = DEFAULT_PLATFORM_REQUEST_PROXY_PATH) {
-  if (!/^\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/u.test(path)) {
-    throw new TypeError(
-      `platformRequestProxy path must start with "/" and must not end with "/": ${JSON.stringify(path)}`,
-    );
-  }
-  return path;
-}
-
 /** Read on every request, so the variables are the dev server's current ones. */
 function readPlatformConfiguration(): PlatformConfiguration {
   const environment =
@@ -218,72 +192,4 @@ function readPlatformConfiguration(): PlatformConfiguration {
   url.search = "";
   url.hash = "";
   return { endpoint: url.toString().replace(/\/+$/u, ""), token };
-}
-
-function readHeader(request: ProxyIncomingMessage, name: string) {
-  const value = request.headers[name];
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function isLoopbackAddress(address: string | undefined) {
-  if (!address) return false;
-  const ipv4 = address.startsWith("::ffff:") ? address.slice("::ffff:".length) : address;
-  return address === "::1" || LOOPBACK_IPV4.test(ipv4);
-}
-
-/** A name that resolves to this machine. Another name here means DNS rebinding. */
-function isLoopbackHost(host: string | undefined) {
-  if (!host) return false;
-  let hostname: string;
-  try {
-    hostname = new URL(`http://${host}`).hostname;
-  } catch {
-    return false;
-  }
-  return (
-    hostname === "localhost" ||
-    hostname.endsWith(".localhost") ||
-    hostname === "[::1]" ||
-    LOOPBACK_IPV4.test(hostname)
-  );
-}
-
-/** Browsers mark requests another site makes; those never reach the platform. */
-function isSameOriginRequest(request: ProxyIncomingMessage) {
-  const site = readHeader(request, "sec-fetch-site");
-  if (site && site !== "same-origin" && site !== "none") return false;
-
-  const origin = readHeader(request, "origin");
-  if (!origin) return true;
-  try {
-    return new URL(origin).host === readHeader(request, "host");
-  } catch {
-    return false;
-  }
-}
-
-/** The body, or null when it exceeds the limit. */
-async function readBody(request: ProxyIncomingMessage): Promise<Uint8Array<ArrayBuffer> | null> {
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  for await (const chunk of request) {
-    const bytes = typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk;
-    size += bytes.byteLength;
-    if (size > MAX_REQUEST_BODY_BYTES) return null;
-    chunks.push(bytes);
-  }
-  const body = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    body.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return body;
-}
-
-function sendError(response: ProxyServerResponse, status: number, code: string, detail: string) {
-  response.statusCode = status;
-  response.setHeader("content-type", "application/json");
-  response.setHeader("cache-control", "no-store");
-  response.end(JSON.stringify({ code, detail }));
 }

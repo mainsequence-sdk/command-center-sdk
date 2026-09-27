@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the `/vite` entry point, additively (`localAgentProxy()`, `LocalAgentProxyOptions`,
+`LocalAgentProxyPlugin`). No change to an existing export, contract ID, JSON Schema, fixture,
+iframe protocol, theme, or storage, and no backend change.
+
+- **An Agent on this machine.** `localAgentProxy()` from `@dev-mainsequence/command-center-sdk/vite`
+  forwards `/__agent__` on the dev server to an Agent the developer runs with `ms-tau` in local mode
+  (`http://127.0.0.1:8787` by default), for a chat that talks to it directly (Command Center AI ADR
+  099). It forwards only the chat's routes, streams the answer, passes the runtime's session id,
+  strips credentials and caller headers, and serves only this machine and the page's own origin. A
+  local runtime answers every caller as the developer, so an application uses this instead of
+  proxying the runtime by hand.
+- `platformRequestProxy()` and `localAgentProxy()` share their caller checks (`proxy-guards.ts`);
+  `platformRequestProxy()` behaves as before.
+
 ## 0.5.6
 
 Compatibility axes: a new `/vite` entry point (Node, for the Vite dev server), the packaged

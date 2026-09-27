@@ -9,6 +9,7 @@
     "./embed-websocket.ts",
     "./layout-playwright.ts",
     "./navigation-playwright.ts",
-    "./vite-platform-request-proxy.ts"
+    "./vite-platform-request-proxy.ts",
+    "./vite-local-agent-proxy.ts"
   ]
 }

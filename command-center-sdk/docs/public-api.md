@@ -47,7 +47,7 @@ framework integrations do not affect the application.
 | `/theme/data-viz` | Framework-neutral | Data-visualization palette types and resolvers |
 | `/embed` | Browser | Static-site message contracts, host/client lifecycle, delegated HTTP access, native FastAPI WebSockets, and platform requests sent through the host |
 | `/embed/react` | React + DOM | Managed `StaticSiteIframe` host component |
-| `/vite` | Node, in a Vite dev server | `platformRequestProxy()`: a top-level local page's platform requests, sent with the developer's token during local development |
+| `/vite` | Node, in a Vite dev server | `platformRequestProxy()`: a top-level local page's platform requests, sent with the developer's token during local development. `localAgentProxy()`: a chat's routes to an Agent run with `ms-tau` in local mode on this machine |
 | `/contracts` | Framework-neutral | Ordered migration helper for versioned SDK payloads |
 | `/contracts/manifest.json` | JSON | Canonical backend contract catalog |
 | `/contracts/schemas/*` | JSON Schema | Versioned language-neutral contract schemas |
@@ -235,6 +235,11 @@ export default { plugins: [platformRequestProxy()] };
 The page sends to `/__mainsequence__/api/...` only when it runs under `vite serve` without a host; a
 deployed site sends through the host. The entry runs in Node and is never imported by browser code.
 See [Send platform requests in local development](./static-site-embeds.md#send-platform-requests-in-local-development).
+
+`localAgentProxy()` forwards `/__agent__` to an Agent the developer runs with `ms-tau` in local mode
+(`http://127.0.0.1:8787`, or `MAINSEQUENCE_TAU_LOCAL_ORIGIN`), for a chat that talks to it directly.
+It forwards only the chat's routes, streams the answer, passes the runtime's session id, and strips
+credentials and caller headers. The [Vite README](https://github.com/mainsequence-sdk/command-center-sdk/blob/main/command-center-sdk/src/vite/README.md) lists its rules.
 
 ## Backend contract bundle
 
