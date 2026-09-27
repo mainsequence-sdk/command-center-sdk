@@ -21,7 +21,10 @@ exports (`src/index.ts`).
   cancels, and keeps the queue. See its [README](./src/engine/README.md).
 - `src/session-detail/`: the AgentSession detail model and the hook that loads a session's detail
   and insights. See its [README](./src/session-detail/README.md).
-- `src/ui/`: the chat UI, `ChatThread`, with `AgentConnectingState` and `AgentIcon`. See its
+- `src/ui/`: the chat UI: `ChatThread`; the composer on its own (`ChatComposer`, `ChatQueueStrip`,
+  and `useChatComposerState()`, which says whether the assistant can take a message); the frame
+  Command Center draws around the thread (`ChatRail`, `ChatLauncher`, `ChatPageLayout`, and
+  `AgentSessionExplorer`); `AgentConnectingState`; and `AgentIcon`. See its
   [README](./src/ui/README.md).
 - `src/model-providers/`: the model provider settings, `ModelProviderSettings`: custom providers,
   built-in provider sign-in, and the direct test conversation. See its

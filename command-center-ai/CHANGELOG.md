@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the npm public API, additively; the stylesheet, additively (new `ms-chat-rail`,
+`ms-chat-launcher`, `ms-chat-explorer`, `ms-chat-page`, and `ms-chat-composer-stack` classes); and
+the packaged agent skills (`ui/compose-command-center-ai-rail` rewritten, the two general skills
+reworded). No browser storage, platform route, or payload change, and the SDK peer range is
+unchanged: the explorer calls the session search and archived-session routes the package already
+exported.
+
+- **The frame is the package's.** An application that imported the package got only the thread and
+  drew its own rail, so it never looked like Command Center. The package now draws the frame
+  Command Center draws, and Command Center uses the same components:
+  - `ChatRail`: the right rail, `docked` or `overlay`, with the theme's gradient, tinted edge, and
+    glows, a header with the Agent's icon tile, the title, a subtitle, an optional `detail` pill,
+    Expand, and Close, and a body for the thread. `tone="accent"` draws a rail opened on one Agent.
+    Close returns the engine to the default session when another Agent's session was open.
+  - `ChatLauncher`: the floating button that opens the rail.
+  - `ChatPageLayout`: the expanded rail, with the session explorer, the Agent, the session, the run
+    status, New session, Show context, Collapse, Minimize, and a `blockingState`.
+  - `AgentSessionExplorer`: the person's sessions under their Agents, with search, the working and
+    queued marks, archive, and archived sessions. Opening a session stays the application's
+    (`onOpenSession`, `onOpenSessionDetails`); `agents` lists the Agents without recent sessions.
+    `groupAgentSessions` and the session title helpers are exported with it.
+- **The composer and readiness on their own.** `ChatComposer` is the thread's composer for an
+  application that draws its own transcript (Enter sends, Shift+Enter breaks the line, Enter queues
+  while the Agent works), and `ChatQueueStrip` the queue strip. `useChatComposerState()` says
+  whether the assistant can take a message: `status` (`ready`, `working`, `waking`, `loading`,
+  `loading-models`, `no-session`, `unavailable`, `models-unavailable`, `choosing-model`, `stopping`,
+  or `busy`), `canSend`, `queues`, `canWrite`, and `reason`. The thread, the standalone composer,
+  and the hook compute it with the same code, so they never disagree.
+- `useChatEngine()` also returns the `auth` and `environmentUid` the application passed.
+- The rail's look is part of the theme: every colour of its gradient and glows is a theme variable,
+  and the stylesheet passes `command-center-sdk theme audit`. The skill and the guide no longer tell
+  applications to draw a flat panel of their own.
+
 ## 0.0.5
 
 Compatibility axes: the connect guide and the `connect-command-center-ai-to-the-platform` skill. No

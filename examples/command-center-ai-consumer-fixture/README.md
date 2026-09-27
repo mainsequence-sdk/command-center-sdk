@@ -7,8 +7,10 @@ both. Release CI installs the chat and SDK tarballs together in a temporary dire
 
 `src/consumer.tsx` loads the SDK's theme, component, and markdown stylesheets and then the chat's,
 builds a connection with a request-URL rewrite, mounts `ChatEngineProvider` with an Agent's default
-session behind a stable handle, and renders `ChatThread`, `ModelProviderSettings`, and
-`AgentConnectingState` with the SDK's `Button`. Its connection's `sendPlatformRequest` adds the
+session behind a stable handle, and renders `ChatThread` inside the package's frame
+(`ChatPageLayout` with its session explorer, `ChatRail`, and `ChatLauncher`), a status line from
+`useChatComposerState()`, `ModelProviderSettings`, and `AgentConnectingState` with the SDK's
+`Button`. Its connection's `sendPlatformRequest` adds the
 application's own credential and renews it once after a `401`.
 
 `src/embedded.tsx` is an application embedded in Command Center: it holds no platform credential,

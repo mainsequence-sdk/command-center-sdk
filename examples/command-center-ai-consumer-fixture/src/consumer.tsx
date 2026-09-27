@@ -5,6 +5,9 @@ import { Button } from "@dev-mainsequence/command-center-sdk/controls";
 import {
   AgentConnectingState,
   ChatEngineProvider,
+  ChatLauncher,
+  ChatPageLayout,
+  ChatRail,
   ChatThread,
   createChatBackendConnection,
   DEFAULT_CHAT_THREAD_COPY,
@@ -15,6 +18,7 @@ import {
   type ChatNotice,
   type ChatNotify,
   type ChatThreadCopy,
+  useChatComposerState,
 } from "@dev-mainsequence/command-center-ai";
 
 // The SDK's theme, component, and markdown stylesheets, then the chat's, once, in this order.
@@ -76,15 +80,23 @@ const copy: Partial<ChatThreadCopy> = {
   composerPlaceholder: DEFAULT_CHAT_THREAD_COPY.composerPlaceholder,
 };
 
+/** Whether the assistant can take a message, in the words the composer shows. */
+function AssistantStatusLine() {
+  const { reason, status } = useChatComposerState();
+  return <p data-assistant-status={status}>{reason ?? "Ready"}</p>;
+}
+
 /**
  * A chat application built only from the packed chat and SDK tarballs: the engine with the
- * Agent's default session, the thread, and the model provider settings.
+ * Agent's default session, the right rail and the expanded rail from the package, and the model
+ * provider settings.
  */
 export function PackedChatApplication({ userUid }: { userUid: string }) {
   // The connection sends every platform request with the application's authentication, so the
   // chat only needs to know who is signed in.
   const auth = useMemo<ChatAuth>(() => ({ userUid }), [userUid]);
-  const [view, setView] = useState<"chat" | "providers">("chat");
+  const [view, setView] = useState<"chat" | "rail" | "providers">("chat");
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [notices, setNotices] = useState<ChatNotice[]>([]);
   const notify: ChatNotify = (notice) => setNotices((current) => [...current, notice]);
 
@@ -96,6 +108,7 @@ export function PackedChatApplication({ userUid }: { userUid: string }) {
       environmentUid="00000000-0000-4000-8000-000000000002"
       isVisible
       notify={notify}
+      requestedSessionId={sessionId}
       showsDefaultSession
       viewContext={{ app: "command-center-ai-consumer-fixture" }}
       onRequestVisible={() => setView("chat")}
@@ -103,13 +116,30 @@ export function PackedChatApplication({ userUid }: { userUid: string }) {
       <Button size="small" onClick={() => setView(view === "chat" ? "providers" : "chat")}>
         {view === "chat" ? "Model providers" : "Back to chat"}
       </Button>
+      <AssistantStatusLine />
       {view === "chat" ? (
-        <ChatThread
-          copy={copy}
-          surface="page"
-          viewer={{ uid: userUid }}
-          onOpenModelProviderSettings={() => setView("providers")}
-        />
+        <ChatPageLayout
+          explorer={{ onOpenSession: setSessionId }}
+          onCreateSession={() => setSessionId(null)}
+          onMinimize={() => setView("rail")}
+        >
+          <ChatThread
+            copy={copy}
+            surface="page"
+            viewer={{ uid: userUid }}
+            onOpenModelProviderSettings={() => setView("providers")}
+          />
+        </ChatPageLayout>
+      ) : view === "rail" ? (
+        <ChatRail
+          title="Packed agent"
+          subtitle="Assistant rail."
+          mode="overlay"
+          onExpand={() => setView("chat")}
+          onClose={() => setView("providers")}
+        >
+          <ChatThread copy={copy} surface="overlay" viewer={{ uid: userUid }} />
+        </ChatRail>
       ) : (
         <ModelProviderSettings auth={auth} connection={connection} notify={notify} />
       )}
@@ -125,3 +155,7 @@ export const connectingStageMarkup = renderToStaticMarkup(
 export function refreshModelCatalog() {
   invalidateModelProviderCatalog();
 }
+
+export const launcherMarkup = renderToStaticMarkup(
+  <ChatLauncher label="Ask the packed agent" onClick={() => {}} />,
+);

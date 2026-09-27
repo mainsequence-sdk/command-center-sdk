@@ -47,6 +47,7 @@ import { Badge, Button } from "@dev-mainsequence/command-center-sdk/controls";
 import {
   isRuntimeInteractionOverdue,
   isTransientRuntimeInteraction,
+  type AgentRuntimeInteraction,
 } from "../backend/runtime-interaction.js";
 import {
   describeToolActivity,
@@ -55,6 +56,7 @@ import {
   type ToolActivity,
 } from "../backend/tool-activity.js";
 import { useChatEngine } from "../engine/ChatEngineProvider.js";
+import { SESSION_MODEL_NEEDED_MESSAGE } from "../engine/session-model-fallback.js";
 import {
   buildThreadParticipantsKey,
   findThreadTargetAgentUid,
@@ -1288,36 +1290,7 @@ function isComposerBlocked({
   );
 }
 
-function Composer({
-  availableModelsError,
-  hasAvailableModels,
-  availableProviders,
-  busyPlaceholder = "Session is working...",
-  compact = false,
-  inputRef,
-  isLoadingAvailableModels,
-  isSessionIdle = false,
-  isCancellingSession,
-  isSessionReady = true,
-  isSessionLoading = false,
-  isSessionBusy,
-  showStopControl = false,
-  model,
-  modelOptions,
-  onProviderChange,
-  provider,
-  providerOptions,
-  onModelChange,
-  onReasoningEffortChange,
-  onStop,
-  reasoningEffortOptions,
-  reasoningEffort,
-  surface = "overlay",
-  sessionUnavailableMessage = null,
-  sessionLoadingMessage = null,
-  runtimeTransient = false,
-  queueMode = false,
-}: {
+type ComposerProps = {
   availableModelsError: string | null;
   hasAvailableModels: boolean;
   availableProviders?: ReadonlyArray<{ label: string; value: string }>;
@@ -1348,7 +1321,246 @@ function Composer({
   runtimeTransient?: boolean;
   /** ADR 087: the agent is working; Enter and the primary control queue the draft. */
   queueMode?: boolean;
-}) {
+};
+
+/** What the thread computes for the composer; the surface places it. */
+type ComposerModelProps = Omit<ComposerProps, "compact" | "inputRef" | "surface">;
+
+/** Where the composer stands, as `useChatComposerState()` reports it. */
+export type ChatComposerStatus =
+  /** No session is selected. */
+  | "no-session"
+  /** The session, or the models it can run, are loading. */
+  | "loading"
+  | "loading-models"
+  /** The Agent is being checked or is waking; a draft already written is kept. */
+  | "waking"
+  /** The session or its Agent cannot take a message; `reason` says why. */
+  | "unavailable"
+  | "models-unavailable"
+  /** The session waits for the person to choose a model in the thread's picker. */
+  | "choosing-model"
+  /** A stop was requested and is being confirmed. */
+  | "stopping"
+  /** The Agent is working: Enter and the primary control add the draft to the queue. */
+  | "working"
+  /** A session is being created or its model saved; nothing can be written yet. */
+  | "busy"
+  /** Enter and the send control send the draft now. */
+  | "ready";
+
+export interface ChatComposerState {
+  status: ChatComposerStatus;
+  /** Enter and the send control send the draft now. */
+  canSend: boolean;
+  /** Enter and the primary control add the draft to the queue instead of sending it. */
+  queues: boolean;
+  /** The input takes typing. */
+  canWrite: boolean;
+  /** The words the composer shows for any status but `ready`; null when it is ready. */
+  reason: string | null;
+}
+
+type ComposerGateInput = {
+  activeAgentName: string | null;
+  activeRuntimeInteraction: AgentRuntimeInteraction | null;
+  apiBaseUrl: string;
+  hasRequestedAvailableModels: boolean;
+  isAssistantRuntimeStarting: boolean;
+  props: Pick<
+    ComposerModelProps,
+    | "availableModelsError"
+    | "hasAvailableModels"
+    | "isCancellingSession"
+    | "isLoadingAvailableModels"
+    | "isSessionBusy"
+    | "isSessionIdle"
+    | "isSessionLoading"
+    | "isSessionReady"
+    | "queueMode"
+    | "runtimeTransient"
+    | "sessionUnavailableMessage"
+    | "showStopControl"
+  >;
+};
+
+/**
+ * The composer's one decision: whether the person can write, send, or queue, and the words for
+ * why not. The composer draws from it and `useChatComposerState()` reports it, so an application
+ * reads exactly what the composer obeys.
+ */
+function resolveComposerGate({
+  activeAgentName,
+  activeRuntimeInteraction,
+  apiBaseUrl,
+  hasRequestedAvailableModels,
+  isAssistantRuntimeStarting,
+  props,
+}: ComposerGateInput) {
+  const {
+    availableModelsError,
+    hasAvailableModels,
+    isCancellingSession = false,
+    isLoadingAvailableModels,
+    isSessionBusy = false,
+    isSessionIdle = false,
+    isSessionLoading = false,
+    isSessionReady = true,
+    queueMode = false,
+    runtimeTransient = false,
+    sessionUnavailableMessage = null,
+    showStopControl = false,
+  } = props;
+  const modelsAwaitingInteraction =
+    !isSessionIdle && isSessionReady && !isSessionBusy && !hasRequestedAvailableModels;
+  const modelsResolving = !isSessionIdle && hasRequestedAvailableModels && isLoadingAvailableModels;
+  const modelsUnavailable =
+    !isSessionIdle &&
+    isSessionReady &&
+    hasRequestedAvailableModels &&
+    !isLoadingAvailableModels &&
+    !hasAvailableModels;
+  const modelCatalogError = modelsUnavailable && Boolean(availableModelsError?.trim());
+  const emptyModelCatalog = modelsUnavailable && !modelCatalogError;
+  const sessionUnavailable = Boolean(sessionUnavailableMessage);
+  const sessionLoading = isSessionLoading && !sessionUnavailable;
+  // Session hydration and runtime readiness are separate axes. While the
+  // agent is waking the composer stays locked: a draft already written is
+  // kept, nothing is ever sent on the user's behalf, and writing resumes once
+  // the agent can take messages.
+  const runtimeStartingOrWaking = isAssistantRuntimeStarting || runtimeTransient;
+  const blockTyping = isComposerBlocked({
+    isSessionIdle,
+    isSessionBusy: Boolean(isSessionBusy),
+    isSessionReady,
+    queueMode,
+    runtimeStartingOrWaking,
+    sessionLoading,
+    sessionUnavailable,
+  });
+  const agentDisplayName = activeAgentName?.trim() || "The agent";
+  // Every session is checked once when it opens; only an agent that does not answer is waking.
+  const agentWaitingCopy =
+    activeRuntimeInteraction?.state === "checking"
+      ? `Checking that ${activeAgentName?.trim() || "the agent"} is ready...`
+      : `${agentDisplayName} is waking up`;
+  const canShowStopControl = Boolean(isSessionBusy && showStopControl);
+  const modelsUnavailableMessage = modelCatalogError
+    ? formatModelsUnavailableMessage(availableModelsError)
+    : formatEmptyModelCatalogMessage();
+  const formattedSessionUnavailableMessage = sessionUnavailableMessage
+    ? formatSessionUnavailableMessage(sessionUnavailableMessage, apiBaseUrl)
+    : null;
+  const sendDisabled =
+    isSessionIdle ||
+    modelsAwaitingInteraction ||
+    modelsResolving ||
+    modelsUnavailable ||
+    sessionUnavailable ||
+    sessionLoading ||
+    runtimeStartingOrWaking ||
+    !isSessionReady;
+  // The send control shows only while the session is neither working nor busy.
+  const canSend = !queueMode && !isSessionBusy && !sendDisabled;
+  const status: ChatComposerStatus = isSessionIdle
+    ? "no-session"
+    : sessionUnavailable
+      ? "unavailable"
+      : sessionLoading
+        ? "loading"
+        : runtimeStartingOrWaking
+          ? "waking"
+          : modelsResolving || modelsAwaitingInteraction
+            ? "loading-models"
+            : modelsUnavailable
+              ? "models-unavailable"
+              : isCancellingSession
+                ? "stopping"
+                : queueMode
+                  ? "working"
+                  : isSessionBusy
+                    ? "busy"
+                    : !isSessionReady
+                      ? "loading"
+                      : "ready";
+  const reason =
+    status === "no-session"
+      ? "Select or start a session to continue."
+      : status === "unavailable"
+        ? formattedSessionUnavailableMessage
+        : status === "loading"
+          ? "Loading session..."
+          : status === "waking"
+            ? agentWaitingCopy
+            : status === "loading-models"
+              ? "Loading models..."
+              : status === "models-unavailable"
+                ? modelsUnavailableMessage
+                : status === "stopping"
+                  ? "Stopping session..."
+                  : status === "working"
+                    ? `${agentDisplayName} is working. Your message will send when it finishes.`
+                    : status === "busy"
+                      ? "Session is working..."
+                      : null;
+  const state: ChatComposerState = {
+    status,
+    canSend: status === "ready" && canSend,
+    queues: queueMode && !blockTyping,
+    canWrite: !blockTyping,
+    reason,
+  };
+
+  return {
+    agentDisplayName,
+    agentWaitingCopy,
+    blockTyping,
+    canShowStopControl,
+    emptyModelCatalog,
+    formattedSessionUnavailableMessage,
+    modelCatalogError,
+    modelsAwaitingInteraction,
+    modelsResolving,
+    modelsUnavailable,
+    modelsUnavailableMessage,
+    runtimeStartingOrWaking,
+    sendDisabled,
+    sessionLoading,
+    sessionUnavailable,
+    state,
+  };
+}
+
+function Composer({
+  availableModelsError,
+  hasAvailableModels,
+  availableProviders,
+  busyPlaceholder = "Session is working...",
+  compact = false,
+  inputRef,
+  isLoadingAvailableModels,
+  isSessionIdle = false,
+  isCancellingSession,
+  isSessionReady = true,
+  isSessionLoading = false,
+  isSessionBusy,
+  showStopControl = false,
+  model,
+  modelOptions,
+  onProviderChange,
+  provider,
+  providerOptions,
+  onModelChange,
+  onReasoningEffortChange,
+  onStop,
+  reasoningEffortOptions,
+  reasoningEffort,
+  surface = "overlay",
+  sessionUnavailableMessage = null,
+  sessionLoadingMessage = null,
+  runtimeTransient = false,
+  queueMode = false,
+}: ComposerProps) {
   const composerRuntime = useComposerRuntime();
   const {
     activeAgentName,
@@ -1367,23 +1579,43 @@ function Composer({
   const hasModelOptions = modelOptions.length > 0;
   const hasProviderOptions = (providerOptions?.length ?? 0) > 0;
   const hasReasoningEffortOptions = reasoningEffortOptions.length > 0;
-  const modelsAwaitingInteraction =
-    !isSessionIdle &&
-    isSessionReady &&
-    !isSessionBusy &&
-    !hasRequestedAvailableModels;
-  const modelsResolving =
-    !isSessionIdle &&
-    hasRequestedAvailableModels &&
-    isLoadingAvailableModels;
-  const modelsUnavailable =
-    !isSessionIdle &&
-    isSessionReady &&
-    hasRequestedAvailableModels &&
-    !isLoadingAvailableModels &&
-    !hasAvailableModels;
-  const modelCatalogError = modelsUnavailable && Boolean(availableModelsError?.trim());
-  const emptyModelCatalog = modelsUnavailable && !modelCatalogError;
+  const {
+    agentDisplayName,
+    agentWaitingCopy,
+    blockTyping,
+    canShowStopControl,
+    emptyModelCatalog,
+    formattedSessionUnavailableMessage,
+    modelCatalogError,
+    modelsAwaitingInteraction,
+    modelsResolving,
+    modelsUnavailable,
+    modelsUnavailableMessage,
+    runtimeStartingOrWaking,
+    sendDisabled,
+    sessionLoading,
+    sessionUnavailable,
+  } = resolveComposerGate({
+    activeAgentName,
+    activeRuntimeInteraction,
+    apiBaseUrl: connection.apiBaseUrl,
+    hasRequestedAvailableModels,
+    isAssistantRuntimeStarting,
+    props: {
+      availableModelsError,
+      hasAvailableModels,
+      isCancellingSession,
+      isLoadingAvailableModels,
+      isSessionBusy,
+      isSessionIdle,
+      isSessionLoading,
+      isSessionReady,
+      queueMode,
+      runtimeTransient,
+      sessionUnavailableMessage,
+      showStopControl,
+    },
+  });
   // The config row waits for the session to be ready: rendering it earlier
   // showed a transient fallback selection (first provider/model in the
   // catalog, e.g. an unauthenticated entry) before the session's stored
@@ -1392,22 +1624,6 @@ function Composer({
     !isSessionIdle &&
     isSessionReady &&
     hasAvailableModels && (hasProviderOptions || hasModelOptions || hasReasoningEffortOptions);
-  const sessionUnavailable = Boolean(sessionUnavailableMessage);
-  const sessionLoading = isSessionLoading && !sessionUnavailable;
-  // Session hydration and runtime readiness are separate axes. While the
-  // agent is waking the composer stays locked: a draft already written is
-  // kept, nothing is ever sent on the user's behalf, and writing resumes once
-  // the agent can take messages.
-  const runtimeStartingOrWaking = isAssistantRuntimeStarting || runtimeTransient;
-  const blockTyping = isComposerBlocked({
-    isSessionIdle,
-    isSessionBusy: Boolean(isSessionBusy),
-    isSessionReady,
-    queueMode,
-    runtimeStartingOrWaking,
-    sessionLoading,
-    sessionUnavailable,
-  });
   // A locked input cannot take the mount-time autofocus, so the surfaces that
   // focus the composer get it back when the waking lock lifts, unless the user
   // has already moved to another control.
@@ -1429,12 +1645,6 @@ function Composer({
       composerInputRef.current?.focus();
     }
   }, [blockTyping, focusesComposer, runtimeStartingOrWaking]);
-  const agentDisplayName = activeAgentName?.trim() || "The agent";
-  // Every session is checked once when it opens; only an agent that does not answer is waking.
-  const agentWaitingCopy =
-    activeRuntimeInteraction?.state === "checking"
-      ? `Checking that ${activeAgentName?.trim() || "the agent"} is ready...`
-      : `${agentDisplayName} is waking up`;
   const enqueueDraft = () => {
     const text = composerRuntime.getState().text;
     if (!text.trim()) {
@@ -1444,13 +1654,6 @@ function Composer({
       composerRuntime.setText("");
     }
   };
-  const canShowStopControl = Boolean(isSessionBusy && showStopControl);
-  const modelsUnavailableMessage = modelCatalogError
-    ? formatModelsUnavailableMessage(availableModelsError)
-    : formatEmptyModelCatalogMessage();
-  const formattedSessionUnavailableMessage = sessionUnavailableMessage
-    ? formatSessionUnavailableMessage(sessionUnavailableMessage, connection.apiBaseUrl)
-    : null;
 
   const composerBody = (
     <ComposerPrimitive.Root
@@ -1558,16 +1761,7 @@ function Composer({
             aria-label="Send message"
             title={runtimeStartingOrWaking ? agentWaitingCopy : undefined}
             className="ms-chat-composer__send"
-            disabled={
-              isSessionIdle ||
-              modelsAwaitingInteraction ||
-              modelsResolving ||
-              modelsUnavailable ||
-              sessionUnavailable ||
-              sessionLoading ||
-              runtimeStartingOrWaking ||
-              !isSessionReady
-            }
+            disabled={sendDisabled}
           >
             <ArrowUp className="ms-chat-icon-md" />
           </ComposerPrimitive.Send>
@@ -2057,14 +2251,13 @@ export function ChatThread({
   );
 }
 
-function ChatThreadBody({
-  compact = false,
-  surface = "overlay",
-}: Pick<ChatThreadProps, "compact" | "surface">) {
-  const isPage = surface === "page";
+/**
+ * The composer's inputs, computed once from the engine for the thread, the standalone
+ * `ChatComposer`, and `useChatComposerState()`, so all three obey the same readiness and queue
+ * rules. The message actions reuse the same lock, so a resend never passes a closed composer.
+ */
+function useThreadComposerModel() {
   const {
-    activeAgentName,
-    activeAgentUid,
     activeSessionReadiness,
     activeSessionSummary,
     activeRuntimeInteraction,
@@ -2073,7 +2266,6 @@ function ChatThreadBody({
     availableProviders,
     availableReasoningEfforts,
     cancelActiveSession,
-    enqueueMessage,
     isAssistantRuntimeStarting,
     isCancellingSession,
     isActiveSessionReady,
@@ -2084,34 +2276,12 @@ function ChatThreadBody({
     selectedModelValue,
     selectedProviderValue,
     selectedReasoningEffortValue,
-    sessionModelSelectionRequest,
-    sessionNotice,
     setSelectedModelValue,
     setSelectedProviderValue,
     setSelectedReasoningEffortValue,
   } = useChatEngine();
-  const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
   const threadIsRunning = useAuiState((s) => s.thread.isRunning);
-  const threadComposer = useComposerRuntime();
-  const actorContext = useMessageActorContext();
-  const participants = useThreadParticipants(actorContext);
-  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
-  // The page hosts the same connecting stage as the rail. The rail hides the
-  // whole thread behind it; here it replaces the loading panel and the
-  // centered composer while the session or the runtime is not ready.
-  // Errors and not-found keep the readiness state below, which carries the
-  // deployment action and the retry.
-  const connecting = useAgentConnectingState({ surface });
-  const runtimeStatus = useRuntimeStatus();
-  // Both surfaces host the stage inside the thread, keeping the composer:
-  // while the session loads or the runtime is not ready, and while a
-  // transient decision (waking, starting) holds a thread that has nothing
-  // to read yet. With history on screen the compact notice carries the
-  // same status instead, so the conversation stays readable.
-  const multiParty = participants.multiParty;
-  const viewportRef = useRef<HTMLDivElement | null>(null);
-  const [footerElement, setFooterElement] = useState<HTMLDivElement | null>(null);
-  const historyAutoScrollSessionIdRef = useRef<string | null>(null);
+  const { copy: threadCopy } = useChatUi();
   const providerOptions = availableProviders.map((entry) => ({
     label: entry.label,
     value: entry.value,
@@ -2187,14 +2357,8 @@ function ChatThreadBody({
     isActiveSessionLoading ||
     activeSessionReadiness.status === "error" ||
     activeSessionReadiness.status === "not_found";
-  const { copy: threadCopy } = useChatUi();
   const readinessStateMessage =
     sessionUnavailableMessage ?? sessionLoadingMessage ?? threadCopy.sessionLoadingMessage;
-  const activeSessionId = activeSessionSummary?.sessionId ?? null;
-  const showThreadConnectingState =
-    connecting.showConnectingState || (runtimeTransient && !hasMessages && !showReadinessState);
-  // The message actions reuse the composer's lock and the composer's send, so
-  // a resend obeys every readiness and queue rule the composer obeys.
   const composerLocked = isComposerBlocked({
     isSessionIdle: isSessionSelectionIdle,
     isSessionBusy: sessionBusy,
@@ -2204,6 +2368,96 @@ function ChatThreadBody({
     sessionLoading: isActiveSessionLoading && !sessionUnavailableMessage,
     sessionUnavailable: Boolean(sessionUnavailableMessage),
   });
+  const composerProps: ComposerModelProps = {
+    availableModelsError,
+    hasAvailableModels: availableModels.length > 0,
+    availableProviders: providerOptions,
+    busyPlaceholder,
+    isLoadingAvailableModels,
+    isSessionIdle: isSessionSelectionIdle,
+    isCancellingSession,
+    isSessionReady: isActiveSessionReady && runtimeCanSubmit,
+    runtimeTransient,
+    isSessionLoading: isActiveSessionLoading,
+    isSessionBusy: sessionBusy,
+    queueMode,
+    showStopControl,
+    model: selectedModel,
+    modelOptions,
+    onProviderChange: setSelectedProviderValue,
+    provider: selectedProvider,
+    providerOptions,
+    onModelChange: setSelectedModelValue,
+    onReasoningEffortChange: setSelectedReasoningEffortValue,
+    onStop: () => {
+      void cancelActiveSession();
+    },
+    reasoningEffortOptions,
+    reasoningEffort: selectedReasoningEffort,
+    sessionUnavailableMessage,
+    sessionLoadingMessage,
+  };
+
+  return {
+    composerLocked,
+    composerProps,
+    isSessionSelectionIdle,
+    queueMode,
+    readinessStateMessage,
+    runtimeTransient,
+    sessionUnavailableMessage,
+    showReadinessState,
+  };
+}
+
+function ChatThreadBody({
+  compact = false,
+  surface = "overlay",
+}: Pick<ChatThreadProps, "compact" | "surface">) {
+  const isPage = surface === "page";
+  const {
+    activeAgentName,
+    activeAgentUid,
+    activeSessionReadiness,
+    activeSessionSummary,
+    enqueueMessage,
+    sessionModelSelectionRequest,
+    sessionNotice,
+  } = useChatEngine();
+  const {
+    composerLocked,
+    composerProps,
+    isSessionSelectionIdle,
+    queueMode,
+    readinessStateMessage,
+    runtimeTransient,
+    sessionUnavailableMessage,
+    showReadinessState,
+  } = useThreadComposerModel();
+  const hasMessages = useAuiState((s) => s.thread.messages.length > 0);
+  const threadComposer = useComposerRuntime();
+  const actorContext = useMessageActorContext();
+  const participants = useThreadParticipants(actorContext);
+  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
+  // The page hosts the same connecting stage as the rail. The rail hides the
+  // whole thread behind it; here it replaces the loading panel and the
+  // centered composer while the session or the runtime is not ready.
+  // Errors and not-found keep the readiness state below, which carries the
+  // deployment action and the retry.
+  const connecting = useAgentConnectingState({ surface });
+  const runtimeStatus = useRuntimeStatus();
+  // Both surfaces host the stage inside the thread, keeping the composer:
+  // while the session loads or the runtime is not ready, and while a
+  // transient decision (waking, starting) holds a thread that has nothing
+  // to read yet. With history on screen the compact notice carries the
+  // same status instead, so the conversation stays readable.
+  const multiParty = participants.multiParty;
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [footerElement, setFooterElement] = useState<HTMLDivElement | null>(null);
+  const historyAutoScrollSessionIdRef = useRef<string | null>(null);
+  const activeSessionId = activeSessionSummary?.sessionId ?? null;
+  const showThreadConnectingState =
+    connecting.showConnectingState || (runtimeTransient && !hasMessages && !showReadinessState);
   const loadIntoComposer = useCallback(
     (text: string) => {
       const value = text.trim();
@@ -2366,35 +2620,9 @@ function ChatThreadBody({
               <div className="ms-chat-thread__center-content">
                 <ComposerQueueStrip surface={surface} />
                 <Composer
-                  availableModelsError={availableModelsError}
-                  hasAvailableModels={availableModels.length > 0}
-                  availableProviders={providerOptions}
-                  busyPlaceholder={busyPlaceholder}
+                  {...composerProps}
                   compact={compact}
                   inputRef={composerInputRef}
-                  isLoadingAvailableModels={isLoadingAvailableModels}
-                  isSessionIdle={isSessionSelectionIdle}
-                  isCancellingSession={isCancellingSession}
-                  isSessionReady={isActiveSessionReady && runtimeCanSubmit}
-                  runtimeTransient={runtimeTransient}
-                  isSessionLoading={isActiveSessionLoading}
-                  isSessionBusy={sessionBusy}
-                  queueMode={queueMode}
-                  showStopControl={showStopControl}
-                  model={selectedModel}
-                  modelOptions={modelOptions}
-                  onProviderChange={setSelectedProviderValue}
-                  provider={selectedProvider}
-                  providerOptions={providerOptions}
-                  onModelChange={setSelectedModelValue}
-                  onReasoningEffortChange={setSelectedReasoningEffortValue}
-                  onStop={() => {
-                    void cancelActiveSession();
-                  }}
-                  reasoningEffortOptions={reasoningEffortOptions}
-                  reasoningEffort={selectedReasoningEffort}
-                  sessionUnavailableMessage={sessionUnavailableMessage}
-                  sessionLoadingMessage={sessionLoadingMessage}
                   surface={surface}
                 />
                 <ComposerFooter surface={surface} />
@@ -2458,35 +2686,9 @@ function ChatThreadBody({
                   <ScrollToLatestButton />
                   <ComposerQueueStrip surface={surface} />
                   <Composer
-                    availableModelsError={availableModelsError}
-                    hasAvailableModels={availableModels.length > 0}
-                    availableProviders={providerOptions}
-                    busyPlaceholder={busyPlaceholder}
+                    {...composerProps}
                     compact={compact}
                     inputRef={composerInputRef}
-                    isLoadingAvailableModels={isLoadingAvailableModels}
-                    isSessionIdle={isSessionSelectionIdle}
-                    isCancellingSession={isCancellingSession}
-                    isSessionReady={isActiveSessionReady && runtimeCanSubmit}
-                  runtimeTransient={runtimeTransient}
-                    isSessionLoading={isActiveSessionLoading}
-                    isSessionBusy={sessionBusy}
-                    queueMode={queueMode}
-                    showStopControl={showStopControl}
-                    model={selectedModel}
-                    modelOptions={modelOptions}
-                    onProviderChange={setSelectedProviderValue}
-                    provider={selectedProvider}
-                    providerOptions={providerOptions}
-                    onModelChange={setSelectedModelValue}
-                    onReasoningEffortChange={setSelectedReasoningEffortValue}
-                    onStop={() => {
-                      void cancelActiveSession();
-                    }}
-                    reasoningEffortOptions={reasoningEffortOptions}
-                    reasoningEffort={selectedReasoningEffort}
-                    sessionUnavailableMessage={sessionUnavailableMessage}
-                    sessionLoadingMessage={sessionLoadingMessage}
                     surface={surface}
                   />
                   <ComposerFooter surface={surface} />
@@ -2502,35 +2704,9 @@ function ChatThreadBody({
                   <ScrollToLatestButton />
                   <ComposerQueueStrip surface={surface} />
                   <Composer
-                    availableModelsError={availableModelsError}
-                    hasAvailableModels={availableModels.length > 0}
-                    availableProviders={providerOptions}
-                    busyPlaceholder={busyPlaceholder}
+                    {...composerProps}
                     compact={compact}
                     inputRef={composerInputRef}
-                    isLoadingAvailableModels={isLoadingAvailableModels}
-                    isSessionIdle={isSessionSelectionIdle}
-                    isCancellingSession={isCancellingSession}
-                    isSessionReady={isActiveSessionReady && runtimeCanSubmit}
-                  runtimeTransient={runtimeTransient}
-                    isSessionLoading={isActiveSessionLoading}
-                    isSessionBusy={sessionBusy}
-                    queueMode={queueMode}
-                    showStopControl={showStopControl}
-                    model={selectedModel}
-                    modelOptions={modelOptions}
-                    onProviderChange={setSelectedProviderValue}
-                    provider={selectedProvider}
-                    providerOptions={providerOptions}
-                    onModelChange={setSelectedModelValue}
-                    onReasoningEffortChange={setSelectedReasoningEffortValue}
-                    onStop={() => {
-                      void cancelActiveSession();
-                    }}
-                    reasoningEffortOptions={reasoningEffortOptions}
-                    reasoningEffort={selectedReasoningEffort}
-                    sessionUnavailableMessage={sessionUnavailableMessage}
-                    sessionLoadingMessage={sessionLoadingMessage}
                     surface={surface}
                   />
                   <ComposerFooter surface={surface} />
@@ -2542,4 +2718,112 @@ function ChatThreadBody({
       </ThreadPrimitive.Root>
     </div>
   );
+}
+
+export interface ChatComposerProps {
+  /** `page` centres a wide composer; `overlay` fits a narrow rail. */
+  surface?: "overlay" | "page";
+  compact?: boolean;
+  /** The words the composer shows; each has a neutral default. */
+  copy?: Partial<ChatThreadCopy>;
+  /** Opens the application's model provider settings; the button hides without it. */
+  onOpenModelProviderSettings?: () => void;
+  /** The queue strip above the input, shown while messages wait. Default true. */
+  showQueue?: boolean;
+  /** The context-window footer under the input. Default true. */
+  showFooter?: boolean;
+}
+
+/**
+ * The thread's composer on its own: the input, Enter to send (Shift+Enter for a new line), Enter to
+ * queue while the Agent works, the send and stop controls, the model row, and the queue strip. It
+ * obeys the same readiness rules as the composer inside `ChatThread`. Render it inside
+ * `ChatEngineProvider`, and not beside a `ChatThread` that already draws one.
+ */
+export function ChatComposer({
+  compact = false,
+  copy,
+  onOpenModelProviderSettings,
+  showFooter = true,
+  showQueue = true,
+  surface = "overlay",
+}: ChatComposerProps) {
+  const uiValue = useMemo(
+    () => ({ copy: resolveChatThreadCopy(copy), onOpenModelProviderSettings, viewer: null }),
+    [copy, onOpenModelProviderSettings],
+  );
+
+  return (
+    <ChatUiProvider value={uiValue}>
+      <ChatComposerBody
+        compact={compact}
+        showFooter={showFooter}
+        showQueue={showQueue}
+        surface={surface}
+      />
+    </ChatUiProvider>
+  );
+}
+
+function ChatComposerBody({
+  compact,
+  showFooter,
+  showQueue,
+  surface,
+}: Required<Pick<ChatComposerProps, "compact" | "showFooter" | "showQueue" | "surface">>) {
+  const { composerProps } = useThreadComposerModel();
+
+  return (
+    <div className="ms-chat-composer-stack">
+      {showQueue ? <ComposerQueueStrip surface={surface} /> : null}
+      <Composer {...composerProps} compact={compact} surface={surface} />
+      {showFooter ? <ComposerFooter surface={surface} /> : null}
+    </div>
+  );
+}
+
+/**
+ * The messages waiting to send, with reorder, edit, remove, and send next. Hidden while the queue
+ * is empty. `ChatThread` and `ChatComposer` already draw it; render it only above a composer of
+ * the application's own.
+ */
+export function ChatQueueStrip({ surface = "overlay" }: { surface?: "overlay" | "page" }) {
+  return <ComposerQueueStrip surface={surface} />;
+}
+
+/**
+ * Whether the assistant can take a message now, and why not. It is the decision the thread's
+ * composer obeys: `ready` sends, `working` queues, and every other status holds the draft with
+ * `reason` as the words to show. Call it inside `ChatEngineProvider`.
+ */
+export function useChatComposerState(): ChatComposerState {
+  const { composerProps } = useThreadComposerModel();
+  const {
+    activeAgentName,
+    activeRuntimeInteraction,
+    connection,
+    hasRequestedAvailableModels,
+    isAssistantRuntimeStarting,
+    sessionModelSelectionRequest,
+  } = useChatEngine();
+  const { state } = resolveComposerGate({
+    activeAgentName,
+    activeRuntimeInteraction,
+    apiBaseUrl: connection.apiBaseUrl,
+    hasRequestedAvailableModels,
+    isAssistantRuntimeStarting,
+    props: composerProps,
+  });
+
+  if (sessionModelSelectionRequest) {
+    return {
+      status: "choosing-model",
+      canSend: false,
+      queues: false,
+      canWrite: false,
+      reason: SESSION_MODEL_NEEDED_MESSAGE,
+    };
+  }
+
+  return state;
 }

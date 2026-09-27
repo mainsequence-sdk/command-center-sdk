@@ -71,8 +71,8 @@ earlier versions stay readable.
   primitives work in its children.
 - `useChatEngine()` returns the engine's value, `ChatEngineValue`: the session list and the active
   session, its detail and summary, readiness, the runtime decision, the model catalog and the
-  selection, the default session's status, the queue, the pending model choice, the connection it
-  was given, and the actions. The package's [UI](../ui/README.md) reads it. It throws outside the
+  selection, the default session's status, the queue, the pending model choice, the connection,
+  `auth`, and `environmentUid` it was given, and the actions. The package's [UI](../ui/README.md) reads it. It throws outside the
   provider.
 - `useOptionalChatEngine()` returns the same value, or null outside the provider.
 - `useChatRunStatus()` returns run progress: `runStatus`, `runStatusDetail`, `thinkingSummary`, and
@@ -88,6 +88,9 @@ An application may layer its own fields over the engine's value, as Command Cent
   `DefaultSessionStatus`, and `ChatLaunchTarget`.
 - `agent-sessions.ts`: session records (`AgentSessionRecord`), their normalization from the
   platform's records, the default-session marker, and the stored session list.
+- `agent-session-groups.ts`: `groupAgentSessions`, which puts the person's sessions under their
+  Agents for the session explorer (every catalog Agent the application passes, then any Agent known
+  only from a session), and the explorer's session titles, handle labels, and local search match.
 - `message-queue.ts`: the pure queue reducer, its limit of ten messages per session, the strip's
   wording, and the `sessionStorage` helpers (ADR 087).
 - `session-model-fallback.ts`: `createSessionWithModelFallback`, which asks for a model when the

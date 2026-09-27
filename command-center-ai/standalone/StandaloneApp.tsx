@@ -4,6 +4,9 @@ import { Button, Input } from "@dev-mainsequence/command-center-sdk/controls";
 
 import {
   ChatEngineProvider,
+  ChatLauncher,
+  ChatPageLayout,
+  ChatRail,
   ChatThread,
   ModelProviderSettings,
   type ChatAuth,
@@ -151,7 +154,10 @@ function StandaloneChat({ chat, onDisconnect }: { chat: ConnectedChat; onDisconn
   );
   const viewer = useMemo(() => ({ uid: userUid }), [userUid]);
   const viewContext = useMemo(() => ({ app: "standalone-chat" }), []);
-  const [view, setView] = useState<"chat" | "providers">("chat");
+  // The expanded rail, the application with the rail open over it, the application alone (with
+  // the launcher), or the model provider settings.
+  const [view, setView] = useState<"chat" | "rail" | "app" | "providers">("chat");
+  const [requestedSessionId, setRequestedSessionId] = useState<string | null>(null);
   const [notices, setNotices] = useState<Array<ChatNotice & { id: number }>>([]);
   const nextNoticeId = useRef(0);
 
@@ -172,9 +178,11 @@ function StandaloneChat({ chat, onDisconnect }: { chat: ConnectedChat; onDisconn
       environmentUid={environmentUid}
       isVisible
       notify={notify}
-      showsDefaultSession
+      requestedSessionId={requestedSessionId}
+      showsDefaultSession={!requestedSessionId}
       viewContext={viewContext}
       onRequestVisible={() => setView("chat")}
+      onRequestedSessionRemoved={() => setRequestedSessionId(null)}
     >
       <div className="standalone-chat">
         <header className="standalone-chat__header">
@@ -184,9 +192,9 @@ function StandaloneChat({ chat, onDisconnect }: { chat: ConnectedChat; onDisconn
               aria-pressed={view === "providers"}
               size="small"
               variant="outline"
-              onClick={() => setView(view === "chat" ? "providers" : "chat")}
+              onClick={() => setView(view === "providers" ? "chat" : "providers")}
             >
-              {view === "chat" ? "Model providers" : "Back to chat"}
+              {view === "providers" ? "Back to chat" : "Model providers"}
             </Button>
             <Button size="small" variant="ghost" onClick={onDisconnect}>
               Disconnect
@@ -195,7 +203,36 @@ function StandaloneChat({ chat, onDisconnect }: { chat: ConnectedChat; onDisconn
         </header>
         <main className="standalone-chat__main">
           {view === "chat" ? (
-            <ChatThread surface="page" viewer={viewer} onOpenModelProviderSettings={() => setView("providers")} />
+            <ChatPageLayout
+              explorer={{ onOpenSession: setRequestedSessionId }}
+              onCreateSession={() => setRequestedSessionId(null)}
+              onMinimize={() => setView("rail")}
+            >
+              <ChatThread surface="page" viewer={viewer} onOpenModelProviderSettings={() => setView("providers")} />
+            </ChatPageLayout>
+          ) : view === "rail" || view === "app" ? (
+            <>
+              <div className="standalone-chat__app">
+                <p>The application's own page. The rail opens over it.</p>
+              </div>
+              {view === "rail" ? (
+                <ChatRail
+                  title="Standalone chat"
+                  subtitle="Assistant rail."
+                  mode="overlay"
+                  onExpand={() => setView("chat")}
+                  onClose={() => setView("app")}
+                >
+                  <ChatThread
+                    surface="overlay"
+                    viewer={viewer}
+                    onOpenModelProviderSettings={() => setView("providers")}
+                  />
+                </ChatRail>
+              ) : (
+                <ChatLauncher label="Ask the assistant" onClick={() => setView("rail")} />
+              )}
+            </>
           ) : (
             <div className="standalone-chat__settings">
               <ModelProviderSettings auth={auth} connection={connection} notify={notify} />

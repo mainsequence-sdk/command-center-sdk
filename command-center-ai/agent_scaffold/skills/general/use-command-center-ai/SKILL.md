@@ -87,12 +87,13 @@ For a new AI capability, start with `$build-command-center-ai-application`.
 
 ## Preserve The Package Boundary
 
-- Command Center AI owns the session engine, the thread and composer, the message queue, readiness,
-  the model picker, the provider screens, and its stylesheet. Do not rebuild them from SDK
-  primitives, and do not call the platform's agent session, Agent runtime, or model provider routes
-  from application code.
-- The application owns sign-in and token refresh, which Agent, the frame of the right rail and the
-  expanded rail, notifications, routing, and the forwarder.
+- Command Center AI owns the session engine, the thread and composer, the message queue, readiness
+  (`useChatComposerState()`), the model picker, the frame of the right rail and the expanded rail
+  (`ChatRail`, `ChatLauncher`, `ChatPageLayout`, and `AgentSessionExplorer`), the provider screens,
+  and its stylesheet. Do not rebuild them from SDK primitives, and do not call the platform's agent
+  session, Agent runtime, or model provider routes from application code.
+- The application owns sign-in and token refresh, which Agent, where the rail and the expanded rail
+  sit and when they open, notifications, routing, and the forwarder.
 - The SDK owns the application's shell, pages, controls, and theme:
   `$compose-command-center-application-shell`, `$compose-command-center-page`,
   `$compose-command-center-controls`, and `$theme-command-center-app`.

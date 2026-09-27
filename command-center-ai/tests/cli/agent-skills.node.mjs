@@ -117,10 +117,14 @@ test("screen-building skills use the SDK's controls, render no raw control, and 
     "the package's stylesheet loads after the SDK's",
   );
   const rail = await skillText("ui/compose-command-center-ai-rail");
-  for (const rule of [/540px/u, /1400px/u, /Expand/u, /Close chat rail/u, /surface="page"/u, /--shadow-panel/u, /375×812/u]) {
+  for (const rule of [/540px/u, /1400px/u, /Expand/u, /Close chat rail/u, /surface="page"/u, /useChatComposerState/u, /375×812/u]) {
     assert.match(rail, rule);
   }
-  assert.doesNotMatch(codeBlocks(rail), /gradient|rgba\(|#[0-9a-f]{3,8}\b/iu, "the rail's example uses literal colours");
+  // The package draws the frame: the examples use its components, not a panel of the application's.
+  for (const component of [/<ChatRail\b/u, /<ChatPageLayout\b/u, /<ChatLauncher\b/u]) {
+    assert.match(codeBlocks(rail), component);
+  }
+  assert.doesNotMatch(codeBlocks(rail), /gradient|rgba\(|#[0-9a-f]{3,8}\b|<section\b|<aside\b/iu, "the rail's example builds its own frame");
 });
 
 test("installs the authoritative namespace, prunes unauthorized entries, and writes provenance", async (t) => {

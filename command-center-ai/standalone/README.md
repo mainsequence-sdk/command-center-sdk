@@ -16,8 +16,12 @@ It may read its own environment; the package in `../src` may not.
 - `StandaloneApp.tsx` is the application. A form takes the platform API URL, a token, the person,
   the Organization Environment, and an Agent. Connecting mounts `ChatEngineProvider` with the
   Agent's default session behind the handle `standalone_chat`, so every visit continues the same
-  conversation, and shows `ChatThread`. A header button switches to `ModelProviderSettings`, and
-  notices from the chat appear in a small stack in the corner.
+  conversation, and shows `ChatThread` in the package's frame: `ChatPageLayout` with its session
+  explorer first; Minimize opens `ChatRail` over a placeholder page, whose Expand returns and whose
+  Close leaves `ChatLauncher`. A header button switches to `ModelProviderSettings`, and notices from
+  the chat appear in a small stack in the corner.
+- `main.tsx` applies the Main Sequence theme with `applyThemePresetToRoot`, or the preset named by
+  `?theme=<id>` (for example `?stand-in&theme=quartz-light`).
 - `connection.ts` builds the application's connection to the backend, including its request-URL
   rewrite.
 - `platform-proxy.ts` holds the proxy prefix shared with `../vite.config.ts`.

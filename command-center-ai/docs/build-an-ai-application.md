@@ -144,9 +144,10 @@ The engine's inputs:
 `ChatThread` takes `surface` (`overlay` for the right rail, `page` for the expanded rail),
 `compact`, `copy` (the thread's words over `DEFAULT_CHAT_THREAD_COPY`), `viewer`, and
 `onOpenModelProviderSettings`. Without that callback, the picker's sign-in action and the "Open
-model providers" button do not appear. The frame around it is in
+model providers" button do not appear. The package also draws the frame around it: `ChatRail`,
+`ChatLauncher`, `ChatPageLayout`, and `AgentSessionExplorer`, in
 [The right rail and the expanded rail](./rail-and-expanded-rail.md); the
-[UI README](../src/ui/README.md) describes the thread.
+[UI README](../src/ui/README.md) describes the thread, `ChatComposer`, and `useChatComposerState()`.
 
 ## Start from the standalone application
 

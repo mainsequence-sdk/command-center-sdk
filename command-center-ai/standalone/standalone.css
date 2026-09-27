@@ -77,6 +77,12 @@ body,
   flex-direction: column;
 }
 
+.standalone-chat__app {
+  flex: 1 1 0%;
+  padding: 1.5rem 1.25rem;
+  color: var(--muted-foreground);
+}
+
 .standalone-chat__settings {
   overflow-y: auto;
   padding: 0 1.25rem 1.5rem;

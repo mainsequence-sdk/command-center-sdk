@@ -3258,4 +3258,794 @@
       grid-template-columns: 1fr 180px 180px;
     }
   }
+
+  /* Rail frame (ChatRail, ChatLauncher). Command Center's right rail: the theme's card fading into
+     its background, a tinted edge, and soft glows in the brand colours. Every colour is a theme
+     variable, so each preset draws its own version. */
+
+  .ms-chat-rail {
+    position: relative;
+    z-index: 100;
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    flex-direction: column;
+    overflow: hidden;
+    border-left: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--card) 84%, transparent) 0%,
+      color-mix(in srgb, var(--card) 90%, transparent) 28%,
+      color-mix(in srgb, var(--background) 86%, transparent) 100%
+    );
+    color: var(--card-foreground);
+    backdrop-filter: blur(64px);
+    -webkit-backdrop-filter: blur(64px);
+  }
+
+  .ms-chat-rail--overlay {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 110;
+    height: auto;
+    width: min(540px, calc(100vw - 10px));
+    box-shadow: -26px 0 80px color-mix(in srgb, var(--foreground) 16%, transparent);
+  }
+
+  :where(.dark) .ms-chat-rail--overlay {
+    box-shadow: -26px 0 80px color-mix(in srgb, var(--background) 72%, transparent);
+  }
+
+  .ms-chat-rail__decor {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .ms-chat-rail__sheen {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* A light lift at the top of a dark rail; a light rail is already bright there. */
+  :where(.dark) .ms-chat-rail__sheen {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--foreground) 7%, transparent) 0%,
+      color-mix(in srgb, var(--foreground) 2%, transparent) 24%,
+      transparent 100%
+    );
+  }
+
+  .ms-chat-rail__edge {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 2rem;
+    background-image: linear-gradient(90deg, color-mix(in srgb, var(--primary) 18%, transparent) 0%, transparent 100%);
+  }
+
+  .ms-chat-rail--accent .ms-chat-rail__edge {
+    background-image: linear-gradient(90deg, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 100%);
+  }
+
+  .ms-chat-rail__glow {
+    position: absolute;
+    border-radius: var(--radius-pill);
+    filter: blur(64px);
+  }
+
+  .ms-chat-rail__glow--top {
+    left: -6rem;
+    top: -60px;
+    height: 18rem;
+    width: 18rem;
+    background-color: color-mix(in srgb, var(--primary) 12%, transparent);
+  }
+
+  .ms-chat-rail__glow--middle {
+    right: -140px;
+    top: 33.333%;
+    height: 20rem;
+    width: 20rem;
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .ms-chat-rail--accent .ms-chat-rail__glow--top {
+    background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
+  .ms-chat-rail--accent .ms-chat-rail__glow--middle {
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+
+  .ms-chat-rail__glow--bottom {
+    bottom: -160px;
+    left: 15%;
+    height: 18rem;
+    width: 18rem;
+    background-color: color-mix(in srgb, var(--topbar-foreground) 6%, transparent);
+  }
+
+  .ms-chat-rail__header {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    padding: 1.5rem 1.5rem 1.25rem;
+  }
+
+  .ms-chat-rail__identity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .ms-chat-rail__tile {
+    display: flex;
+    height: 2.75rem;
+    width: 2.75rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+    border-radius: calc(var(--radius) + 0.5rem);
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+    box-shadow: var(--card-nested-shadow);
+  }
+
+  .ms-chat-rail--accent .ms-chat-rail__tile {
+    border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--foreground);
+  }
+
+  .ms-chat-rail__tile-icon {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+
+  .ms-chat-rail__heading {
+    min-width: 0;
+  }
+
+  .ms-chat-rail__title {
+    font-size: var(--font-size-body-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-control);
+    color: var(--foreground);
+  }
+
+  .ms-chat-rail__subtitle {
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-rail__detail {
+    margin-top: 0.5rem;
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    border-radius: var(--radius-pill);
+    background-color: color-mix(in srgb, var(--background) 48%, transparent);
+    padding: 0.25rem 0.625rem;
+    font-size: var(--font-size-body-sm);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-rail__detail > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ms-chat-rail__actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ms-chat-rail__body {
+    position: relative;
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    padding: 1.25rem;
+  }
+
+  .ms-chat-launcher {
+    position: fixed;
+    right: 1.25rem;
+    bottom: calc(1.25rem + var(--application-safe-area-bottom));
+    z-index: 105;
+    box-shadow: var(--shadow-picker);
+  }
+
+  .ms-chat-launcher__icon {
+    height: 1rem;
+    width: 1rem;
+  }
+
+  /* The composer on its own (ChatComposer): the queue, the input, and the footer, stacked. */
+
+  .ms-chat-composer-stack {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  /* Session explorer (AgentSessionExplorer). */
+
+  .ms-chat-explorer {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .ms-chat-explorer__header {
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    padding: 0.75rem;
+  }
+
+  .ms-chat-explorer__header-button,
+  .ms-chat-page__action {
+    height: 2rem;
+    width: 2rem;
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer__environment {
+    margin-left: auto;
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    border-radius: calc(var(--radius) - 6px);
+    background-color: color-mix(in srgb, var(--background) 36%, transparent);
+    padding: 0.25rem 0.5rem;
+    font-size: var(--font-size-body-xs);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer__body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .ms-chat-explorer__scroll {
+    min-height: 0;
+    flex: 1 1 0%;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+
+  .ms-chat-explorer__status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    font-size: var(--font-size-body-lg);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer__status--danger,
+  .ms-chat-explorer__note--danger {
+    color: var(--danger);
+  }
+
+  .ms-chat-explorer__groups {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .ms-chat-explorer__group-toggle {
+    display: flex;
+    height: 2rem;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: calc(var(--radius) - 2px);
+    background-color: transparent;
+    padding: 0 0.5rem;
+    text-align: left;
+    color: var(--foreground);
+    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .ms-chat-explorer__group-toggle--active {
+    color: var(--primary);
+  }
+
+  .ms-chat-explorer__agent-icon {
+    height: 1rem;
+    width: 1rem;
+    flex-shrink: 0;
+  }
+
+  .ms-chat-explorer__group-name {
+    min-width: 0;
+    flex: 1 1 0%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-size-body-lg);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .ms-chat-explorer__group-count {
+    flex-shrink: 0;
+    font-size: var(--font-size-body-sm);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer__sessions {
+    margin-left: 1.25rem;
+    padding-left: 0.25rem;
+  }
+
+  .ms-chat-explorer__note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer__row {
+    display: flex;
+    min-height: 2rem;
+    align-items: center;
+    gap: 0.125rem;
+    border-radius: calc(var(--radius) - 2px);
+    padding: 0.25rem 0.5rem;
+    transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .ms-chat-explorer__row--active {
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+
+  .ms-chat-explorer__row--archived {
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer__row-main {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    background-color: transparent;
+    text-align: left;
+    color: inherit;
+  }
+
+  .ms-chat-explorer__row-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ms-chat-explorer__working {
+    flex-shrink: 0;
+    color: var(--primary);
+    animation: ms-chat-explorer-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes ms-chat-explorer-pulse {
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .ms-chat-explorer__queued {
+    flex-shrink: 0;
+    border-radius: var(--radius-pill);
+    background-color: color-mix(in srgb, var(--primary) 12%, transparent);
+    padding: 0 0.375rem;
+    font-size: var(--font-size-body-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--primary);
+  }
+
+  .ms-chat-explorer__row-title {
+    min-width: 0;
+    flex: 1 1 0%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-size-body-lg);
+    color: var(--foreground);
+  }
+
+  .ms-chat-explorer__row--archived .ms-chat-explorer__row-title {
+    color: inherit;
+  }
+
+  .ms-chat-explorer__row-time {
+    flex-shrink: 0;
+    font-size: var(--font-size-body-xs);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer__row-handle {
+    margin-top: 0.125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-size-body-xs);
+    line-height: var(--line-height-compact);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer__row-action {
+    display: inline-flex;
+    height: 1.5rem;
+    width: 1.5rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: calc(var(--radius) - 6px);
+    background-color: transparent;
+    color: var(--muted-foreground);
+    transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .ms-chat-explorer__row-action:disabled {
+    opacity: 0.5;
+  }
+
+  .ms-chat-explorer__row-action:focus-visible,
+  .ms-chat-explorer__group-toggle:focus-visible,
+  .ms-chat-explorer__row-main:focus-visible,
+  .ms-chat-explorer__more:focus-visible,
+  .ms-chat-explorer-search__result:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
+
+  .ms-chat-explorer__more {
+    width: 100%;
+    border-radius: calc(var(--radius) - 2px);
+    background-color: transparent;
+    padding: 0.375rem 0.5rem;
+    text-align: left;
+    font-size: var(--font-size-body);
+    color: var(--muted-foreground);
+  }
+
+  @media (hover: hover) {
+    .ms-chat-explorer__group-toggle:hover,
+    .ms-chat-explorer__row:not(.ms-chat-explorer__row--active):hover,
+    .ms-chat-explorer-search__result:hover {
+      background-color: color-mix(in srgb, var(--background) 48%, transparent);
+    }
+
+    .ms-chat-explorer__row-action:not(:disabled):hover {
+      background-color: color-mix(in srgb, var(--background) 70%, transparent);
+      color: var(--foreground);
+    }
+
+    .ms-chat-explorer__row-action--details:hover {
+      color: var(--primary);
+    }
+
+    .ms-chat-explorer__more:hover {
+      background-color: color-mix(in srgb, var(--background) 36%, transparent);
+      color: var(--foreground);
+    }
+  }
+
+  .ms-chat-explorer-search {
+    max-width: min(640px, calc(100vw - 24px));
+  }
+
+  .ms-chat-explorer-search__field {
+    position: relative;
+  }
+
+  .ms-chat-explorer-search__field-icon {
+    pointer-events: none;
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer-search__input {
+    height: 2.5rem;
+    padding-left: 2.25rem;
+  }
+
+  .ms-chat-explorer-search__results {
+    margin-top: 1rem;
+    display: flex;
+    max-height: min(50vh, 480px);
+    flex-direction: column;
+    gap: 0.25rem;
+    overflow-y: auto;
+  }
+
+  .ms-chat-explorer-search__result {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: calc(var(--radius) - 2px);
+    background-color: transparent;
+    padding: 0.5rem;
+    text-align: left;
+    color: var(--foreground);
+  }
+
+  .ms-chat-explorer-search__result-icon {
+    flex-shrink: 0;
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-explorer-search__result-text {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+  }
+
+  .ms-chat-explorer-search__result-title,
+  .ms-chat-explorer-search__result-meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ms-chat-explorer-search__result-title {
+    font-size: var(--font-size-body-lg);
+  }
+
+  .ms-chat-explorer-search__result-meta {
+    font-size: var(--font-size-body);
+    color: var(--muted-foreground);
+  }
+
+  /* Expanded rail (ChatPageLayout). */
+
+  .ms-chat-page {
+    position: relative;
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .ms-chat-page__scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    background-color: color-mix(in srgb, var(--background) 65%, transparent);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .ms-chat-page__explorer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    height: 100%;
+    width: min(320px, calc(100vw - 24px));
+    flex-shrink: 0;
+    overflow: hidden;
+    border-right: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    background-color: color-mix(in srgb, var(--background) 96%, transparent);
+    box-shadow: var(--shadow-dialog);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  .ms-chat-page__main {
+    position: relative;
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 1rem;
+  }
+
+  .ms-chat-page__header {
+    flex-shrink: 0;
+    padding-top: 0.75rem;
+  }
+
+  .ms-chat-page__header-inner {
+    margin: 0 auto;
+    display: flex;
+    width: 100%;
+    max-width: 64rem;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    padding-bottom: 0.75rem;
+  }
+
+  .ms-chat-page__inline-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .ms-chat-page__action--active {
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+  }
+
+  .ms-chat-page__heading {
+    min-width: 0;
+    flex: 1 1 0%;
+  }
+
+  .ms-chat-page__agent,
+  .ms-chat-page__session {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ms-chat-page__agent {
+    font-size: var(--font-size-body-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--foreground);
+  }
+
+  .ms-chat-page__session {
+    font-size: var(--font-size-body);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-page__status {
+    display: inline-flex;
+    height: 1.75rem;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    border-radius: var(--radius-pill);
+    background-color: color-mix(in srgb, var(--card) 40%, transparent);
+    padding: 0 0.625rem;
+    font-size: var(--font-size-body);
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-page__status--primary {
+    border-color: color-mix(in srgb, var(--primary) 25%, transparent);
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+  }
+
+  .ms-chat-page__status--success {
+    border-color: color-mix(in srgb, var(--success) 25%, transparent);
+    background-color: color-mix(in srgb, var(--success) 10%, transparent);
+    color: var(--success);
+  }
+
+  .ms-chat-page__status--danger {
+    border-color: color-mix(in srgb, var(--danger) 25%, transparent);
+    background-color: color-mix(in srgb, var(--danger) 10%, transparent);
+    color: var(--danger);
+  }
+
+  .ms-chat-page__status--warning {
+    border-color: color-mix(in srgb, var(--warning) 25%, transparent);
+    background-color: color-mix(in srgb, var(--warning-tint) 10%, transparent);
+    color: var(--warning);
+  }
+
+  .ms-chat-page__thread {
+    position: relative;
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 0%;
+    overflow: hidden;
+  }
+
+  .ms-chat-page__context {
+    pointer-events: none;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 20;
+    display: flex;
+    width: min(24rem, calc(100vw - 2rem));
+    justify-content: flex-end;
+  }
+
+  .ms-chat-page__context-card {
+    pointer-events: auto;
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--shadow-dialog);
+  }
+
+  .ms-chat-page__context-header {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .ms-chat-page__context-heading {
+    min-width: 0;
+  }
+
+  .ms-chat-page__context-heading > p {
+    color: var(--muted-foreground);
+  }
+
+  .ms-chat-page__context-payload {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    border-radius: calc(var(--radius) - 6px);
+    background-color: color-mix(in srgb, var(--background) 85%, transparent);
+    padding: 0.75rem;
+    font-size: var(--font-size-body-sm);
+    line-height: var(--line-height-relaxed);
+    color: var(--foreground);
+  }
+
+  /* From the SDK's lg breakpoint the explorer is a column of the page, not an overlay. */
+  @media (min-width: 1024px) {
+    .ms-chat-page__scrim {
+      display: none;
+    }
+
+    .ms-chat-page__explorer {
+      position: relative;
+      z-index: auto;
+      width: 320px;
+      background-color: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
 }

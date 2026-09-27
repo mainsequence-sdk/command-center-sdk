@@ -158,6 +158,10 @@ export interface ChatEngineValue {
   agentId: string | null;
   agentSessions: AgentSessionSummary[];
   archiveAgentSession: (sessionId: string) => Promise<boolean>;
+  /** The signed-in person the application passed, for parts that call the platform themselves. */
+  auth: ChatAuth;
+  /** The active Organization Environment the application passed. */
+  environmentUid: string | null;
   cancelActiveSession: () => Promise<void>;
   clearThread: () => void;
   /** The backend connection the engine was given, for parts that build URLs or messages from it. */
@@ -4296,6 +4300,8 @@ export function ChatEngineProvider({
       agentId,
       agentSessions: sortedAgentSessions,
       archiveAgentSession,
+      auth,
+      environmentUid: activeEnvironmentUid,
       cancelActiveSession,
       clearThread: clearRuntimeThread,
       connection,
@@ -4352,6 +4358,8 @@ export function ChatEngineProvider({
     }),
     [
       activeAgentLabel,
+      auth,
+      activeEnvironmentUid,
       activeAgentName,
       activeAgentUid,
       activeSessionDetail,

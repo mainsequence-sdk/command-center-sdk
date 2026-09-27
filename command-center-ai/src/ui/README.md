@@ -8,7 +8,7 @@ connecting stage; the message actions; agent icons; and markdown.
 
 ## Entry Points
 
-The package exports three components:
+The thread:
 
 - `ChatThread`: the active session of the nearest `ChatEngineProvider`. Its props:
   - `surface`: `page` is a full-width column, `overlay` a narrow rail;
@@ -18,12 +18,44 @@ The package exports three components:
   - `viewer`: the signed-in person (`ChatViewer`), drawn on their own messages;
   - `onOpenModelProviderSettings`: opens the application's model provider settings. The picker's
     "Sign in to provider" action and the "Open model providers" button appear only with it.
+- `ChatComposer`: the thread's composer on its own, for an application that draws its own
+  transcript: the input, Enter to send (Shift+Enter for a new line), Enter to queue while the Agent
+  works, send and stop, the model row, the queue strip, and the context footer. It takes
+  `surface`, `compact`, `copy`, `onOpenModelProviderSettings`, `showQueue`, and `showFooter`. Never
+  render it beside a `ChatThread`, which already has one.
+- `ChatQueueStrip`: the queue strip alone, for a composer of the application's own.
+- `useChatComposerState()`: whether the assistant can take a message now. It returns `status`
+  (`ready`, `working`, `waking`, `loading`, `loading-models`, `no-session`, `unavailable`,
+  `models-unavailable`, `choosing-model`, `stopping`, or `busy`), `canSend`, `queues`, `canWrite`,
+  and `reason`, the words the composer shows. It is the decision the composer obeys, computed by
+  the same code (`useThreadComposerModel` and `resolveComposerGate` in `ChatThread.tsx`).
 - `AgentConnectingState`: the connecting stage. The thread shows it while an Agent starts; an
   application can show it while it prepares a session, as Command Center's shortcut does.
 - `AgentIcon`: an Agent's custom icon with a built-in fallback
   ([ADR 090](../../docs/adr/adr-090-agent-icons-in-command-center-surfaces.md)). It reads the
   projection and the credentials from the engine's icon provider, so outside the engine it draws
   the fallback.
+
+The frame Command Center draws around the thread, so every application looks like Command Center
+([the rail guide](../../docs/rail-and-expanded-rail.md)):
+
+- `ChatRail` (`ChatRail.tsx`): the right rail, `docked` in the layout or `overlay` over the page,
+  with the theme's gradient, tinted edge, and glows; a header with the Agent's icon tile, `title`,
+  `subtitle`, an optional `detail` pill, Expand (with `onExpand`), and Close; and a body for the
+  thread. `tone="accent"` draws a directly launched Agent's rail. Close returns the engine to the
+  default session when another Agent's session was open, unless `restoreDefaultSessionOnClose` is
+  false.
+- `ChatLauncher` (`ChatRail.tsx`): the floating button that opens the rail.
+- `ChatPageLayout` (`ChatPageLayout.tsx`): the expanded rail: the session explorer at the left (a
+  column from 1024px, an overlay with a scrim below), a header with the Agent, the session, and the
+  run status, New session, Show context, Collapse, and Minimize, and the thread. `blockingState`
+  replaces the page while the application cannot show a session.
+- `AgentSessionExplorer` (`AgentSessionExplorer.tsx`): the person's sessions under their Agents,
+  with search, the working and queued marks, archive, and archived sessions on request. It reads the
+  engine and calls the platform with the engine's `connection`, `auth`, and `environmentUid`.
+  Opening a session (`onOpenSession`) and its details (`onOpenSessionDetails`) are the
+  application's; `agents` adds the Agents without recent sessions. The grouping is
+  `groupAgentSessions` in the engine.
 
 The thread draws text, reasoning, tool calls, errors, and notices. `data-<name>` parts reach the
 engine, which reads the provenance they carry; the thread does not draw them.
@@ -118,8 +150,7 @@ and `theme/markdown.css`). Command Center imports it in its global stylesheet, r
 
 Maintenance notes:
 
-- The warning panels use `--warning-tint`, which the SDK has not released yet. The chat needs the
-  SDK release that publishes it.
+- The warning panels use `--warning-tint`, which the SDK publishes.
 - The compact provider, model, and thinking picker overrides the SDK picker's trigger with
   `!important`, the only way a layered rule wins over an unlayered one. The SDK's theme audit
   reads the flag as part of the value and reports those two declarations; the fix belongs in the
@@ -128,6 +159,10 @@ Maintenance notes:
   theme's radius.
 - Small shadows come from the theme's shadow tokens (`--card-nested-shadow`, `--shadow-picker`),
   because the audit refuses fixed shadow colours. The success colour is the theme's `--success`.
+- The rail's gradient, edge, and glows are Command Center's look and part of the theme: every stop
+  is a `color-mix` of theme variables, so each preset draws its own. Its sheen and its floating
+  shadow read the SDK's `dark` class (`:where(.dark)`), which `applyThemePresetToRoot` sets, because
+  a light lift and a dark shadow are the right choice only on a dark ground.
 - The stylesheet was generated from the Tailwind classes these components had in Command Center
   and checked rule by rule against Tailwind's output in Command Center's page. From now on it is
   maintained by hand. Keep modifier rules after their block's rules: they override it at the same
@@ -137,4 +172,6 @@ Maintenance notes:
 
 The `*.client.test.tsx` files mount the thread in assistant-ui's external-store runtime with the
 engine mocked: message actions, message authors, the connecting stage, agent icons, the queue, and
-tool calls. The "choose a model" state and the agent icon have their own.
+tool calls. `ChatComposer.client.test.tsx` covers the standalone composer and every status of
+`useChatComposerState()`; `ChatFrame.client.test.tsx` the rail, the launcher, and the expanded
+rail; `AgentSessionExplorer.client.test.tsx` the explorer. The "choose a model" state and the agent icon have their own.

@@ -11,10 +11,11 @@ Make the application-level decisions here, then follow the focused skills. The h
 ## Establish The Boundary
 
 Command Center AI draws the conversation and the application places it. The package owns the
-session engine, the thread, the composer and its model picker, readiness, the message queue, and
-the provider screens. The application owns sign-in and the credential, sending the platform requests itself, which Agent, the frame around the
-thread (the right rail and the expanded rail), routing, notifications, and the forwarder to the
-platform. The SDK owns the application's shell, pages, controls, and theme.
+session engine, the thread, the composer and its model picker, readiness, the message queue, the
+frame around the thread (the right rail, its launcher, the expanded rail, and the session explorer),
+and the provider screens. The application owns sign-in and the credential, sending the platform
+requests itself, which Agent, where the rail and the expanded rail sit and when they open, routing,
+notifications, and the forwarder to the platform. The SDK owns the application's shell, pages, controls, and theme.
 
 ## Make These Decisions First
 

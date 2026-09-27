@@ -208,6 +208,15 @@ export {
   type MessageActorContext,
   type ThreadParticipants,
 } from "./engine/message-actors.js";
+export {
+  agentSessionMatchesNavigationQuery,
+  getAgentSessionNavigationHandleLabel,
+  getAgentSessionNavigationTitle,
+  groupAgentSessions,
+  UNNAMED_AGENT_LABEL,
+  type AgentSessionExplorerAgent,
+  type AgentSessionGroup,
+} from "./engine/agent-session-groups.js";
 export { clearAgentIconCache } from "./engine/agent-icon-cache.js";
 export {
   AgentIconAuthContext,
@@ -221,7 +230,29 @@ export {
 } from "./engine/agent-icons-context.js";
 
 // The chat UI (ADR 096, step 4). Its stylesheet is `@dev-mainsequence/command-center-ai/styles.css`.
-export { ChatThread, type ChatThreadProps } from "./ui/ChatThread.js";
+export {
+  ChatComposer,
+  ChatQueueStrip,
+  ChatThread,
+  useChatComposerState,
+  type ChatComposerProps,
+  type ChatComposerState,
+  type ChatComposerStatus,
+  type ChatThreadProps,
+} from "./ui/ChatThread.js";
+// The frame Command Center draws around the thread: the right rail, its launcher, the expanded
+// rail, and its session explorer.
+export {
+  ChatLauncher,
+  ChatRail,
+  type ChatLauncherProps,
+  type ChatRailProps,
+} from "./ui/ChatRail.js";
+export { ChatPageLayout, type ChatPageLayoutProps } from "./ui/ChatPageLayout.js";
+export {
+  AgentSessionExplorer,
+  type AgentSessionExplorerProps,
+} from "./ui/AgentSessionExplorer.js";
 export {
   DEFAULT_CHAT_THREAD_COPY,
   resolveChatThreadCopy,
