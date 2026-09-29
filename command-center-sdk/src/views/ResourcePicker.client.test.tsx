@@ -136,4 +136,75 @@ describe("ResourcePicker", () => {
 
     container.remove();
   });
+
+  async function renderActionMenu() {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    roots.push(root);
+    await act(async () => {
+      root.render(
+        <ResourcePicker
+          mode="action"
+          ariaLabel="Row actions"
+          options={[
+            { value: "open", label: "Open" },
+            { value: "archive", label: "Archive" },
+          ]}
+          triggerLabel="Actions"
+          onAction={() => undefined}
+        />,
+      );
+    });
+    const trigger = container.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]')!;
+    return { container, trigger };
+  }
+
+  it("moves focus into the popup only once it is positioned and visible", async () => {
+    const focus = HTMLElement.prototype.focus;
+    const visibilityAtFocus: string[] = [];
+    const spy = vi.spyOn(HTMLElement.prototype, "focus").mockImplementation(function (this: HTMLElement, options) {
+      const popup = this.closest<HTMLElement>("[data-resource-picker-popup]");
+      if (popup) visibilityAtFocus.push(popup.style.visibility);
+      focus.call(this, options);
+    });
+    const { container, trigger } = await renderActionMenu();
+
+    await act(async () => trigger.click());
+
+    expect(document.activeElement?.textContent).toBe("Open");
+    expect(visibilityAtFocus).toEqual(["visible"]);
+    spy.mockRestore();
+    container.remove();
+  });
+
+  it("moves focus into an open popover on ArrowDown instead of hiding it", async () => {
+    const { container, trigger } = await renderActionMenu();
+
+    await act(async () => trigger.click());
+    await act(async () => trigger.focus());
+    await act(async () => {
+      trigger.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowUp" }));
+    });
+
+    const popup = document.body.querySelector<HTMLElement>("[data-resource-picker-popup]");
+    expect(popup?.style.visibility).toBe("visible");
+    expect(document.activeElement?.textContent).toBe("Archive");
+    container.remove();
+  });
+
+  it("closes an open popover on Tab and returns focus to its trigger", async () => {
+    const { container, trigger } = await renderActionMenu();
+
+    await act(async () => trigger.click());
+    const option = document.activeElement!;
+    expect(option.getAttribute("role")).toBe("menuitem");
+    const tab = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "Tab" });
+    await act(async () => option.dispatchEvent(tab));
+
+    expect(tab.defaultPrevented).toBe(true);
+    expect(document.body.querySelector("[data-resource-picker-popup]")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    container.remove();
+  });
 });

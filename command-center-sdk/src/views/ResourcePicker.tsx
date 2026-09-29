@@ -294,17 +294,26 @@ export function ResourcePicker(props: ResourcePickerProps) {
       const target = event.target as Node;
       if (!rootRef.current?.contains(target) && !popupRef.current?.contains(target)) close();
     };
-    const closeOnEscape = (event: KeyboardEvent) => {
+    const closeOnKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
         close(true);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      // The popover is portaled, so Tab from inside it would land at the end of the document.
+      if (popupRef.current?.contains(document.activeElement)) {
+        event.preventDefault();
+        close(true);
+      } else {
+        close();
       }
     };
     window.addEventListener("pointerdown", closeOnOutsidePointer);
-    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", closeOnKey);
     return () => {
       window.removeEventListener("pointerdown", closeOnOutsidePointer);
-      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("keydown", closeOnKey);
     };
   }, [open, sheet]);
 
@@ -331,14 +340,17 @@ export function ResourcePicker(props: ResourcePickerProps) {
     };
   }, [fitContent, open, placement, sheet]);
 
+  // The popup opens with `visibility: hidden` until it is positioned, and a browser does not
+  // focus a hidden element, so focus moves in only once the popup is visible.
+  const positioned = popupStyle.visibility === "visible";
   useEffect(() => {
-    if (!open) return;
+    if (!open || !positioned) return;
     if (searchable) {
       searchRef.current?.focus();
       return;
     }
     optionRefs.current[activeIndex]?.focus();
-  }, [open, searchable]);
+  }, [open, positioned, searchable]);
 
   useEffect(() => {
     if (disabled && open) close();
@@ -563,7 +575,19 @@ export function ResourcePicker(props: ResourcePickerProps) {
         onKeyDown={(event) => {
           if (event.key === "ArrowDown" || event.key === "ArrowUp") {
             event.preventDefault();
-            openPicker(event.key === "ArrowDown" ? "first" : "last");
+            const direction = event.key === "ArrowDown" ? "first" : "last";
+            if (!open) {
+              openPicker(direction);
+              return;
+            }
+            // Already open: move focus in. Reopening would hide the popup without repositioning it.
+            if (searchable) {
+              searchRef.current?.focus();
+              return;
+            }
+            const index = findEnabledIndex(visibleOptions, direction);
+            setActiveIndex(index);
+            optionRefs.current[index]?.focus();
           }
         }}
       >
