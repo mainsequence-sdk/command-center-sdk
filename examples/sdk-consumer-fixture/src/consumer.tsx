@@ -47,6 +47,7 @@ import { graphiteTheme } from "@dev-mainsequence/command-center-sdk/theme/preset
 import {
   ResourceDetailShell,
   ResourcePagination,
+  type ResourceDetailBreadcrumbLeadContext,
   type ResourceDetailTabLeadContext,
 } from "@dev-mainsequence/command-center-sdk/views";
 
@@ -116,6 +117,8 @@ export const packedDetailHtml = renderToStaticMarkup(
   <ResourceDetailShell<Service>
     activeTabId={packedDetailTabs.activeTab?.id}
     breadcrumbs={[{ id: "services", label: "Services" }, { id: "service", label: "Pricing API" }]}
+    renderBreadcrumbLead={({ current }: ResourceDetailBreadcrumbLeadContext) =>
+      current ? <span data-icon="service" /> : null}
     renderTabLead={({ level, tab }: ResourceDetailTabLeadContext<Service>) =>
       level === "primary" ? <span data-icon={tab.id} /> : null}
     tabs={packedDetailTabs.tabs}

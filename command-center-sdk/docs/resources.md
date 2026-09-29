@@ -278,6 +278,7 @@ export function ServiceDetail({ service }: { service: Service }) {
       activeSubTabId={activeSubTab?.id}
       onTabChange={setTab}
       onSubTabChange={setSection}
+      renderBreadcrumbLead={({ current }) => (current ? <ServiceIcon service={service} /> : null)}
       renderTabLead={({ tab: detailTab }) => <ServiceTabIcon tabId={detailTab.id} />}
       tabs={tabs}
       tabsLabel="Service sections"
@@ -306,7 +307,9 @@ export function ServiceDetail({ service }: { service: Service }) {
 The shell owns breadcrumbs, summary placement, action placement, tabs, transitions, and errors.
 Tab contents remain domain-owned. Use an embedded `ResourceListPage` for a related collection. Use
 the shell for any page about one object with a summary and sections, even when the object is not a
-listed resource: the `summary` slot takes any node.
+listed resource: the `summary` slot takes any node. `renderBreadcrumbLead` puts a leading visual,
+usually the object's own icon, before a breadcrumb's label; it receives the crumb, its index, and
+whether it is the current (last) crumb, and renders `aria-hidden` so the label stays the name.
 
 ### Tabs
 

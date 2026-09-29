@@ -5,9 +5,9 @@
 Compatibility axes: `/resource`, additively (`resolveResourceDetailTabs`,
 `ResolvedResourceDetailTabs`, `ResourceDetailTabSelection`, and `disabled` on detail tab and sub-tab
 definitions; `ResourceDetailSubTabDefinition` takes an optional resource type); `/views`,
-additively (`ResourceDetailShell` props `renderTabLead`, `tabsLabel`, and `tabsOverflow`, and the
-types `ResourceDetailTabLeadContext` and `ResourceDetailTabsOverflow`) with the tab and picker
-behavior changes listed below; `styles.css`; the packaged skills `views/build-resource-detail`,
+additively (`ResourceDetailShell` props `renderTabLead`, `renderBreadcrumbLead`, `tabsLabel`, and
+`tabsOverflow`, and the types `ResourceDetailTabLeadContext`, `ResourceDetailBreadcrumbLeadContext`,
+and `ResourceDetailTabsOverflow`) with the tab and picker behavior changes listed below; `styles.css`; the packaged skills `views/build-resource-detail`,
 `controls/compose-command-center-controls`, `layout/compose-command-center-page`,
 `general/build-command-center-application`, and `general/use-command-center-sdk`; and the skill
 installer's behavior. No contract ID, JSON Schema, fixture, provenance field, iframe protocol,
@@ -20,7 +20,8 @@ theme, or storage change, and no backend change.
   `tabsLabel` names the primary strip.
 - **Disabled tabs and tab icons.** A tab or sub-tab with `disabled` stays visible and focusable but
   never selects. `renderTabLead` draws an `aria-hidden` leading visual, usually an icon, for each
-  tab.
+  tab, and `renderBreadcrumbLead` does the same for a breadcrumb, so a detail can keep its object's
+  icon beside its name.
 - **A More menu for tabs that do not fit.** With a fine pointer, tabs that do not fit move into a
   trailing More menu (the SDK's action picker, a bottom sheet on small screens); with a coarse
   pointer the strip still scrolls sideways. The selected tab always stays in the strip, and a tab

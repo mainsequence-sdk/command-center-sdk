@@ -33,6 +33,8 @@ function DetailTabsApp({ initialTab, overflow }: { initialTab: string; overflow:
       breadcrumbs: [{ id: "agents", label: "Agents" }, { id: "agent", label: "Pricing agent" }],
       onSubTabChange: setActiveSubTab,
       onTabChange: setActiveTab,
+      renderBreadcrumbLead: ({ current }) =>
+        current ? h("svg", { "data-crumb-lead": "", viewBox: "0 0 16 16" }, h("rect", { fill: "currentColor", height: 10, width: 10, x: 3, y: 3 })) : null,
       renderTabLead: ({ tab }) =>
         h("svg", { "data-lead": tab.id, viewBox: "0 0 16 16" }, h("circle", { cx: 8, cy: 8, fill: "currentColor", r: 5 })),
       tabs,

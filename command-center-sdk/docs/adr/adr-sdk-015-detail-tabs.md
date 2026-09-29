@@ -16,8 +16,9 @@
 ## Publication status
 
 This decision is implemented in SDK source for the next package release. A consumer may use
-`resolveResourceDetailTabs`, the `disabled` tab field, and the `renderTabLead`, `tabsLabel`, and
-`tabsOverflow` props only when its installed package's declarations contain them.
+`resolveResourceDetailTabs`, the `disabled` tab field, and the `renderTabLead`,
+`renderBreadcrumbLead`, `tabsLabel`, and `tabsOverflow` props only when its installed package's
+declarations contain them.
 
 ## Decision summary
 
@@ -106,6 +107,12 @@ type becomes generic with a default, so existing references are unchanged.
 output is `aria-hidden`, so the label stays the accessible name, and it must be pure: it also
 renders in the hidden measurement copy and in the More menu. An `svg` lead is sized to 1rem.
 
+A detail that moves onto the shell must not lose the object's own icon, which hosts often showed
+beside its name in the header. Breadcrumb labels are strings in the framework-neutral
+`ResourceBreadcrumbDefinition`, so `renderBreadcrumbLead` on the shell draws a breadcrumb's leading
+visual from `{ crumb, index, current }`, `current` marking the last crumb. It follows the same
+rules: `aria-hidden`, a 1rem `svg`, and the label as the name.
+
 ### 5. Overflow
 
 `tabsOverflow` takes `auto` (default), `menu`, or `scroll`. `auto` resolves through the viewport
@@ -176,7 +183,8 @@ protocol, theme, or storage format changes, and no backend action is required.
 1. Resolve the tabs once per render with `resolveResourceDetailTabs`, pass the result to
    `ResourceDetailShell`, and switch the tab body on the same result.
 2. Move hand-written visibility filters into `isVisible` and gates into `disabled`.
-3. Replace icons inside tab labels with `renderTabLead`, and name the strip with `tabsLabel`.
+3. Replace icons inside tab labels with `renderTabLead`, move an object's icon from a
+   hand-built header into `renderBreadcrumbLead`, and name the strip with `tabsLabel`.
 4. Delete private tab components and button rows that imitate tabs; move such pages onto the shell.
 5. Leave `tabsOverflow` at `auto` unless a page has a reason to force one form.
 

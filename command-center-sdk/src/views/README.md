@@ -111,7 +111,8 @@ optional primary/secondary nested tabs. The host owns tab state, routing, querie
 tab bodies. The tabs follow SDK ADR 015: each strip is one Tab stop with manual activation (arrow
 keys, Home, and End move focus; Enter, Space, or a click selects), the content is the strip's
 `tabpanel`, disabled tabs stay focusable but never select, and `renderTabLead` adds an
-`aria-hidden` leading visual. `tabsOverflow` (`auto` by default) moves tabs that do not fit into a
+`aria-hidden` leading visual; `renderBreadcrumbLead` does the same for a breadcrumb, usually the
+current object's icon. `tabsOverflow` (`auto` by default) moves tabs that do not fit into a
 More menu with a fine pointer and scrolls the strip with a coarse one; the selected and focused
 tabs always stay visible. The strip lives in the internal `ResourceDetailTabs.tsx`, which holds
 every hook of the tabbed card because the shell returns early while `loading`; its measurement and

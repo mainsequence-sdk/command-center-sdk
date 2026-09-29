@@ -95,6 +95,10 @@ test.describe("detail tabs with a fine pointer", () => {
     await page.keyboard.press("Enter");
     await expect(body(page)).toHaveAttribute("data-body", "usage");
 
+    // The breadcrumb's icon is decoration: hidden from assistive technology, beside the label.
+    await expect(page.locator('[aria-current="page"] [aria-hidden="true"] > [data-crumb-lead]')).toBeVisible();
+    await expect(page.locator('[aria-current="page"]')).toHaveText("Pricing agent");
+
     // One Tab stop per strip: the next Tab leaves the tabs for the panel.
     await page.keyboard.press("Tab");
     await expect(page.getByRole("tabpanel")).toBeFocused();

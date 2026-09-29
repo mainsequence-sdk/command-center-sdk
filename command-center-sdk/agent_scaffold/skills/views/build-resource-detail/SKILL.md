@@ -51,7 +51,9 @@ authoritative.
    `onTabChange` and `onSubTabChange` write them. When the result reports `fallback`, show the
    resolved tab and leave the URL unchanged.
 5. Return a tab's icon from `renderTabLead`. It renders `aria-hidden`, so the label stays the tab's
-   name; keep it pure, because it also renders in a measurement copy and in the More menu.
+   name; keep it pure, because it also renders in a measurement copy and in the More menu. Show the
+   object's own icon beside its name with `renderBreadcrumbLead`, returning it for the `current`
+   crumb.
 6. Name the primary strip with `tabsLabel`, for example "Service sections".
 7. Leave `tabsOverflow` at `auto`: with a mouse, tabs that do not fit move into a More menu; on
    touch the strip scrolls sideways. Force `"menu"` or `"scroll"` only for a stated product reason.
@@ -91,6 +93,7 @@ export function ServiceDetail({ service, tabId, sectionId, onTabId, onSectionId 
       breadcrumbs={[{ id: "services", label: "Services" }, { id: "service", label: service?.name ?? "Service" }]}
       onSubTabChange={onSectionId}
       onTabChange={onTabId}
+      renderBreadcrumbLead={({ current }) => (current ? <ServiceIcon service={service} /> : null)}
       renderTabLead={({ tab }) => <ServiceTabIcon tabId={tab.id} />}
       summary={<ServiceSummary service={service} />}
       tabs={tabs}

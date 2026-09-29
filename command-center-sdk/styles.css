@@ -642,6 +642,23 @@ h3),
   font-weight: var(--font-weight-semibold);
 }
 
+.cc-resource-breadcrumbs__crumb {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.cc-resource-breadcrumbs__lead {
+  align-items: center;
+  display: inline-flex;
+  flex: none;
+}
+
+.cc-resource-breadcrumbs__lead > svg {
+  block-size: 1rem;
+  inline-size: 1rem;
+}
+
 .cc-resource-breadcrumbs__separator {
   color: color-mix(in srgb, var(--muted-foreground) 65%, transparent);
 }

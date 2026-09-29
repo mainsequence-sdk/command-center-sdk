@@ -151,6 +151,28 @@ describe("ResourceDetailShell", () => {
     expect(html).toContain(`id="${labelIds[1]}">Releases</span>`);
   });
 
+  it("renders an aria-hidden lead before a breadcrumb label and says which crumb is current", () => {
+    const seen: Array<[string, boolean, number]> = [];
+    const html = renderToStaticMarkup(
+      <ResourceDetailShell
+        breadcrumbs={[
+          { id: "agents", label: "Agents", onSelect: () => undefined },
+          { id: "agent", label: "Pricing agent" },
+        ]}
+        renderBreadcrumbLead={({ crumb, current, index }) => {
+          seen.push([crumb.id, current, index]);
+          return current ? <svg data-lead={crumb.id} /> : null;
+        }}
+      />,
+    );
+
+    expect(seen).toEqual([["agents", false, 0], ["agent", true, 1]]);
+    expect(html).toContain('<button class="cc-resource-breadcrumbs__crumb" type="button">Agents</button>');
+    expect(html).toContain(
+      '<span aria-current="page" class="cc-resource-breadcrumbs__crumb"><span aria-hidden="true" class="cc-resource-breadcrumbs__lead"><svg data-lead="agent"></svg></span>Pricing agent</span>',
+    );
+  });
+
   it("renders no tab list or panel without tabs", () => {
     const html = renderToStaticMarkup(<ResourceDetailShell><div>Body</div></ResourceDetailShell>);
 

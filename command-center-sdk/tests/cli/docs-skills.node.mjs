@@ -432,6 +432,7 @@ test("detail guidance teaches the shell's tabs instead of a tab control", async 
   for (const value of [detailSkill, resourcesGuide]) {
     assert.match(value, /resolveResourceDetailTabs/u);
     assert.match(value, /renderTabLead/u);
+    assert.match(value, /renderBreadcrumbLead/u);
     assert.match(value, /tabsOverflow/u);
     assert.match(value, /tabsLabel/u);
     assert.match(value, /isVisible/u);

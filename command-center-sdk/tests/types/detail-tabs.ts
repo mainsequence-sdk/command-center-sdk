@@ -7,6 +7,7 @@ import {
   type ResourceDetailTabDefinition,
 } from "../../src/resource/index.js";
 import type {
+  ResourceDetailBreadcrumbLeadContext,
   ResourceDetailShellProps,
   ResourceDetailTabLeadContext,
   ResourceDetailTabsOverflow,
@@ -45,6 +46,9 @@ const renderTabLead = (context: ResourceDetailTabLeadContext<Service>): ReactNod
   return context.parent;
 };
 
+const renderBreadcrumbLead = ({ crumb, current, index }: ResourceDetailBreadcrumbLeadContext): ReactNode =>
+  current ? `${index}:${crumb.label}` : null;
+
 const overflow: ResourceDetailTabsOverflow = "auto";
 // @ts-expect-error overflow is auto, menu, or scroll
 const invalidOverflow: ResourceDetailTabsOverflow = "wrap";
@@ -52,6 +56,7 @@ const invalidOverflow: ResourceDetailTabsOverflow = "wrap";
 const props: ResourceDetailShellProps<Service> = {
   activeSubTabId: resolved.activeSubTab?.id,
   activeTabId: resolved.activeTab?.id,
+  renderBreadcrumbLead,
   renderTabLead,
   tabs: resolved.tabs,
   tabsLabel: "Service sections",
