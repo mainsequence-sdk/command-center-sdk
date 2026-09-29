@@ -13,5 +13,6 @@ export * from "./ResourcePicker.js";
 export * from "./ResourceSelectionCheckbox.js";
 export * from "./ResourceSearch.js";
 export * from "./ResourceToolbar.js";
+export * from "./ResourceTransferList.js";
 export * from "./ResourceTransitionShell.js";
 export * from "./resource-table.js";

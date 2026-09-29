@@ -89,7 +89,8 @@ its narrower backend-proven path ownership, and all other namespaces remain unto
   `$compose-command-center-controls`.
 - Use `/resource` for framework-neutral resource definitions and adapters.
 - Use `/resource/react` for resource selection state.
-- Use `/views` for React resource lists, details, pickers, and supporting compositions. A detail's
+- Use `/views` for React resource lists, details, pickers, side-by-side transfer lists
+  (`ResourceTransferList`), and supporting compositions. A detail's
   tabs belong to `ResourceDetailShell`; `/controls` has no tab control, so route tabbed pages to
   `$build-resource-detail`.
 - Use `/contracts` for JSON-safe shared contracts and migrations.

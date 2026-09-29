@@ -73,6 +73,7 @@ Use the highest-level view that owns the workflow you need:
 | Searchable, pageable collection | `ResourceListPage` |
 | One entity with summary and tabs | `ResourceDetailShell` |
 | Single, multiple, or action selection | `ResourcePicker` |
+| Many items chosen side by side from a long list | `ResourceTransferList` |
 | Complete responsive page composition | `/layout` primitives |
 | Actions, badges, and labelled fields | `/controls` primitives |
 | Application startup or reconnect status | `ApplicationStatusScreen` |

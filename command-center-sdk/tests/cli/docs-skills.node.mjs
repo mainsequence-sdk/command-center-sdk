@@ -426,6 +426,19 @@ test("control guidance requires the public primitives across every screen-buildi
   }
 });
 
+test("selection guidance teaches the transfer list instead of hand-built dual lists", async () => {
+  const pickerSkill = await readFile(join(skillsRoot, "views", "build-resource-picker", "SKILL.md"), "utf8");
+  const resourcesGuide = await readFile(join(docsRoot, "resources.md"), "utf8");
+  for (const value of [pickerSkill, resourcesGuide]) {
+    assert.match(value, /ResourceTransferList/u);
+    assert.match(value, /itemLabel/u);
+    assert.match(value, /added/u);
+    assert.match(value, /removed/u);
+    assert.match(value, /disabled/u);
+  }
+  assert.match(pickerSkill, /Do not hand-build a dual list/u);
+});
+
 test("detail guidance teaches the shell's tabs instead of a tab control", async () => {
   const detailSkill = await readFile(join(skillsRoot, "views", "build-resource-detail", "SKILL.md"), "utf8");
   const resourcesGuide = await readFile(join(docsRoot, "resources.md"), "utf8");

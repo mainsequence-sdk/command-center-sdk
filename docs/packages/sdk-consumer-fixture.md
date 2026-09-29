@@ -12,7 +12,7 @@ monorepo aliases, source traversal, or any other Command Center package.
 - uses the conventional HTTP resource adapter;
 - declares columns, actions, and detail tabs, resolves them with `resolveResourceDetailTabs`, and
   renders them in `ResourceDetailShell`;
-- renders an SDK-owned resource pagination view;
+- renders an SDK-owned resource pagination view and a transfer list;
 - resolves contracts, embed, navigation, layout, feedback, resource, views, theme, palette, preset,
   and stylesheet export maps; and
 - compiles against the tarball produced by the release workflow.

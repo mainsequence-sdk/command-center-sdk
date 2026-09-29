@@ -98,15 +98,19 @@ import {
   ResourceDetailShell,
   ResourceListPage,
   ResourcePicker,
+  ResourceTransferList,
   type ResourceDetailBreadcrumbLeadContext,
   type ResourceDetailTabLeadContext,
   type ResourceDetailTabsOverflow,
+  type ResourceTransferChange,
 } from "@dev-mainsequence/command-center-sdk/views";
 ```
 
 `ResourceDetailShell` also owns its tabs' keyboard model, tab panel, disabled state, leading
 visuals (`renderTabLead`), accessible name (`tabsLabel`), and overflow (`tabsOverflow`); there is no
 separate tab component. `renderBreadcrumbLead` adds a leading visual to a breadcrumb.
+`ResourceTransferList` chooses many items side by side; the application owns what they are and how
+a change is saved.
 
 See [Resource applications](./concepts/resource-applications.md) for how the layers compose and
 [Resources](./resources.md) for task-level examples.

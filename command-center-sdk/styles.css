@@ -2190,6 +2190,223 @@ h3),
   }
 }
 
+/* SDK ADR 016. Two searchable lists with the move buttons between them (columns) or below the
+   first list (stacked). The lists scroll inside a fixed height, so a long list never grows the page. */
+.cc-resource-transfer {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-areas:
+    "available actions selected"
+    "description description description";
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.cc-resource-transfer[data-cc-presentation="stacked"] {
+  grid-template-areas:
+    "available"
+    "actions"
+    "selected"
+    "description";
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.cc-resource-transfer__pane {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-rows: auto auto 1fr;
+  min-width: 0;
+}
+
+.cc-resource-transfer__pane[data-side="available"] {
+  grid-area: available;
+}
+
+.cc-resource-transfer__pane[data-side="selected"] {
+  grid-area: selected;
+}
+
+.cc-resource-transfer__pane-header {
+  color: var(--muted-foreground);
+  font-size: var(--font-size-body);
+}
+
+.cc-resource-transfer__pane-label {
+  color: var(--foreground);
+  font-weight: var(--font-weight-semibold);
+}
+
+.cc-resource-transfer__frame {
+  background: var(--background);
+  block-size: 16rem;
+  border: 1px solid var(--border);
+  border-radius: max(0.25rem, calc(var(--radius) - 4px));
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem;
+}
+
+.cc-resource-transfer__list {
+  align-content: start;
+  display: grid;
+  gap: 0.125rem;
+}
+
+.cc-resource-transfer__option {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: max(0.25rem, calc(var(--radius) - 6px));
+  box-sizing: border-box;
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 0.6rem;
+  inline-size: 100%;
+  line-height: var(--line-height-compact);
+  min-block-size: 2.25rem;
+  padding: 0.45rem 0.6rem;
+  text-align: start;
+  user-select: none;
+}
+
+/* Inset, so the scrolling frame never clips the ring. */
+.cc-resource-transfer__option:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .cc-resource-transfer__option:not([aria-disabled="true"]):hover {
+    background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  }
+
+  .cc-resource-transfer__option[aria-selected="true"]:not([aria-disabled="true"]):hover {
+    background: color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+}
+
+.cc-resource-transfer__option[aria-selected="true"] {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.cc-resource-transfer__option[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cc-resource-transfer__option--danger {
+  color: var(--danger);
+}
+
+.cc-resource-transfer__check {
+  align-items: center;
+  block-size: 1rem;
+  border: 1px solid color-mix(in srgb, var(--muted-foreground) 60%, transparent);
+  border-radius: max(0.2rem, calc(var(--radius) - 8px));
+  box-sizing: border-box;
+  color: var(--primary-foreground);
+  display: inline-flex;
+  flex: 0 0 1rem;
+  inline-size: 1rem;
+  justify-content: center;
+}
+
+.cc-resource-transfer__check svg {
+  block-size: 0.75rem;
+  fill: none;
+  inline-size: 0.75rem;
+  opacity: 0;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.cc-resource-transfer__option[aria-selected="true"] .cc-resource-transfer__check {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.cc-resource-transfer__option[aria-selected="true"] .cc-resource-transfer__check svg {
+  opacity: 1;
+}
+
+.cc-resource-transfer__icon {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 1rem;
+  justify-content: center;
+}
+
+.cc-resource-transfer__icon svg {
+  block-size: 1rem;
+  inline-size: 1rem;
+}
+
+.cc-resource-transfer__option-copy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.15rem;
+  min-inline-size: 0;
+}
+
+.cc-resource-transfer__option-label,
+.cc-resource-transfer__option-subtitle {
+  overflow-wrap: anywhere;
+}
+
+.cc-resource-transfer__option-subtitle,
+.cc-resource-transfer__option-meta,
+.cc-resource-transfer__empty,
+.cc-resource-transfer__description {
+  color: var(--muted-foreground);
+  font-size: var(--font-size-body);
+}
+
+.cc-resource-transfer__option-meta {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.cc-resource-transfer__empty {
+  margin: 0;
+  padding: 1rem 0.75rem;
+  text-align: center;
+}
+
+.cc-resource-transfer__actions {
+  align-content: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-area: actions;
+  justify-items: center;
+}
+
+/* Stacked, each list takes the height it needs, up to the same cap. */
+.cc-resource-transfer[data-cc-presentation="stacked"] .cc-resource-transfer__frame {
+  block-size: auto;
+  max-block-size: 16rem;
+  min-block-size: 5.5rem;
+}
+
+.cc-resource-transfer[data-cc-presentation="stacked"] .cc-resource-transfer__actions {
+  grid-auto-flow: column;
+  justify-content: center;
+}
+
+/* Stacked, Available sits above Selected, so "add" points down and "remove" points up. */
+.cc-resource-transfer[data-cc-presentation="stacked"] .cc-resource-transfer__actions svg {
+  transform: rotate(90deg);
+}
+
+.cc-resource-transfer__description {
+  grid-area: description;
+  margin: 0;
+}
+
 .cc-resource-visually-hidden {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
@@ -3517,6 +3734,7 @@ h3),
   .cc-resource-picker__trigger,
   .cc-resource-picker__option,
   .cc-resource-picker__header-action,
+  .cc-resource-transfer__option,
   .cc-resource-detail-tabs__tab,
   .cc-resource-breadcrumbs button,
   .cc-collapsed-entity-summary__toggle,

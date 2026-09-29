@@ -37,6 +37,14 @@ copy, custom value/option renderers, loading state, and top/bottom placement con
 portaled and fixed-positioned so resource cards, tables, dialogs, and selection bars cannot clip or
 reflow them. Application components should adapt their data to this primitive instead of building
 another dropdown implementation or exposing a browser-native select with different styling.
+`ResourceTransferList` (SDK ADR 016) is the inline counterpart for choosing many items from a long
+list: two searchable multi-select listboxes, not chosen and chosen, with labelled buttons that move
+the marked or every shown option across. It reuses the picker's option model and search rule
+(`option-search.ts`), keeps chosen values it has no option for, treats a `disabled` option as a
+locked choice, gives each list one Tab stop with arrow, Space, Shift, Ctrl/Cmd+A, and Enter
+handling, announces moves in a status region, and stacks below `sm` (`presentation="auto"`). Its
+pure move rules live in `transfer-list-model.ts`. It knows nothing about users, teams, or access:
+applications compose it into those controls.
 Selection actions are presented through the `ResourceBulkActionPicker` adapter, labeled “Actions”
 and placed beside the selection count on the left; resource screens must not add one button per
 discovered bulk action. The adapter and `ResourceSearch` use `ResourcePicker` action mode, while

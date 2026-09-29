@@ -17,7 +17,8 @@ renders a controlled application rail and grouped sub-application panel through 
 It renders the public page/header/stack/card/grid composition and imports the browser-verifier
 surface through the package export map. It resolves the resource's detail tabs (a hidden and a
 disabled tab) with `resolveResourceDetailTabs` and renders them in `ResourceDetailShell` with a tab
-lead, a tab-list label, and an overflow mode.
+lead, a tab-list label, and an overflow mode, and it renders a `ResourceTransferList` with a locked
+choice.
 
 This fixture must not import `@/`, `src/`, `extensions/`, or unpublished private host APIs.
 

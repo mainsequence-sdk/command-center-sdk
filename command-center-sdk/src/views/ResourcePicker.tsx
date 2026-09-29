@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 
 import { useOverlayBehavior } from "../layout/overlay.js";
 import { useCommandCenterViewport } from "../layout/viewport.js";
+import { getOptionSearchText } from "./option-search.js";
 
 /**
  * `popover` anchors the option list to the trigger. `sheet` anchors it to the bottom of the
@@ -120,14 +121,6 @@ function findEnabledIndex(
   return options.findIndex((option) => !option.disabled);
 }
 
-function getSearchText(option: ResourcePickerOption) {
-  return [
-    option.label,
-    option.subtitle ?? "",
-    option.meta ?? "",
-    ...(option.keywords ?? []),
-  ].join(" ").toLocaleLowerCase();
-}
 
 export function ResourcePicker(props: ResourcePickerProps) {
   const {
@@ -186,7 +179,7 @@ export function ResourcePicker(props: ResourcePickerProps) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const visibleOptions = useMemo(
     () => normalizedQuery
-      ? options.filter((option) => getSearchText(option).includes(normalizedQuery))
+      ? options.filter((option) => getOptionSearchText(option).includes(normalizedQuery))
       : options,
     [normalizedQuery, options],
   );

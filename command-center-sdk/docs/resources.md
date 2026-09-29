@@ -389,6 +389,73 @@ When a picker is one field of a form, wrap it in `Field` from `/controls` and pa
 `useFieldControlProps()` to its trigger so its label, description, error, and required state are
 wired like every other control. See [Application controls](./application-controls.md).
 
+## Choose many items side by side
+
+A picker is right for a few choices in a compact field. When people choose many items from a long
+list and need to see what they chose, use `ResourceTransferList`: the items not chosen on one side,
+the chosen ones on the other, each side searchable, with buttons that move the marked items or every
+shown item across. It is a primitive, not a feature: the application decides what the items are,
+what choosing them means, and when a change is saved.
+
+An access editor, for example, composes one list for users and one for teams under each access
+level, and turns each change into the requests its backend expects:
+
+```tsx
+import { ApplicationCard } from "@dev-mainsequence/command-center-sdk/layout";
+import {
+  ResourceTransferList,
+  type ResourceTransferChange,
+} from "@dev-mainsequence/command-center-sdk/views";
+
+export function ViewAccessEditor({ access, users, teams }: ViewAccessEditorProps) {
+  return (
+    <ApplicationCard header={<h3>Can view</h3>}>
+      <ResourceTransferList
+        itemLabel="users"
+        description="Chosen users can view this object."
+        options={users.map((user) => ({
+          value: user.uid,
+          label: user.name,
+          subtitle: user.email,
+          // An owner always has access: shown as chosen, and never removed.
+          disabled: user.uid === access.ownerUid,
+          meta: user.uid === access.ownerUid ? "Owner" : undefined,
+        }))}
+        value={access.viewUserUids}
+        onValueChange={(value, change: ResourceTransferChange) => saveViewUsers(value, change)}
+      />
+      <ResourceTransferList
+        itemLabel="teams"
+        options={teams.map((team) => ({ value: team.uid, label: team.name, meta: `${team.memberCount} members` }))}
+        value={access.viewTeamUids}
+        onValueChange={(value, change) => saveViewTeams(value, change)}
+      />
+    </ApplicationCard>
+  );
+}
+```
+
+- **Controlled.** `value` is the chosen values in order; `onValueChange` receives the next value and
+  what moved (`{ added, removed }`), so the application can send exactly those changes. A chosen
+  value with no option is kept in the value and not shown, so the list never removes what it
+  cannot display.
+- **Locked choices.** A `disabled` option cannot be marked or moved. Among the chosen items it reads
+  as a choice that always holds, such as an owner; say why in its `meta` or `subtitle`.
+- **Keyboard.** Each list is one Tab stop. The arrow keys, Home, and End move focus; Space marks
+  the focused item; Shift with an arrow extends the marks; Ctrl or Cmd with A marks every shown
+  item, and again clears them; Enter moves the marked items, or the focused one, across. A
+  double-click moves one item. After a move, focus stays in the list, on the next item that
+  remains, and a status message announces what moved.
+- **Search.** Each side filters by label, subtitle, meta, and keywords. "Add all shown" and "Remove
+  all shown" move only what the search shows, and only shown marks move.
+- **Names.** `itemLabel` is a plural noun that names the lists ("Available users"), their
+  searches, and the move buttons ("Add selected users"). `availableLabel` and `selectedLabel`
+  change the two headings; `description` sits under both lists and is announced with them.
+- **Phones.** `presentation="auto"` (the default) stacks the lists below `sm`, with the move
+  buttons between them pointing down and up; `"columns"` and `"stacked"` fix the form. Rows are at
+  least 44px on a coarse pointer, and each list scrolls inside a fixed height.
+- **Read only.** `disabled` keeps the lists browsable and searchable and moves nothing.
+
 ## Add actions
 
 There are three ownership paths:
@@ -471,5 +538,7 @@ action is in flight. Do not render a raw `<button>` or restyle the SDK's own act
   tab, and the More menu at a narrow width.
 - Pickers cover keyboard interaction, disabled options, search, portal placement, and every used
   mode.
+- Transfer lists cover marking and moving by keyboard and pointer, "all shown" with a search, locked
+  (disabled) choices, the change your application saves, and the stacked form on a phone.
 - Bulk actions cover explicit/all-matching selection, options, allowed/blocked/error preflight,
   stale requests, successful refresh, and selection cleanup.

@@ -60,6 +60,7 @@ Choose the highest-level composition that owns the required lifecycle:
 | Domain-object collection | `ResourceListPage` | `$build-resource-list` |
 | One domain object with summary, actions, and sections | `ResourceDetailShell` | `$build-resource-detail` |
 | Searchable single or multiple choice | `ResourcePicker` | `$build-resource-picker` |
+| Many items chosen side by side from a long list (who gets access) | `ResourceTransferList` | `$build-resource-picker` |
 | List, row, detail, or bulk operation | Resource action contracts | `$add-resource-actions` |
 | A chat or AI capabilities: a conversation with a Main Sequence Agent, agent sessions, model providers | None in the SDK; install `@dev-mainsequence/command-center-ai` as `$use-command-center-sdk` describes | `$use-command-center-ai` |
 

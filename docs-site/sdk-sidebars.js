@@ -65,6 +65,7 @@ const sdkSidebars = {
             "adr/adr-sdk-013-static-site-platform-request-bridge",
             "adr/adr-sdk-014-local-platform-request-proxy",
             "adr/adr-sdk-015-detail-tabs",
+            "adr/adr-sdk-016-transfer-list",
           ],
         },
       ],

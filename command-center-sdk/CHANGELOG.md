@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: `/views`, additively (`ResourceTransferList` and the types
+`ResourceTransferListProps`, `ResourceTransferChange`, `ResourceTransferListPresentation`,
+`ResourceTransferListSide`, and `ResourceTransferListRenderOptionState`); `styles.css`; and the
+packaged skills `views/build-resource-picker`, `general/build-command-center-application`, and
+`general/use-command-center-sdk`. No change to an existing export, contract ID, JSON Schema,
+fixture, iframe protocol, theme, or storage, and no backend change.
+
+- **Choose many items side by side** (SDK ADR 016). `ResourceTransferList` shows the items not
+  chosen and the items chosen as two searchable lists, with buttons that move the marked items or
+  every shown item across. It is controlled over the picker's option model: `onValueChange` gets the
+  next value and what moved (`{ added, removed }`), chosen values without an option are kept, and a
+  `disabled` option is a locked choice. Each list is a named multi-select listbox with one Tab stop,
+  arrow, Space, Shift, Ctrl/Cmd+A, and Enter handling, and a status message after each move; "all
+  shown" follows the search. It stacks below `sm`, keeps each list at a fixed height, and gives rows
+  44px on a coarse pointer. It knows nothing about users, teams, or access: applications compose it
+  into those controls.
+- `ResourcePicker` shares its search rule with the transfer list through one internal helper; its
+  behavior is unchanged.
+- The `build-resource-picker` skill teaches the transfer list, and the general skills route "many
+  items chosen from a long list" to it.
+
 ## 0.5.8
 
 Compatibility axes: `/resource`, additively (`resolveResourceDetailTabs`,

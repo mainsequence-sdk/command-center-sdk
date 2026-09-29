@@ -47,8 +47,10 @@ import { graphiteTheme } from "@dev-mainsequence/command-center-sdk/theme/preset
 import {
   ResourceDetailShell,
   ResourcePagination,
+  ResourceTransferList,
   type ResourceDetailBreadcrumbLeadContext,
   type ResourceDetailTabLeadContext,
+  type ResourceTransferChange,
 } from "@dev-mainsequence/command-center-sdk/views";
 
 import "@dev-mainsequence/command-center-sdk/styles.css";
@@ -218,6 +220,20 @@ export const packedFeedbackHtml = renderToStaticMarkup(
     message="Preparing the application runtime."
     stages={packedFeedbackStages}
     title="Preparing application"
+  />,
+);
+
+export const packedTransferListHtml = renderToStaticMarkup(
+  <ResourceTransferList
+    description="Chosen users can view this service."
+    itemLabel="users"
+    onValueChange={(_value: readonly string[], _change: ResourceTransferChange) => undefined}
+    options={[
+      { label: "Ada Lovelace", subtitle: "ada@example.test", value: "ada" },
+      { disabled: true, label: "Linus Torvalds", meta: "Always has access", value: "linus" },
+    ]}
+    presentation="auto"
+    value={["linus"]}
   />,
 );
 
