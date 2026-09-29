@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -100,6 +101,8 @@ function OptionContent({ option }: { option: ResourcePickerOption }) {
   );
 }
 
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 function CheckMark() {
   return (
     <span aria-hidden="true" className="cc-resource-transfer__check">
@@ -168,7 +171,9 @@ export function ResourceTransferList({
   };
   const lowerItemLabel = lowerFirst(itemLabel);
 
-  useEffect(() => {
+  // Focus follows a move within the commit that lands it, so the focused option already holds the
+  // Tab stop when the next key arrives.
+  useIsomorphicLayoutEffect(() => {
     const pending = pendingFocusRef.current;
     if (!pending) return;
     pendingFocusRef.current = null;

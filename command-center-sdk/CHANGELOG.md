@@ -10,6 +10,9 @@ JSON Schema, fixture, iframe protocol, theme, or storage, and no backend change.
   and makes the move buttons unavailable until it clears, while people can still browse, search,
   and mark. An application that saves each change as it happens passes it during the save, so no
   move made meanwhile is lost.
+- **Tab after a keyboard move.** The option that takes focus after a move is now the list's Tab
+  stop within the same commit. Before, a Tab that arrived before the next render could land on
+  another option in the same list instead of leaving it.
 
 ## 0.5.9
 

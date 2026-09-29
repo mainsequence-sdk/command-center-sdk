@@ -85,6 +85,28 @@ test.describe("transfer list with a fine pointer", () => {
     await expect(page.getByRole("button", { name: "Add selected users" })).toBeFocused();
   });
 
+  test("hands the Tab stop to the option it focuses as the move lands", async ({ page }) => {
+    await openEditor(page);
+    await page.getByRole("searchbox", { name: "Search available users" }).focus();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press(" ");
+    await page.keyboard.press("Shift+ArrowDown");
+
+    // The next key can arrive before any queued task runs, so the move must settle within its own
+    // commit: the option that takes focus is the Tab stop at once.
+    const landed = await page.evaluate(async () => {
+      document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+      for (let turn = 0; turn < 20; turn += 1) await Promise.resolve();
+      const focused = document.activeElement as HTMLElement;
+      return {
+        focused: focused.dataset.value,
+        tabStops: [...focused.parentElement!.querySelectorAll<HTMLElement>('[tabindex="0"]')].map((node) => node.dataset.value),
+      };
+    });
+    expect(landed).toEqual({ focused: "katherine", tabStops: ["katherine"] });
+  });
+
   test("names every move button and moves every shown option", async ({ page }) => {
     await openEditor(page);
     await expect(page.locator(".cc-resource-transfer").first()).toHaveAttribute("data-cc-presentation", "columns");
