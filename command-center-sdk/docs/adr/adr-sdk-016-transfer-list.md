@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-29
-- Implementation: `@dev-mainsequence/command-center-sdk` 0.5.9
+- Implementation: `@dev-mainsequence/command-center-sdk` 0.5.9 (`pending` in 0.5.10)
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
 - Related:
@@ -101,9 +101,13 @@ HTML uses `columns`. Each list scrolls inside a fixed height (in the stacked for
 height). The move icons point down and up when stacked. Rows reach 44px on a coarse pointer through
 the coarse-pointer selector list, as picker options do, and the move buttons through `cc-control`.
 
-### 7. Read only
+### 7. Read only and pending
 
-`disabled` keeps the lists browsable and searchable and moves nothing.
+`disabled` keeps the lists browsable and searchable and moves nothing. `pending`, named like the
+`/controls` `Button` prop, is for an application that saves each change as it happens: both lists
+carry `aria-busy`, the move buttons are unavailable, and nothing moves until it clears, while
+browsing, searching, and marking still work. Added in 0.5.10, after an application saved on every
+move and silently dropped the moves made during a save.
 
 ## Ownership boundary
 

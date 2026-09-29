@@ -31,6 +31,7 @@ const props: ResourceTransferListProps = {
   itemLabel: "users",
   onValueChange,
   options,
+  pending: false,
   presentation,
   renderOption,
   value: ["linus"],

@@ -74,6 +74,18 @@ describe("ResourceTransferList", () => {
     expect(html).not.toContain("Nobody yet.");
   });
 
+  it("marks both lists busy while a change is saving", () => {
+    const html = renderToStaticMarkup(
+      <ResourceTransferList itemLabel="users" onValueChange={() => undefined} options={options} pending value={[]} />,
+    );
+
+    expect(openingTags(html, 'role="listbox"').every((tag) => attribute(tag, "aria-busy") === "true")).toBe(true);
+    expect(openingTags(html, 'class="cc-resource-transfer"')[0]).toContain('data-pending="true"');
+    expect(openingTags(html, 'aria-label="Add all shown users"').every((tag) => attribute(tag, "aria-disabled") === "true")).toBe(true);
+    // Saving is not read only: options stay enabled.
+    expect(openingTags(html, 'role="option"').map((tag) => attribute(tag, "aria-disabled"))).toEqual([null, null, "true"]);
+  });
+
   it("marks every option inert when the list is read only", () => {
     const html = renderToStaticMarkup(
       <ResourceTransferList disabled itemLabel="users" onValueChange={() => undefined} options={options} value={[]} />,

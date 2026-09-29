@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: `/views`, additively (`ResourceTransferList` prop `pending`); `styles.css`; and
+the packaged skill `views/build-resource-picker`. No change to an existing export, contract ID,
+JSON Schema, fixture, iframe protocol, theme, or storage, and no backend change.
+
+- **A transfer list that is saving** (SDK ADR 016). `pending` marks both lists busy (`aria-busy`)
+  and makes the move buttons unavailable until it clears, while people can still browse, search,
+  and mark. An application that saves each change as it happens passes it during the save, so no
+  move made meanwhile is lost.
+
 ## 0.5.9
 
 Compatibility axes: `/views`, additively (`ResourceTransferList` and the types

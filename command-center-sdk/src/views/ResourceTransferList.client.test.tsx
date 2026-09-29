@@ -185,6 +185,30 @@ describe("ResourceTransferList", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("lets people mark while a change saves, and moves nothing until it clears", async () => {
+    const onChange = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    roots.push(root);
+    const render = (pending: boolean) =>
+      act(async () => root.render(<Harness onChange={onChange} pending={pending} />));
+
+    await render(true);
+    await act(async () => option(container, "ada").click());
+    expect(option(container, "ada").getAttribute("aria-selected")).toBe("true");
+    await act(async () => button(container, "Add selected users").click());
+    await act(async () => {
+      option(container, "ada").focus();
+      press("Enter");
+    });
+    expect(onChange).not.toHaveBeenCalled();
+
+    await render(false);
+    await act(async () => button(container, "Add selected users").click());
+    expect(onChange).toHaveBeenCalledWith(["ada"], { added: ["ada"], removed: [] });
+  });
+
   it("keeps focus on a move button after it moves everything", async () => {
     const container = await mount();
     const addAll = button(container, "Add all shown users");

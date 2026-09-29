@@ -2407,6 +2407,12 @@ h3),
   margin: 0;
 }
 
+/* Saving: the lists stay readable and nothing moves. */
+.cc-resource-transfer[data-pending] .cc-resource-transfer__frame {
+  cursor: progress;
+  opacity: 0.8;
+}
+
 .cc-resource-visually-hidden {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);

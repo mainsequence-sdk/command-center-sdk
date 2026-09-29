@@ -42,6 +42,8 @@ field.
 5. Compose one list per kind of item: an access control uses one list for users and one for teams
    under each access level. The SDK knows nothing about users, teams, or access.
 6. Leave `presentation` at `auto`: side by side on wide screens, stacked on phones.
+7. When each change saves right away, pass `pending` while it saves, show the value being saved in
+   the meantime, and restore the saved value if the save fails.
 
 ```tsx
 import { ResourceTransferList } from "@dev-mainsequence/command-center-sdk/views";

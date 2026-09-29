@@ -42,7 +42,8 @@ list: two searchable multi-select listboxes, not chosen and chosen, with labelle
 the marked or every shown option across. It reuses the picker's option model and search rule
 (`option-search.ts`), keeps chosen values it has no option for, treats a `disabled` option as a
 locked choice, gives each list one Tab stop with arrow, Space, Shift, Ctrl/Cmd+A, and Enter
-handling, announces moves in a status region, and stacks below `sm` (`presentation="auto"`). Its
+handling, announces moves in a status region, and stacks below `sm` (`presentation="auto"`). `pending` marks
+both lists busy and blocks moves while the application saves a change. Its
 pure move rules live in `transfer-list-model.ts`. It knows nothing about users, teams, or access:
 applications compose it into those controls.
 Selection actions are presented through the `ResourceBulkActionPicker` adapter, labeled “Actions”

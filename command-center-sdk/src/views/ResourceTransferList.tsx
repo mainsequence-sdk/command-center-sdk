@@ -57,6 +57,11 @@ export interface ResourceTransferListProps {
   description?: ReactNode;
   /** Read only: the lists can be browsed and searched, and nothing moves. */
   disabled?: boolean;
+  /**
+   * A change is being saved: both lists are marked busy and nothing moves until it clears. People
+   * can still browse, search, and mark items.
+   */
+  pending?: boolean;
   presentation?: ResourceTransferListPresentation;
   /** Replaces an option's content. The row keeps its selection state and styling. */
   renderOption?: (option: ResourcePickerOption, state: ResourceTransferListRenderOptionState) => ReactNode;
@@ -120,6 +125,7 @@ export function ResourceTransferList({
   itemLabel,
   onValueChange,
   options,
+  pending = false,
   presentation = "auto",
   renderOption,
   selectedLabel = "Selected",
@@ -198,7 +204,7 @@ export function ResourceTransferList({
   }
 
   function move(side: ResourceTransferListSide, values: readonly string[], focusAfter?: PendingFocus) {
-    if (disabled || values.length === 0) return;
+    if (disabled || pending || values.length === 0) return;
     const result = side === "available"
       ? addToTransferSelection(options, value, values)
       : removeFromTransferSelection(options, value, values);
@@ -331,6 +337,7 @@ export function ResourceTransferList({
         />
         <div className="cc-resource-transfer__frame">
           <div
+            aria-busy={pending || undefined}
             aria-describedby={descriptionId}
             aria-labelledby={labelId}
             aria-multiselectable="true"
@@ -382,13 +389,15 @@ export function ResourceTransferList({
     <div
       className="cc-resource-transfer"
       data-cc-presentation={resolvedPresentation}
+      aria-busy={pending || undefined}
       data-disabled={disabled || undefined}
+      data-pending={pending || undefined}
       id={baseId}
     >
       {renderPane("available")}
       <div aria-label={`Move ${noun}`} className="cc-resource-transfer__actions" role="group">
         <Button
-          aria-disabled={disabled || addMarked.length === 0 || undefined}
+          aria-disabled={disabled || pending || addMarked.length === 0 || undefined}
           aria-label={`Add selected ${noun}`}
           iconOnly
           onClick={() => move("available", addMarked)}
@@ -397,7 +406,7 @@ export function ResourceTransferList({
           <ChevronRight />
         </Button>
         <Button
-          aria-disabled={disabled || addShown.length === 0 || undefined}
+          aria-disabled={disabled || pending || addShown.length === 0 || undefined}
           aria-label={`Add all shown ${noun}`}
           iconOnly
           onClick={() => move("available", addShown)}
@@ -406,7 +415,7 @@ export function ResourceTransferList({
           <ChevronsRight />
         </Button>
         <Button
-          aria-disabled={disabled || removeMarked.length === 0 || undefined}
+          aria-disabled={disabled || pending || removeMarked.length === 0 || undefined}
           aria-label={`Remove selected ${noun}`}
           iconOnly
           onClick={() => move("selected", removeMarked)}
@@ -415,7 +424,7 @@ export function ResourceTransferList({
           <ChevronLeft />
         </Button>
         <Button
-          aria-disabled={disabled || removeShown.length === 0 || undefined}
+          aria-disabled={disabled || pending || removeShown.length === 0 || undefined}
           aria-label={`Remove all shown ${noun}`}
           iconOnly
           onClick={() => move("selected", removeShown)}

@@ -455,6 +455,9 @@ export function ViewAccessEditor({ access, users, teams }: ViewAccessEditorProps
   buttons between them pointing down and up; `"columns"` and `"stacked"` fix the form. Rows are at
   least 44px on a coarse pointer, and each list scrolls inside a fixed height.
 - **Read only.** `disabled` keeps the lists browsable and searchable and moves nothing.
+- **Saving.** Pass `pending` while your application saves a change: both lists are marked busy and
+  nothing moves until it clears, while people can still browse, search, and mark. Show the change
+  you are saving as the `value` meanwhile, and put the saved value back if the save fails.
 
 ## Add actions
 
