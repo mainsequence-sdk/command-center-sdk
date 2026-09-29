@@ -117,9 +117,11 @@ Use `ResourceDetailShell` for one identified domain object. Compose it from:
 - related-resource collections rendered with the embedded list composition; and
 - domain-specific content contributed inside the standard shell.
 
-Keep tab state controlled by the host router when it must survive navigation or deep links. Route
-the implementation to `$build-resource-detail`. Product-specific composition remains in the
-consumer application.
+Keep tab state controlled by the host router when it must survive navigation or deep links, and
+resolve hidden and disabled tabs with `resolveResourceDetailTabs` instead of filtering them by hand.
+The shell's tabs own the keyboard model, tab icons, and the More menu for tabs that do not fit; an
+application never builds its own tab strip. Route the implementation to `$build-resource-detail`.
+Product-specific composition remains in the consumer application.
 
 ## Route Backend And Contract Work
 

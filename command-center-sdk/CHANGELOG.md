@@ -2,9 +2,47 @@
 
 ## Unreleased
 
-Compatibility axes: the skill installer's behavior only. No export, contract ID, JSON Schema,
-packaged skill, provenance field, iframe protocol, theme, or storage change, and no backend change.
+Compatibility axes: `/resource`, additively (`resolveResourceDetailTabs`,
+`ResolvedResourceDetailTabs`, `ResourceDetailTabSelection`, and `disabled` on detail tab and sub-tab
+definitions; `ResourceDetailSubTabDefinition` takes an optional resource type); `/views`,
+additively (`ResourceDetailShell` props `renderTabLead`, `tabsLabel`, and `tabsOverflow`, and the
+types `ResourceDetailTabLeadContext` and `ResourceDetailTabsOverflow`) with the tab and picker
+behavior changes listed below; `styles.css`; the packaged skills `views/build-resource-detail`,
+`controls/compose-command-center-controls`, `layout/compose-command-center-page`,
+`general/build-command-center-application`, and `general/use-command-center-sdk`; and the skill
+installer's behavior. No contract ID, JSON Schema, fixture, provenance field, iframe protocol,
+theme, or storage change, and no backend change.
 
+- **Detail tabs a keyboard can use** (SDK ADR 015). Each `ResourceDetailShell` tab strip is one Tab
+  stop: ArrowLeft and ArrowRight move focus (reversed right to left), Home and End jump to the
+  ends, and Enter, Space, or a click selects. The content is the strip's `tabpanel`, labelled by
+  the selected tab and sub-tab, and the focus ring is inset so the strip never clips it.
+  `tabsLabel` names the primary strip.
+- **Disabled tabs and tab icons.** A tab or sub-tab with `disabled` stays visible and focusable but
+  never selects. `renderTabLead` draws an `aria-hidden` leading visual, usually an icon, for each
+  tab.
+- **A More menu for tabs that do not fit.** With a fine pointer, tabs that do not fit move into a
+  trailing More menu (the SDK's action picker, a bottom sheet on small screens); with a coarse
+  pointer the strip still scrolls sideways. The selected tab always stays in the strip, and a tab
+  chosen from More receives focus once the host selects it. `tabsOverflow` (`auto`, `menu`,
+  `scroll`) forces either form; server HTML uses the scrolling strip until measured.
+- **One tab resolution for the host and the shell.** `resolveResourceDetailTabs` applies
+  `isVisible`, which nothing evaluated before, and function-valued `disabled` once the resource has
+  loaded, and returns the visible tabs, the active tab and sub-tab, and a `fallback` flag. A host
+  that switches its body on the same result can no longer render a different tab than the shell
+  highlights.
+- **Behavior changes for existing details.** A strip is one Tab stop and the panel is a Tab stop;
+  with a fine pointer overflowing tabs move into More instead of scrolling (`tabsOverflow="scroll"`
+  keeps the previous behavior); with no requested sub-tab the first enabled sub-tab is selected;
+  selecting a tab in a scrolling strip scrolls only the strip, never the page; the tabs row gains a
+  frame element around each strip and its More trigger.
+- **Pickers keep keyboard focus.** `ResourcePicker` moves focus into its popup only once the popup
+  is visible (a browser does not focus a hidden element, so keyboard users stayed on the trigger);
+  ArrowDown or ArrowUp on the trigger of an open popup moves focus into it instead of hiding it; and
+  Tab closes a popover.
+- The packaged skills teach the detail tabs: `build-resource-detail` composes them, and the
+  controls, page, and general skills route tabs to it; the `docs-skills` test forbids tab roles in
+  skill examples.
 - **Concurrent installs no longer fail.** npm runs one postinstall per workspace that nests its own
   copy of the SDK, all at once and into the same repository; one install renamed entries another
   was moving and failed the whole `npm install` with `ENOENT` or `ENOTEMPTY`. Installs of the

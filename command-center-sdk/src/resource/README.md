@@ -51,8 +51,13 @@ but it must not contain a route or mutate shell URL state. The host supplies the
 adapter that interprets the intent.
 
 Detail definitions may declare controlled primary tabs and optional nested secondary tabs. The
-definitions contain semantic IDs, labels, and counts only. Route parameters, URL canonicalization,
-queries, endpoint selection, and domain content remain in the consuming application. Normalized
+definitions contain semantic IDs, labels, counts, disabled flags, and visibility predicates only.
+`resolveResourceDetailTabs` (`detail-tabs.ts`) turns them and the requested ids into the visible
+tabs, the active tab and sub-tab, and a `fallback` flag. It is the only place `isVisible` and a
+function-valued `disabled` run, and only once the resource is loaded, so a deep link survives the
+load; hosts pass its result to `ResourceDetailShell` and switch the tab body on the same result.
+Route parameters, URL canonicalization, queries, endpoint selection, and domain content remain in
+the consuming application. Normalized
 entity-summary contracts likewise contain presentation data without application navigation or
 mutation behavior.
 

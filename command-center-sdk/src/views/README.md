@@ -108,6 +108,15 @@ the host.
 `ResourceDetailShell` is the controlled detail framework. It owns breadcrumbs, action placement,
 blocking loading and error states, summary placement, the detail content container, flat tabs, and
 optional primary/secondary nested tabs. The host owns tab state, routing, queries, mutations, and
-tab bodies. `EntitySummary` and `CollapsedEntitySummary` render normalized backend-neutral summary
+tab bodies. The tabs follow SDK ADR 015: each strip is one Tab stop with manual activation (arrow
+keys, Home, and End move focus; Enter, Space, or a click selects), the content is the strip's
+`tabpanel`, disabled tabs stay focusable but never select, and `renderTabLead` adds an
+`aria-hidden` leading visual. `tabsOverflow` (`auto` by default) moves tabs that do not fit into a
+More menu with a fine pointer and scrolls the strip with a coarse one; the selected and focused
+tabs always stay visible. The strip lives in the internal `ResourceDetailTabs.tsx`, which holds
+every hook of the tabbed card because the shell returns early while `loading`; its measurement and
+fitting rules are pure functions in `detail-tab-layout.ts`, and its More menu is a `ResourcePicker`
+in action mode. Hosts resolve tabs once with `resolveResourceDetailTabs` from `/resource`, which is
+the only place `isVisible` and function-valued `disabled` run, and switch the body on that result. `EntitySummary` and `CollapsedEntitySummary` render normalized backend-neutral summary
 data; hosts contribute icons, link handling, editing, label mutations, and notifications through
 callbacks. No view in this module knows a consumer endpoint or application-owned search parameter.

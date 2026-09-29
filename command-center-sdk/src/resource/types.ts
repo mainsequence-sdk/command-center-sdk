@@ -285,18 +285,29 @@ export interface ResourceActionDefinition<T, Id extends ResourceId> {
   isDisabled?: (input: ResourceActionInput<T, Id>) => boolean;
 }
 
-export interface ResourceDetailSubTabDefinition {
+export interface ResourceDetailSubTabDefinition<T = unknown> {
   id: string;
   label: string;
   count?: number;
+  /**
+   * A disabled sub-tab stays visible and focusable but cannot be selected. A function runs only
+   * through `resolveResourceDetailTabs` with a loaded resource.
+   */
+  disabled?: boolean | ((resource: T) => boolean);
 }
 
 export interface ResourceDetailTabDefinition<T = unknown> {
   id: string;
   label: string;
   count?: number;
-  subTabs?: readonly ResourceDetailSubTabDefinition[];
+  subTabs?: readonly ResourceDetailSubTabDefinition<T>[];
+  /** Runs only through `resolveResourceDetailTabs` with a loaded resource; hidden tabs are omitted. */
   isVisible?: (resource: T) => boolean;
+  /**
+   * A disabled tab stays visible and focusable but cannot be selected. A function runs only
+   * through `resolveResourceDetailTabs` with a loaded resource.
+   */
+  disabled?: boolean | ((resource: T) => boolean);
 }
 
 export interface ResourceDetailDefinition<T> {

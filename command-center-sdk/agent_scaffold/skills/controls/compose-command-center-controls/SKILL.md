@@ -1,6 +1,6 @@
 ---
 name: compose-command-center-controls
-description: Compose, migrate, review, or verify buttons, badges, labels, labelled fields, inputs, and textareas with the public @dev-mainsequence/command-center-sdk/controls primitives. Use for page and card actions, icon-only buttons, pending actions, status badges, form fields with descriptions and errors, wiring a custom control into a field, or replacing an application's private button/input/badge kit. Do not use for form state, validation rules, submission, selects, dialogs, or notifications.
+description: Compose, migrate, review, or verify buttons, badges, labels, labelled fields, inputs, and textareas with the public @dev-mainsequence/command-center-sdk/controls primitives. Use for page and card actions, icon-only buttons, pending actions, status badges, form fields with descriptions and errors, wiring a custom control into a field, or replacing an application's private button/input/badge kit. Do not use for form state, validation rules, submission, selects, tabs, dialogs, or notifications.
 ---
 
 # Compose Command Center Controls
@@ -85,9 +85,10 @@ yourself when the browser should block submission; `Field.required` is assistive
 The controls own presentation and accessible wiring. The application owns values, change
 handling, validation rules, submission, mutation policy, optimistic updates, and notifications.
 Do not pass a form library, schema, or submit promise into a control. Route selects to
-`ResourcePicker` in `/views`, resource tables and status cells to `$build-resource-list`, page
-geometry to `$compose-command-center-page`, and startup or reconnection feedback to
-`$build-application-loading-flow`.
+`ResourcePicker` in `/views`, resource tables and status cells to `$build-resource-list`, tabs to
+`$build-resource-detail` (the tabs of `ResourceDetailShell`; never a row of `Button`s that swap
+`variant`), page geometry to `$compose-command-center-page`, and startup or reconnection feedback
+to `$build-application-loading-flow`.
 
 ## Migrate A Private Kit
 

@@ -10,7 +10,8 @@ monorepo aliases, source traversal, or any other Command Center package.
 
 - defines a typed resource application;
 - uses the conventional HTTP resource adapter;
-- declares columns, actions, and detail tabs;
+- declares columns, actions, and detail tabs, resolves them with `resolveResourceDetailTabs`, and
+  renders them in `ResourceDetailShell`;
 - renders an SDK-owned resource pagination view;
 - resolves contracts, embed, navigation, layout, feedback, resource, views, theme, palette, preset,
   and stylesheet export maps; and

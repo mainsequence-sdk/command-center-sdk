@@ -230,18 +230,43 @@ more than two or the pointer is coarse. Pass `"table"` or `"stacked"` to fix the
 
 ## Build a resource detail
 
-Keep the selected UID, query, and tab state in the host. Pass normalized presentation into the
-shell:
+Keep the selected UID, query, and tab ids in the host, in the URL when they must survive a reload.
+Resolve the tabs once per render with `resolveResourceDetailTabs`, pass the result to the shell, and
+switch the tab body on the same result, so the highlighted tab and the body always agree:
 
 ```tsx
 import { Button } from "@dev-mainsequence/command-center-sdk/controls";
+import {
+  resolveResourceDetailTabs,
+  type ResourceDetailTabDefinition,
+} from "@dev-mainsequence/command-center-sdk/resource";
 import {
   EntitySummary,
   ResourceDetailShell,
 } from "@dev-mainsequence/command-center-sdk/views";
 
+const serviceTabs: ResourceDetailTabDefinition<Service>[] = [
+  { id: "overview", label: "Overview" },
+  { id: "logs", label: "Logs", isVisible: (service) => Boolean(service.logsUrl) },
+  {
+    id: "releases",
+    label: "Releases",
+    subTabs: [
+      { id: "current", label: "Current" },
+      { id: "history", label: "History" },
+    ],
+  },
+  { id: "settings", label: "Settings", disabled: (service) => !service.canEdit },
+];
+
 export function ServiceDetail({ service }: { service: Service }) {
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState<string | null>(null);
+  const [section, setSection] = useState<string | null>(null);
+  const { activeSubTab, activeTab, tabs } = resolveResourceDetailTabs(serviceTabs, {
+    activeSubTabId: section,
+    activeTabId: tab,
+    resource: service,
+  });
 
   return (
     <ResourceDetailShell<Service>
@@ -249,12 +274,13 @@ export function ServiceDetail({ service }: { service: Service }) {
         { id: "services", label: "Services", onSelect: () => navigate("/services") },
         { id: service.uid, label: service.name },
       ]}
-      activeTabId={tab}
+      activeTabId={activeTab?.id}
+      activeSubTabId={activeSubTab?.id}
       onTabChange={setTab}
-      tabs={[
-        { id: "overview", label: "Overview" },
-        { id: "releases", label: "Releases" },
-      ]}
+      onSubTabChange={setSection}
+      renderTabLead={({ tab: detailTab }) => <ServiceTabIcon tabId={detailTab.id} />}
+      tabs={tabs}
+      tabsLabel="Service sections"
       headerActions={<Button onClick={() => openEditDialog(service)}>Edit</Button>}
       summary={
         <EntitySummary
@@ -268,18 +294,52 @@ export function ServiceDetail({ service }: { service: Service }) {
         />
       }
     >
-      {tab === "overview" ? <ServiceOverview service={service} /> : <ServiceReleases service={service} />}
+      {activeTab?.id === "overview" ? <ServiceOverview service={service} /> : null}
+      {activeTab?.id === "logs" ? <ServiceLogs service={service} /> : null}
+      {activeTab?.id === "releases" ? <ServiceReleases service={service} view={activeSubTab?.id} /> : null}
+      {activeTab?.id === "settings" ? <ServiceSettings service={service} /> : null}
     </ResourceDetailShell>
   );
 }
 ```
 
 The shell owns breadcrumbs, summary placement, action placement, tabs, transitions, and errors.
-Tab contents remain domain-owned. Use an embedded `ResourceListPage` for a related collection.
+Tab contents remain domain-owned. Use an embedded `ResourceListPage` for a related collection. Use
+the shell for any page about one object with a summary and sections, even when the object is not a
+listed resource: the `summary` slot takes any node.
 
-On a phone the tab strip scrolls sideways with edge shadows and keeps the active tab in view, the
-summary's facts fall into two columns with values allowed to wrap, and a field's `info` opens on
-tap instead of hover. Pass `tablePresentation="auto"` to an embedded list so it stacks too.
+### Tabs
+
+The shell owns the tab semantics, so a detail never needs its own tab strip. Do not add roles, key
+handlers, or `tabIndex` to tabs, and do not fake tabs with a row of `Button`s that swap variants.
+
+- **Keyboard.** Each strip is one Tab stop. ArrowLeft and ArrowRight move focus between tabs
+  (reversed in a right-to-left layout), Home and End jump to the ends, and Enter, Space, or a click
+  selects. Focus alone never selects, because a tab's body usually loads data. The content is the
+  strip's `tabpanel`, labelled by the selected tab and sub-tab.
+- **Hidden and disabled tabs.** `isVisible` removes a tab; `disabled` keeps it visible and
+  focusable but not selectable. Both can be functions of the resource, and they run only inside
+  `resolveResourceDetailTabs` once `resource` is neither `null` nor `undefined`, so a deep link keeps
+  its tab while the record loads. When the requested tab is hidden, disabled, or unknown, the result
+  selects the first enabled tab and sets `fallback`. Show the resolved tab and leave the URL alone.
+  Sub-tabs follow the same rules; with no requested sub-tab, the first enabled one is selected.
+- **Icons.** `renderTabLead` draws a leading visual, usually an icon, for each tab; its `level`
+  says whether the tab is primary or secondary. It renders `aria-hidden`, so the label stays the
+  tab's name, and an `svg` lead is sized to 1rem. Keep it pure: it also renders in a hidden
+  measurement copy and in the More menu.
+- **Overflow.** `tabsOverflow` decides how tabs that do not fit are reached. The default, `auto`,
+  moves them into a trailing **More** menu when the pointer is fine and lets the strip scroll
+  sideways, with edge shadows, when it is coarse. The selected tab always stays in the strip,
+  swapped into the last visible slot when needed, and a tab chosen from More receives focus once
+  your state selects it. Pass `"menu"` or `"scroll"` to force one behaviour. Server-rendered HTML
+  uses the scrolling strip until the browser has measured it.
+- **Names.** `tabsLabel` names the primary strip for assistive technology (default "Detail
+  sections"); a secondary strip is named after its tab.
+
+On a phone the tab strip scrolls sideways with edge shadows and keeps the selected tab in view
+without scrolling the page, the summary's facts fall into two columns with values allowed to wrap,
+and a field's `info` opens on tap instead of hover. Pass `tablePresentation="auto"` to an embedded
+list so it stacks too.
 
 `headerActions`, tab-content forms, and status markers use `Button`, `Field`, `Input`, `Textarea`,
 and `Badge` from [`/controls`](./application-controls.md); the detail shell owns the chrome around
@@ -403,7 +463,9 @@ action is in flight. Do not render a raw `<button>` or restyle the SDK's own act
 - Pagination changes do not refetch stable discovery; semantic query/scope changes do.
 - Abort signals cancel stale list and activation requests.
 - Lists cover loading, error, empty, no-results, search, filters, sort, paging, and refresh.
-- Details cover loading/error, summary, actions, flat/nested tabs, and controlled navigation.
+- Details cover loading/error, summary, actions, flat/nested tabs, and controlled navigation, plus
+  keyboard focus (arrows move, Enter selects), hidden and disabled tabs, a deep link to a hidden
+  tab, and the More menu at a narrow width.
 - Pickers cover keyboard interaction, disabled options, search, portal placement, and every used
   mode.
 - Bulk actions cover explicit/all-matching selection, options, allowed/blocked/error preflight,

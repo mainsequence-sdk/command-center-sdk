@@ -184,10 +184,20 @@ import { Badge } from "@dev-mainsequence/command-center-sdk/controls";
 domain status to a tone in the application. A badge is static; do not attach a click handler to
 it. Use `ResourceStatusCell` from `/views` inside a resource table.
 
+## Split a page into sections with tabs
+
+Tabs are not a `/controls` component. A page about one object whose sections sit under a summary
+is a `ResourceDetailShell`, and the shell's tabs carry the keyboard model, the tab panel, disabled
+tabs, leading icons, and the More menu for tabs that do not fit (SDK ADR 015). Pass `tabs`,
+`activeTabId`, and `onTabChange`, and resolve hidden or disabled tabs with
+`resolveResourceDetailTabs`; see [Build a resource detail](./resources.md#build-a-resource-detail).
+Do not build a tab strip from `Button`s that swap `variant`, and do not put one in an
+`ApplicationCard` header.
+
 ## Migrate from an application kit
 
 Replace private button, input, textarea, and badge components with the SDK controls and delete
-the private files. A kit whose default button was the filled primary needs `variant="primary"` at
+the private files. A private tab component maps to the tabs of `ResourceDetailShell`. A kit whose default button was the filled primary needs `variant="primary"` at
 the call sites that meant it; the SDK default is `outline`. `size="sm"`, `"lg"`, and `"icon"`
 become `size="small"`, `size="large"`, and `iconOnly`. A private card or page header maps to
 `ApplicationCard` and `ApplicationPageHeader` from `/layout`. Remove application CSS that

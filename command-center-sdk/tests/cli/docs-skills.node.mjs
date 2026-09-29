@@ -414,11 +414,36 @@ test("control guidance requires the public primitives across every screen-buildi
   }
   // Prose may name a raw element to forbid it; rendered examples and assets may not use one.
   const rawControl = /<(button|input|textarea|label|select)\b/u;
+  // Tabs belong to ResourceDetailShell (SDK ADR 015); an example never assigns tab roles itself.
+  const handRolledTabs = /\brole=["'{]*tab(?:list|panel)?["'}]/u;
   for (const file of await skillFiles(skillsRoot)) {
     const content = await readFile(file, "utf8");
     const rendered = file.endsWith(".md")
       ? [...content.matchAll(/```[^\n]*\n([\s\S]*?)```/gu)].map((match) => match[1]).join("\n")
       : content;
     assert.equal(rawControl.test(rendered), false, `${relative(skillsRoot, file)} renders a raw control`);
+    assert.equal(handRolledTabs.test(rendered), false, `${relative(skillsRoot, file)} renders hand-rolled tabs`);
   }
+});
+
+test("detail guidance teaches the shell's tabs instead of a tab control", async () => {
+  const detailSkill = await readFile(join(skillsRoot, "views", "build-resource-detail", "SKILL.md"), "utf8");
+  const resourcesGuide = await readFile(join(docsRoot, "resources.md"), "utf8");
+  for (const value of [detailSkill, resourcesGuide]) {
+    assert.match(value, /resolveResourceDetailTabs/u);
+    assert.match(value, /renderTabLead/u);
+    assert.match(value, /tabsOverflow/u);
+    assert.match(value, /tabsLabel/u);
+    assert.match(value, /isVisible/u);
+    assert.match(value, /disabled/u);
+    assert.match(value, /More/u);
+  }
+
+  const controlsSkill = await readFile(
+    join(skillsRoot, "controls", "compose-command-center-controls", "SKILL.md"),
+    "utf8",
+  );
+  const controlsGuide = await readFile(join(docsRoot, "application-controls.md"), "utf8");
+  assert.match(controlsSkill, /tabs to\s+`\$build-resource-detail`/u);
+  assert.match(controlsGuide, /Tabs are not a `\/controls` component/u);
 });

@@ -15,7 +15,9 @@ without importing product auth, endpoint, or iframe-protocol internals. It also
 renders a controlled application rail and grouped sub-application panel through the public
 `/navigation` export.
 It renders the public page/header/stack/card/grid composition and imports the browser-verifier
-surface through the package export map.
+surface through the package export map. It resolves the resource's detail tabs (a hidden and a
+disabled tab) with `resolveResourceDetailTabs` and renders them in `ResourceDetailShell` with a tab
+lead, a tab-list label, and an overflow mode.
 
 This fixture must not import `@/`, `src/`, `extensions/`, or unpublished private host APIs.
 

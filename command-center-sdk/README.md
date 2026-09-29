@@ -124,10 +124,10 @@ error normalization stay outside the resource definition.
 - `/controls`: the public button, badge, label, labelled field, input, and textarea, plus the hook
   that wires a custom control into a field.
 - `/resource`: framework-neutral resource definitions, adapters, HTTP normalization, pagination,
-  activation, and discovered bulk actions.
+  activation, detail-tab resolution, and discovered bulk actions.
 - `/resource/react`: loaded-page and explicit/all-matching selection state.
-- `/views`: React resource lists, details, summaries, pickers, tables, cards, pagination, and
-  action UI.
+- `/views`: React resource lists, details (with keyboard-accessible tabs that move what does not
+  fit into a More menu), summaries, pickers, tables, cards, pagination, and action UI.
 - `/contracts`: ordered migration helpers.
 - `/contracts/manifest.json`, `/contracts/schemas/*`, and `/contracts/fixtures/*`: the versioned
   backend-facing JSON Schema bundle and conformance fixtures.

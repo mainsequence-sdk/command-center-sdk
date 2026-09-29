@@ -64,12 +64,18 @@ import {
   createResourcePaginationModel,
   defineResourceApplication,
   parseResourceDiscovery,
+  resolveResourceDetailTabs,
   type ResourceAdapter,
   type ResourceApplicationDefinition,
+  type ResourceDetailTabDefinition,
   type ResourceListRequest,
   type ResourceListResult,
 } from "@dev-mainsequence/command-center-sdk/resource";
 ```
+
+`resolveResourceDetailTabs` turns detail tab definitions and the requested tab ids into the visible
+tabs, the active tab and sub-tab, and a `fallback` flag; it is the only place a tab's `isVisible`
+and function-valued `disabled` run.
 
 The module has no React dependency. Use it in clients, normalizers, tests, and server-capable code
 that does not execute browser APIs.
@@ -92,8 +98,14 @@ import {
   ResourceDetailShell,
   ResourceListPage,
   ResourcePicker,
+  type ResourceDetailTabLeadContext,
+  type ResourceDetailTabsOverflow,
 } from "@dev-mainsequence/command-center-sdk/views";
 ```
+
+`ResourceDetailShell` also owns its tabs' keyboard model, tab panel, disabled state, leading
+visuals (`renderTabLead`), accessible name (`tabsLabel`), and overflow (`tabsOverflow`); there is no
+separate tab component.
 
 See [Resource applications](./concepts/resource-applications.md) for how the layers compose and
 [Resources](./resources.md) for task-level examples.

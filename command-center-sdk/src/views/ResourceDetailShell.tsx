@@ -1,7 +1,15 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
+import { resolveResourceDetailTabs } from "../resource/detail-tabs.js";
 import type { ResourceBreadcrumbDefinition, ResourceDetailTabDefinition } from "../resource/types.js";
+import {
+  ResourceDetailTabsCard,
+  type ResourceDetailTabLeadContext,
+  type ResourceDetailTabsOverflow,
+} from "./ResourceDetailTabs.js";
 import { ResourceTransitionShell } from "./ResourceTransitionShell.js";
+
+export type { ResourceDetailTabLeadContext, ResourceDetailTabsOverflow } from "./ResourceDetailTabs.js";
 
 export interface ResourceDetailShellProps<T = unknown> {
   activeSubTabId?: string | null;
@@ -17,19 +25,26 @@ export interface ResourceDetailShellProps<T = unknown> {
   loadingTitle?: ReactNode;
   onSubTabChange?: (id: string) => void;
   onTabChange?: (id: string) => void;
+  /**
+   * Leading visual for each tab, usually an icon. It renders `aria-hidden`, so the label stays the
+   * tab's accessible name. Keep it pure: it renders in the strip, a hidden measurement copy, and the
+   * More menu.
+   */
+  renderTabLead?: (context: ResourceDetailTabLeadContext<T>) => ReactNode;
   summary?: ReactNode;
+  /**
+   * Tabs to render. Resolve them with `resolveResourceDetailTabs` when they use `isVisible` or a
+   * function-valued `disabled`; the shell itself evaluates neither.
+   */
   tabs?: readonly ResourceDetailTabDefinition<T>[];
   tabsAccessory?: ReactNode;
-}
-
-function TabButton({ active, count, label, onClick, variant }: { active: boolean; count?: number; label: string; onClick: () => void; variant: "primary" | "secondary" }) {
-  const ref = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (active && typeof ref.current?.scrollIntoView === "function") {
-      ref.current.scrollIntoView({ block: "nearest", inline: "nearest" });
-    }
-  }, [active]);
-  return <button aria-selected={active} className={`cc-resource-detail-tabs__tab cc-resource-detail-tabs__tab--${variant}${active ? " cc-resource-detail-tabs__tab--active" : ""}`} onClick={onClick} ref={ref} role="tab" type="button"><span>{label}</span>{count !== undefined ? <span className="cc-resource-detail-tabs__count">{count}</span> : null}</button>;
+  /** Accessible name of the primary tab list. Defaults to "Detail sections". */
+  tabsLabel?: string;
+  /**
+   * How tabs that do not fit are reached. `auto` (default) moves them into a More menu with a fine
+   * pointer and scrolls the row sideways with a coarse pointer.
+   */
+  tabsOverflow?: ResourceDetailTabsOverflow;
 }
 
 export function ResourceDetailShell<T = unknown>({
@@ -46,14 +61,16 @@ export function ResourceDetailShell<T = unknown>({
   loadingTitle = "Loading details…",
   onSubTabChange,
   onTabChange,
+  renderTabLead,
   summary,
   tabs = [],
   tabsAccessory,
+  tabsLabel = "Detail sections",
+  tabsOverflow = "auto",
 }: ResourceDetailShellProps<T>) {
   if (loading) return <ResourceTransitionShell description={loadingDescription} embedded={embedded} title={loadingTitle} />;
 
-  const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0];
-  const subTabs = activeTab?.subTabs ?? [];
+  const resolved = resolveResourceDetailTabs(tabs, { activeSubTabId, activeTabId });
   const hasResolvedContent =
     (summary !== null && summary !== undefined) ||
     (children !== null && children !== undefined);
@@ -67,13 +84,23 @@ export function ResourceDetailShell<T = unknown>({
       </header> : null}
       {error ? <div className="cc-resource-detail-shell__error" role="alert">{error}</div> : null}
       {summary ? <div className="cc-resource-detail-shell__summary">{summary}</div> : null}
-      {(!error || hasResolvedContent) && tabs.length ? <div className="cc-resource-detail-shell__card">
-        <div className="cc-resource-detail-shell__tabs-header">
-          <div className="cc-resource-detail-shell__tabs-row"><div aria-label="Detail sections" className="cc-resource-detail-tabs" role="tablist">{tabs.map((tab) => <TabButton active={tab.id === activeTab?.id} count={tab.count} key={tab.id} label={tab.label} onClick={() => onTabChange?.(tab.id)} variant="primary" />)}</div>{tabsAccessory ? <div className="cc-resource-detail-shell__tabs-accessory">{tabsAccessory}</div> : null}</div>
-          {subTabs.length > 1 ? <div aria-label={`${activeTab?.label ?? "Detail"} sections`} className="cc-resource-detail-tabs cc-resource-detail-tabs--secondary" role="tablist">{subTabs.map((tab) => <TabButton active={tab.id === activeSubTabId} count={tab.count} key={tab.id} label={tab.label} onClick={() => onSubTabChange?.(tab.id)} variant="secondary" />)}</div> : null}
-        </div>
-        {content}
-      </div> : !error || hasResolvedContent ? content : null}
+      {(!error || hasResolvedContent) && resolved.tabs.length ? (
+        <ResourceDetailTabsCard<T>
+          accessory={tabsAccessory}
+          activeSubTab={resolved.activeSubTab}
+          activeTab={resolved.activeTab}
+          contentVariant={contentVariant}
+          onSubTabChange={onSubTabChange}
+          onTabChange={onTabChange}
+          overflow={tabsOverflow}
+          renderTabLead={renderTabLead}
+          subTabs={resolved.subTabs}
+          tabs={resolved.tabs}
+          tabsLabel={tabsLabel}
+        >
+          {children}
+        </ResourceDetailTabsCard>
+      ) : !error || hasResolvedContent ? content : null}
     </section>
   );
 }

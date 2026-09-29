@@ -60,7 +60,119 @@ describe("ResourceDetailShell", () => {
     expect(html).toContain("Loading service…");
     expect(html).not.toContain("cc-resource-detail-tabs");
   });
+
+  it("renders one tab stop, links every tab to the panel, and names the panel by the active label", () => {
+    const html = renderToStaticMarkup(
+      <ResourceDetailShell
+        activeTabId="logs"
+        renderTabLead={({ tab }) => <svg data-lead={tab.id} />}
+        tabs={[
+          { count: 3, id: "overview", label: "Overview" },
+          { id: "logs", label: "Logs" },
+          { disabled: true, id: "settings", label: "Settings" },
+        ]}
+        tabsLabel="Service sections"
+      >
+        <div>Logs body</div>
+      </ResourceDetailShell>,
+    );
+
+    const tablist = openingTags(html, 'role="tablist"');
+    expect(tablist).toHaveLength(1);
+    expect(attribute(tablist[0]!, "aria-label")).toBe("Service sections");
+
+    const tabs = openingTags(html, 'role="tab"');
+    expect(tabs.map((tag) => attribute(tag, "data-cc-tab-id"))).toEqual(["overview", "logs", "settings"]);
+    expect(tabs.map((tag) => attribute(tag, "tabindex"))).toEqual(["-1", "0", "-1"]);
+    expect(tabs.map((tag) => attribute(tag, "aria-selected"))).toEqual(["false", "true", "false"]);
+    expect(tabs.map((tag) => attribute(tag, "aria-disabled"))).toEqual([null, null, "true"]);
+
+    const [panel] = openingTags(html, 'role="tabpanel"');
+    const panelId = attribute(panel!, "id");
+    expect(panelId).toBeTruthy();
+    expect(attribute(panel!, "tabindex")).toBe("0");
+    expect(tabs.every((tag) => attribute(tag, "aria-controls") === panelId)).toBe(true);
+    expect(html).toContain(`id="${attribute(panel!, "aria-labelledby")}">Logs</span>`);
+
+    expect(html).toContain('<span aria-hidden="true" class="cc-resource-detail-tabs__lead"><svg data-lead="overview"></svg></span>');
+    expect(html).toContain('<span class="cc-resource-detail-tabs__count">3</span>');
+    expect(duplicateIds(html)).toEqual([]);
+  });
+
+  it("serves the scroll styling until the browser has measured the strip", () => {
+    const html = renderToStaticMarkup(
+      <ResourceDetailShell activeTabId="a" tabs={[{ id: "a", label: "A" }, { id: "b", label: "B" }]} />,
+    );
+
+    expect(html).toContain('data-overflow="scroll"');
+    expect(html).not.toContain('data-overflow="menu"');
+    expect(html).not.toContain('aria-haspopup="menu"');
+    // The hidden measurement copies are neither tabs nor focusable.
+    const [measure] = openingTags(html, 'class="cc-resource-detail-tabs__measure"');
+    expect(attribute(measure!, "aria-hidden")).toBe("true");
+    expect(openingTags(html, "data-cc-measure-tab").every((tag) => attribute(tag, "tabindex") === "-1")).toBe(true);
+    expect(openingTags(html, 'role="tab"')).toHaveLength(2);
+  });
+
+  it("renders no measurement copies when the strip only scrolls", () => {
+    const html = renderToStaticMarkup(
+      <ResourceDetailShell activeTabId="a" tabs={[{ id: "a", label: "A" }]} tabsOverflow="scroll" />,
+    );
+
+    expect(html).not.toContain("cc-resource-detail-tabs__measure");
+  });
+
+  it("falls back to the first enabled tab and sub-tab, and labels the panel by both", () => {
+    const html = renderToStaticMarkup(
+      <ResourceDetailShell
+        activeTabId="missing"
+        tabs={[
+          { disabled: true, id: "code", label: "Code" },
+          {
+            id: "ship",
+            label: "Ship",
+            subTabs: [
+              { id: "releases", label: "Releases" },
+              { id: "history", label: "Deploy History" },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    const selected = openingTags(html, 'aria-selected="true"').map((tag) => attribute(tag, "data-cc-tab-id"));
+    expect(selected).toEqual(["ship", "releases"]);
+    const tablists = openingTags(html, 'role="tablist"').map((tag) => attribute(tag, "aria-label"));
+    expect(tablists).toEqual(["Detail sections", "Ship sections"]);
+    const [panel] = openingTags(html, 'role="tabpanel"');
+    const labelIds = attribute(panel!, "aria-labelledby")!.split(" ");
+    expect(labelIds).toHaveLength(2);
+    expect(html).toContain(`id="${labelIds[0]}">Ship</span>`);
+    expect(html).toContain(`id="${labelIds[1]}">Releases</span>`);
+  });
+
+  it("renders no tab list or panel without tabs", () => {
+    const html = renderToStaticMarkup(<ResourceDetailShell><div>Body</div></ResourceDetailShell>);
+
+    expect(html).not.toContain('role="tablist"');
+    expect(html).not.toContain('role="tabpanel"');
+    expect(html).toContain("Body");
+  });
 });
+
+function openingTags(html: string, marker: string) {
+  return (html.match(/<[a-z][^>]*>/gu) ?? []).filter((tag) => tag.includes(marker));
+}
+
+function attribute(tag: string, name: string) {
+  const match = new RegExp(`\\s${name}="([^"]*)"`, "u").exec(tag);
+  return match ? match[1]! : null;
+}
+
+function duplicateIds(html: string) {
+  const ids = [...html.matchAll(/\sid="([^"]*)"/gu)].map((match) => match[1]);
+  return ids.filter((id, index) => ids.indexOf(id) !== index);
+}
 
 describe("EntitySummary", () => {
   it("renders the normalized summary contract without application dependencies", () => {

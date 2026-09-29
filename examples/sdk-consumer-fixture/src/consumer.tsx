@@ -39,11 +39,16 @@ import {
 import {
   createHttpResourceAdapter,
   defineResourceApplication,
+  resolveResourceDetailTabs,
 } from "@dev-mainsequence/command-center-sdk/resource";
 import { mainSequenceTheme } from "@dev-mainsequence/command-center-sdk/theme";
 import { getThemeCategoricalPalette } from "@dev-mainsequence/command-center-sdk/theme/data-viz";
 import { graphiteTheme } from "@dev-mainsequence/command-center-sdk/theme/presets";
-import { ResourcePagination } from "@dev-mainsequence/command-center-sdk/views";
+import {
+  ResourceDetailShell,
+  ResourcePagination,
+  type ResourceDetailTabLeadContext,
+} from "@dev-mainsequence/command-center-sdk/views";
 
 import "@dev-mainsequence/command-center-sdk/styles.css";
 import "@dev-mainsequence/command-center-sdk/theme/styles.css";
@@ -96,10 +101,30 @@ export const servicesResource = defineResourceApplication({
   detail: {
     tabs: [
       { id: "overview", label: "Overview" },
-      { id: "activity", label: "Activity" },
+      { id: "activity", label: "Activity", isVisible: (service) => service.uid !== "" },
+      { id: "settings", label: "Settings", disabled: true },
     ],
   },
 });
+
+const packedDetailTabs = resolveResourceDetailTabs(servicesResource.detail?.tabs, {
+  activeTabId: "activity",
+  resource: { name: "Pricing API", uid: "svc-1" },
+});
+
+export const packedDetailHtml = renderToStaticMarkup(
+  <ResourceDetailShell<Service>
+    activeTabId={packedDetailTabs.activeTab?.id}
+    breadcrumbs={[{ id: "services", label: "Services" }, { id: "service", label: "Pricing API" }]}
+    renderTabLead={({ level, tab }: ResourceDetailTabLeadContext<Service>) =>
+      level === "primary" ? <span data-icon={tab.id} /> : null}
+    tabs={packedDetailTabs.tabs}
+    tabsLabel="Service sections"
+    tabsOverflow="auto"
+  >
+    <p>{packedDetailTabs.activeTab?.label}</p>
+  </ResourceDetailShell>,
+);
 
 export const packedNavigationApplication = defineNavigationApplication({
   id: "foundry",

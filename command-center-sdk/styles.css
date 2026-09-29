@@ -690,7 +690,56 @@ h3),
   display: flex;
   min-width: 0;
   overflow-x: auto;
+  scroll-padding-inline: 1.5rem;
   scrollbar-width: none;
+}
+
+/* SDK ADR 015. The strip and its More trigger share one flexible frame; the frame's width, not its
+   content, decides how many tabs fit, so hiding a tab never shrinks the room for the others. */
+.cc-resource-detail-tabs__viewport {
+  align-items: stretch;
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  position: relative;
+}
+
+.cc-resource-detail-tabs__viewport > .cc-resource-detail-tabs {
+  flex: 0 1 auto;
+}
+
+.cc-resource-detail-tabs__viewport > .cc-resource-picker {
+  display: flex;
+  flex: none;
+}
+
+.cc-resource-detail-tabs[data-overflow="menu"] {
+  background: none;
+  overflow: hidden;
+}
+
+.cc-resource-detail-tabs[data-overflow="menu"] .cc-resource-detail-tabs__tab {
+  min-width: 0;
+}
+
+.cc-resource-detail-tabs__measure {
+  block-size: 0;
+  inline-size: 0;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  visibility: hidden;
+}
+
+.cc-resource-detail-tabs__measure-row {
+  display: flex;
+  inline-size: max-content;
+}
+
+.cc-resource-detail-tabs__measure-row > * {
+  flex: none;
 }
 
 .cc-resource-detail-tabs__tab {
@@ -713,7 +762,13 @@ h3),
 }
 
 @media (hover: hover) {
-  .cc-resource-detail-tabs__tab:hover {
+  .cc-resource-detail-tabs__tab:not([aria-disabled="true"]):hover {
+    color: var(--foreground);
+  }
+
+  .cc-resource-picker__trigger.cc-resource-detail-tabs__more:hover:not(:disabled) {
+    background: transparent;
+    border-bottom-color: var(--transparent);
     color: var(--foreground);
   }
 }
@@ -723,10 +778,76 @@ h3),
   font-weight: var(--font-weight-semibold);
 }
 
-.cc-resource-detail-tabs--secondary {
+/* Inset, so the scrolling strip and the card never clip the ring. */
+.cc-resource-detail-tabs__tab:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -4px;
+}
+
+.cc-resource-detail-tabs__tab[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cc-resource-detail-tabs__lead {
+  align-self: center;
+  display: inline-flex;
+  flex: none;
+}
+
+.cc-resource-detail-tabs__lead > svg {
+  block-size: 1rem;
+  inline-size: 1rem;
+}
+
+.cc-resource-detail-tabs__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cc-resource-picker__trigger.cc-resource-detail-tabs__more {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--transparent);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--muted-foreground);
+  font-size: var(--font-size-body-lg);
+  gap: 0.35rem;
+  inline-size: auto;
+  justify-content: flex-start;
+  margin-bottom: -1px;
+  padding: 1rem 0.85rem 0.85rem;
+  white-space: nowrap;
+}
+
+.cc-resource-picker__trigger.cc-resource-detail-tabs__more:focus-visible,
+.cc-resource-picker__trigger.cc-resource-detail-tabs__more[aria-expanded="true"] {
+  border-bottom-color: var(--transparent);
+  box-shadow: none;
+  color: var(--foreground);
+}
+
+.cc-resource-picker__trigger.cc-resource-detail-tabs__more:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -4px;
+}
+
+.cc-resource-detail-tabs__viewport--secondary {
   background: color-mix(in srgb, var(--muted) 35%, transparent);
   border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
   padding: 0 1rem;
+}
+
+.cc-resource-detail-tabs--secondary {
+  background: none;
+}
+
+.cc-resource-detail-tabs__viewport--secondary .cc-resource-detail-tabs__more {
+  font-size: var(--font-size-markdown-h3);
+  padding-bottom: 0.65rem;
+  padding-top: 0.65rem;
 }
 
 .cc-resource-detail-tabs__tab--secondary {
@@ -755,6 +876,11 @@ h3),
 
 .cc-resource-detail-shell__content--plain {
   min-width: 0;
+}
+
+.cc-resource-detail-shell__content[role="tabpanel"]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
 }
 
 .cc-entity-summary {
@@ -1024,6 +1150,10 @@ h3),
     align-items: stretch;
     flex-direction: column;
     padding-top: 0.5rem;
+  }
+
+  .cc-resource-detail-tabs__viewport {
+    flex-basis: auto;
   }
 
   .cc-entity-summary__facts {

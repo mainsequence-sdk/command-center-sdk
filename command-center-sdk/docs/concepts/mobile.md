@@ -74,7 +74,10 @@ viewport seam. The resolved form appears as `data-cc-presentation` on the surfac
 tests, and the verifier can read it. `ApplicationNavigationShell` applies it with `docked` and
 `overlay`, `DataTable` with `table` and `stacked`, `ResourcePagination` with `full` and `compact`,
 `ResourcePicker` with `popover` and `sheet`, and `ResourceActionConfirmationDialog` with `dialog`
-and `sheet`. See [Application navigation](../navigation.md) and [Resources](../resources.md).
+and `sheet`. `ResourceDetailShell` applies the same idea to its tab strips with `tabsOverflow`
+(SDK ADR 015): `auto` scrolls a strip sideways with a coarse pointer and moves tabs that do not fit
+into a More menu with a fine one, and the resolved form appears as `data-overflow` on the strip.
+See [Application navigation](../navigation.md) and [Resources](../resources.md).
 
 ## What the stylesheets do on touch
 

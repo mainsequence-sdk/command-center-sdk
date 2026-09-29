@@ -44,8 +44,10 @@ them from incomplete local observations.
 
 A controlled SDK component may keep internal interaction details while the host owns the durable
 value. `ResourceDetailShell`, for example, receives `activeTabId` and calls `onTabChange`; it still
-owns tab semantics, layout, and accessible presentation. The host can encode the selected tab in
-the URL without reimplementing the tab interface.
+owns tab semantics, layout, keyboard focus, the measurement that decides which tabs fit, and the
+More menu. The host can encode the selected tab in the URL without reimplementing the tab
+interface, and resolves hidden or disabled tabs with `resolveResourceDetailTabs` instead of
+rewriting the URL.
 
 Use controlled props when another part of the application must observe, persist, or restore the
 value. Keep ephemeral focus, measurement, request correlation, and presentation state inside the

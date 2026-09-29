@@ -24,6 +24,7 @@ owning application repositories; backend implementation decisions are out of sco
 - [SDK ADR 011: Public Control and Form Primitives](./adr-sdk-011-public-control-and-form-primitives.md) — Accepted
 - [SDK ADR 013: Static-Site Platform Request Bridge](./adr-sdk-013-static-site-platform-request-bridge.md) — Accepted
 - [SDK ADR 014: Local Platform Request Proxy](./adr-sdk-014-local-platform-request-proxy.md) — Accepted
+- [SDK ADR 015: Detail Tabs Own Their Keyboard, Panel, and Overflow](./adr-sdk-015-detail-tabs.md) — Accepted
 
 ## Rules
 

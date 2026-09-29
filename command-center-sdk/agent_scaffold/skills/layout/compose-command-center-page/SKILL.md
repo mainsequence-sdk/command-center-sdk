@@ -82,6 +82,11 @@ Place `ResourceListPage` and `ResourceDetailShell` directly in `ApplicationPageS
 them in `ApplicationCard`; those views already own their internal surface, padding, and lifecycle.
 Do the same for any specialized renderer whose public documentation says it owns its frame.
 
+A page about one object with a summary and sections is a `ResourceDetailShell`, even when the
+object is not a listed resource; route it to `$build-resource-detail`. Never put a tab strip in an
+`ApplicationCard` header or build one from buttons: the shell's tabs own the keyboard model, the tab
+panel, and the More menu.
+
 Keep domain-specific charts, forms, split panes, maps, editors, and canvases application-owned.
 The layout primitives do not own routing, authentication, permissions, persistence, API transport,
 notifications, or product actions. Route application-level staged loading, retry, and failure

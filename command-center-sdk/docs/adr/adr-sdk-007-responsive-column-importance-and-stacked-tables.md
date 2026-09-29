@@ -5,6 +5,8 @@
 - Implementation: `@dev-mainsequence/command-center-sdk` unreleased (planned 0.4.0)
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
+- Amended by: [SDK ADR 015: Detail Tabs Own Their Keyboard, Panel, and Overflow](./adr-sdk-015-detail-tabs.md)
+  (§5: with a fine pointer, tabs that do not fit move into a More menu)
 - Related:
   - [SDK ADR 006: Device-Aware Primitives](./adr-sdk-006-device-aware-primitives.md)
   - [Resources](../resources.md), [Backend contracts](../backend-contracts.md)
