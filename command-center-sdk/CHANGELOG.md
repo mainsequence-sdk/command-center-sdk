@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.10
 
 Compatibility axes: `/views`, additively (`ResourceTransferList` prop `pending`); `styles.css`; and
 the packaged skill `views/build-resource-picker`. No change to an existing export, contract ID,
