@@ -155,8 +155,11 @@ returns the visible tabs with `disabled` resolved, the active tab and sub-tab, a
 ### 7. Picker keyboard fixes
 
 `ResourcePicker` moves focus into its popup only once the popup is positioned and visible; ArrowDown
-or ArrowUp on the trigger of an open popup moves focus into it; and Tab closes a popover, returning
-focus to the trigger when focus was inside the portaled popup. These apply to every picker.
+or ArrowUp on the trigger of an open popup moves focus into it; Tab closes a popover, returning
+focus to the trigger when focus was inside the portaled popup; and choosing an action, a value, or
+the header action returns focus to the trigger when closing the popup would otherwise leave it on
+the page, while a choice that moved focus on (into a dialog, onto a newly selected tab) keeps it.
+These apply to every picker.
 
 ### 8. Styling
 

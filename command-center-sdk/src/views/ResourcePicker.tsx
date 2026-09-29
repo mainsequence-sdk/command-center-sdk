@@ -271,12 +271,23 @@ export function ResourcePicker(props: ResourcePickerProps) {
     open: open && sheet,
   });
 
-  const close = (restoreFocus = false) => {
+  // `"if-lost"` follows a choice: focus returns to the trigger only when closing the popup would
+  // leave it nowhere, so a choice that moves focus on (a dialog, a newly selected tab) keeps it.
+  const close = (restoreFocus: boolean | "if-lost" = false) => {
     setOpen(false);
     updateSearchValue("");
     setActiveIndex(-1);
     onOpenChange?.(false);
-    if (restoreFocus) queueMicrotask(() => triggerRef.current?.focus());
+    if (!restoreFocus) return;
+    queueMicrotask(() => {
+      const trigger = triggerRef.current;
+      if (!trigger?.isConnected) return;
+      if (restoreFocus === "if-lost") {
+        const focused = document.activeElement;
+        if (focused && focused !== document.body && focused.isConnected) return;
+      }
+      trigger.focus();
+    });
   };
 
   const openPicker = (direction: "first" | "last" = "first") => {
@@ -366,7 +377,7 @@ export function ResourcePicker(props: ResourcePickerProps) {
 
     if (isActionPicker(props)) {
       props.onAction(option.value);
-      close();
+      close("if-lost");
       return;
     }
 
@@ -379,7 +390,7 @@ export function ResourcePicker(props: ResourcePickerProps) {
     }
 
     props.onValueChange(option.value);
-    close();
+    close("if-lost");
   };
 
   const moveActiveOption = (direction: 1 | -1) => {
@@ -455,7 +466,7 @@ export function ResourcePicker(props: ResourcePickerProps) {
             className="cc-resource-picker__header-action"
             onClick={() => {
               headerAction.onSelect();
-              close();
+              close("if-lost");
             }}
           >
             {headerAction.label}

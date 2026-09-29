@@ -137,7 +137,7 @@ describe("ResourcePicker", () => {
     container.remove();
   });
 
-  async function renderActionMenu() {
+  async function renderActionMenu(onAction: (value: string) => void = () => undefined) {
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
@@ -152,13 +152,74 @@ describe("ResourcePicker", () => {
             { value: "archive", label: "Archive" },
           ]}
           triggerLabel="Actions"
-          onAction={() => undefined}
+          onAction={onAction}
         />,
       );
     });
     const trigger = container.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]')!;
     return { container, trigger };
   }
+
+  it("returns focus to the trigger once an action is chosen", async () => {
+    const onAction = vi.fn();
+    const { container, trigger } = await renderActionMenu(onAction);
+
+    await act(async () => trigger.click());
+    const archive = Array.from(document.body.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'))
+      .find((item) => item.textContent === "Archive")!;
+    await act(async () => {
+      archive.focus();
+      archive.click();
+    });
+
+    expect(onAction).toHaveBeenCalledWith("archive");
+    expect(document.body.querySelector("[data-resource-picker-popup]")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    container.remove();
+  });
+
+  it("leaves focus where the chosen action moved it", async () => {
+    const elsewhere = document.createElement("input");
+    document.body.append(elsewhere);
+    const { container, trigger } = await renderActionMenu(() => elsewhere.focus());
+
+    await act(async () => trigger.click());
+    await act(async () => document.body.querySelector<HTMLButtonElement>('[role="menuitem"]')!.click());
+
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
+    container.remove();
+  });
+
+  it("returns focus to the trigger once a value is chosen", async () => {
+    const onValueChange = vi.fn();
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    roots.push(root);
+    await act(async () => {
+      root.render(
+        <ResourcePicker
+          mode="single"
+          ariaLabel="Kind"
+          options={[
+            { value: "all", label: "All kinds" },
+            { value: "time-indexed", label: "Time indexed" },
+          ]}
+          value="all"
+          onValueChange={onValueChange}
+        />,
+      );
+    });
+    const trigger = container.querySelector<HTMLButtonElement>('button[aria-haspopup="listbox"]')!;
+
+    await act(async () => trigger.click());
+    await act(async () => document.body.querySelectorAll<HTMLButtonElement>('[role="option"]')[1]!.click());
+
+    expect(onValueChange).toHaveBeenCalledWith("time-indexed");
+    expect(document.activeElement).toBe(trigger);
+    container.remove();
+  });
 
   it("moves focus into the popup only once it is positioned and visible", async () => {
     const focus = HTMLElement.prototype.focus;

@@ -39,8 +39,10 @@ theme, or storage change, and no backend change.
   frame element around each strip and its More trigger.
 - **Pickers keep keyboard focus.** `ResourcePicker` moves focus into its popup only once the popup
   is visible (a browser does not focus a hidden element, so keyboard users stayed on the trigger);
-  ArrowDown or ArrowUp on the trigger of an open popup moves focus into it instead of hiding it; and
-  Tab closes a popover.
+  ArrowDown or ArrowUp on the trigger of an open popup moves focus into it instead of hiding it; Tab
+  closes a popover; and choosing an action, a value, or the header action returns focus to the
+  trigger instead of dropping it on the page, unless the choice moved focus on, for example into a
+  dialog. Row-action menus, bulk actions, and filters all use it.
 - The packaged skills teach the detail tabs: `build-resource-detail` composes them, and the
   controls, page, and general skills route tabs to it; the `docs-skills` test forbids tab roles in
   skill examples.

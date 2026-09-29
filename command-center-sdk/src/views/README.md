@@ -46,7 +46,10 @@ presentations (SDK ADR 006): `popover` anchors to the trigger and now flips abov
 no room below; `sheet` anchors to the bottom of the visual viewport with a scrim, a focus trap, a
 scroll lock, and 44px rows, so the on-screen keyboard pushes it up instead of covering it. `auto`
 resolves to `sheet` below `sm` and on `sm` with a coarse pointer; every picker the SDK renders
-itself uses `auto`.
+itself uses `auto`. Keyboard focus never falls to the page: the popup takes focus once it is
+positioned and visible, ArrowDown or ArrowUp on an open picker's trigger moves into it, Tab closes a
+popover, and a choice returns focus to the trigger unless the choice moved focus on, for example
+into a dialog.
 Hosts can provide `renderBulkActionConfirmation` when their application owns the canonical modal
 system. The SDK retains discovery, selection, preflight, execution, error, and refresh behavior;
 the host renderer supplies only the established confirmation presentation.
