@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.9
 
 Compatibility axes: `/views`, additively (`ResourceTransferList` and the types
 `ResourceTransferListProps`, `ResourceTransferChange`, `ResourceTransferListPresentation`,
