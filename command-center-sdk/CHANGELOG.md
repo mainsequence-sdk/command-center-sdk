@@ -1,13 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.5.8
 
 Compatibility axes: `/resource`, additively (`resolveResourceDetailTabs`,
 `ResolvedResourceDetailTabs`, `ResourceDetailTabSelection`, and `disabled` on detail tab and sub-tab
 definitions; `ResourceDetailSubTabDefinition` takes an optional resource type); `/views`,
 additively (`ResourceDetailShell` props `renderTabLead`, `renderBreadcrumbLead`, `tabsLabel`, and
 `tabsOverflow`, and the types `ResourceDetailTabLeadContext`, `ResourceDetailBreadcrumbLeadContext`,
-and `ResourceDetailTabsOverflow`) with the tab and picker behavior changes listed below; `styles.css`; the packaged skills `views/build-resource-detail`,
+and `ResourceDetailTabsOverflow`) with the tab and picker behavior changes listed below;
+`styles.css`; the packaged skills `views/build-resource-detail`,
 `controls/compose-command-center-controls`, `layout/compose-command-center-page`,
 `general/build-command-center-application`, and `general/use-command-center-sdk`; and the skill
 installer's behavior. No contract ID, JSON Schema, fixture, provenance field, iframe protocol,
