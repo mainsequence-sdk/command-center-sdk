@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.11
 
 Compatibility axes: the CLI, additively (`login`, `logout`, `refresh-token`, `auth status`,
 `auth token`); `/vite` behavior (`platformRequestProxy()` token source, no declaration change); and
