@@ -198,15 +198,20 @@ async function sendPlatformRequest(request: Request): Promise<Response> {
 }
 ```
 
-The developer exports `MAINSEQUENCE_ENDPOINT` and `MAINSEQUENCE_ACCESS_TOKEN` before `npm run dev`;
-the dev server adds the token, and the page never holds it. Never give the token a `VITE_` name,
+The developer signs in once per machine with `npx command-center-sdk login`; the dev server takes
+the token from that saved session, renews it, and adds it, and the page never holds it. The
+project names its backend with `MAINSEQUENCE_ENDPOINT`, in the environment or in `.env`, which
+holds no token. `MAINSEQUENCE_ACCESS_TOKEN` in the dev server's environment wins over the saved
+session. Never give a token a `VITE_` name,
 never read it in page code, and never select the local path from anything but
 `import.meta.env.DEV` and a top-level window. Without a host there is no `onContext`: read the
 developer's `uid` from `/__mainsequence__/api/v1/users/me/`. The dev server forwards the bridge's
 request shape (the five methods, the platform's `/api/` paths, `accept`, `content-type`, a body up
 to 1 MiB) but has no allow-list, so a path that works locally can be `not_allowed` embedded. Handle
-`503` (`platform_not_configured`: a variable is missing), `502` (`platform_unreachable`), `401`
-(refresh the token and restart the dev server), and `403` (`cross_site_request` or `not_local`:
+`503` (`platform_not_configured`: the machine is not signed in, or a variable is invalid; the
+detail names the login command), `502` (`platform_unreachable`), `401` (the dev server already
+renewed the session and asked once more: sign in again), and `403` (`cross_site_request` or
+`not_local`:
 only the page itself, on this machine through a localhost name, can use the route).
 
 ## Build The Host

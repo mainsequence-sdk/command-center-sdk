@@ -138,7 +138,8 @@ error normalization stay outside the resource definition.
   delegated FastAPI HTTP access, native one-time-ticket WebSocket connections, and platform
   requests the host sends as the signed-in person.
 - `/vite`: `platformRequestProxy()`, a Vite dev-server plugin that sends a top-level local page's
-  platform requests with the developer's `MAINSEQUENCE_ACCESS_TOKEN`, during local development only;
+  platform requests as the developer, with the session `command-center-sdk login` saved on the
+  machine, during local development only;
   and `localAgentProxy()`, which forwards a chat's routes to an Agent the developer runs with
   `ms-tau` in local mode on this machine.
 - `/styles.css` and `/theme/*.css`: browser-ready styles.
@@ -149,7 +150,26 @@ Import only declared package exports. Do not import `dist` files or repository s
 
 The SDK supplies reusable controlled navigation chrome but does not own authentication, routes,
 permission evaluation, query caching, backend authorization, deployment configuration, branding,
-favorites, user menus, persistence policy, or product-domain models and applications.
+favorites, user menus, persistence policy, or product-domain models and applications. Its CLI signs
+a developer's machine in to the platform for local development; an application's own sign-in stays
+the application's.
+
+## Sign in for local development
+
+```bash
+npx command-center-sdk login
+```
+
+One login per machine serves every project: the session is saved in the operating system's
+credential store (the login Keychain on macOS, Secret Service on Linux), one per backend, and the
+Main Sequence Python CLI shares it. `skills sync`, `code-repository sync`, and the dev server's
+`platformRequestProxy()` use it and renew it. A project names its backend with
+`MAINSEQUENCE_ENDPOINT`, in the environment or in its `.env`, and holds no token.
+`auth status` reports the session, `auth token` hands a short-lived access token to another local
+tool, `refresh-token` renews the session and removes credentials left in `./.env`, and `logout`
+ends it. `MAINSEQUENCE_ACCESS_TOKEN` in the environment still wins, for a launcher or a CI job.
+See [Sign in once per machine](./docs/application-operations.md#sign-in-once-per-machine) and SDK
+ADR 017.
 
 ## Agent skills
 
@@ -186,19 +206,18 @@ namespace under `.agents/skills`. Use `--dry-run --json` to inspect the `removed
 writing. See the [human-doc/skill map](./docs/README.md#task-and-agent-skill-map) for the exact
 workflow parity.
 
-When `MAINSEQUENCE_ACCESS_TOKEN` and an MCP URL are available, package postinstall also makes a
-nonblocking attempt to refresh backend-owned platform skills under `.agents/skills/mainsequence/`.
-Run the strict command when the refresh must succeed or when you want dry-run/JSON evidence:
+When `MAINSEQUENCE_ACCESS_TOKEN` and an MCP URL are set in the environment, package postinstall
+also makes a nonblocking attempt to refresh backend-owned platform skills under
+`.agents/skills/mainsequence/`. Postinstall reads no saved session. Run the strict command, which
+uses the saved session, when the refresh must succeed or when you want dry-run/JSON evidence:
 
 ```bash
-export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
-export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
 npx command-center-sdk skills sync --path .
 npx command-center-sdk skills sync --path . --dry-run --json
 ```
 
-The URL may instead be supplied with `--mcp-url` or `COMMAND_CENTER_SDK_MCP_URL`. Do not place the
-token in command arguments. The MCP installer writes
+The MCP URL is the project's backend plus `/mcp`, or `--mcp-url` or `COMMAND_CENTER_SDK_MCP_URL`;
+the saved session is sent only to its own backend. Do not place a token in command arguments. The MCP installer writes
 `.agents/skills/mainsequence/MCP_PINNED_FROM.txt`, overwrites only its recorded folders, may adopt
 folders proven MCP-owned by the Python SDK sentinel, and preserves every unrelated skill. Set
 `COMMAND_CENTER_SDK_MCP_POSTINSTALL=0` to disable only the best-effort postinstall network attempt;
@@ -249,11 +268,12 @@ Use the SDK CLI when a registered Command Center code repository is ready to be 
 tagged, and pushed for automatic deployment:
 
 ```bash
-export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
-export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
 npx command-center-sdk code-repository sync -m "Describe the change" --path . --dry-run
 npx command-center-sdk code-repository sync -m "Describe the change" --path .
 ```
+
+The command authenticates with the saved session, or with `MAINSEQUENCE_ACCESS_TOKEN` when the
+environment sets one.
 
 The Git repository root must contain `package.json` plus `package-lock.json`. Before changing local
 state, the command verifies that the supplied path is that root and resolves its canonical `origin`,
@@ -295,7 +315,8 @@ seconds. The CLI option takes precedence, and Git-context timeouts stop before m
   an explicit synchronization decision for public extension APIs, human docs and examples,
   backend schemas and fixtures, package exports, and release verification.
 - SDK source must not import application aliases, product endpoints, auth stores, routers, or
-  persistence policy.
+  persistence policy. The Node-only `/vite` entry reads the developer's machine session from
+  `cli/machine-session.mjs` (SDK ADR 017); no browser entry point may.
 - Framework-neutral entrypoints must not load React or browser-only code.
 - React views live behind deliberate UI subpaths.
 - Public JavaScript, declarations, CSS, package exports, examples, and agent skills must agree.

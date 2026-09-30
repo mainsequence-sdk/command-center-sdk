@@ -105,8 +105,10 @@ const connection = createChatBackendConnection({
   page's own origin works. This needs SDK `^0.5.5`, the first release with
   `client.sendPlatformRequest`; upgrade an older one.
 - In local development, a top-level page under `vite serve` has no host. Add `platformRequestProxy()`
-  from `@dev-mainsequence/command-center-sdk/vite` (SDK `^0.5.6`) to the dev server; the developer
-  exports `MAINSEQUENCE_ENDPOINT` and `MAINSEQUENCE_ACCESS_TOKEN` before `npm run dev`. Only when
+  from `@dev-mainsequence/command-center-sdk/vite` (SDK `^0.5.6`) to the dev server. The developer
+  signs in once per machine with `npx command-center-sdk login`, and the dev server uses that saved
+  session; with an SDK whose `command-center-sdk --help` lists no `login`, the developer exports
+  `MAINSEQUENCE_ENDPOINT` and `MAINSEQUENCE_ACCESS_TOKEN` before `npm run dev` instead. Only when
   `import.meta.env.DEV` is true and `window.parent === window`, the sender fetches
   `/__mainsequence__` plus the request's path and query; otherwise it stays
   `client.sendPlatformRequest`. `auth.userUid` comes from `/__mainsequence__/api/v1/users/me/`. Never

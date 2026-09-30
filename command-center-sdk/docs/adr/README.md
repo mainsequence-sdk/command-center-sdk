@@ -26,6 +26,7 @@ owning application repositories; backend implementation decisions are out of sco
 - [SDK ADR 014: Local Platform Request Proxy](./adr-sdk-014-local-platform-request-proxy.md) — Accepted
 - [SDK ADR 015: Detail Tabs Own Their Keyboard, Panel, and Overflow](./adr-sdk-015-detail-tabs.md) — Accepted
 - [SDK ADR 016: A Side-by-Side Transfer List for Choosing Many Items](./adr-sdk-016-transfer-list.md) — Accepted
+- [SDK ADR 017: One Machine Session for Local Development](./adr-sdk-017-machine-session-for-local-development.md) — Accepted
 
 ## Rules
 

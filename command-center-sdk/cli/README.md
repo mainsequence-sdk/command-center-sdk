@@ -47,20 +47,78 @@ Python `PINNED_FROM.txt` may prove that a matching folder is already MCP-owned; 
 rewritten by this package. An unknown pre-existing destination blocks the strict command.
 
 The MCP URL resolves from `--mcp-url`, `COMMAND_CENTER_SDK_MCP_URL`, `MAINSEQUENCE_MCP_URL`, or
-`MAINSEQUENCE_ENDPOINT` plus `/mcp`. Authentication uses the process-only
-`MAINSEQUENCE_ACCESS_TOKEN`; tokens are never accepted in a command argument or written to
-provenance. The CLI does not import browser auth or another application's token store.
+the backend plus `/mcp`. Authentication uses `MAINSEQUENCE_ACCESS_TOKEN` when the process
+environment sets it, and otherwise the machine session ([Machine Session](#machine-session)),
+which is sent only to an MCP URL on its own backend. Tokens are never accepted in a command
+argument or written to provenance. The CLI does not import browser auth or another application's
+token store.
 
 Postinstall always performs the packaged copy, then attempts the same MCP update when its URL and
-access token are available. Authentication, transport, catalog, or MCP filesystem failures are
+access token are available in the environment; it reads no saved session. Authentication, transport, catalog, or MCP filesystem failures are
 reported without failing npm installation and preserve the previous MCP tree. Set
 `COMMAND_CENTER_SDK_MCP_POSTINSTALL=0` to disable that best-effort network lane. The explicit
 `skills sync` command remains nonzero on every such failure.
 
 Keep these modules dependency-free and bin-only. Do not export them through the browser SDK
-entrypoint map. Exercise changes through the Node tests and a packed-package smoke test. The
+entrypoint map. The one module another part of the package imports is `machine-session.mjs`, which
+the Node-only `/vite` entry reads. Exercise changes through the Node tests and a packed-package smoke test. The
 existing backend MCP manifest version 2 is authoritative; do not create a second Command Center
 contract for the same catalog.
+
+## Machine Session
+
+SDK ADR 017. A developer signs in once per machine, and the CLI's commands that call the platform,
+and the `/vite` plugin `platformRequestProxy()`, use that session. `machine-session.mjs` owns the
+record and the stores, `login.mjs` the two logins and the logout request, and
+`session-commands.mjs` the commands and their output. `machine-session.d.mts` declares the first
+for the `/vite` entry's TypeScript, without Node's types.
+
+| Command | Behavior |
+| --- | --- |
+| `login [<backend-url>] [--backend <url>] [--no-open] [--mcp] [--json]` | Browser login with PKCE, answered on a loopback port the CLI listens on. `--no-open` prints the address. `--mcp` prints the `auth.cli_authorize` tool call an agent's MCP connection makes, and waits for it. |
+| `logout [--backend <url>] [--json]` | Ends the tracked session on the platform and removes the entry, also one it cannot read. |
+| `refresh-token [--backend <url>] [--json]` | Renews the saved session and reports it. Removes credential entries from `./.env` and names them. `refresh_token` is accepted too. |
+| `auth status [--backend <url>] [--check] [--json]` | The session report, without a token value. `--check` asks the platform. |
+| `auth token [--backend <url>] [--json]` | A short-lived access token, renewed when it would expire within a minute. |
+
+Names, JSON keys, and exit codes are those of the Main Sequence Python CLI, so a tool can ask
+whichever CLI a project has: `0` success, `1` no usable session, `3` no credential store. With
+`--json`, a failure is `{ "error": ... }` on standard error. No command prints a refresh token, and
+no message carries a request or a token.
+
+The record is one per backend: service `MainSequenceCLI.auth`, account `default.` plus the first 16
+hexadecimal digits of SHA-256 of the backend URL, secret `{"v": 1, "backend", "username",
+"access", "refresh"}` as ASCII JSON. The Python CLI reads and writes the same record. The backend
+URL is kept as written, minus surrounding space and trailing slashes, because the account is
+derived from it; never re-serialize it.
+
+The backend resolves from `--backend`, `MAINSEQUENCE_ENDPOINT` in the environment, the same entry
+in the project's `.env` (the only entry ever read from it), `backend_url` in `config.json` of the
+settings directory the CLIs share, and last the standard platform.
+
+Stores, each reached through a program of the system so every runtime uses one entry:
+
+- **macOS**: the login Keychain through `/usr/bin/security`. macOS asks for consent when a program
+  requests the secret of an entry another program created. Entries the CLIs write carry the comment
+  `MainSequenceCLI.session.v1`; a read inspects the attributes first and requests the secret only
+  when the comment is there. An entry without it is not read and is replaced by the next login. An
+  entry this process has read is updated in place; any other is deleted and added. The secret goes
+  to `security -i` on standard input, which reads 4,096-character lines, so a longer record is
+  refused.
+- **Linux**: Secret Service through `secret-tool`, with the attributes `service`, `username`, and
+  `application = Python keyring library` and the label the Python library writes, so both CLIs
+  replace one item. `secret-tool` exits `1` for a missing item and for an unreachable service; only
+  the second writes to standard error.
+- **Other systems**: no store. Commands exit `3`, and `MAINSEQUENCE_ACCESS_TOKEN` is the only
+  credential.
+
+`code-repository sync` and `skills sync` take `sessionAccess` from the binary. Called as a library
+without it, they use only the values and the environment they are given. `postinstall.mjs` never
+reads the session.
+
+No test may read or write the machine's credential store. The functions take `store`, `fetchImpl`,
+`env`, `cwd`, and `io`; `tests/cli/session-test-support.mjs` has the stand-ins. A test that starts
+the binary must fail at argument parsing, or set `MAINSEQUENCE_ACCESS_TOKEN`.
 
 ## Application Documentation Initialization
 
@@ -121,7 +179,9 @@ afterward when strict backend-owned guidance refresh is required.
 ## CodeRepository Sync
 
 `command-center-sdk code-repository sync` mirrors Python's `mainsequence code-repository sync` for
-consuming npm applications whose Vite application is at the Git repository root. The supplied path
+consuming npm applications whose Vite application is at the Git repository root. It authenticates
+with `MAINSEQUENCE_ACCESS_TOKEN` when the environment sets it, and otherwise with the machine
+session of the backend the repository names, which it asks for after inspecting the repository. The supplied path
 must be that root and contain `package.json` and `package-lock.json`; nested application directories fail preflight
 rather than being discovered or translated. The orchestration, backend client, and local npm/Git/SSH
 operations live in the focused `code-repository-sync*.mjs` modules and remain dependency-free and bin-only.

@@ -72,7 +72,7 @@ export async function runPostinstall({
     const configuration = resolveMcpConfiguration({ env });
     if (!configuration.available) {
       logger.log(
-        `[command-center-sdk] Skipped MCP skills; missing ${configuration.missing.join(" and ")}. Run \`command-center-sdk skills sync --path .\` after configuring authentication.`,
+        `[command-center-sdk] Skipped MCP skills; missing ${configuration.missing.join(" and ")}. Run \`command-center-sdk skills sync --path .\`; it also uses the session \`command-center-sdk login\` saves.`,
       );
       return { sdk: result, platform: { skipped: "missing-configuration" } };
     }

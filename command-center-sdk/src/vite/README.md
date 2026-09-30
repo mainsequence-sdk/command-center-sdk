@@ -17,15 +17,25 @@ page on a local dev server has no host, so `platformRequestProxy()` stands in fo
 development only:
 
 - The page sends a platform request to `/__mainsequence__/api/...` on its own dev server.
-- The dev server sends it to `MAINSEQUENCE_ENDPOINT` with
-  `Authorization: Bearer $MAINSEQUENCE_ACCESS_TOKEN`. Both are process-only variables, the same ones
-  the SDK's CLI reads; the page never holds the token, and a build never contains it.
+- The dev server sends it to the platform with the developer's access token; the page never holds
+  the token, and a build never contains it. The token is the session `command-center-sdk login`
+  saved on this machine (SDK ADR 017) for the backend the project names: `MAINSEQUENCE_ENDPOINT`
+  in the environment, the same entry in the `.env` Vite reads, the backend the CLIs saved, or the
+  standard platform. The plugin keeps it in memory until it is about to expire and renews it.
+- `MAINSEQUENCE_ACCESS_TOKEN` in the dev server's environment wins over the saved session. It goes
+  only to the `MAINSEQUENCE_ENDPOINT` set next to it, and is not renewed.
 - Only the method (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`), the path and query under the platform's
   `/api/`, `accept`, `content-type`, and a body of at most 1 MiB go out, as through the host bridge.
   The status, `content-type`, and the body come back.
-- A missing or invalid variable is a `503` with code `platform_not_configured` and a warning when
-  the dev server starts. A platform that does not answer is a `502` (`platform_unreachable`). A
-  `401` from the platform passes through, with one warning to refresh the token and restart.
+- No usable session, no credential store, a store that could not be read, or an invalid variable
+  is a `503` with code `platform_not_configured`, a detail that names the login command or the
+  variable, and a warning when the dev server starts. A platform that does not answer, or does not
+  answer a renewal, is a `502` (`platform_unreachable`).
+- A `401` to the session's token makes the plugin read the store again, use the token another
+  process saved meanwhile or renew the session, and send the request once more. A second `401`
+  passes through with one warning that names the login command. A `401` to an environment token
+  passes through with one warning to replace it and restart.
+- A request the plugin refuses reads no credential.
 
 `options.path` changes the route; it starts with `/` and does not end with one.
 
@@ -74,6 +84,11 @@ aborts the runtime's; `ms-tau` then cancels the turn.
 
 - Keep the request shape equal to the host bridge's (`src/embed/static-site.ts`), so a request that
   works locally also works embedded.
+- The plugin imports the session from `cli/machine-session.mjs`, which the package ships beside
+  `dist`. That module is Node-only, and `cli/machine-session.d.mts` declares it without Node's
+  types. Nothing else under `src` may import it, and no browser entry point may reach it.
+- No test reads this machine's credential store: `platform-request-proxy.test.ts` replaces
+  `openCredentialStore` and gives the plugin a store held in memory.
 - The plugin types only the parts of Vite's dev server it uses, so the published declarations need
   neither Vite's nor Node's types. `tests/types/vite-platform-request-proxy.ts` proves it still fits
   Vite's `PluginOption`.

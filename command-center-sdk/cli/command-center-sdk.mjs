@@ -9,11 +9,25 @@ import {
 import { initializeApplicationDocumentation } from "./application-docs.mjs";
 import { parseCodeRepositorySyncTimeoutMs } from "./code-repository-sync-api.mjs";
 import { syncCodeRepository } from "./code-repository-sync.mjs";
+import {
+  authStatus,
+  authToken,
+  login,
+  logout,
+  parseSessionArguments,
+  refreshToken,
+  resolvePlatformAccess,
+} from "./session-commands.mjs";
 import { syncAgentSkills } from "./sync-agent-skills.mjs";
 
 const usage = `Command Center SDK
 
 Usage:
+  command-center-sdk login [<backend-url>] [--backend <url>] [--no-open] [--mcp] [--json]
+  command-center-sdk logout [--backend <url>] [--json]
+  command-center-sdk refresh-token [--backend <url>] [--json]
+  command-center-sdk auth status [--backend <url>] [--check] [--json]
+  command-center-sdk auth token [--backend <url>] [--json]
   command-center-sdk skills install [--path <repository-root>] [--dry-run] [--json]
   command-center-sdk skills sync [--path <repository-root>] [--mcp-url <url>] [--dry-run] [--json]
   command-center-sdk application docs init [--path <repository-root>] [--dry-run] [--skip-install] [--json]
@@ -23,6 +37,14 @@ Usage:
   command-center-sdk theme audit [--path <css-file-or-directory>] [--json]
   command-center-sdk --version
   command-center-sdk --help
+
+The login command signs this machine in to the platform and saves one session per backend in the
+operating system's credential store (macOS Keychain, or Secret Service on Linux). Every project on
+the machine uses it, and the Main Sequence Python CLI reads and writes the same session. No project
+file holds a token. Commands that call the platform use MAINSEQUENCE_ACCESS_TOKEN when it is set,
+and otherwise the saved session of the backend the project names with MAINSEQUENCE_ENDPOINT, in the
+environment or in its .env. "auth token" prints a short-lived access token for another local tool;
+"refresh-token" renews the session and removes credential entries left in ./.env.
 
 The install command copies packaged skills into:
   <repository-root>/.agents/skills/command-center/
@@ -420,6 +442,16 @@ function printHumanApplicationDocsResult(result) {
   console.log(`Next: ${result.next.join("; ")}`);
 }
 
+// `refresh_token` is the spelling a person may type after the Python CLI's alias.
+const SESSION_COMMANDS = [
+  { words: ["login"], allowed: ["--no-open", "--mcp"], positionalBackend: true, run: login },
+  { words: ["logout"], run: logout },
+  { words: ["refresh-token"], run: refreshToken },
+  { words: ["refresh_token"], run: refreshToken },
+  { words: ["auth", "status"], allowed: ["--check"], run: authStatus },
+  { words: ["auth", "token"], run: authToken },
+];
+
 async function main() {
   const args = process.argv.slice(2);
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
@@ -429,6 +461,15 @@ async function main() {
   if (args.length === 1 && (args[0] === "--version" || args[0] === "-v")) {
     const metadata = await readSdkPackageMetadata();
     console.log(metadata.version);
+    return;
+  }
+  const sessionCommand = SESSION_COMMANDS.find(({ words }) =>
+    words.every((word, index) => args[index] === word),
+  );
+  if (sessionCommand) {
+    const options = parseSessionArguments(args.slice(sessionCommand.words.length), sessionCommand);
+    // These commands report their own failures: the exit code says what is missing.
+    process.exitCode = await sessionCommand.run(options);
     return;
   }
   if (args[0] === "theme" && args[1] === "audit") {
@@ -499,6 +540,7 @@ async function main() {
       timeoutMs: options.timeoutMs,
       dryRun: options.dryRun,
       quiet: options.json,
+      sessionAccess: resolvePlatformAccess,
       onPlan: options.json ? undefined : printHumanCodeRepositorySyncPlan,
     });
     if (options.json) console.log(JSON.stringify(result, null, 2));
@@ -527,6 +569,7 @@ async function main() {
           mcpUrl: options.mcpUrl,
           dryRun: options.dryRun,
           command: "command-center-sdk skills sync",
+          sessionAccess: resolvePlatformAccess,
         });
   if (options.json) {
     console.log(JSON.stringify(result, null, 2));

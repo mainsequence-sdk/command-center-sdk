@@ -152,10 +152,14 @@ export default defineConfig({ plugins: [react(), platformRequestProxy()] });
 ```
 
 ```bash
-export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
-export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
+npx command-center-sdk login   # once per machine
 npm run dev
 ```
+
+The dev server sends the requests with that saved session and renews it. The project names its
+backend with `MAINSEQUENCE_ENDPOINT`, in the environment or in its `.env`, which holds no token.
+This needs an SDK release whose `command-center-sdk --help` lists `login`; with an earlier one,
+export `MAINSEQUENCE_ENDPOINT` and `MAINSEQUENCE_ACCESS_TOKEN` before `npm run dev`.
 
 The sender uses the dev server only under `vite serve` on a top-level page. A production build
 replaces `import.meta.env.DEV` with `false`, so it always sends through the host:

@@ -580,6 +580,140 @@ test("a configured Git-context timeout is identified and stops before mutation",
   }
 });
 
+function gitContextBackend(calls) {
+  return async (url, options) => {
+    calls.push({ url, authorization: options.headers.Authorization });
+    if (url.endsWith("/resolve-git-context/")) {
+      return jsonResponse({
+        canonical_repository_identity: TEST_REPOSITORY_IDENTITY,
+        repository_branch: "main",
+        repository_ref: "refs/heads/main",
+        commit_sha: TEST_COMMIT_SHA,
+        code_repository_branch: {
+          uid: "main-uid",
+          code_repository_uid: "code-repository-uid-123",
+          repository_branch: "main",
+        },
+      });
+    }
+    return jsonResponse({ version: "1.2.4", tag_name: "v1.2.4" });
+  };
+}
+
+test("without a token the sync uses the machine session of the backend the repository names", async () => {
+  const harness = codeRepositoryHarness();
+  const calls = [];
+  const asked = [];
+
+  const result = await syncCodeRepository({
+    message: "Deploy with the saved session",
+    codeRepositoryDir: harness.codeRepositoryDir,
+    localOps: harness.localOps,
+    env: {},
+    fetchImpl: gitContextBackend(calls),
+    dryRun: true,
+    sessionAccess: async (options) => {
+      asked.push(options);
+      return { backendUrl: "https://session.example", accessToken: "session-access-token" };
+    },
+  });
+
+  assert.equal(result.tagName, "v1.2.4");
+  // Asked once, after the repository was inspected, and for that repository: its .env may name
+  // the backend.
+  assert.equal(asked.length, 1);
+  assert.equal(asked[0].cwd, harness.codeRepositoryDir);
+  assert.deepEqual(asked[0].env, {});
+  assert.deepEqual(harness.events.slice(0, 2).map(([type]) => type), [
+    "resolve-code-repository-directory",
+    "inspect-code-repository",
+  ]);
+  assert.deepEqual(calls, [
+    {
+      url: "https://session.example/api/v1/code-repository-branches/resolve-git-context/",
+      authorization: "Bearer session-access-token",
+    },
+    {
+      url: "https://session.example/api/v1/code-repository-branches/main-uid/default-redeployment-tag/",
+      authorization: "Bearer session-access-token",
+    },
+  ]);
+});
+
+test("a token set for the sync wins and the machine session is not asked for", async () => {
+  const harness = codeRepositoryHarness();
+  const calls = [];
+  const sessionAccess = async () => assert.fail("the saved session is not read when a token is set");
+
+  await syncCodeRepository({
+    message: "Deploy with the environment token",
+    codeRepositoryDir: harness.codeRepositoryDir,
+    localOps: harness.localOps,
+    env: { MAINSEQUENCE_ENDPOINT: "https://environment.example", MAINSEQUENCE_ACCESS_TOKEN: "environment-token" },
+    fetchImpl: gitContextBackend(calls),
+    dryRun: true,
+    sessionAccess,
+  });
+  await syncCodeRepository({
+    message: "Deploy with an explicit token",
+    codeRepositoryDir: harness.codeRepositoryDir,
+    localOps: harness.localOps,
+    env: {},
+    backendUrl: "https://explicit.example",
+    accessToken: "explicit-token",
+    fetchImpl: gitContextBackend(calls),
+    dryRun: true,
+    sessionAccess,
+  });
+
+  assert.deepEqual(
+    calls.map(({ url, authorization }) => [new URL(url).origin, authorization]),
+    [
+      ["https://environment.example", "Bearer environment-token"],
+      ["https://environment.example", "Bearer environment-token"],
+      ["https://explicit.example", "Bearer explicit-token"],
+      ["https://explicit.example", "Bearer explicit-token"],
+    ],
+  );
+});
+
+test("a sync without a token or a session stops before the backend and says how to log in", async () => {
+  const harness = codeRepositoryHarness();
+  const noRequest = async () => assert.fail("nothing is sent without a credential");
+
+  await assert.rejects(
+    syncCodeRepository({
+      message: "Deploy",
+      codeRepositoryDir: harness.codeRepositoryDir,
+      localOps: harness.localOps,
+      env: {},
+      fetchImpl: noRequest,
+      sessionAccess: async () => {
+        throw new Error("Not logged in. Run: command-center-sdk login");
+      },
+    }),
+    (caught) => {
+      assert.equal(caught instanceof CodeRepositorySyncError, true);
+      assert.equal(caught.stage, "resolve-backend-configuration");
+      assert.match(caught.message, /Not logged in\. Run: command-center-sdk login/u);
+      return true;
+    },
+  );
+
+  // Called as a library without a session source, the sync names the variables as before.
+  await assert.rejects(
+    syncCodeRepository({
+      message: "Deploy",
+      codeRepositoryDir: harness.codeRepositoryDir,
+      localOps: harness.localOps,
+      env: {},
+      fetchImpl: noRequest,
+    }),
+    /CodeRepository sync requires MAINSEQUENCE_ENDPOINT and MAINSEQUENCE_ACCESS_TOKEN\./u,
+  );
+  assert.equal(harness.events.some(([type]) => type === "command"), false);
+});
+
 test("backend API resolves the exact CodeRepositoryBranch and requests its deployment tag", async () => {
   const calls = [];
   const responses = [

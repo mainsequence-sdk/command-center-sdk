@@ -5,6 +5,9 @@
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
 - Contract: none; a new `/vite` entry point for the dev server
+- Amended by: [SDK ADR 017: One Machine Session for Local Development](./adr-sdk-017-machine-session-for-local-development.md)
+  (the token source, the `401` handling, and what `platform_not_configured` covers; see
+  [Amendment](#amendment-2026-09-30-the-saved-session))
 - Related:
   - [SDK ADR 013: Static-Site Platform Request Bridge](./adr-sdk-013-static-site-platform-request-bridge.md)
   - [Static-site embeds](../static-site-embeds.md#send-platform-requests-in-local-development)
@@ -100,3 +103,21 @@ receives the SDK CLI's. Hosts are not involved in local development.
 - Local development has no allow-list, so embedded testing before release stays necessary.
 - The token lives in the dev server's environment until the developer replaces it; an expired
   token is a `401` until the dev server restarts with a new one.
+
+## Amendment 2026-09-30: the saved session
+
+SDK ADR 017 changes where the token comes from. The text above stays as the record of the original
+decision; where the two differ, this section and SDK ADR 017 hold.
+
+- Decision 2: `MAINSEQUENCE_ACCESS_TOKEN` is used when the dev server's environment sets it, and
+  goes only to the `MAINSEQUENCE_ENDPOINT` set next to it. Without it, the token is the session
+  `command-center-sdk login` saved on this machine for the backend the project names: in
+  `MAINSEQUENCE_ENDPOINT` of the environment, in the project's `.env`, in the settings the CLIs
+  share, or the standard platform. The plugin keeps the access token in memory until it is about to
+  expire and renews it by itself.
+- Decision 4: a `401` to a session token is answered by renewing the session and sending the
+  request once more; a second `401` passes through with one warning that names the login command.
+  A `401` to an environment token passes through as before. `platform_not_configured` also covers
+  no usable session, no credential store, and a store that could not be read.
+- Consequences: with a saved session, the dev server keeps working while the session lasts, and
+  nobody restarts it for a token.

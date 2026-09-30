@@ -62,6 +62,41 @@ dependency sources are reported but not rewritten.
 After an applied update, refresh skills and run the application's typecheck, tests, build, and
 browser checks against the new package.
 
+## Sign in once per machine
+
+The commands below that call the platform, and the local dev server's platform proxy, act as you.
+Sign in once:
+
+```bash
+npx command-center-sdk login
+```
+
+The browser opens the platform's sign-in page, and the session is saved in the operating system's
+credential store: the login Keychain on macOS, and Secret Service on Linux, which the CLI reaches
+through `secret-tool` from your distribution's libsecret tools. It is one session per backend for
+every project on the machine. The Main Sequence Python CLI (`mainsequence`) reads and writes the
+same session, so a login with either CLI serves both. The tools renew it by themselves.
+
+The project names its backend and holds no token. The backend is the first of these that is set:
+`--backend <url>`, `MAINSEQUENCE_ENDPOINT` in the environment, `MAINSEQUENCE_ENDPOINT` in the
+project's `.env`, the backend a Main Sequence CLI saved on this machine, and the standard platform.
+
+| Command | What it does |
+| --- | --- |
+| `login [--backend <url>] [--no-open]` | Signs in through the browser. `--no-open` prints the address instead of opening it. |
+| `login --mcp` | For a coding agent with an authenticated Main Sequence MCP connection: prints the `auth.cli_authorize` tool call that approves the login. |
+| `auth status [--check] [--json]` | Reports the session this project would use, without a token value. `--check` also asks the platform. |
+| `auth token [--json]` | Prints a short-lived access token for another local tool, and never the refresh token. |
+| `refresh-token` | Renews the session, and removes credential entries that an earlier setup left in `./.env`. |
+| `logout` | Ends the session on the platform and removes it from the machine. |
+
+Exit code `1` means there is no usable session: run `login`. Exit code `3` means the CLI reaches no
+credential store on this machine.
+
+A launcher or a CI job sets `MAINSEQUENCE_ENDPOINT` and `MAINSEQUENCE_ACCESS_TOKEN` in its
+environment instead. That token wins over the saved session and is sent only to that endpoint. Keep
+tokens out of command arguments and committed files. SDK ADR 017 records the decision.
+
 ## Refresh SDK and platform guidance
 
 Package installation copies SDK-version-matched skills under `.agents/skills/command-center/`.
@@ -72,17 +107,16 @@ npx command-center-sdk skills install --path . --dry-run
 npx command-center-sdk skills install --path .
 ```
 
-When the backend-owned MCP catalog must also be current, authenticate through environment values
-and use strict synchronization:
+When the backend-owned MCP catalog must also be current, use strict synchronization. It
+authenticates with your saved session ([Sign in once per machine](#sign-in-once-per-machine)), or
+with the token in the environment when one is set:
 
 ```bash
-export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
-export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
 npx command-center-sdk skills sync --path . --dry-run --json
 npx command-center-sdk skills sync --path .
 ```
 
-Keep the bearer token out of command arguments and committed files. `skills sync` refreshes both
+`skills sync` refreshes both
 the packaged `command-center` namespace and backend-owned `mainsequence` namespace. It exits
 nonzero on authentication, transport, manifest, or ownership failure. A normal npm postinstall
 attempt is intentionally nonblocking and preserves the previous backend-owned installation when
@@ -101,12 +135,12 @@ Use `code-repository sync` only after the complete application working tree is r
 commit and one backend-recognized deployment:
 
 ```bash
-export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
-export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
 npx command-center-sdk code-repository sync -m "Update service dashboard" --path . --dry-run
 ```
 
-Inspect `git status --short` first. The non-dry run stages the complete working tree, including
+The command authenticates with your saved session
+([Sign in once per machine](#sign-in-once-per-machine)), or with the token in the environment when
+one is set. Inspect `git status --short` first. The non-dry run stages the complete working tree, including
 untracked files and deletions; it is not a partial-file commit helper.
 
 Preflight validates the application root, then sends the canonical `origin`, attached branch, and

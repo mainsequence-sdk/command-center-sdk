@@ -548,8 +548,9 @@ never answers reaches the child's timeout.
 
 Build for the host path above: it is how a deployed site reaches the platform. A top-level page on
 a local Vite dev server has no host, so during local development only, the SDK's Vite plugin stands
-in for it. The dev server sends each platform request with the developer's token, which it reads
-from its own environment; the page never holds it, and a build never contains it.
+in for it. The dev server sends each platform request with the developer's token: the session
+`command-center-sdk login` saved on this machine, which it renews by itself. The page never holds
+the token, and a build never contains it.
 
 ```ts
 // vite.config.ts
@@ -562,13 +563,16 @@ export default defineConfig({
 ```
 
 ```bash
-export MAINSEQUENCE_ENDPOINT="https://your-platform.example"
-export MAINSEQUENCE_ACCESS_TOKEN="<runtime access token>"
+npx command-center-sdk login   # once per machine
 npm run dev
 ```
 
-These are the process-only variables the SDK's CLI reads. Never give the token a `VITE_` name:
-Vite writes those into the bundle.
+The backend is the one the project names: `MAINSEQUENCE_ENDPOINT` in the dev server's environment,
+or in the project's `.env`, which holds the endpoint and no token
+([Sign in once per machine](./application-operations.md#sign-in-once-per-machine)). A launcher that
+cannot sign in sets `MAINSEQUENCE_ENDPOINT` and `MAINSEQUENCE_ACCESS_TOKEN` in the dev server's
+environment instead; that token wins over the saved session and is not renewed. Never give a token
+a `VITE_` name: Vite writes those into the bundle.
 
 The page sends a platform request to `/__mainsequence__` plus the platform path, and only when it
 runs under `vite serve` without a host. A production build replaces `import.meta.env.DEV` with
@@ -598,10 +602,12 @@ Without a host there is no `onContext`: read the developer's uid from
   of at most 1 MiB. The status, `content-type`, and the body come back.
 - It has no allow-list. The host serves only the paths it chooses, so a request that works locally
   can be `not_allowed` embedded; test the site embedded before release.
-- A missing or invalid variable answers `503` (`platform_not_configured`, naming the variable) and
-  warns when the dev server starts. A platform that does not answer is `502`
-  (`platform_unreachable`). A `401` from the platform passes through, and the dev server warns once
-  to refresh `MAINSEQUENCE_ACCESS_TOKEN` and restart.
+- No usable session, no credential store, or an invalid variable answers `503`
+  (`platform_not_configured`), names the login command or the variable, and warns when the dev
+  server starts. A platform that does not answer is `502` (`platform_unreachable`).
+- When the platform answers `401` to the session's token, the dev server renews the session and
+  sends the request once more. A second `401` passes through, with one warning to run the login. A
+  `401` to `MAINSEQUENCE_ACCESS_TOKEN` passes through, with one warning to replace it and restart.
 - Only the page the dev server serves can use the route: another site gets `403`
   (`cross_site_request`), and another computer, or a request through any name other than
   `localhost`, `*.localhost`, `127.x.x.x`, or `[::1]`, gets `403` (`not_local`).

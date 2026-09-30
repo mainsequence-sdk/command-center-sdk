@@ -52,8 +52,8 @@ guidance refresh is required.
 
 Package installation copies version-matched SDK skills into `.agents/skills/command-center` and
 makes a nonblocking MCP refresh when `MAINSEQUENCE_ACCESS_TOKEN` plus an MCP URL are available in
-the npm process. Do not assume that the best-effort platform lane succeeded merely because package
-installation completed.
+the npm process. Postinstall reads no saved session. Do not assume that the best-effort platform
+lane succeeded merely because package installation completed.
 
 When current backend-owned platform guidance is required, run the strict workflow from the Git
 repository root:
@@ -62,9 +62,14 @@ repository root:
 npx command-center-sdk skills sync --path .
 ```
 
-Use `--dry-run` before writing and `--json` for machine-readable evidence. Resolve the MCP URL with
-`--mcp-url`, `COMMAND_CENTER_SDK_MCP_URL`, or `MAINSEQUENCE_ENDPOINT`; keep
-`MAINSEQUENCE_ACCESS_TOKEN` in the process environment and never put it in a command argument.
+Use `--dry-run` before writing and `--json` for machine-readable evidence. The command
+authenticates with the session saved on the machine: check it with
+`npx command-center-sdk auth status`, and when there is none, run `npx command-center-sdk login`,
+or `npx command-center-sdk login --mcp` when you hold an authenticated Main Sequence MCP
+connection and can call the `auth.cli_authorize` tool it prints. The MCP URL is the project's
+backend (`MAINSEQUENCE_ENDPOINT`, in the environment or in `.env`) plus `/mcp`, or `--mcp-url` or
+`COMMAND_CENTER_SDK_MCP_URL`. `MAINSEQUENCE_ACCESS_TOKEN` in the process environment wins over the
+saved session. Never put a token in a command argument or in a file.
 Inspect `.agents/skills/command-center/PINNED_FROM.txt` for the package version and
 `.agents/skills/mainsequence/MCP_PINNED_FROM.txt` for the backend manifest. Treat the installed SDK
 catalog as authoritative for the complete `command-center` namespace: install, postinstall, update,

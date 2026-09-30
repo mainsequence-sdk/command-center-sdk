@@ -157,7 +157,7 @@ export function createCodeRepositorySyncApi({
     }
     if (response.status === 401) {
       throw new CodeRepositorySyncApiError(
-        "Backend authentication failed (401). Refresh MAINSEQUENCE_ACCESS_TOKEN.",
+        "Backend authentication failed (401). Run `command-center-sdk login`, or replace MAINSEQUENCE_ACCESS_TOKEN when it is set.",
       );
     }
     if (!response.ok) {

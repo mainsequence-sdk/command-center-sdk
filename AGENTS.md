@@ -13,7 +13,9 @@
 - Do not add Command Center product application code, authentication, persistence policy,
   deployment configuration, or application environment files. Product routes and backend
   transports stay out of the SDK package; Command Center AI is bound to the platform's routes by
-  design.
+  design. The one credential the SDK handles is the developer's machine session of SDK ADR 017: its
+  Node-only CLI signs a developer in, and the `/vite` dev-server plugin reads that session. No
+  browser entry point holds a credential or gains authentication code.
 - Consumers must use declared package exports. Do not introduce aliases into repository source or
   imports from `dist`.
 

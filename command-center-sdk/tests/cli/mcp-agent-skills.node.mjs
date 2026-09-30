@@ -380,6 +380,100 @@ test("strict synchronization refreshes both SDK and MCP namespaces", async () =>
   }
 });
 
+test("without a token the skills sync uses the machine session and the MCP of its backend", async () => {
+  const projectRoot = await temporaryDirectory("session-sync");
+  try {
+    const rows = platformRows([
+      { name: "command_center", path: "skills/command_center/command_center/SKILL.md" },
+    ]);
+    const calls = [];
+    const urls = [];
+    const asked = [];
+    const mcp = mockMcpFetch(rows, calls);
+
+    const plan = await syncAgentSkills({
+      projectDir: projectRoot,
+      dryRun: true,
+      env: {},
+      fetchImpl: (url, request) => {
+        urls.push(url);
+        return mcp(url, request);
+      },
+      packageMetadata: { name: "@dev-mainsequence/command-center-sdk", version: "9.8.7" },
+      sessionAccess: async (options) => {
+        asked.push(options);
+        return { backendUrl: "https://session.example", accessToken: "session-access-token" };
+      },
+    });
+
+    assert.equal(plan.platform.installed.length, 1);
+    // Asked once, for this repository: its .env may name the backend.
+    assert.equal(asked.length, 1);
+    assert.equal(asked[0].cwd, projectRoot);
+    assert.equal(urls.length > 0 && urls.every((url) => url === "https://session.example/mcp"), true);
+    assert.equal(calls.every(({ headers }) => headers.Authorization === "Bearer session-access-token"), true);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test("a saved session is sent only to the MCP of the backend it belongs to", async () => {
+  const sessionAccess = async () => ({ backendUrl: "https://session.example", accessToken: "session-access-token" });
+  const noRequest = async () => assert.fail("the session token is not sent to another backend");
+  const packageMetadata = { name: "@dev-mainsequence/command-center-sdk", version: "9.8.7" };
+
+  await assert.rejects(
+    syncAgentSkills({
+      projectDir: tmpdir(),
+      dryRun: true,
+      mcpUrl: "https://elsewhere.example/mcp",
+      env: {},
+      fetchImpl: noRequest,
+      packageMetadata,
+      sessionAccess,
+    }),
+    /The MCP URL is not on https:\/\/session\.example, the backend of the saved session\./u,
+  );
+  await assert.rejects(
+    syncAgentSkills({
+      projectDir: tmpdir(),
+      dryRun: true,
+      env: { COMMAND_CENTER_SDK_MCP_URL: "https://elsewhere.example/mcp" },
+      fetchImpl: noRequest,
+      packageMetadata,
+      sessionAccess,
+    }),
+    /The MCP URL is not on https:\/\/session\.example/u,
+  );
+});
+
+test("a token set for the skills sync wins, and a library caller without a session source is told the variable", async () => {
+  const rows = platformRows([
+    { name: "command_center", path: "skills/command_center/command_center/SKILL.md" },
+  ]);
+  const calls = [];
+  const packageMetadata = { name: "@dev-mainsequence/command-center-sdk", version: "9.8.7" };
+  const projectRoot = await temporaryDirectory("token-sync");
+  try {
+    await syncAgentSkills({
+      projectDir: projectRoot,
+      dryRun: true,
+      env: { MAINSEQUENCE_ENDPOINT: "https://environment.example", MAINSEQUENCE_ACCESS_TOKEN: "environment-token" },
+      fetchImpl: mockMcpFetch(rows, calls),
+      packageMetadata,
+      sessionAccess: async () => assert.fail("the saved session is not read when a token is set"),
+    });
+    assert.equal(calls.every(({ headers }) => headers.Authorization === "Bearer environment-token"), true);
+
+    await assert.rejects(
+      syncAgentSkills({ projectDir: projectRoot, dryRun: true, env: {}, packageMetadata }),
+      /MCP skill synchronization requires MCP URL \(COMMAND_CENTER_SDK_MCP_URL or MAINSEQUENCE_ENDPOINT\) and MAINSEQUENCE_ACCESS_TOKEN\./u,
+    );
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
 test("postinstall installs MCP skills when process authentication is available", async () => {
   const projectRoot = await temporaryDirectory("postinstall-success");
   const rows = platformRows([
@@ -456,13 +550,14 @@ test("postinstall MCP failures are nonblocking and explicit sync failures are st
     assert.equal(invalidConfiguration.status, 0, invalidConfiguration.stderr);
     assert.match(invalidConfiguration.stderr, /without blocking installation/u);
 
+    // A token is set, so the command does not look for a session saved on this machine.
     const strict = spawnSync(
       process.execPath,
       [cliPath, "skills", "sync", "--path", projectRoot, "--json"],
-      { encoding: "utf8", env: sanitizedEnvironment() },
+      { encoding: "utf8", env: sanitizedEnvironment({ MAINSEQUENCE_ACCESS_TOKEN: "access-token" }) },
     );
     assert.notEqual(strict.status, 0);
-    assert.match(strict.stderr, /MCP skill synchronization requires/u);
+    assert.match(strict.stderr, /MCP skill synchronization requires MCP URL/u);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }

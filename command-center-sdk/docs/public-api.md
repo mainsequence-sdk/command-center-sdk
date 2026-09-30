@@ -239,8 +239,10 @@ and lifecycle rules.
 ## Vite dev server API
 
 A top-level page on a local dev server has no host to send its platform requests. For local
-development only, `/vite` gives the dev server a plugin that sends them with the developer's
-`MAINSEQUENCE_ACCESS_TOKEN` to `MAINSEQUENCE_ENDPOINT`, both read from the dev server's environment:
+development only, `/vite` gives the dev server a plugin that sends them as the developer, with the
+session `command-center-sdk login` saved on the machine, to the backend the project names with
+`MAINSEQUENCE_ENDPOINT`. `MAINSEQUENCE_ACCESS_TOKEN` in the dev server's environment wins over the
+saved session:
 
 ```ts
 // vite.config.ts

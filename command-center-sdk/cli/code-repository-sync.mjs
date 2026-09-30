@@ -67,6 +67,7 @@ export async function syncCodeRepository({
   fetchImpl,
   localOps = codeRepositorySyncLocalOps,
   api,
+  sessionAccess,
   onPlan,
 } = {}) {
   const state = { completed: [] };
@@ -92,12 +93,24 @@ export async function syncCodeRepository({
     let codeRepositoryApi = api;
     if (!codeRepositoryApi) {
       stage = "resolve-backend-configuration";
-      const configuration = resolveCodeRepositorySyncConfiguration({
+      let configuration = resolveCodeRepositorySyncConfiguration({
         backendUrl,
         accessToken,
         timeoutMs,
         env,
       });
+      if (!configuration.accessToken && sessionAccess) {
+        // No token was passed or set: the machine session of the backend this repository names.
+        const session = await sessionAccess({ env, cwd: state.codeRepositoryDir, fetchImpl });
+        if (session) {
+          configuration = resolveCodeRepositorySyncConfiguration({
+            backendUrl: session.backendUrl,
+            accessToken: session.accessToken,
+            timeoutMs,
+            env,
+          });
+        }
+      }
       if (!configuration.available) {
         throw new Error(`CodeRepository sync requires ${configuration.missing.join(" and ")}.`);
       }

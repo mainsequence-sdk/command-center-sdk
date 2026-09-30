@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the CLI, additively (`login`, `logout`, `refresh-token`, `auth status`,
+`auth token`); `/vite` behavior (`platformRequestProxy()` token source, no declaration change); and
+the packaged skills `general/use-command-center-sdk`,
+`general/maintain-command-center-code-repository`, and `embed/integrate-static-site-iframe`. No
+change to an existing export, contract ID, JSON Schema, fixture, iframe protocol, theme, or storage,
+and no backend change.
+
+- **Sign in once per machine** (SDK ADR 017). `command-center-sdk login` saves one session per
+  backend in the operating system's credential store: the login Keychain on macOS, Secret Service
+  on Linux through `secret-tool`. The Main Sequence Python CLI reads and writes the same session,
+  so a login with either serves both. `--mcp` signs in through a coding agent's authenticated MCP
+  connection. `auth status` reports the session, `auth token` hands a short-lived access token to
+  another local tool, `refresh-token` renews the session and removes credentials an earlier setup
+  left in `./.env`, and `logout` ends it. Exit `1` is no usable session and `3` is no credential
+  store. On a system where the CLI reaches no store, a token in the environment stays the only
+  credential.
+- **The tools use the session.** `code-repository sync`, `skills sync`, and the dev server's
+  `platformRequestProxy()` use the saved session of the backend the project names with
+  `MAINSEQUENCE_ENDPOINT`, in the environment or in its `.env`, and renew it. They stopped with a
+  missing-variable message before. `MAINSEQUENCE_ACCESS_TOKEN` in the environment still wins and
+  is sent only to the endpoint set next to it. A saved session is sent only to its own backend.
+- **A dev server that outlives a token.** `platformRequestProxy()` keeps the access token in
+  memory until it is about to expire, renews it by itself, and after a `401` renews the session
+  and sends the request once more. The `platform_not_configured` detail now names the login
+  command when the machine is not signed in; its status and code are unchanged.
+- On macOS, a session saved by a version of the Python CLI that does not mark its Keychain entry is
+  not read, because asking for it would show a consent dialog in every process. One login replaces
+  it.
+
 ## 0.5.10
 
 Compatibility axes: `/views`, additively (`ResourceTransferList` prop `pending`); `styles.css`; and

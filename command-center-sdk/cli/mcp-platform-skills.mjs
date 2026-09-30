@@ -442,7 +442,9 @@ async function jsonRpcRequest({
     clearTimeout(timer);
   }
   if (response.status === 401) {
-    throw new McpPlatformSkillError("MCP authentication failed (401). Refresh the access token.");
+    throw new McpPlatformSkillError(
+      "MCP authentication failed (401). Run `command-center-sdk login`, or replace MAINSEQUENCE_ACCESS_TOKEN when it is set.",
+    );
   }
   if (!response.ok) {
     throw new McpPlatformSkillError(`MCP ${method} request failed (${response.status}).`);

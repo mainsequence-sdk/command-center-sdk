@@ -85,6 +85,10 @@ try {
     "application-sdk-maintenance.mjs",
     "application-docs.mjs",
     "sync-agent-skills.mjs",
+    "machine-session.mjs",
+    "machine-session.d.mts",
+    "login.mjs",
+    "session-commands.mjs",
   ].map((name) => readFile(join(extractedPackage, "cli", name), "utf8")));
   await Promise.all(
     ["project-sdk-maintenance.mjs", "project-docs.mjs"].map((name) =>
@@ -103,6 +107,19 @@ try {
   assert.match(cliHelp, /code-repository sync/u);
   assert.match(cliHelp, /--timeout-ms/u);
   assert.match(cliHelp, /repository-root/u);
+  for (const sessionCommand of ["login", "logout", "refresh-token", "auth status", "auth token"]) {
+    assert.match(cliHelp, new RegExp(`command-center-sdk ${sessionCommand}`, "u"));
+  }
+  // The Vite plugins load the machine session from the CLI directory of the same package.
+  const viteModule = await import(
+    pathToFileURL(join(extractedPackage, "dist", "vite", "index.js")).href
+  );
+  assert.equal(typeof viteModule.platformRequestProxy, "function");
+  assert.equal(typeof viteModule.localAgentProxy, "function");
+  assert.match(
+    await readFile(join(extractedPackage, "dist", "vite", "platform-request-proxy.js"), "utf8"),
+    /from "\.\.\/\.\.\/cli\/machine-session\.mjs"/u,
+  );
   const embedModule = await import(
     pathToFileURL(join(extractedPackage, "dist", "embed", "index.js")).href
   );

@@ -37,8 +37,14 @@ current backend `CodeRepositoryBranch`.
 4. Do not add or restore superseded caller-supplied repository, branch, or Environment identity
    inputs in `.env`. They are not source-identity inputs; an optional positional CodeRepository UID
    is only a consistency assertion against the Git-resolved CodeRepository.
-5. Ensure `MAINSEQUENCE_ENDPOINT` and a current `MAINSEQUENCE_ACCESS_TOKEN` are available only in
-   the process environment. Never place the token in an argument, file, log, or report.
+5. Confirm the machine is signed in: `npx command-center-sdk auth status` exits `0`. When it does
+   not, run `npx command-center-sdk login`, or `npx command-center-sdk login --mcp` when you hold
+   an authenticated Main Sequence MCP connection and can call the `auth.cli_authorize` tool it
+   prints. The backend is the one the repository names with `MAINSEQUENCE_ENDPOINT`, in the
+   environment or in `.env`. `.env` holds no token; `npx command-center-sdk refresh-token` removes
+   one that an earlier setup left there. A launcher may set `MAINSEQUENCE_ENDPOINT` and
+   `MAINSEQUENCE_ACCESS_TOKEN` in the process environment instead, and that token wins. Never
+   place a token in an argument, file, log, or report.
    Backend requests default to 60 seconds. When a known-slow environment needs more time, set
    `COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS` or pass `--timeout-ms` with an integer from
    1,000 through 300,000; the CLI option takes precedence. Do not add automatic POST retries.

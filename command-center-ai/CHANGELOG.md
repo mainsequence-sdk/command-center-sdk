@@ -12,6 +12,9 @@ field, platform route, or storage change.
   install`. Installs now take turns through `.agents/skills/.command-center-ai.lock`: the first
   installs, the others wait, then install against what it left, and every one succeeds. A lock left
   by an install that exited is cleared. The SDK's installer has the same fix, for parity.
+- The platform guide and the `connect-command-center-ai-to-the-platform` skill describe local
+  development with the session `command-center-sdk login` saves (SDK ADR 017), and keep the
+  environment token for an SDK without that command. The package itself is unchanged.
 
 ## 0.0.8
 

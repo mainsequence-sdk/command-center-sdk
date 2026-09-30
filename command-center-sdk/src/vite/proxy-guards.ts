@@ -32,7 +32,12 @@ export type ProxyMiddleware = (
 /** The parts of Vite's dev server the plugin uses. */
 export interface ProxyDevServer {
   middlewares: { use(middleware: ProxyMiddleware): unknown };
-  config: { logger: { warn(message: string): void } };
+  config: {
+    logger: { warn(message: string): void };
+    /** The project root, and where Vite reads `.env` files from when that is another directory. */
+    root?: string;
+    envDir?: string | false;
+  };
 }
 
 /** The route a proxy serves: it starts with `/` and does not end with one. */
