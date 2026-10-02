@@ -11,7 +11,12 @@ import {
 } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
-export const MCP_AGENT_SKILL_NAMESPACE = "mainsequence";
+// The Command Center SDK's own namespace for the platform's MCP skills (issue #9). The Python
+// Main Sequence SDK owns `.agents/skills/mainsequence/` and mirrors it, deleting what it did not
+// install, so the two installers must never share a folder.
+export const MCP_AGENT_SKILL_NAMESPACE = "ms-command-center";
+// Where versions before 0.5.12 installed these skills; only what they recorded there is removed.
+export const LEGACY_MCP_AGENT_SKILL_NAMESPACE = "mainsequence";
 export const MCP_PINNED_FROM_FILENAME = "MCP_PINNED_FROM.txt";
 export const MCP_PINNED_FROM_SCHEMA = "1";
 
@@ -115,13 +120,14 @@ async function previousManagedRoots(sentinelPath) {
   ];
 }
 
-async function pythonManagedRoots(destinationRoot) {
-  const sentinelPath = join(destinationRoot, PYTHON_PINNED_FROM_FILENAME);
+/** The skill folders the Python Main Sequence SDK records in its namespace; those are its own. */
+async function pythonManagedRoots(legacyRoot) {
+  const sentinelPath = join(legacyRoot, PYTHON_PINNED_FROM_FILENAME);
   const fields = await readRegularSentinel(sentinelPath, "Main Sequence Python pin sentinel");
   if (!fields) return [];
   if (
     fields.get("schema")?.[0] !== "2" ||
-    fields.get("namespace")?.[0] !== MCP_AGENT_SKILL_NAMESPACE
+    fields.get("namespace")?.[0] !== LEGACY_MCP_AGENT_SKILL_NAMESPACE
   ) {
     return [];
   }
@@ -237,6 +243,64 @@ async function rollbackInstall({ destinationRoot, backupRoot, installed, backedU
   }
 }
 
+/**
+ * What an earlier version of this installer left in `.agents/skills/mainsequence/`: only the folders
+ * its own `MCP_PINNED_FROM.txt` records, minus any the Python SDK's `PINNED_FROM.txt` claims, and
+ * that sentinel. Anything else there is the Python SDK's or the project's and is never touched. An
+ * unreadable, foreign, or unsafe sentinel means nothing is ours to remove.
+ */
+async function planLegacyRetirement(projectDir) {
+  const legacyRoot = join(projectDir, ".agents", "skills", LEGACY_MCP_AGENT_SKILL_NAMESPACE);
+  const sentinelPath = join(legacyRoot, MCP_PINNED_FROM_FILENAME);
+  const none = { legacyRoot, sentinelPath: null, removable: [], kept: [] };
+  try {
+    const rootState = await pathState(legacyRoot);
+    if (!rootState || rootState.isSymbolicLink() || !rootState.isDirectory()) return none;
+    await assertSafeDestinationPath(projectDir, legacyRoot);
+    const fields = await readRegularSentinel(sentinelPath, "Earlier MCP pin sentinel");
+    if (
+      !fields ||
+      fields.get("schema")?.[0] !== MCP_PINNED_FROM_SCHEMA ||
+      fields.get("installer")?.[0] !== INSTALLER_NAME ||
+      fields.get("namespace")?.[0] !== LEGACY_MCP_AGENT_SKILL_NAMESPACE ||
+      fields.get("source")?.[0] !== "mcp"
+    ) {
+      return none;
+    }
+    const recorded = [
+      ...new Set((fields.get("managed_skill_path") ?? []).map((path) => validateManagedRoot(path))),
+    ];
+    const pythonOwned = new Set(await pythonManagedRoots(legacyRoot));
+    const removable = [];
+    const kept = [];
+    for (const managedRoot of recorded) {
+      const destination = join(legacyRoot, ...managedRoot.split("/"));
+      if (pythonOwned.has(managedRoot)) {
+        kept.push({ managedRoot, destination, reason: "python-sdk" });
+        continue;
+      }
+      await assertSafeDestinationPath(legacyRoot, destination);
+      const state = await pathState(destination);
+      if (state?.isDirectory()) removable.push({ managedRoot, destination });
+    }
+    return { legacyRoot, sentinelPath, removable, kept };
+  } catch (error) {
+    if (error instanceof McpAgentSkillInstallBlocked) return none;
+    throw error;
+  }
+}
+
+async function retireLegacySkills(plan) {
+  if (!plan.sentinelPath) return;
+  for (const item of plan.removable) {
+    await rm(item.destination, { recursive: true, force: true });
+    await pruneEmptyParents(dirname(item.destination), plan.legacyRoot);
+  }
+  await rm(plan.sentinelPath, { force: true });
+  // The folder goes only when nothing else is left in it.
+  await rmdir(plan.legacyRoot).catch(() => {});
+}
+
 async function pruneEmptyParents(start, stop) {
   let current = start;
   while (current !== stop && relative(stop, current) && !relative(stop, current).startsWith("..")) {
@@ -279,8 +343,8 @@ export async function installMcpAgentSkills({
   await assertSafeDestinationPath(resolvedProjectDir, destinationRoot);
   const sentinelPath = join(destinationRoot, MCP_PINNED_FROM_FILENAME);
   const previousRoots = await previousManagedRoots(sentinelPath);
-  const adoptableRoots = await pythonManagedRoots(destinationRoot);
-  const ownedRoots = new Set([...previousRoots, ...adoptableRoots]);
+  const ownedRoots = new Set(previousRoots);
+  const legacy = await planLegacyRetirement(resolvedProjectDir);
 
   const current = catalog.skills.map((skill) => {
     const managedRoot = validateManagedRoot(skill.managedRoot);
@@ -324,13 +388,20 @@ export async function installMcpAgentSkills({
     dryRun: Boolean(dryRun),
     installed: current.map(({ content: _content, ...item }) => item),
     removed: stale,
+    // What an earlier version installed under `.agents/skills/mainsequence/` and this one removes.
+    legacy: {
+      root: legacy.legacyRoot,
+      sentinelPath: legacy.sentinelPath,
+      removed: legacy.removable,
+      kept: legacy.kept,
+    },
   };
   if (dryRun) return result;
 
   const skillsParent = dirname(destinationRoot);
   await mkdir(skillsParent, { recursive: true });
-  const stageRoot = await mkdtemp(join(skillsParent, ".mainsequence-mcp-stage-"));
-  const backupRoot = await mkdtemp(join(skillsParent, ".mainsequence-mcp-backup-"));
+  const stageRoot = await mkdtemp(join(skillsParent, `.${MCP_AGENT_SKILL_NAMESPACE}-mcp-stage-`));
+  const backupRoot = await mkdtemp(join(skillsParent, `.${MCP_AGENT_SKILL_NAMESPACE}-mcp-backup-`));
   const installed = [];
   const backedUp = [];
   let previousSentinel = null;
@@ -399,5 +470,7 @@ export async function installMcpAgentSkills({
   for (const item of stale) {
     await pruneEmptyParents(dirname(item.destination), destinationRoot);
   }
+  // Only after the new namespace is complete, so a failed install never loses the skills.
+  await retireLegacySkills(legacy);
   return result;
 }

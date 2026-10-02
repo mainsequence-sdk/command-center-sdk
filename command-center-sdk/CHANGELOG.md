@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the installed MCP skill namespace and its provenance file move from
+`.agents/skills/mainsequence/` to `.agents/skills/ms-command-center/`; the `--json` result of
+`skills sync` gains `platform.legacy`. No npm export, contract ID, JSON Schema, fixture, iframe
+protocol, theme, or backend change.
+
+- **The MCP platform skills have their own namespace** ([#9](https://github.com/mainsequence-sdk/command-center-sdk/issues/9)).
+  Postinstall and `skills sync` installed them in `.agents/skills/mainsequence/`, which the Python
+  Main Sequence SDK owns since 9.0.2 and mirrors, deleting what it did not install. A Command Center
+  application with a Python environment had two writers undoing each other. They now go to
+  `.agents/skills/ms-command-center/`, with its own `MCP_PINNED_FROM.txt`, and the installer no
+  longer adopts folders on the Python SDK's word.
+  - After a successful install it removes, from `.agents/skills/mainsequence/`, only the folders an
+    earlier version's `MCP_PINNED_FROM.txt` records and the Python SDK's `PINNED_FROM.txt` does not,
+    then that sentinel, then the folder if it is empty. Another installer's sentinel, a symbolic
+    link, or an unsafe path leaves everything there untouched. `skills sync --dry-run --json` lists
+    the removals under `platform.legacy`.
+  - Point anything that read `.agents/skills/mainsequence/MCP_PINNED_FROM.txt` at
+    `.agents/skills/ms-command-center/MCP_PINNED_FROM.txt`.
+
 ## 0.5.11
 
 Compatibility axes: the CLI, additively (`login`, `logout`, `refresh-token`, `auth status`,

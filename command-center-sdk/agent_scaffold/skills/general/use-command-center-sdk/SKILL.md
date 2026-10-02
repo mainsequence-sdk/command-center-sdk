@@ -71,11 +71,12 @@ backend (`MAINSEQUENCE_ENDPOINT`, in the environment or in `.env`) plus `/mcp`, 
 `COMMAND_CENTER_SDK_MCP_URL`. `MAINSEQUENCE_ACCESS_TOKEN` in the process environment wins over the
 saved session. Never put a token in a command argument or in a file.
 Inspect `.agents/skills/command-center/PINNED_FROM.txt` for the package version and
-`.agents/skills/mainsequence/MCP_PINNED_FROM.txt` for the backend manifest. Treat the installed SDK
+`.agents/skills/ms-command-center/MCP_PINNED_FROM.txt` for the backend manifest. Treat the installed SDK
 catalog as authoritative for the complete `command-center` namespace: install, postinstall, update,
 and sync prune every entry not authorized by the current package, including unrecorded legacy
-skills. Put application-owned guidance in another namespace. The `mainsequence` installer retains
-its narrower backend-proven path ownership, and all other namespaces remain untouched.
+skills. Put application-owned guidance in another namespace. The MCP installer owns only the
+folders it records in `ms-command-center`; `.agents/skills/mainsequence/` belongs to the Python Main
+Sequence SDK, and every other namespace remains untouched.
 
 ## Choose Public Entrypoints
 

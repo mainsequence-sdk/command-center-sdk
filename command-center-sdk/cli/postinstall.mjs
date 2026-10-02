@@ -93,6 +93,11 @@ export async function runPostinstall({
     logger.log(
       `[command-center-sdk] Installed ${platform.installed.length} MCP skill(s) in ${platform.destinationRoot}.`,
     );
+    if (platform.legacy?.sentinelPath) {
+      logger.log(
+        `[command-center-sdk] Removed ${platform.legacy.removed.length} MCP skill folder(s) an earlier version installed in ${platform.legacy.root}; the Python Main Sequence SDK owns that folder.`,
+      );
+    }
     return { sdk: result, platform };
   } catch (error) {
     logger.warn(

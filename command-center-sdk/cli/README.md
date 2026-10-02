@@ -41,10 +41,18 @@ dynamic index. It reads only those skills and validates one manifest revision, l
 hashes, byte sizes, MIME types, safe paths, and skill frontmatter before writing.
 
 Backend-owned skills keep their declared hierarchy below
-`<repository-root>/.agents/skills/mainsequence/`. `MCP_PINNED_FROM.txt` records the exact manifest
-and paths managed by this installer. Refreshes overwrite or remove only those recorded folders. An existing
-Python `PINNED_FROM.txt` may prove that a matching folder is already MCP-owned; it is never
-rewritten by this package. An unknown pre-existing destination blocks the strict command.
+`<repository-root>/.agents/skills/ms-command-center/`, this package's own namespace.
+`MCP_PINNED_FROM.txt` records the exact manifest and paths managed by this installer. Refreshes
+overwrite or remove only those recorded folders. An unknown pre-existing destination blocks the
+strict command.
+
+The Python Main Sequence SDK owns `<repository-root>/.agents/skills/mainsequence/` and mirrors it,
+deleting what it did not install, so this installer never writes there (issue #9). Versions before
+0.5.12 installed the MCP skills there; after a successful install, the installer removes from that
+folder only the folders its old `MCP_PINNED_FROM.txt` records (schema 1, this installer,
+`source=mcp`) that the Python SDK's `PINNED_FROM.txt` does not also record, then that sentinel, then
+the folder if nothing is left. A sentinel of another installer, a symbolic link, or an unsafe path
+means nothing there is removed. `--dry-run --json` lists them under `platform.legacy`.
 
 The MCP URL resolves from `--mcp-url`, `COMMAND_CENTER_SDK_MCP_URL`, `MAINSEQUENCE_MCP_URL`, or
 the backend plus `/mcp`. Authentication uses `MAINSEQUENCE_ACCESS_TOKEN` when the process

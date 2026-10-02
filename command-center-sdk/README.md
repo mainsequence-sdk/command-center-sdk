@@ -208,7 +208,7 @@ workflow parity.
 
 When `MAINSEQUENCE_ACCESS_TOKEN` and an MCP URL are set in the environment, package postinstall
 also makes a nonblocking attempt to refresh backend-owned platform skills under
-`.agents/skills/mainsequence/`. Postinstall reads no saved session. Run the strict command, which
+`.agents/skills/ms-command-center/`. Postinstall reads no saved session. Run the strict command, which
 uses the saved session, when the refresh must succeed or when you want dry-run/JSON evidence:
 
 ```bash
@@ -218,8 +218,11 @@ npx command-center-sdk skills sync --path . --dry-run --json
 
 The MCP URL is the project's backend plus `/mcp`, or `--mcp-url` or `COMMAND_CENTER_SDK_MCP_URL`;
 the saved session is sent only to its own backend. Do not place a token in command arguments. The MCP installer writes
-`.agents/skills/mainsequence/MCP_PINNED_FROM.txt`, overwrites only its recorded folders, may adopt
-folders proven MCP-owned by the Python SDK sentinel, and preserves every unrelated skill. Set
+`.agents/skills/ms-command-center/MCP_PINNED_FROM.txt`, overwrites only its recorded folders, and
+preserves every unrelated skill. It never writes `.agents/skills/mainsequence/`, which the Python
+Main Sequence SDK owns and mirrors; it removes from there only the folders and the
+`MCP_PINNED_FROM.txt` that versions before 0.5.12 recorded, and leaves any folder the Python SDK's
+`PINNED_FROM.txt` also records. Set
 `COMMAND_CENTER_SDK_MCP_POSTINSTALL=0` to disable only the best-effort postinstall network attempt;
 the packaged `command-center` skill installation still runs.
 

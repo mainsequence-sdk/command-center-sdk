@@ -51,7 +51,9 @@ The install command copies packaged skills into:
 
 The sync command refreshes packaged skills and authenticated MCP skills in:
   <repository-root>/.agents/skills/command-center/
-  <repository-root>/.agents/skills/mainsequence/
+  <repository-root>/.agents/skills/ms-command-center/
+It also removes the MCP skills versions before 0.5.12 recorded in .agents/skills/mainsequence/,
+which the Python Main Sequence SDK owns, and leaves everything else there.
 
 The CodeRepository sync command requires the Vite application at the Git repository root, bumps the npm
 patch version, requests the current CodeRepositoryBranch's backend-owned deployment tag, refreshes
@@ -324,11 +326,25 @@ function printHumanSyncResult(result) {
   console.log(
     `${action} ${result.platform.installed.length} MCP skill(s) in ${result.platform.destinationRoot}.`,
   );
+  printLegacyRetirement(result.platform.legacy, result.dryRun);
   console.log(`SDK version: ${result.sdk.pinnedVersion}`);
   console.log(`Platform manifest: ${result.platform.manifestSha256}`);
   if (!result.dryRun) {
     console.log(`SDK provenance: ${result.sdk.sentinelPath}`);
     console.log(`MCP provenance: ${result.platform.sentinelPath}`);
+  }
+}
+
+/** What an earlier version left in `.agents/skills/mainsequence/` (issue #9). */
+function printLegacyRetirement(legacy, dryRun) {
+  if (!legacy?.sentinelPath) return;
+  console.log(
+    `${dryRun ? "Would remove" : "Removed"} ${legacy.removed.length} MCP skill folder(s) an earlier version installed in ${legacy.root}.`,
+  );
+  if (legacy.kept.length > 0) {
+    console.log(
+      `Left ${legacy.kept.length} there that the Python Main Sequence SDK also records: ${legacy.kept.map((item) => item.managedRoot).join(", ")}.`,
+    );
   }
 }
 

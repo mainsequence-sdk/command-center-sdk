@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import {
+  LEGACY_MCP_AGENT_SKILL_NAMESPACE,
   MCP_AGENT_SKILL_NAMESPACE,
   MCP_PINNED_FROM_FILENAME,
   McpAgentSkillInstallBlocked,
@@ -250,7 +251,7 @@ test("installs MCP skill folders, removes stale managed folders, and preserves u
       join(first.destinationRoot, MCP_PINNED_FROM_FILENAME),
       "utf8",
     );
-    assert.match(sentinel, /namespace=mainsequence/u);
+    assert.match(sentinel, /namespace=ms-command-center/u);
     assert.match(sentinel, /managed_skill_path=releases\/static_site/u);
     assert.doesNotMatch(sentinel, /managed_skill_path=platform\/code_repository_design/u);
   } finally {
@@ -258,13 +259,28 @@ test("installs MCP skill folders, removes stale managed folders, and preserves u
   }
 });
 
-test("adopts Python-proven MCP folders but rejects unknown destination ownership", async () => {
+test("installs into its own namespace, apart from the Python SDK's", () => {
+  assert.equal(MCP_AGENT_SKILL_NAMESPACE, "ms-command-center");
+  assert.equal(LEGACY_MCP_AGENT_SKILL_NAMESPACE, "mainsequence");
+});
+
+test("rejects an unowned folder in its own namespace, even one a Python sentinel names", async () => {
   const projectRoot = await temporaryDirectory("ownership");
   try {
     const destinationRoot = join(projectRoot, ".agents", "skills", MCP_AGENT_SKILL_NAMESPACE);
     const managedRoot = join(destinationRoot, "command_center", "command_center");
     await mkdir(managedRoot, { recursive: true });
     await writeFile(join(managedRoot, "SKILL.md"), "old", "utf8");
+    await writeFile(
+      join(destinationRoot, "PINNED_FROM.txt"),
+      [
+        "schema=2",
+        "namespace=mainsequence",
+        "platform_resource.command_center.path=skills/command_center/command_center/SKILL.md",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
 
     await assert.rejects(
       installMcpAgentSkills({
@@ -276,27 +292,137 @@ test("adopts Python-proven MCP folders but rejects unknown destination ownership
       }),
       McpAgentSkillInstallBlocked,
     );
+    assert.equal(await readFile(join(managedRoot, "SKILL.md"), "utf8"), "old");
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
 
+/** An earlier version's install in the Python SDK's namespace, beside the Python SDK's own files. */
+async function writeLegacyNamespace(projectRoot, { installer = "@dev-mainsequence/command-center-sdk" } = {}) {
+  const legacyRoot = join(projectRoot, ".agents", "skills", LEGACY_MCP_AGENT_SKILL_NAMESPACE);
+  const files = {
+    "command_center/command_center/SKILL.md": "earlier Command Center install",
+    "platform/shared/SKILL.md": "recorded by both installers",
+    "python_owned/SKILL.md": "the Python SDK's",
+    "notes/project.md": "the project's",
+    [MCP_PINNED_FROM_FILENAME]: [
+      "schema=1",
+      `installer=${installer}`,
+      "namespace=mainsequence",
+      "source=mcp",
+      "managed_skill_path=command_center/command_center",
+      "managed_skill_path=platform/shared",
+      "",
+    ].join("\n"),
+    "PINNED_FROM.txt": [
+      "schema=2",
+      "namespace=mainsequence",
+      "platform_resource.shared.path=skills/platform/shared/SKILL.md",
+      "platform_resource.python.path=skills/python_owned/SKILL.md",
+      "",
+    ].join("\n"),
+  };
+  for (const [path, text] of Object.entries(files)) {
+    await mkdir(dirname(join(legacyRoot, path)), { recursive: true });
+    await writeFile(join(legacyRoot, path), text, "utf8");
+  }
+  return legacyRoot;
+}
+
+test("removes only what an earlier version recorded in the Python SDK's namespace", async () => {
+  const projectRoot = await temporaryDirectory("legacy");
+  try {
+    const legacyRoot = await writeLegacyNamespace(projectRoot);
+    const skills = catalog([
+      { name: "command_center", path: "skills/command_center/command_center/SKILL.md" },
+    ]);
+
+    const plan = await installMcpAgentSkills({
+      projectDir: projectRoot,
+      catalog: skills,
+      installerVersion: "0.5.12",
+      dryRun: true,
+    });
+    assert.deepEqual(plan.legacy.removed.map((item) => item.managedRoot), ["command_center/command_center"]);
+    assert.deepEqual(plan.legacy.kept.map((item) => item.managedRoot), ["platform/shared"]);
+    await readFile(join(legacyRoot, "command_center", "command_center", "SKILL.md"), "utf8");
+
+    const result = await installMcpAgentSkills({
+      projectDir: projectRoot,
+      catalog: skills,
+      installerVersion: "0.5.12",
+    });
+    await readFile(
+      join(projectRoot, ".agents", "skills", "ms-command-center", "command_center", "command_center", "SKILL.md"),
+      "utf8",
+    );
+    assert.equal(result.legacy.removed.length, 1);
+    // The earlier install and its sentinel are gone, emptied parents with them.
+    await assert.rejects(readFile(join(legacyRoot, MCP_PINNED_FROM_FILENAME), "utf8"), { code: "ENOENT" });
+    await assert.rejects(readdir(join(legacyRoot, "command_center")), { code: "ENOENT" });
+    // Everything the Python SDK or the project owns stays.
+    assert.equal(await readFile(join(legacyRoot, "platform", "shared", "SKILL.md"), "utf8"), "recorded by both installers");
+    assert.equal(await readFile(join(legacyRoot, "python_owned", "SKILL.md"), "utf8"), "the Python SDK's");
+    assert.equal(await readFile(join(legacyRoot, "notes", "project.md"), "utf8"), "the project's");
+    await readFile(join(legacyRoot, "PINNED_FROM.txt"), "utf8");
+
+    // A second run finds nothing of its own there.
+    const again = await installMcpAgentSkills({ projectDir: projectRoot, catalog: skills, installerVersion: "0.5.12" });
+    assert.equal(again.legacy.sentinelPath, null);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test("leaves the Python SDK's namespace alone when its MCP sentinel is not this installer's", async () => {
+  const projectRoot = await temporaryDirectory("legacy-foreign");
+  try {
+    const legacyRoot = await writeLegacyNamespace(projectRoot, { installer: "someone-else" });
+    const result = await installMcpAgentSkills({
+      projectDir: projectRoot,
+      catalog: catalog([
+        { name: "command_center", path: "skills/command_center/command_center/SKILL.md" },
+      ]),
+      installerVersion: "0.5.12",
+    });
+
+    assert.equal(result.legacy.sentinelPath, null);
+    await readFile(join(legacyRoot, "command_center", "command_center", "SKILL.md"), "utf8");
+    await readFile(join(legacyRoot, MCP_PINNED_FROM_FILENAME), "utf8");
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test("removes the old namespace folder only when nothing else is left in it", async () => {
+  const projectRoot = await temporaryDirectory("legacy-empty");
+  try {
+    const legacyRoot = join(projectRoot, ".agents", "skills", LEGACY_MCP_AGENT_SKILL_NAMESPACE);
+    await mkdir(join(legacyRoot, "command_center", "command_center"), { recursive: true });
+    await writeFile(join(legacyRoot, "command_center", "command_center", "SKILL.md"), "earlier", "utf8");
     await writeFile(
-      join(destinationRoot, "PINNED_FROM.txt"),
+      join(legacyRoot, MCP_PINNED_FROM_FILENAME),
       [
-        "schema=2",
+        "schema=1",
+        "installer=@dev-mainsequence/command-center-sdk",
         "namespace=mainsequence",
-        "platform_resource.command_center.uri=mainsequence://platform/skills/command-center",
-        "platform_resource.command_center.path=skills/command_center/command_center/SKILL.md",
+        "source=mcp",
+        "managed_skill_path=command_center/command_center",
         "",
       ].join("\n"),
       "utf8",
     );
+
     await installMcpAgentSkills({
       projectDir: projectRoot,
       catalog: catalog([
         { name: "command_center", path: "skills/command_center/command_center/SKILL.md" },
       ]),
-      installerVersion: "0.1.3",
+      installerVersion: "0.5.12",
     });
-    assert.match(await readFile(join(managedRoot, "SKILL.md"), "utf8"), /platform guidance/u);
-    await readFile(join(destinationRoot, "PINNED_FROM.txt"), "utf8");
+
+    assert.deepEqual((await readdir(join(projectRoot, ".agents", "skills"))).sort(), ["ms-command-center"]);
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
@@ -372,7 +498,7 @@ test("strict synchronization refreshes both SDK and MCP namespaces", async () =>
       "utf8",
     );
     await readFile(
-      join(projectRoot, ".agents", "skills", "mainsequence", "command_center", "command_center", "SKILL.md"),
+      join(projectRoot, ".agents", "skills", MCP_AGENT_SKILL_NAMESPACE, "command_center", "command_center", "SKILL.md"),
       "utf8",
     );
   } finally {
@@ -502,7 +628,7 @@ test("postinstall installs MCP skills when process authentication is available",
         projectRoot,
         ".agents",
         "skills",
-        "mainsequence",
+        MCP_AGENT_SKILL_NAMESPACE,
         "command_center",
         "command_center",
         "SKILL.md",
@@ -511,7 +637,7 @@ test("postinstall installs MCP skills when process authentication is available",
     );
     assert.match(
       await readFile(
-        join(projectRoot, ".agents", "skills", "mainsequence", MCP_PINNED_FROM_FILENAME),
+        join(projectRoot, ".agents", "skills", MCP_AGENT_SKILL_NAMESPACE, MCP_PINNED_FROM_FILENAME),
         "utf8",
       ),
       /command=npm postinstall/u,

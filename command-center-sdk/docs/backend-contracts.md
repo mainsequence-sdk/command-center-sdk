@@ -77,7 +77,8 @@ under the manifest schema version, and list and read metadata match that revisio
 additive skills dynamically without a new npm contract or hard-coded skill list. Breaking metadata
 semantics require a new backend manifest version and an SDK compatibility update. Run
 `command-center-sdk skills sync --path . --json` to validate the complete live revision before it
-is written under `.agents/skills/mainsequence/`.
+is written under `.agents/skills/ms-command-center/`. The Python Main Sequence SDK owns
+`.agents/skills/mainsequence/`; the Command Center SDK installs nothing there.
 
 ## Resource-list discovery and bulk-action lifecycle
 
