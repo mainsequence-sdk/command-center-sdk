@@ -14,8 +14,9 @@ The platform deploys from Git pushes. The repository's `.mainsequence/workflows/
 which pushes deploy:
 
 - `tag_regex` omitted or `null`: every push to the branch deploys.
-- `tag_regex` set to a regular expression: a push deploys only when a tag that matches it points at
-  the branch's latest commit.
+- `tag_regex` set to a regular expression: a tag that matches it deploys the commit it points at,
+  whether that is the branch's latest commit or an older commit on the branch. A push without a
+  matching tag deploys nothing.
 
 `automatic_deployment` and `tag_regex` are set only in that workflow file. Change them there and
 commit the change like any other file; no command or platform request sets them.
@@ -159,13 +160,12 @@ dependency declaration and rerun the sync. Never reset, discard, or rewrite user
 ## Verify The Outcome
 
 After the push, confirm the commit is on the remote branch. When the workflow file sets a
-`tag_regex`, also confirm that the release job created the matching tag on the branch's latest
-commit:
+`tag_regex`, also confirm that the release job created the matching tag on the commit you pushed:
 
 ```bash
 git fetch --tags origin
 git log -1 --decorate --oneline origin/<branch>
-git tag --points-at origin/<branch>
+git tag --points-at <pushed commit>
 ```
 
 Report the branch, the pushed commit, the version, and the release tag when there is one, without
