@@ -217,9 +217,27 @@ or whose commit is only on another branch, deploys nothing for that application.
 
 ### Going Back To An Older Version
 
-Revert the change and release a new version: `git revert <commit>`, raise the patch version with
-`npm version patch --no-git-tag-version`, commit, push, and let CI tag the result. The version keeps
-moving forward and every deployed commit matches its tag.
+Two ways work. Use either only when the user asks for it.
+
+- Revert and release a new version: `git revert <commit>`, raise the patch version with
+  `npm version patch --no-git-tag-version`, commit, push, and let CI tag the result. This works for
+  every application, including one that deploys every push, and keeps the version moving forward.
+- For an application with a `tag_regex`, push the older version's tag again. GitHub sends an event
+  only when a tag is created, so delete the tag on GitHub and push it again; it still points at the
+  same commit:
+
+  ```bash
+  git fetch --tags origin
+  git push origin :refs/tags/v1.2.0
+  git push origin v1.2.0
+  ```
+
+  The application redeploys that commit exactly as it was released: its code, its build and its
+  workflow file, whose settings replace the current ones. The commit must still be on the branch and
+  the tag must match the current `tag_regex`. An application that deploys every push ignores the tag.
+  Re-pushing a tag also re-runs any GitHub Actions workflow that the tag triggers, and a tag ruleset
+  may forbid deleting it; use the revert route then. The next release tag deploys a newer version
+  again.
 
 ## Handle Failures Without Hiding State
 
