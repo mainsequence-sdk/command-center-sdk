@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.13
 
 Compatibility axes: the CLI command `code-repository sync` (breaking: its arguments, its behavior,
 and its `--json` output); the packaged skill `general/maintain-command-center-code-repository`. No
