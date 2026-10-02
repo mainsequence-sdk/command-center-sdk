@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.12
 
 Compatibility axes: the installed MCP skill namespace and its provenance file move from
 `.agents/skills/mainsequence/` to `.agents/skills/ms-command-center/`; the `--json` result of
