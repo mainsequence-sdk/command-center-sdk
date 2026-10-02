@@ -1,6 +1,6 @@
 ---
 name: maintain-command-center-code-repository
-description: Safely finish, version, and deploy a Main Sequence Command Center application code repository with command-center-sdk code-repository sync. Use when an application change is ready to commit and must produce the backend-recognized branch tag that triggers automatic deployment.
+description: Finish, commit, and deploy a Main Sequence Command Center application code repository. Use when an application change is ready to commit, when dependencies changed and package-lock.json must be refreshed with command-center-sdk code-repository sync, or when deciding how a push, a release tag, and the workflow file's tag_regex deploy the application.
 ---
 
 # Maintain And Deploy A Command Center CodeRepository
@@ -8,47 +8,31 @@ description: Safely finish, version, and deploy a Main Sequence Command Center a
 Use this workflow only in a consuming npm application that is registered as a Main Sequence
 CodeRepository. It is not the source-maintenance workflow for changing the SDK package itself.
 
-## Why CodeRepository Sync Is Required
+## How A Push Deploys
 
-Automatic deployment is keyed by a backend-owned tag for one registered `CodeRepositoryBranch`.
-A plain commit, a locally invented `v<version>` tag, or a tag copied from another branch does not
-establish that deployment identity. `command-center-sdk code-repository sync` keeps the npm
-version, lockfile, Git commit, backend CodeRepositoryBranch, annotated tag, and pushed remote state
-in one ordered workflow.
+The platform deploys from Git pushes. The repository's `.mainsequence/workflows/*.yaml` file decides
+which pushes deploy:
 
-The backend decides the tag. Typical results include:
+- `tag_regex` omitted or `null`: every push to the branch deploys.
+- `tag_regex` set to a regular expression: a push deploys only when a tag that matches it points at
+  the branch's latest commit.
 
-- `main` at version `1.2.4`: `v1.2.4`
-- `dev` at version `1.2.4`: `v1.2.4-dev.1`
-- `feature/foo` at version `1.2.4`: a backend-generated feature tag such as
-  `v1.2.4-feature-foo-12345678.1`
+`automatic_deployment` and `tag_regex` are set only in that workflow file. Change them there and
+commit the change like any other file; no command or platform request sets them.
 
-Never reproduce these rules in application code. Always use the exact `tag_name` returned for the
-current backend `CodeRepositoryBranch`.
+Versions and release tags are repository code. The Main Sequence platform no longer provides tag
+names, and `command-center-sdk code-repository sync` no longer versions, commits, tags, or pushes.
+When the workflow file sets a `tag_regex`, the repository's own CI creates the matching release
+tags (see the example below). Never invent a tag by hand to force a deployment.
 
 ## Preflight The CodeRepository
 
 1. Confirm the Vite application is at the Git repository root. Nested `frontend/` applications are
    not supported.
 2. Confirm that root contains `package.json` and `package-lock.json`.
-3. Confirm the current Git checkout has an `origin` remote, an attached named branch, and a valid
-   `HEAD` commit. The backend resolves this source context to the CodeRepository and
-   CodeRepositoryBranch.
-4. Do not add or restore superseded caller-supplied repository, branch, or Environment identity
-   inputs in `.env`. They are not source-identity inputs; an optional positional CodeRepository UID
-   is only a consistency assertion against the Git-resolved CodeRepository.
-5. Confirm the machine is signed in: `npx command-center-sdk auth status` exits `0`. When it does
-   not, run `npx command-center-sdk login`, or `npx command-center-sdk login --mcp` when you hold
-   an authenticated Main Sequence MCP connection and can call the `auth.cli_authorize` tool it
-   prints. The backend is the one the repository names with `MAINSEQUENCE_ENDPOINT`, in the
-   environment or in `.env`. `.env` holds no token; `npx command-center-sdk refresh-token` removes
-   one that an earlier setup left there. A launcher may set `MAINSEQUENCE_ENDPOINT` and
-   `MAINSEQUENCE_ACCESS_TOKEN` in the process environment instead, and that token wins. Never
-   place a token in an argument, file, log, or report.
-   Backend requests default to 60 seconds. When a known-slow environment needs more time, set
-   `COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS` or pass `--timeout-ms` with an integer from
-   1,000 through 300,000; the CLI option takes precedence. Do not add automatic POST retries.
-6. Inspect the installed SDK and resolve any authorized compatible update separately:
+3. Read the repository's `.mainsequence/workflows/*.yaml` and note whether it sets `tag_regex`. That
+   decides whether your push deploys by itself or waits for a matching release tag.
+4. Inspect the installed SDK and resolve any authorized compatible update separately:
 
 ```bash
 npx command-center-sdk application sdk-status --path . --json
@@ -57,9 +41,9 @@ npx command-center-sdk application update-sdk --path . --dry-run
 
 `update-sdk` is dependency maintenance only. Run it only when the user authorizes the update, then
 refresh guidance and rerun the application checks. It does not change the application version, contact
-the deployment backend, commit, tag, or push, and it never replaces the release sync below.
+the deployment backend, commit, tag, or push.
 
-7. If the application has `docs:check` or `build:docs`, verify the documentation source and combined
+5. If the application has `docs:check` or `build:docs`, verify the documentation source and combined
    artifact from the same root:
 
 ```bash
@@ -73,96 +57,115 @@ not release proof. Follow `$document-command-center-application` for the canonic
 toolchain, and browser checks. If the application uses another browser-script name, run its equivalent
 production-artifact suite and record the exact command.
 
-8. Run the read-only deployment preview from that root:
+## Refresh Dependencies After Changing Them
+
+After adding, removing, or upgrading a dependency in `package.json`, run from the repository root:
 
 ```bash
-npx command-center-sdk code-repository sync -m "Describe the change" --path . --dry-run
+npx command-center-sdk code-repository sync --path .
 ```
 
-The preview must reject any supplied path below the Git root and resolve the canonical `origin`,
-attached branch, and exact `HEAD` commit to exactly one backend `CodeRepositoryBranch`. Validate the
-backend-returned repository identity, branch, ref, and commit before using its CodeRepository and
-CodeRepositoryBranch UIDs. If the branch is detached, its Git context is absent or ambiguous, or any
-returned identity differs, stop. Do not search another application directory, fall back to `main`,
-create a CodeRepositoryBranch implicitly, restore `.env` identity, or invent a tag. Register the branch
-through the platform workflow and rerun preflight. It must also report the next npm patch version
-and exact backend-owned branch tag, then reject an invalid or existing local tag without creating
-SSH credentials or changing files.
+It runs exactly two commands in that root:
 
-## Understand The Complete-Tree Commit
+1. `npm install --package-lock-only`, which refreshes `package-lock.json`;
+2. `npm ci`, which installs exactly what the lockfile records.
 
-The command intentionally runs `git add -A`, matching the Python `mainsequence code-repository sync`
-workflow. Before executing it, inspect all tracked, untracked, modified, and deleted paths:
+It calls no backend, needs no sign-in, creates no SSH key, changes no version, and runs no Git
+command. `--json` returns the commands and the completed stages. A path below the Git root, a
+missing `package-lock.json`, or a failing npm command stops it and names the stage; nothing is
+rolled back, so read the npm output and `git diff` before you fix and rerun. It takes no commit
+message, `--dry-run`, or timeout any more and refuses them.
+
+## Commit And Push
+
+Commit and push the way you would in any Git repository. Review every path first and commit only
+what belongs to the change:
 
 ```bash
 git status --short
 git diff --check
+git add <paths that belong to the change>
+git commit -m "Describe the change"
+git push origin HEAD
 ```
 
-Do not use code-repository sync when the working tree contains unrelated or sensitive material that should
-not be committed. Preserve user-owned changes and resolve the intended commit boundary first.
+Include `package-lock.json` whenever the sync changed it. With `tag_regex` omitted, this push
+deploys. With a `tag_regex`, the push deploys once a matching tag points at the branch's latest
+commit, which the repository's CI normally creates after the push.
 
-## Execute The Deployment Sync
+## Release Tags Come From The Repository's Own CI
 
-Run:
+When the workflow file sets a `tag_regex`, add a release job to the repository. This GitHub Actions
+workflow is an example of user code, not something the SDK installs; adapt the branch, Node version,
+checks, and tag format to the repository:
 
-```bash
-npx command-center-sdk code-repository sync -m "Describe the change" --path .
+```yaml
+# .github/workflows/release.yml (example)
+name: release
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test
+      - name: Tag the version declared in package.json
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "$TAG already exists; nothing to release"
+            exit 0
+          fi
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG"
 ```
 
-The command performs this ordered sequence:
-
-1. Resolve the canonical Git origin, attached branch, and exact `HEAD` commit to the registered
-   backend CodeRepository and `CodeRepositoryBranch` before local mutation.
-2. Preview npm's patch result, request the backend-owned tag for that future version, and reject an
-   invalid or existing local tag.
-3. Ensure the repository-specific SSH key exists and read its public key.
-   Its filename is `mainsequence-<repository-slug>-<first-16-sha256>` from the normalized
-   `host[:non-default-port]/repository/path`; never select a key by repository basename alone and
-   never fall back to a legacy basename-only key.
-4. Register a newly created key through the owning CodeRepository's `add-deploy-key` action. For an
-   existing key, first reuse it when Git access works; otherwise register it and retry.
-5. Require `git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>` to pass with that
-   exact forced SSH identity.
-6. Query the exact backend tag ref on `origin`; treat both a collision and an indeterminate remote
-   check as a hard pre-mutation failure.
-7. Bump the npm patch version without letting npm create a Git tag, then verify the result matches
-   the preview.
-8. Refresh `package-lock.json` and synchronize installed dependencies from it.
-9. Stage the complete working tree and create the requested commit.
-10. Create an annotated Git tag using the backend response unchanged.
-11. Push atomically with `--follow-tags` while explicitly targeting `origin`,
-    `HEAD:refs/heads/<branch>`, and the backend-generated `refs/tags/<tag>` ref.
-
-Keep `--atomic --follow-tags` to match the canonical Python platform workflow. Never replace it
-with a tag-only push. Keep the remote and refspecs explicit so local upstream, push-remote, or
-push-default configuration cannot redirect the deployment sync or leave a partial remote update.
-
-Use `--json` when another tool needs structured evidence. Structured output must never contain the
-access token.
+It tags each pushed commit on `main` whose `package.json` declares a version that has no tag yet,
+after the repository's checks pass. To release, raise the version in the commit you push, for
+example with `npm version patch --no-git-tag-version`, which updates `package.json` and
+`package-lock.json` without creating a tag locally. A `tag_regex` such as `^v\d+\.\d+\.\d+$` then
+deploys exactly those tagged commits. `fetch-depth: 0` brings the existing tags so the check sees
+them, `contents: write` lets the job push the tag, and the `concurrency` group keeps two releases
+from racing.
 
 ## Handle Failures Without Hiding State
 
-Every failure stops the remaining steps. The command does not automatically roll back user files,
-npm lifecycle effects, a completed commit, or a local tag. Read the reported failing stage, then
-inspect:
+`code-repository sync` stops at the first failure and rolls nothing back. Read the reported stage,
+then inspect:
 
 ```bash
 git status --short
-git log -1 --decorate --oneline
-git tag --points-at HEAD
+git diff -- package.json package-lock.json
 ```
 
-If failure happened before Git-context resolution, no version, key, dependency, commit, tag, or
-push operation should have occurred. A deploy-key registration or Git preflight failure can leave
-the generated local key or registered backend deploy key in place, but must leave the version,
-dependency state, commit, and local tag unchanged. If failure happened after versioning, report the
-produced version and tag and repair the existing state deliberately; do not rerun blindly and
-create another patch version.
+A failure before `update-lockfile` changed nothing. A failure in `update-lockfile` or
+`install-lockfile` can leave `package-lock.json` or `node_modules` partly updated; fix the
+dependency declaration and rerun the sync. Never reset, discard, or rewrite user changes to recover.
 
 ## Verify The Outcome
 
-Confirm the final commit and backend-owned branch tag are present remotely. Treat that pushed tag,
-not merely the commit, as the automatic-deployment trigger. Report the canonical repository
-identity, attached ref, exact pre-sync `HEAD`, code repository UID, Git branch, CodeRepositoryBranch UID, version,
-exact backend tag, and push result without reporting credentials.
+After the push, confirm the commit is on the remote branch. When the workflow file sets a
+`tag_regex`, also confirm that the release job created the matching tag on the branch's latest
+commit:
+
+```bash
+git fetch --tags origin
+git log -1 --decorate --oneline origin/<branch>
+git tag --points-at origin/<branch>
+```
+
+Report the branch, the pushed commit, the version, and the release tag when there is one, without
+reporting credentials.

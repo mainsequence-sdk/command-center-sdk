@@ -120,9 +120,9 @@ Stores, each reached through a program of the system so every runtime uses one e
 - **Other systems**: no store. Commands exit `3`, and `MAINSEQUENCE_ACCESS_TOKEN` is the only
   credential.
 
-`code-repository sync` and `skills sync` take `sessionAccess` from the binary. Called as a library
-without it, they use only the values and the environment they are given. `postinstall.mjs` never
-reads the session.
+`skills sync` takes `sessionAccess` from the binary. Called as a library without it, it uses only the
+values and the environment it is given. `postinstall.mjs` never reads the session, and
+`code-repository sync` calls no platform.
 
 No test may read or write the machine's credential store. The functions take `store`, `fetchImpl`,
 `env`, `cwd`, and `io`; `tests/cli/session-test-support.mjs` has the stand-ins. A test that starts
@@ -186,46 +186,29 @@ afterward when strict backend-owned guidance refresh is required.
 
 ## CodeRepository Sync
 
-`command-center-sdk code-repository sync` mirrors Python's `mainsequence code-repository sync` for
-consuming npm applications whose Vite application is at the Git repository root. It authenticates
-with `MAINSEQUENCE_ACCESS_TOKEN` when the environment sets it, and otherwise with the machine
-session of the backend the repository names, which it asks for after inspecting the repository. The supplied path
-must be that root and contain `package.json` and `package-lock.json`; nested application directories fail preflight
-rather than being discovered or translated. The orchestration, backend client, and local npm/Git/SSH
-operations live in the focused `code-repository-sync*.mjs` modules and remain dependency-free and bin-only.
+`command-center-sdk code-repository sync [--path <repository-root>] [--json]` keeps a consuming npm
+application's dependency files current. The supplied path must be the Git repository root and
+contain `package.json` and `package-lock.json`; nested application directories fail preflight rather
+than being discovered or translated. The root is found on the file system (the nearest `.git` folder
+or file), so the command needs no Git program. It then runs, in that root:
 
-Before local mutation, the command resolves the canonical `origin`, attached branch, and exact
-`HEAD` commit through `POST /api/v1/code-repository-branches/resolve-git-context/`. The response supplies the exact
-`CodeRepositoryBranch` and its parent CodeRepository UID. Superseded local repository-identity
-markers are neither read nor written; if a caller supplies the legacy positional CodeRepository
-UID, it is only an assertion and cannot select another CodeRepository. Missing, ambiguous,
-mismatched, or detached Git identity is a hard failure. The
-command previews the npm patch version, requests the backend-owned tag, and rejects an invalid or
-existing local tag. It then ensures the repository-specific SSH key is registered through the
-resolved owning CodeRepository's `add-deploy-key` action and verifies the forced identity with
-`git push --dry-run --follow-tags origin HEAD:refs/heads/<branch>`. A reusable key that already
-passes the Git preflight is not registered again. Deploy-key registration or Git access failures
-therefore stop before the version, commit, or local Git tag changes. The exact backend tag is then
-queried on `origin`; a collision or indeterminate result also stops before mutation. Tag syntax
-remains backend-owned. Do not add local main/dev/feature naming rules.
+1. `npm install --package-lock-only`, stage `update-lockfile`;
+2. `npm ci`, stage `install-lockfile`.
 
-Backend requests default to 60,000 milliseconds. Consumers may pass `--timeout-ms` or set
-`COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS` to an integer from 1,000 through 300,000; the CLI
-option takes precedence. Timeout errors identify the effective limit and retain the preflight
-no-mutation guarantee. The client does not retry POST requests automatically.
+That is all it does. It makes no backend request, reads no session or token, creates no SSH key,
+runs no `npm version`, and runs no Git command. Commit and push the changed files yourself.
+`--json` keeps npm's output off standard output and prints the commands and the completed stages; a
+failure prints `{ error, stage, codeRepositoryDir, completed }` and exits `1`. Nothing is rolled
+back. The arguments earlier versions took to commit, tag, and push (positional commit message or
+CodeRepository UID, `-m`/`--message`, a dry run, a backend timeout) fail argument parsing with an
+error that says the command no longer commits, tags, or pushes.
 
-The repository key filename is `mainsequence-<repository-slug>-<first-16-sha256>` from the
-normalized `host[:non-default-port]/repository/path`. Equivalent SCP and `ssh://` origins share an
-identity while same-basename repositories do not. Basename-only key files remain untouched and
-are never used as a compatibility fallback.
-
-Execution runs npm version, verifies the result matches the preview, refreshes the lockfile and runs
-`npm ci`, stages, commits, creates the annotated tag, and atomically pushes the explicit resolved
-branch and backend tag refs with `--follow-tags`. Dry-run performs branch resolution, future-version
-and tag rendering, and local tag validation, but does not create SSH keys, query private remote
-refs, install dependencies, or mutate Git. Failures stop the workflow and report accumulated state;
-automatic rollback is deliberately excluded because the working tree and npm lifecycle effects are
-consumer-owned.
+Deployment is not this command's business. The platform deploys from Git pushes as the repository's
+`.mainsequence/workflows/*.yaml` says: `tag_regex` omitted or `null` deploys every push, a regular
+expression deploys only when a matching tag points at the branch's latest commit. Release tags are
+created by the repository's own CI. Do not add tag naming, version bumps, or platform calls back to
+this command. `code-repository-sync.mjs` holds the steps and `code-repository-sync-local-ops.mjs`
+the root check and the npm runner; both stay dependency-free and bin-only.
 
 ## Theme Audit
 

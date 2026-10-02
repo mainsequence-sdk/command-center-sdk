@@ -71,7 +71,7 @@ action examples.
 ### Operate or extend
 
 - [Application operations](./application-operations.md) separates SDK updates, skill refresh,
-  deployment synchronization, mutation boundaries, and recovery.
+  dependency refresh, deployment from Git pushes and the repository's release tags, and recovery.
 - [Application documentation](./application-documentation.md) builds a task-focused end-user guide
   whose folder hierarchy mirrors the application menu and ships at `/docs/` in the same artifact.
 - [Extending and releasing](./extending-and-releasing.md) covers SDK-source changes, public
@@ -138,7 +138,7 @@ specific consuming-application task.
 | Install and use the SDK | [Getting started](./getting-started.md) | `general/use-command-center-sdk` |
 | Compose an application | [SDK architecture](./concepts/sdk-architecture.md) | `general/build-command-center-application` |
 | Compose the embedded shell and navigation | [Navigation](./navigation.md) | `navigation/compose-command-center-application-shell` |
-| Inspect, version, and deploy an application | [Application operations](./application-operations.md) | `general/maintain-command-center-code-repository` |
+| Inspect, refresh, and deploy an application | [Application operations](./application-operations.md) | `general/maintain-command-center-code-repository` |
 | Build and ship an application user guide | [Application documentation](./application-documentation.md) | `documentation/document-command-center-application` |
 | Compose a responsive page | [Application layout](./application-layout.md) | `layout/compose-command-center-page` |
 | Present startup or reconnect progress | [Application feedback](./application-feedback.md) | `feedback/build-application-loading-flow` |

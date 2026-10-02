@@ -79,7 +79,6 @@ try {
     "install-agent-skills.mjs",
     "install-mcp-skills.mjs",
     "mcp-platform-skills.mjs",
-    "code-repository-sync-api.mjs",
     "code-repository-sync-local-ops.mjs",
     "code-repository-sync.mjs",
     "application-sdk-maintenance.mjs",
@@ -91,7 +90,8 @@ try {
     "session-commands.mjs",
   ].map((name) => readFile(join(extractedPackage, "cli", name), "utf8")));
   await Promise.all(
-    ["project-sdk-maintenance.mjs", "project-docs.mjs"].map((name) =>
+    // Retired modules: the sync's backend client went with its tag and deploy-key requests.
+    ["project-sdk-maintenance.mjs", "project-docs.mjs", "code-repository-sync-api.mjs"].map((name) =>
       assert.rejects(readFile(join(extractedPackage, "cli", name), "utf8"), { code: "ENOENT" }),
     ),
   );
@@ -105,7 +105,8 @@ try {
   assert.match(cliHelp, /application update-sdk/u);
   assert.match(cliHelp, /application docs init/u);
   assert.match(cliHelp, /code-repository sync/u);
-  assert.match(cliHelp, /--timeout-ms/u);
+  assert.match(cliHelp, /code-repository sync \[--path <repository-root>\] \[--json\]\n/u);
+  assert.doesNotMatch(cliHelp, /--timeout-ms/u);
   assert.match(cliHelp, /repository-root/u);
   for (const sessionCommand of ["login", "logout", "refresh-token", "auth status", "auth token"]) {
     assert.match(cliHelp, new RegExp(`command-center-sdk ${sessionCommand}`, "u"));
@@ -390,11 +391,11 @@ try {
     join(managedRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
     "utf8",
   );
-  assert.match(maintainCodeRepositorySkill, /backend-owned tag|backend-returned annotated tag/iu);
-  assert.match(maintainCodeRepositorySkill, /exact backend tag ref|exact tag ref/iu);
-  assert.match(maintainCodeRepositorySkill, /--atomic --follow-tags/iu);
-  assert.match(maintainCodeRepositorySkill, /canonical[^.]*origin[^.]*branch[^.]*HEAD/isu);
-  assert.match(maintainCodeRepositorySkill, /Do not add or restore superseded caller-supplied repository/u);
+  assert.match(maintainCodeRepositorySkill, /npm install --package-lock-only/u);
+  assert.match(maintainCodeRepositorySkill, /npm ci/u);
+  assert.match(maintainCodeRepositorySkill, /\.mainsequence\/workflows\/\*\.yaml/u);
+  assert.match(maintainCodeRepositorySkill, /tag_regex/u);
+  assert.doesNotMatch(maintainCodeRepositorySkill, /--follow-tags|backend-owned tag/iu);
   assert.match(
     await readFile(
       join(managedRoot, "general", "use-command-center-sdk", "SKILL.md"),

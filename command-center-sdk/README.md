@@ -162,9 +162,9 @@ npx command-center-sdk login
 
 One login per machine serves every project: the session is saved in the operating system's
 credential store (the login Keychain on macOS, Secret Service on Linux), one per backend, and the
-Main Sequence Python CLI shares it. `skills sync`, `code-repository sync`, and the dev server's
-`platformRequestProxy()` use it and renew it. A project names its backend with
-`MAINSEQUENCE_ENDPOINT`, in the environment or in its `.env`, and holds no token.
+Main Sequence Python CLI shares it. `skills sync` and the dev server's `platformRequestProxy()` use
+it and renew it. A project names its backend with `MAINSEQUENCE_ENDPOINT`, in the environment or in
+its `.env`, and holds no token.
 `auth status` reports the session, `auth token` hands a short-lived access token to another local
 tool, `refresh-token` renews the session and removes credentials left in `./.env`, and `logout`
 ends it. `MAINSEQUENCE_ACCESS_TOKEN` in the environment still wins, for a launcher or a CI job.
@@ -267,49 +267,28 @@ guidance must be refreshed and verified.
 
 ## CodeRepository sync and automatic deployment
 
-Use the SDK CLI when a registered Command Center code repository is ready to be versioned, committed,
-tagged, and pushed for automatic deployment:
+After changing dependencies in a registered Command Center code repository, refresh the lockfile
+and the installed packages from the Git repository root:
 
 ```bash
-npx command-center-sdk code-repository sync -m "Describe the change" --path . --dry-run
-npx command-center-sdk code-repository sync -m "Describe the change" --path .
+npx command-center-sdk code-repository sync --path .
 ```
 
-The command authenticates with the saved session, or with `MAINSEQUENCE_ACCESS_TOKEN` when the
-environment sets one.
+The root must contain `package.json` and `package-lock.json`; a nested application directory is
+rejected. The command runs `npm install --package-lock-only` and then `npm ci`, and nothing else: it
+makes no backend request, needs no sign-in, creates no SSH key, and does not version, commit, tag,
+or push. Commit and push the changed files yourself. `--json` returns the commands and the completed
+stages. The arguments earlier versions took to commit, tag, and push (a commit message, a
+CodeRepository UID, a dry run, a timeout) are refused with an error that says so.
 
-The Git repository root must contain `package.json` plus `package-lock.json`. Before changing local
-state, the command verifies that the supplied path is that root and resolves its canonical `origin`,
-attached branch, and exact `HEAD` commit through the backend Git-context endpoint. The response
-authoritatively supplies both the registered `CodeRepositoryBranch` and its parent CodeRepository. The command
-does not read or restore superseded local repository-identity markers in `.env`; an optional positional CodeRepository UID
-is only a consistency assertion against the Git-resolved result. It previews the npm patch version,
-requests that version's backend-owned tag, and rejects an invalid or existing local tag before
-creating an SSH key. It then registers a newly created repository SSH public key through the owning
-CodeRepository, verifies the forced identity with a dry-run push, and checks the exact remote tag ref.
-Existing keys that already pass this preflight are not registered again. A nested application
-directory, detached checkout, unresolved Git context, tag collision, deploy-key registration
-failure, or inaccessible Git remote is a hard failure before the version, dependency, commit, or
-local Git tag changes.
-
-Repository keys use the cross-CLI filename
-`~/.ssh/mainsequence-<repository-slug>-<first-16-sha256>` derived from the normalized
-`host[:non-default-port]/repository/path`, so `org-a/app` and `org-b/app` never collide. Equivalent
-SCP and `ssh://` origins select the same key. Old basename-only files are left untouched and are
-not used as a fallback; the repository-specific key is registered and verified instead.
-
-The command verifies that the applied npm bump matches its preview, refreshes and installs the
-lockfile, runs `git add -A`, commits, creates the returned annotated tag unchanged, and atomically
-pushes the explicit branch and tag refs with `--follow-tags`. Consequently, `main`, `dev`, and
-feature branches may receive different backend-owned tag formats. Review the complete working tree
-before running the command because every modification, deletion, and untracked file is staged. See
-the installed `general/maintain-command-center-code-repository` skill and the
-[code-repository-sync guide](./docs/getting-started.md#sync-a-code-repository-for-automatic-deployment) for failure
-and recovery semantics.
-
-Backend requests use a 60-second default timeout. Slow environments can override it with
-`--timeout-ms` or `COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS`, bounded from 1 through 300
-seconds. The CLI option takes precedence, and Git-context timeouts stop before mutation.
+The platform deploys from Git pushes as the repository's `.mainsequence/workflows/*.yaml` file says:
+with `tag_regex` omitted or `null`, every push deploys; with a regular expression, a push deploys
+only when a matching tag points at the branch's latest commit. `automatic_deployment` and
+`tag_regex` are set only in that file. The Main Sequence platform no longer provides tag names;
+versions and release tags are repository code, created by the repository's own CI. See
+[Refresh dependencies and deploy from Git](./docs/getting-started.md#refresh-dependencies-and-deploy-from-git),
+the [Application operations](./docs/application-operations.md#release-tags-from-the-repositorys-own-ci)
+example release workflow, and the installed `general/maintain-command-center-code-repository` skill.
 
 ## Maintenance constraints
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the CLI command `code-repository sync` (breaking: its arguments, its behavior,
+and its `--json` output); the packaged skill `general/maintain-command-center-code-repository`. No
+npm export, contract ID, JSON Schema, fixture, iframe protocol, theme, or storage change.
+
+- **Versions and release tags are repository code.** The Main Sequence platform no longer provides
+  tag names. It deploys from Git pushes as the repository's `.mainsequence/workflows/*.yaml` says:
+  with `tag_regex` omitted or `null` every push deploys, and with a regular expression a push
+  deploys only when a matching tag points at the branch's latest commit. `automatic_deployment` and
+  `tag_regex` are set only in that file. Release tags come from the repository's own CI; the
+  application-operations guide and the skill carry an example GitHub Actions release workflow.
+- **`code-repository sync` only refreshes dependencies.** In the repository root it runs
+  `npm install --package-lock-only` and then `npm ci`, and nothing else. It makes no backend request,
+  reads no session, creates or registers no SSH key, runs no `npm version`, and runs no Git command.
+  Commit and push the changed files yourself.
+  - It no longer takes a commit message or a CodeRepository UID (positional or `-m`/`--message`),
+    `--dry-run`, or `--timeout-ms`, and refuses them with an error that says why.
+    `COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS` is no longer read.
+  - `--json` prints `{ command, codeRepositoryDir, commands, completed }`, and a failure
+    `{ error, stage, codeRepositoryDir, completed }`.
+  - The root check finds the nearest `.git` folder or file on the file system, so the command no
+    longer needs Git installed.
+
 ## 0.5.12
 
 Compatibility axes: the installed MCP skill namespace and its provenance file move from

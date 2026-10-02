@@ -6,6 +6,9 @@
 - Owners: Command Center SDK maintainers
 - Package: `@dev-mainsequence/command-center-sdk`
 - Contract: none; new CLI commands, and the token source of `platformRequestProxy()`
+- Amended 2026-10-02: `code-repository sync` no longer calls the platform. It only refreshes
+  `package-lock.json` and runs `npm ci`, so it reads no session; decision 11 no longer applies, and
+  the session serves `skills sync` and `platformRequestProxy()`.
 - Related:
   - [SDK ADR 014: Local Platform Request Proxy](./adr-sdk-014-local-platform-request-proxy.md)
     (amended: its token source, its `401` handling, and its `platform_not_configured` answers)
@@ -22,7 +25,8 @@ installed CLI lists `login` in `command-center-sdk --help`.
 A developer signs in once per machine. The session is one record per backend in the operating
 system's credential store, and the Main Sequence Python CLI reads and writes the same record, so a
 login made with either CLI serves both. The SDK's Node tools that call the platform use it: the
-`code-repository sync` and `skills sync` commands, and the `platformRequestProxy()` Vite plugin. No
+`skills sync` command and the `platformRequestProxy()` Vite plugin (`code-repository sync` did too
+until it stopped calling the platform; see the amendment above). No
 project file holds a token: a project names its backend, and the machine holds the session.
 `MAINSEQUENCE_ACCESS_TOKEN` in the environment still wins, so a launcher or a CI job works as
 before.
@@ -124,6 +128,8 @@ have no Python CLI, so its tools could not use that session.
 11. `code-repository sync` asks for the session after it has inspected the repository, for that
     repository's directory, and before its first platform request. `npm` postinstall reads no
     credential store: it keeps using the environment, and names the command that uses the session.
+    (Amended 2026-10-02: `code-repository sync` makes no platform request any more and asks for no
+    session. The postinstall rule stands.)
 
 ### 4. The dev server
 

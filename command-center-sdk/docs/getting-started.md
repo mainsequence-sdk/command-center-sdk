@@ -289,18 +289,22 @@ The update respects the current declaration and does not commit, tag, push, depl
 application version. See [Application operations](./application-operations.md) for drift and
 constraint-blocked cases.
 
-## Sync a code repository for automatic deployment
+## Refresh dependencies and deploy from Git
 
-When every working-tree change is ready for one release, preview the deployment synchronization:
+After you change dependencies in `package.json`, refresh the lockfile and the installed packages
+from the repository root:
 
 ```bash
-npx command-center-sdk code-repository sync -m "Update the application" --path . --dry-run
+npx command-center-sdk code-repository sync --path .
 ```
 
-Preflight sends the canonical Git origin, attached branch, and exact `HEAD` commit to the backend;
-an optional code-repository UID is only an assertion. The dry run previews the next npm patch
-version and checks the exact `refs/tags/<backend tag>` on `origin` before local mutation.
+It runs `npm install --package-lock-only` and then `npm ci`, and nothing else: it calls no backend
+and does not version, commit, tag, or push. Commit and push the changes yourself, like any other
+change.
 
-The non-dry run versions, installs, stages the complete working tree, commits, tags, and explicitly
-pushes the resolved branch and backend-owned tag with `--atomic --follow-tags`. Read the complete
-[Application operations](./application-operations.md) runbook before using it.
+The platform deploys from Git pushes as the repository's `.mainsequence/workflows/*.yaml` file says.
+With `tag_regex` omitted, every push to the branch deploys; with a regular expression, a push
+deploys only when a matching tag points at the branch's latest commit. The Main Sequence platform
+no longer provides tag names: release tags come from the repository's own CI.
+[Application operations](./application-operations.md#release-tags-from-the-repositorys-own-ci) has
+an example workflow.

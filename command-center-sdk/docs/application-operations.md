@@ -1,6 +1,6 @@
 ---
 title: Application operations
-description: Inspect, update, synchronize, and recover an SDK-consuming application.
+description: Inspect, update, refresh, deploy, and recover an SDK-consuming application.
 ---
 
 # Application operations
@@ -10,7 +10,7 @@ operations that are easy to confuse:
 
 1. inspecting or updating the npm dependency;
 2. refreshing version-matched agent guidance; and
-3. versioning, committing, tagging, and pushing an application for automatic deployment.
+3. refreshing dependencies, then committing and pushing so the platform deploys the application.
 
 Run commands from the consuming application's Git and npm root. Main Sequence Vite applications
 keep `package.json`, `package-lock.json`, `.env`, `.agents/`, `src/`, and `vite.config.*` at that
@@ -129,104 +129,130 @@ catalog, even when an older sentinel did not record them. Dry-run JSON exposes t
 namespace; every other namespace under `.agents/skills` is preserved. The separately managed
 `mainsequence` namespace continues to remove only backend-proven MCP paths.
 
-## Preview automatic deployment synchronization
+## Refresh dependencies with code-repository sync
 
-Use `code-repository sync` only after the complete application working tree is ready to become one
-commit and one backend-recognized deployment:
+After you add, remove, or upgrade a dependency in `package.json`, refresh the lockfile and the
+installed packages from the repository root:
 
 ```bash
-npx command-center-sdk code-repository sync -m "Update service dashboard" --path . --dry-run
+npx command-center-sdk code-repository sync --path .
+npx command-center-sdk code-repository sync --path . --json
 ```
 
-The command authenticates with your saved session
-([Sign in once per machine](#sign-in-once-per-machine)), or with the token in the environment when
-one is set. Inspect `git status --short` first. The non-dry run stages the complete working tree, including
-untracked files and deletions; it is not a partial-file commit helper.
-
-Preflight validates the application root, then sends the canonical `origin`, attached branch, and
-exact `HEAD` commit to the backend Git-context resolver. The backend authoritatively identifies the
-matching branch and owning code repository. An optional positional code-repository UID is only an
-assertion against that result; it is not local identity configuration.
-
-The dry run also:
-
-- previews the next npm patch version;
-- requests the exact backend-owned deployment tag for that version and branch;
-- rejects invalid or already-existing local tags;
-- checks the exact remote tag ref on `origin`; and
-- reports failure before version, dependency, commit, or local-tag mutation.
-
-It does not create SSH credentials or make the application commit.
-
-## What the non-dry run changes
-
-After preflight succeeds, the command performs an ordered transaction-like workflow:
+The command checks that the path is the Git repository root and holds `package.json` and
+`package-lock.json`, then runs exactly:
 
 ```text
-resolve registered Git context and backend tag
-  → prepare/reuse repository-specific SSH identity
-  → verify dry-run push and exact remote tag absence
-  → bump and verify npm patch version
-  → refresh package-lock.json and run npm ci
-  → git add -A and commit
-  → create the backend-returned annotated tag
-  → atomic explicit branch-and-tag push with --follow-tags
+npm install --package-lock-only   refreshes package-lock.json
+npm ci                            installs exactly what the lockfile records
 ```
 
-Run it with:
+It calls no backend, needs no sign-in, creates no SSH key, changes no version, and runs no Git
+command. `--json` returns the commands and the completed stages. It takes no commit message,
+CodeRepository UID, `--dry-run`, or timeout any more, and refuses them with an error that says so.
+
+## Commit and push
+
+Commit and push the way you would in any Git repository. Review every path first, including
+untracked files, and commit only what belongs to the change, with `package-lock.json` whenever the
+sync changed it:
 
 ```bash
-npx command-center-sdk code-repository sync -m "Update service dashboard" --path .
+git status --short
+git diff --check
+git add <paths that belong to the change>
+git commit -m "Update service dashboard"
+git push origin HEAD
 ```
 
-The explicit remote, branch refspec, backend tag ref, and `--atomic --follow-tags` prevent local
-upstream or push-default configuration from redirecting deployment. Main, development, and feature
-branches may receive different backend-owned tag formats; the CLI never duplicates or guesses the
-backend algorithm.
+## How a push deploys
 
-Repository SSH keys use a hash of normalized `host[:non-default-port]/repository/path`, so
-different repositories with the same basename cannot collide. Equivalent SCP and `ssh://` origins
-resolve to the same identity. Existing repository-specific keys are reused only after Git access
-passes; old basename-only keys are neither deleted nor used as a fallback.
+The platform deploys from Git pushes. The repository's `.mainsequence/workflows/*.yaml` file
+decides which pushes deploy:
 
-## Timeouts and mutation boundaries
+| `tag_regex` in the workflow file | What deploys |
+| --- | --- |
+| omitted or `null` | Every push to the branch. |
+| a regular expression | A push, once a tag that matches it points at the branch's latest commit. |
 
-Backend calls default to 60 seconds. Override with `--timeout-ms` or
-`COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS`, bounded from 1,000 to 300,000 milliseconds. The
-CLI option wins. A Git-context timeout occurs before local mutation.
+`automatic_deployment` and `tag_regex` are set only in that workflow file: change them there and
+commit the change. The Main Sequence platform no longer provides tag names, and
+`code-repository sync` no longer creates or pushes tags.
 
-The command stops on the first failure, but steps after versioning are not automatically rolled
-back. Depending on the failure point, the working tree may contain a version bump, refreshed
-lockfile, installed dependencies, commit, local tag, generated SSH key, or registered backend
-deploy key. This is why the dry run and clean review are mandatory.
+## Release tags from the repository's own CI
 
-## Recovery by failure point
+When the workflow file sets a `tag_regex`, the repository's own CI creates the release tags. This
+GitHub Actions workflow is an example of user code, not something the SDK installs; adapt the
+branch, Node version, checks, and tag format to the repository:
 
-| Failure point | Expected local state | Safe response |
+```yaml
+# .github/workflows/release.yml (example)
+name: release
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test
+      - name: Tag the version declared in package.json
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "$TAG already exists; nothing to release"
+            exit 0
+          fi
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG"
+```
+
+The job tags each pushed commit on `main` whose `package.json` declares a version that has no tag
+yet, after the checks pass. To release, raise the version in the commit you push, for example with
+`npm version patch --no-git-tag-version`, which updates `package.json` and `package-lock.json`
+without creating a tag. A `tag_regex` such as `^v\d+\.\d+\.\d+$` then deploys exactly those tagged
+commits. `fetch-depth: 0` brings the existing tags so the check sees them, `contents: write` lets
+the job push the tag, and the `concurrency` group keeps two releases from racing.
+
+## Recovery
+
+`code-repository sync` stops at the first failure, names the stage, and rolls nothing back.
+
+| Failure stage | Local state | Safe response |
 | --- | --- | --- |
-| Root or Git-context preflight | Unchanged | Fix path, branch registration, or detached checkout |
-| Backend tag resolution | Unchanged | Fix backend registration or returned tag contract |
-| SSH registration/access check | Version and Git refs unchanged; a new local/backend key may remain | Repair access, then rerun preflight |
-| Remote tag collision/check | Version and Git refs unchanged | Resolve collision; never invent a replacement tag |
-| npm version or install | Working tree may contain version/lock changes | Inspect the exact diff and npm output before continuing |
-| Commit creation | Changes may be staged or committed | Inspect status and log; preserve unrelated work |
-| Local tag creation | Commit may exist | Verify tag target and backend identity before retrying |
-| Atomic push | Local commit and tag may exist; remote atomicity prevents branch/tag split | Diagnose transport or policy, then retry the exact push contract |
+| `resolve-code-repository-directory`, `inspect-code-repository` | Unchanged | Run it from the Git repository root, which holds `package.json` and `package-lock.json` |
+| `update-lockfile` | `package-lock.json` may be partly refreshed | Read the npm output, fix the dependency declaration, and rerun |
+| `install-lockfile` | `node_modules` may be partly installed | Read the npm output and rerun; the lockfile is already current |
 
-Do not use destructive reset commands as generic recovery. Inspect `git status`, the current commit,
-the exact tag, and remote refs first; choose a recovery that preserves user work.
+When a push did not deploy and the workflow file sets a `tag_regex`, check whether a matching tag
+points at the branch's latest commit: look at the release job's run, and at `git tag --points-at
+origin/<branch>` after `git fetch --tags origin`. Do not use destructive reset commands as generic
+recovery; preserve user work.
 
 ## Release readiness checklist
 
-Before synchronization:
+Before you push a change meant for deployment:
 
 1. inspect the entire working tree, including untracked files;
-2. run the consumer's typecheck, unit tests, production build, and relevant browser tests;
-3. verify only declared package exports are imported;
-4. refresh version-matched skills if the SDK changed;
-5. confirm credentials are supplied only through the process environment;
-6. run `code-repository sync --dry-run` and review the next npm patch version and backend tag; and
-7. run the non-dry command only when all current changes belong in one release.
+2. run `code-repository sync` when dependencies changed, and commit the refreshed lockfile;
+3. run the consumer's typecheck, unit tests, production build, and relevant browser tests;
+4. verify only declared package exports are imported;
+5. refresh version-matched skills if the SDK changed;
+6. keep credentials out of committed files; and
+7. when the workflow file sets a `tag_regex`, raise the version for a release and confirm the
+   repository's CI tags the pushed commit.
 
 Application documentation has its own build and deep-link requirements; see
 [Application documentation](./application-documentation.md). SDK-source publishing is a different

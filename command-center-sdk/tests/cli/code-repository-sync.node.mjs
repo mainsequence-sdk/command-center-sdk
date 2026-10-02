@@ -1,1001 +1,204 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { execFile, spawnSync } from "node:child_process";
+import { createServer } from "node:http";
+import { access, chmod, mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
-import {
-  CODE_REPOSITORY_SYNC_TIMEOUT_ENV,
-  createCodeRepositorySyncApi,
-  CodeRepositorySyncApiError,
-  DEFAULT_CODE_REPOSITORY_SYNC_TIMEOUT_MS,
-  resolveCodeRepositorySyncConfiguration,
-} from "../../cli/code-repository-sync-api.mjs";
-import {
-  createCodeRepositorySyncLocalOps,
-  nextNpmPatchVersion,
-  repositorySshKeyIdentity,
-  repositorySshKeyName,
-  sanitizeCommitMessage,
-} from "../../cli/code-repository-sync-local-ops.mjs";
+import { createCodeRepositorySyncLocalOps } from "../../cli/code-repository-sync-local-ops.mjs";
 import { CodeRepositorySyncError, syncCodeRepository } from "../../cli/code-repository-sync.mjs";
 
+const execFileAsync = promisify(execFile);
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const cliPath = join(packageRoot, "cli", "command-center-sdk.mjs");
-const TEST_COMMIT_SHA = "a".repeat(40);
-const TEST_REPOSITORY_IDENTITY = "github.com/organization/project";
+const DEPENDENCY_COMMANDS = [
+  ["npm", ["install", "--package-lock-only"]],
+  ["npm", ["ci"]],
+];
+const ALL_STAGES = [
+  "resolve-code-repository-directory",
+  "inspect-code-repository",
+  "update-lockfile",
+  "install-lockfile",
+];
 
-function jsonResponse(payload, status = 200) {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    headers: { get: (name) => name.toLowerCase() === "content-type" ? "application/json" : null },
-    async json() {
-      return payload;
-    },
-  };
+async function applicationAtRepositoryRoot(prefix = "command-center-code-repository-sync-") {
+  const root = await mkdtemp(join(tmpdir(), prefix));
+  await mkdir(join(root, ".git"));
+  await writeFile(join(root, "package.json"), JSON.stringify({ name: "application", version: "1.2.3" }), "utf8");
+  await writeFile(join(root, "package-lock.json"), "{}\n", "utf8");
+  return root;
 }
 
-function emptyResponse(status = 204) {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    headers: { get: () => null },
-  };
-}
-
-function codeRepositoryHarness({
-  gitBranch = "main",
-  renderedTag = "v1.2.4",
-  branchError,
-  keyCreated = true,
-  registrationError,
-  remoteTagError,
-  actualVersion = "1.2.4",
-  verificationErrors = [],
-} = {}) {
-  const events = [];
-  const codeRepositoryDir = "/project";
-  let verificationAttempt = 0;
-  const localOps = {
-    async resolveCodeRepositoryDir(value) {
-      events.push(["resolve-code-repository-directory", value]);
-      return codeRepositoryDir;
-    },
-    async inspectCodeRepository(value) {
-      events.push(["inspect-code-repository", value]);
-      return {
-        currentVersion: "1.2.3",
-        canonicalRepositoryIdentity: TEST_REPOSITORY_IDENTITY,
-        gitBranch,
-        repositoryRef: `refs/heads/${gitBranch}`,
-        commitSha: TEST_COMMIT_SHA,
-        origin: "git@github.com:organization/project.git",
-      };
-    },
-    async ensureRepositoryKey(origin) {
-      events.push(["ensure-key", origin]);
-      return {
-        created: keyCreated,
-        keyPath: "/keys/project",
-        keyTitle: "developer-workstation",
-        publicKey: "ssh-ed25519 AAAATEST command-center",
-      };
-    },
-    gitEnvironment(keyPath) {
-      events.push(["git-environment", keyPath]);
-      return { GIT_SSH_COMMAND: `ssh -i ${keyPath}` };
-    },
-    verifyGitPush(value, branch, env) {
-      events.push(["verify-git-push", value, branch, env.GIT_SSH_COMMAND]);
-      const error = verificationErrors[verificationAttempt];
-      verificationAttempt += 1;
-      if (error) throw error;
-    },
-    async readPackageVersion(value) {
-      events.push(["read-version", value]);
-      return actualVersion;
-    },
-    validateGitTag(value, tagName) {
-      events.push(["validate-tag", value, tagName]);
-    },
-    validateRemoteGitTag(value, tagName, env) {
-      events.push(["validate-remote-tag", value, tagName, env.GIT_SSH_COMMAND]);
-      if (remoteTagError) throw remoteTagError;
-    },
-    runCommand(command, args, options) {
-      events.push(["command", command, args, options.cwd]);
-    },
-  };
-  const api = {
-    async resolveGitContext(context) {
-      events.push(["resolve-git-context", context]);
-      if (branchError) throw new CodeRepositorySyncApiError(branchError);
-      return {
-        canonicalRepositoryIdentity: context.repositoryIdentity,
-        gitBranch: context.repositoryBranch,
-        repositoryRef: `refs/heads/${context.repositoryBranch}`,
-        commitSha: context.commitSha,
-        codeRepositoryUid: "code-repository-uid-123",
-        codeRepositoryBranchUid: "code-repository-branch-uid-123",
-      };
-    },
-    async addCodeRepositoryDeployKey(codeRepositoryUid, key) {
-      events.push(["add-code-repository-deploy-key", codeRepositoryUid, key]);
-      if (registrationError) throw registrationError;
-    },
-    async renderDefaultRedeploymentTag(codeRepositoryBranchUid, version) {
-      events.push(["render-tag", codeRepositoryBranchUid, version]);
-      return renderedTag;
-    },
-  };
-  return { api, events, localOps, codeRepositoryDir };
-}
-
-test("normalizes commit messages like the Python code-repository sync command", () => {
-  assert.equal(sanitizeCommitMessage('  Deploy\n"dashboard"  '), "Deploy 'dashboard'");
-  assert.throws(() => sanitizeCommitMessage("\n\r"), /Commit message is required/u);
-});
-
-test("calculates npm patch versions without mutating the repository", () => {
-  assert.equal(nextNpmPatchVersion("1.2.3"), "1.2.4");
-  assert.equal(nextNpmPatchVersion("1.2.3-rc.2"), "1.2.3");
-  assert.equal(nextNpmPatchVersion("1.2.3+build.7"), "1.2.4");
-  assert.equal(nextNpmPatchVersion("1.2.3-rc.2+build.7"), "1.2.3");
-  assert.throws(() => nextNpmPatchVersion("1.2"), /Cannot calculate npm patch version/u);
-});
-
-test("derives the cross-CLI Repository SSH Key Identity v1 vectors", () => {
-  for (const [origin, identity, usesSsh, keyName] of [
-    [
-      "git@github.com:org-a/app.git",
-      "github.com/org-a/app",
-      true,
-      "mainsequence-app-30cab1d6d9237dda",
-    ],
-    [
-      "ssh://git@github.com/org-a/app.git",
-      "github.com/org-a/app",
-      true,
-      "mainsequence-app-30cab1d6d9237dda",
-    ],
-    [
-      "https://github.com/org-a/app.git?token=ignored#fragment",
-      "github.com/org-a/app",
-      false,
-      "mainsequence-app-30cab1d6d9237dda",
-    ],
-    [
-      "git@github.com:org-b/app.git",
-      "github.com/org-b/app",
-      true,
-      "mainsequence-app-8a36e97017a59942",
-    ],
-  ]) {
-    assert.deepEqual(repositorySshKeyIdentity(origin), { identity, usesSsh });
-    assert.equal(repositorySshKeyName(origin), keyName);
-  }
-});
-
-test("repository SSH key identity preserves path case and non-default ports", () => {
-  assert.deepEqual(repositorySshKeyIdentity("ssh://git@Example.COM:2222/Org/App.git"), {
-    identity: "example.com:2222/Org/App",
-    usesSsh: true,
-  });
-});
-
-test("resolves CodeRepository identity exclusively from Git context", async () => {
-  const harness = codeRepositoryHarness();
-  const result = await syncCodeRepository({
-    message: "Preview application",
-    codeRepositoryDir: harness.codeRepositoryDir,
-    localOps: harness.localOps,
-    api: harness.api,
-    dryRun: true,
-  });
-
-  assert.equal(result.codeRepositoryUid, "code-repository-uid-123");
-  assert.equal(result.canonicalRepositoryIdentity, TEST_REPOSITORY_IDENTITY);
-  assert.equal(result.repositoryRef, "refs/heads/main");
-  assert.equal(result.commitSha, TEST_COMMIT_SHA);
-  assert.deepEqual(
-    harness.events.find(([type]) => type === "resolve-git-context"),
-    [
-      "resolve-git-context",
-      {
-        repositoryIdentity: TEST_REPOSITORY_IDENTITY,
-        repositoryBranch: "main",
-        commitSha: TEST_COMMIT_SHA,
-      },
-    ],
-  );
-});
-
-test("treats a supplied CodeRepository UID only as an assertion", async () => {
-  const matching = codeRepositoryHarness();
-  const result = await syncCodeRepository({
-    message: "Preview application",
-    codeRepositoryUid: "code-repository-uid-123",
-    codeRepositoryDir: matching.codeRepositoryDir,
-    localOps: matching.localOps,
-    api: matching.api,
-    dryRun: true,
-  });
-  assert.equal(result.codeRepositoryUid, "code-repository-uid-123");
-
-  const mismatched = codeRepositoryHarness();
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Preview another code repository",
-      codeRepositoryUid: "another-code-repository-uid",
-      codeRepositoryDir: mismatched.codeRepositoryDir,
-      localOps: mismatched.localOps,
-      api: mismatched.api,
-      dryRun: true,
-    }),
-    (caught) => {
-      assert.equal(caught.stage, "assert-code-repository-uid");
-      assert.match(caught.message, /does not match Git-resolved CodeRepository/u);
-      assert.equal(caught.state.codeRepositoryUid, "code-repository-uid-123");
-      return true;
-    },
-  );
-  assert.equal(mismatched.events.some(([type]) => type === "render-tag"), false);
-  assert.equal(mismatched.events.some(([type]) => type === "ensure-key"), false);
-});
-
-for (const [gitBranch, renderedTag] of [
-  ["main", "v1.2.4"],
-  ["dev", "v1.2.4-dev.1"],
-  ["feature/foo", "v1.2.4-feature-foo-12345678.1"],
-]) {
-  test(`uses the backend-owned ${gitBranch} tag unchanged`, async () => {
-    const harness = codeRepositoryHarness({ gitBranch, renderedTag });
-    const result = await syncCodeRepository({
-      message: "Update application",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      api: harness.api,
-      quiet: true,
-    });
-
-    assert.equal(result.gitBranch, gitBranch);
-    assert.equal(result.tagName, renderedTag);
-    assert.deepEqual(
-      harness.events.filter(([type]) => type === "command").map(([, command, args]) => [command, args]),
-      [
-        ["npm", ["version", "patch", "--no-git-tag-version"]],
-        ["npm", ["install", "--package-lock-only"]],
-        ["npm", ["ci"]],
-        ["git", ["add", "-A"]],
-        ["git", ["commit", "-m", "Update application"]],
-        ["git", ["tag", "-a", renderedTag, "-m", renderedTag]],
-        [
-          "git",
-          [
-            "push",
-            "--atomic",
-            "--follow-tags",
-            "origin",
-            `HEAD:refs/heads/${gitBranch}`,
-            `refs/tags/${renderedTag}:refs/tags/${renderedTag}`,
-          ],
-        ],
-      ],
-    );
-    assert.deepEqual(
-      harness.events.find(([type]) => type === "render-tag"),
-      ["render-tag", "code-repository-branch-uid-123", "1.2.4"],
-    );
-    const eventTypes = harness.events.map(([type]) => type);
-    assert.ok(eventTypes.indexOf("validate-tag") < eventTypes.indexOf("ensure-key"));
-    assert.ok(eventTypes.indexOf("validate-remote-tag") < eventTypes.indexOf("command"));
-    assert.equal(
-      harness.events
-        .filter(([type]) => type === "command")
-        .every((event) => event[3] === harness.codeRepositoryDir),
-      true,
-    );
-  });
-}
-
-test("registers a new repository key and verifies push access before mutation", async () => {
-  const harness = codeRepositoryHarness();
-  await syncCodeRepository({
-    message: "Update application",
-    codeRepositoryDir: harness.codeRepositoryDir,
-    localOps: harness.localOps,
-    api: harness.api,
-    quiet: true,
-  });
-
-  assert.deepEqual(
-    harness.events.find(([type]) => type === "add-code-repository-deploy-key"),
-    [
-      "add-code-repository-deploy-key",
-      "code-repository-uid-123",
-      {
-        keyTitle: "developer-workstation",
-        publicKey: "ssh-ed25519 AAAATEST command-center",
-      },
-    ],
-  );
-  const eventTypes = harness.events.map(([type]) => type);
-  assert.ok(eventTypes.indexOf("add-code-repository-deploy-key") < eventTypes.indexOf("verify-git-push"));
-  assert.ok(eventTypes.indexOf("verify-git-push") < eventTypes.indexOf("command"));
-});
-
-test("does not re-register a reusable repository key that passes Git preflight", async () => {
-  const harness = codeRepositoryHarness({ keyCreated: false });
-  await syncCodeRepository({
-    message: "Update application",
-    codeRepositoryDir: harness.codeRepositoryDir,
-    localOps: harness.localOps,
-    api: harness.api,
-    quiet: true,
-  });
-
-  assert.equal(harness.events.filter(([type]) => type === "verify-git-push").length, 1);
-  assert.equal(harness.events.some(([type]) => type === "add-code-repository-deploy-key"), false);
-});
-
-test("registers and retries an existing repository key that fails Git preflight", async () => {
-  const harness = codeRepositoryHarness({
-    keyCreated: false,
-    verificationErrors: [new Error("Permission denied"), null],
-  });
-  await syncCodeRepository({
-    message: "Update application",
-    codeRepositoryDir: harness.codeRepositoryDir,
-    localOps: harness.localOps,
-    api: harness.api,
-    quiet: true,
-  });
-
-  assert.equal(harness.events.filter(([type]) => type === "verify-git-push").length, 2);
-  assert.equal(harness.events.filter(([type]) => type === "add-code-repository-deploy-key").length, 1);
-});
-
-test("deploy-key registration failure stops before code repository mutation", async () => {
-  const harness = codeRepositoryHarness({ registrationError: new Error("Deploy key rejected") });
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Update application",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      api: harness.api,
-      quiet: true,
-    }),
-    (caught) => {
-      assert.equal(caught.stage, "register-code-repository-deploy-key");
-      assert.match(caught.message, /Deploy key rejected/u);
-      return true;
-    },
-  );
-  assert.equal(harness.events.some(([type]) => type === "command"), false);
-});
-
-test("Git push preflight failure stops before code repository mutation", async () => {
-  const harness = codeRepositoryHarness({ verificationErrors: [new Error("Permission denied")] });
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Update application",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      api: harness.api,
-      quiet: true,
-    }),
-    (caught) => {
-      assert.equal(caught.stage, "verify-git-push-access");
-      assert.match(caught.message, /Permission denied/u);
-      return true;
-    },
-  );
-  assert.equal(harness.events.some(([type]) => type === "command"), false);
-});
-
-test("remote tag collision stops before version or repository mutation", async () => {
-  const harness = codeRepositoryHarness({ remoteTagError: new Error("Git tag already exists remotely: v1.2.4") });
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Update application",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      api: harness.api,
-      quiet: true,
-    }),
-    (caught) => {
-      assert.equal(caught.stage, "validate-remote-branch-tag");
-      assert.match(caught.message, /already exists remotely/u);
-      return true;
-    },
-  );
-  assert.equal(harness.events.some(([type]) => type === "command"), false);
-});
-
-test("unexpected npm version stops before lockfile or Git mutation", async () => {
-  const harness = codeRepositoryHarness({ actualVersion: "1.2.5" });
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Update application",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      api: harness.api,
-      quiet: true,
-    }),
-    (caught) => {
-      assert.equal(caught.stage, "verify-version-bump");
-      assert.match(caught.message, /preflight expected 1\.2\.4/u);
-      return true;
-    },
-  );
-  assert.deepEqual(
-    harness.events.filter(([type]) => type === "command").map(([, command, args]) => [command, args]),
-    [["npm", ["version", "patch", "--no-git-tag-version"]]],
-  );
-});
-
-test("dry-run resolves the backend CodeRepositoryBranch but performs no local mutation", async () => {
-  const harness = codeRepositoryHarness({ gitBranch: "dev", renderedTag: "v1.2.4-dev.1" });
-  const result = await syncCodeRepository({
-    message: "Preview deployment",
-    codeRepositoryDir: harness.codeRepositoryDir,
-    localOps: harness.localOps,
-    api: harness.api,
-    dryRun: true,
-  });
-
-  assert.equal(result.dryRun, true);
-  assert.equal(result.gitBranch, "dev");
-  assert.equal(result.nextVersion, "1.2.4");
-  assert.equal(result.version, "1.2.4");
-  assert.equal(result.tagName, "v1.2.4-dev.1");
-  assert.equal(harness.events.some(([type]) => type === "resolve-git-context"), true);
-  assert.equal(harness.events.some(([type]) => type === "render-tag"), true);
-  assert.equal(harness.events.some(([type]) => type === "validate-tag"), true);
-  for (const mutation of ["ensure-key", "git-environment", "add-code-repository-deploy-key", "verify-git-push", "validate-remote-tag", "read-version", "command"]) {
-    assert.equal(harness.events.some(([type]) => type === mutation), false, mutation);
-  }
-});
-
-test("an unregistered Git branch stops before every local mutation", async () => {
-  const error = "No visible CodeRepositoryBranch matches the Git source context.";
-  const harness = codeRepositoryHarness({ gitBranch: "feature/missing", branchError: error });
-
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Deploy missing branch",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      api: harness.api,
-    }),
-    (caught) => {
-      assert.equal(caught instanceof CodeRepositorySyncError, true);
-      assert.equal(caught.stage, "resolve-git-context");
-      assert.match(caught.message, /No visible CodeRepositoryBranch/u);
-      return true;
-    },
-  );
-
-  for (const mutation of ["ensure-key", "git-environment", "add-code-repository-deploy-key", "verify-git-push", "read-version", "render-tag", "validate-tag", "command"]) {
-    assert.equal(harness.events.some(([type]) => type === mutation), false, mutation);
-  }
-});
-
-test("a detached Git checkout stops before the backend or local mutation", async () => {
-  const harness = codeRepositoryHarness();
-  harness.localOps.inspectCodeRepository = async () => {
-    throw new Error("Current Git checkout is detached or has no named branch.");
-  };
-
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Deploy detached checkout",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      api: harness.api,
-    }),
-    /detached or has no named branch/u,
-  );
-  assert.equal(harness.events.some(([type]) => type === "resolve-git-context"), false);
-  assert.equal(harness.events.some(([type]) => type === "command"), false);
-});
-
-test("backend configuration uses a bounded timeout with explicit-over-environment precedence", () => {
-  const base = {
-    backendUrl: "https://platform.example",
-    accessToken: "secret-access-token",
-  };
-  assert.equal(
-    resolveCodeRepositorySyncConfiguration(base).timeoutMs,
-    DEFAULT_CODE_REPOSITORY_SYNC_TIMEOUT_MS,
-  );
-  assert.equal(
-    resolveCodeRepositorySyncConfiguration({
-      ...base,
-      env: { [CODE_REPOSITORY_SYNC_TIMEOUT_ENV]: "120000" },
-    }).timeoutMs,
-    120_000,
-  );
-  assert.equal(
-    resolveCodeRepositorySyncConfiguration({
-      ...base,
-      timeoutMs: 90_000,
-      env: { [CODE_REPOSITORY_SYNC_TIMEOUT_ENV]: "120000" },
-    }).timeoutMs,
-    90_000,
-  );
-  for (const value of ["not-a-number", "1.5", "999", "300001"]) {
-    assert.throws(
-      () =>
-        resolveCodeRepositorySyncConfiguration({
-          ...base,
-          env: { [CODE_REPOSITORY_SYNC_TIMEOUT_ENV]: value },
-        }),
-      /timeout must be an integer between 1000 and 300000 milliseconds/u,
-    );
-  }
-});
-
-test("a configured Git-context timeout is identified and stops before mutation", async () => {
-  const harness = codeRepositoryHarness();
-  const fetchImpl = async (_url, { signal }) =>
-    new Promise((_resolve, reject) => {
-      signal.addEventListener("abort", () => reject(new TypeError("fetch failed")), { once: true });
-    });
-
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Deploy after slow preflight",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      backendUrl: "https://platform.example",
-      accessToken: "secret-access-token",
-      timeoutMs: 1_000,
-      fetchImpl,
-    }),
-    (caught) => {
-      assert.equal(caught instanceof CodeRepositorySyncError, true);
-      assert.equal(caught.stage, "resolve-git-context");
-      assert.match(caught.message, /timed out after 1000ms/u);
-      assert.match(caught.message, /--timeout-ms/u);
-      assert.match(caught.message, new RegExp(CODE_REPOSITORY_SYNC_TIMEOUT_ENV, "u"));
-      return true;
-    },
-  );
-
-  for (const mutation of [
-    "ensure-key",
-    "git-environment",
-    "add-code-repository-deploy-key",
-    "verify-git-push",
-    "validate-remote-tag",
-    "read-version",
-    "command",
-  ]) {
-    assert.equal(harness.events.some(([type]) => type === mutation), false, mutation);
-  }
-});
-
-function gitContextBackend(calls) {
-  return async (url, options) => {
-    calls.push({ url, authorization: options.headers.Authorization });
-    if (url.endsWith("/resolve-git-context/")) {
-      return jsonResponse({
-        canonical_repository_identity: TEST_REPOSITORY_IDENTITY,
-        repository_branch: "main",
-        repository_ref: "refs/heads/main",
-        commit_sha: TEST_COMMIT_SHA,
-        code_repository_branch: {
-          uid: "main-uid",
-          code_repository_uid: "code-repository-uid-123",
-          repository_branch: "main",
-        },
-      });
+/** Records every program the sync starts; `failing` names the arguments that exit 1. */
+function recordingSpawn(calls, { failing } = {}) {
+  return (command, args, options) => {
+    calls.push({ command, args, cwd: options.cwd, stdio: options.stdio });
+    if (failing && failing.join(" ") === args.join(" ")) {
+      return { status: 1, stdout: "", stderr: "npm error code ERESOLVE" };
     }
-    return jsonResponse({ version: "1.2.4", tag_name: "v1.2.4" });
+    return { status: 0, stdout: "", stderr: "" };
   };
 }
 
-test("without a token the sync uses the machine session of the backend the repository names", async () => {
-  const harness = codeRepositoryHarness();
-  const calls = [];
-  const asked = [];
+/** Runs `operation` with a fetch that records and refuses every request. */
+async function withoutBackend(operation) {
+  const original = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (...args) => {
+    requests.push(args);
+    throw new Error("code-repository sync must not send a request");
+  };
+  try {
+    await operation();
+  } finally {
+    globalThis.fetch = original;
+  }
+  return requests;
+}
 
-  const result = await syncCodeRepository({
-    message: "Deploy with the saved session",
-    codeRepositoryDir: harness.codeRepositoryDir,
-    localOps: harness.localOps,
-    env: {},
-    fetchImpl: gitContextBackend(calls),
-    dryRun: true,
-    sessionAccess: async (options) => {
-      asked.push(options);
-      return { backendUrl: "https://session.example", accessToken: "session-access-token" };
-    },
-  });
+test("sync runs exactly the lockfile refresh and npm ci in the repository root", async () => {
+  const root = await applicationAtRepositoryRoot();
+  try {
+    const calls = [];
+    let result;
+    const requests = await withoutBackend(async () => {
+      result = await syncCodeRepository({
+        codeRepositoryDir: root,
+        localOps: createCodeRepositorySyncLocalOps({ spawnSyncImpl: recordingSpawn(calls) }),
+      });
+    });
 
-  assert.equal(result.tagName, "v1.2.4");
-  // Asked once, after the repository was inspected, and for that repository: its .env may name
-  // the backend.
-  assert.equal(asked.length, 1);
-  assert.equal(asked[0].cwd, harness.codeRepositoryDir);
-  assert.deepEqual(asked[0].env, {});
-  assert.deepEqual(harness.events.slice(0, 2).map(([type]) => type), [
-    "resolve-code-repository-directory",
-    "inspect-code-repository",
-  ]);
-  assert.deepEqual(calls, [
-    {
-      url: "https://session.example/api/v1/code-repository-branches/resolve-git-context/",
-      authorization: "Bearer session-access-token",
-    },
-    {
-      url: "https://session.example/api/v1/code-repository-branches/main-uid/default-redeployment-tag/",
-      authorization: "Bearer session-access-token",
-    },
-  ]);
+    assert.deepEqual(
+      calls.map(({ command, args, cwd }) => [command, args, cwd]),
+      DEPENDENCY_COMMANDS.map(([command, args]) => [command, args, root]),
+    );
+    // npm writes to the terminal when the output is not JSON.
+    assert.deepEqual(calls.map(({ stdio }) => stdio), ["inherit", "inherit"]);
+    assert.deepEqual(requests, []);
+    assert.deepEqual(result, {
+      command: "command-center-sdk code-repository sync",
+      codeRepositoryDir: root,
+      commands: ["npm install --package-lock-only", "npm ci"],
+      completed: ALL_STAGES,
+    });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
-test("a token set for the sync wins and the machine session is not asked for", async () => {
-  const harness = codeRepositoryHarness();
-  const calls = [];
-  const sessionAccess = async () => assert.fail("the saved session is not read when a token is set");
-
-  await syncCodeRepository({
-    message: "Deploy with the environment token",
-    codeRepositoryDir: harness.codeRepositoryDir,
-    localOps: harness.localOps,
-    env: { MAINSEQUENCE_ENDPOINT: "https://environment.example", MAINSEQUENCE_ACCESS_TOKEN: "environment-token" },
-    fetchImpl: gitContextBackend(calls),
-    dryRun: true,
-    sessionAccess,
-  });
-  await syncCodeRepository({
-    message: "Deploy with an explicit token",
-    codeRepositoryDir: harness.codeRepositoryDir,
-    localOps: harness.localOps,
-    env: {},
-    backendUrl: "https://explicit.example",
-    accessToken: "explicit-token",
-    fetchImpl: gitContextBackend(calls),
-    dryRun: true,
-    sessionAccess,
-  });
-
-  assert.deepEqual(
-    calls.map(({ url, authorization }) => [new URL(url).origin, authorization]),
-    [
-      ["https://environment.example", "Bearer environment-token"],
-      ["https://environment.example", "Bearer environment-token"],
-      ["https://explicit.example", "Bearer explicit-token"],
-      ["https://explicit.example", "Bearer explicit-token"],
-    ],
-  );
+test("quiet sync keeps npm output off standard output for --json", async () => {
+  const root = await applicationAtRepositoryRoot();
+  try {
+    const calls = [];
+    await syncCodeRepository({
+      codeRepositoryDir: root,
+      quiet: true,
+      localOps: createCodeRepositorySyncLocalOps({ spawnSyncImpl: recordingSpawn(calls) }),
+    });
+    assert.deepEqual(calls.map(({ stdio }) => stdio), ["pipe", "pipe"]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
-test("a sync without a token or a session stops before the backend and says how to log in", async () => {
-  const harness = codeRepositoryHarness();
-  const noRequest = async () => assert.fail("nothing is sent without a credential");
-
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Deploy",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      env: {},
-      fetchImpl: noRequest,
-      sessionAccess: async () => {
-        throw new Error("Not logged in. Run: command-center-sdk login");
-      },
-    }),
-    (caught) => {
-      assert.equal(caught instanceof CodeRepositorySyncError, true);
-      assert.equal(caught.stage, "resolve-backend-configuration");
-      assert.match(caught.message, /Not logged in\. Run: command-center-sdk login/u);
-      return true;
-    },
-  );
-
-  // Called as a library without a session source, the sync names the variables as before.
-  await assert.rejects(
-    syncCodeRepository({
-      message: "Deploy",
-      codeRepositoryDir: harness.codeRepositoryDir,
-      localOps: harness.localOps,
-      env: {},
-      fetchImpl: noRequest,
-    }),
-    /CodeRepository sync requires MAINSEQUENCE_ENDPOINT and MAINSEQUENCE_ACCESS_TOKEN\./u,
-  );
-  assert.equal(harness.events.some(([type]) => type === "command"), false);
-});
-
-test("backend API resolves the exact CodeRepositoryBranch and requests its deployment tag", async () => {
-  const calls = [];
-  const responses = [
-    jsonResponse({
-      canonical_repository_identity: TEST_REPOSITORY_IDENTITY,
-      repository_branch: "dev",
-      repository_ref: "refs/heads/dev",
-      commit_sha: TEST_COMMIT_SHA,
-      code_repository_branch: {
-        uid: "dev-uid",
-        code_repository_uid: "code-repository-uid-123",
-        repository_branch: "dev",
-      },
-    }),
-    emptyResponse(),
-    jsonResponse({ version: "1.2.4", tag_name: "v1.2.4-dev.1" }),
-  ];
-  const api = createCodeRepositorySyncApi({
-    backendUrl: "https://platform.example/",
-    accessToken: "secret-access-token",
-    fetchImpl: async (url, options) => {
-      calls.push({ url, options });
-      return responses.shift();
-    },
-  });
-
-  const branch = await api.resolveGitContext({
-    repositoryIdentity: TEST_REPOSITORY_IDENTITY,
-    repositoryBranch: "dev",
-    commitSha: TEST_COMMIT_SHA,
-  });
-  await api.addCodeRepositoryDeployKey("code-repository-uid-123", {
-    keyTitle: "developer-workstation",
-    publicKey: "ssh-ed25519 AAAATEST command-center",
-  });
-  const tag = await api.renderDefaultRedeploymentTag(branch.codeRepositoryBranchUid, "1.2.4");
-
-  assert.deepEqual(branch, {
-    canonicalRepositoryIdentity: TEST_REPOSITORY_IDENTITY,
-    gitBranch: "dev",
-    repositoryRef: "refs/heads/dev",
-    commitSha: TEST_COMMIT_SHA,
-    codeRepositoryUid: "code-repository-uid-123",
-    codeRepositoryBranchUid: "dev-uid",
-  });
-  assert.equal(tag, "v1.2.4-dev.1");
-  assert.deepEqual(calls.map(({ url, options }) => [options.method, url]), [
-    ["POST", "https://platform.example/api/v1/code-repository-branches/resolve-git-context/"],
-    ["POST", "https://platform.example/api/v1/code-repositories/code-repository-uid-123/add-deploy-key/"],
-    ["POST", "https://platform.example/api/v1/code-repository-branches/dev-uid/default-redeployment-tag/"],
-  ]);
-  assert.equal(
-    calls[0].options.body,
-    JSON.stringify({
-      repository_identity: TEST_REPOSITORY_IDENTITY,
-      repository_branch: "dev",
-      commit_sha: TEST_COMMIT_SHA,
-    }),
-  );
-  assert.equal(
-    calls[1].options.body,
-    JSON.stringify({
-      key_title: "developer-workstation",
-      public_key: "ssh-ed25519 AAAATEST command-center",
-    }),
-  );
-  assert.equal(calls[2].options.body, JSON.stringify({ version: "1.2.4" }));
-  assert.equal(calls.every(({ options }) => options.headers.Authorization === "Bearer secret-access-token"), true);
-});
-
-test("backend API rejects an unregistered branch before requesting a tag", async () => {
-  const calls = [];
-  const api = createCodeRepositorySyncApi({
-    backendUrl: "https://platform.example",
-    accessToken: "secret-access-token",
-    fetchImpl: async (url, options) => {
-      calls.push({ url, options });
-      return jsonResponse(
-        { detail: "No visible CodeRepositoryBranch matches the Git source context." },
-        404,
-      );
-    },
-  });
-
-  await assert.rejects(
-    api.resolveGitContext({
-      repositoryIdentity: TEST_REPOSITORY_IDENTITY,
-      repositoryBranch: "feature/missing",
-      commitSha: TEST_COMMIT_SHA,
-    }),
-    /failed \(404\).*No visible CodeRepositoryBranch/u,
-  );
-  assert.equal(calls.length, 1);
-});
-
-test("backend API rejects a malformed Git-context response", async () => {
-  const api = createCodeRepositorySyncApi({
-    backendUrl: "https://platform.example",
-    accessToken: "secret-access-token",
-    fetchImpl: async () =>
-      jsonResponse({
-        canonical_repository_identity: TEST_REPOSITORY_IDENTITY,
-        repository_branch: "main",
-        repository_ref: "refs/heads/main",
-        commit_sha: TEST_COMMIT_SHA,
+test("a failed lockfile refresh stops before npm ci and names the stage", async () => {
+  const root = await applicationAtRepositoryRoot();
+  try {
+    const calls = [];
+    await assert.rejects(
+      syncCodeRepository({
+        codeRepositoryDir: root,
+        localOps: createCodeRepositorySyncLocalOps({
+          spawnSyncImpl: recordingSpawn(calls, { failing: ["install", "--package-lock-only"] }),
+        }),
       }),
-  });
-
-  await assert.rejects(
-    api.resolveGitContext({
-      repositoryIdentity: TEST_REPOSITORY_IDENTITY,
-      repositoryBranch: "main",
-      commitSha: TEST_COMMIT_SHA,
-    }),
-    /Resolved CodeRepositoryBranch must be an object/u,
-  );
+      (caught) => {
+        assert.equal(caught instanceof CodeRepositorySyncError, true);
+        assert.equal(caught.stage, "update-lockfile");
+        assert.match(caught.message, /npm install --package-lock-only failed with status 1: npm error code ERESOLVE/u);
+        assert.deepEqual(caught.toJSON(), {
+          error: caught.message,
+          stage: "update-lockfile",
+          codeRepositoryDir: root,
+          completed: ["resolve-code-repository-directory", "inspect-code-repository"],
+        });
+        return true;
+      },
+    );
+    assert.deepEqual(calls.map(({ args }) => args), [["install", "--package-lock-only"]]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
-test("backend API rejects a Git-context response for another commit", async () => {
-  const api = createCodeRepositorySyncApi({
-    backendUrl: "https://platform.example",
-    accessToken: "secret-access-token",
-    fetchImpl: async () =>
-      jsonResponse({
-        canonical_repository_identity: TEST_REPOSITORY_IDENTITY,
-        repository_branch: "main",
-        repository_ref: "refs/heads/main",
-        commit_sha: "b".repeat(40),
-        code_repository_branch: {
-          uid: "main-uid",
-          code_repository_uid: "code-repository-uid-123",
-          repository_branch: "main",
-        },
+test("an application below the Git repository root stops before npm runs", async () => {
+  const root = await applicationAtRepositoryRoot();
+  const nested = join(root, "frontend");
+  try {
+    await mkdir(nested);
+    await writeFile(join(nested, "package.json"), "{}\n", "utf8");
+    await writeFile(join(nested, "package-lock.json"), "{}\n", "utf8");
+    const calls = [];
+    await assert.rejects(
+      syncCodeRepository({
+        codeRepositoryDir: nested,
+        localOps: createCodeRepositorySyncLocalOps({ spawnSyncImpl: recordingSpawn(calls) }),
       }),
-  });
-
-  await assert.rejects(
-    api.resolveGitContext({
-      repositoryIdentity: TEST_REPOSITORY_IDENTITY,
-      repositoryBranch: "main",
-      commitSha: TEST_COMMIT_SHA,
-    }),
-    /returned another Git commit/u,
-  );
-});
-
-test("backend API rejects a tag response for another version", async () => {
-  const api = createCodeRepositorySyncApi({
-    backendUrl: "https://platform.example",
-    accessToken: "secret-access-token",
-    fetchImpl: async () => jsonResponse({ version: "9.9.9", tag_name: "v9.9.9" }),
-  });
-  await assert.rejects(
-    api.renderDefaultRedeploymentTag("branch-uid", "1.2.4"),
-    /returned another version/u,
-  );
-});
-
-test("CLI rejects duplicate commit-message forms as JSON", () => {
-  const result = spawnSync(
-    process.execPath,
-    [
-      cliPath,
-      "code-repository",
-      "sync",
-      "Positional message",
-      "--message",
-      "Option message",
-      "--json",
-    ],
-    { encoding: "utf8" },
-  );
-  assert.equal(result.status, 1);
-  assert.deepEqual(JSON.parse(result.stderr), {
-    error: "Pass the commit message either positionally or with --message, not both.",
-  });
-});
-
-test("CLI rejects an out-of-range backend timeout before sync", () => {
-  const result = spawnSync(
-    process.execPath,
-    [cliPath, "code-repository", "sync", "Deploy", "--timeout-ms=999", "--json"],
-    { encoding: "utf8" },
-  );
-  assert.equal(result.status, 1);
-  assert.deepEqual(JSON.parse(result.stderr), {
-    error: "CodeRepository backend timeout must be an integer between 1000 and 300000 milliseconds.",
-  });
-});
-
-test("CLI forwards --path to CodeRepository preflight", () => {
-  const missingCodeRepository = join(
-    tmpdir(),
-    `command-center-sdk-missing-code-repository-${process.pid}`,
-  );
-  const result = spawnSync(
-    process.execPath,
-    [
-      cliPath,
-      "code-repository",
-      "sync",
-      "Terminology audit",
-      "--path",
-      missingCodeRepository,
-      "--dry-run",
-      "--json",
-    ],
-    { encoding: "utf8" },
-  );
-
-  assert.equal(result.status, 1);
-  const payload = JSON.parse(result.stderr);
-  assert.equal(payload.stage, "resolve-code-repository-directory");
-  assert.match(payload.error, /Code repository directory does not exist/u);
-  assert.equal(payload.codeRepositoryDir, null);
+      (caught) => {
+        assert.equal(caught.stage, "inspect-code-repository");
+        assert.match(caught.message, /requires the Vite application at the Git repository root/u);
+        assert.match(caught.message, /nested code repository directory/u);
+        return true;
+      },
+    );
+    assert.deepEqual(calls, []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("local preflight rejects missing package-lock.json", async () => {
-  const codeRepositoryDir = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-lock-"));
+  const root = await applicationAtRepositoryRoot();
   try {
-    await mkdir(join(codeRepositoryDir, ".git"), { recursive: true });
-    await writeFile(join(codeRepositoryDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
-    const localOps = createCodeRepositorySyncLocalOps();
-    await assert.rejects(localOps.inspectCodeRepository(codeRepositoryDir), /requires .*package-lock\.json/u);
-    assert.equal(JSON.parse(await readFile(join(codeRepositoryDir, "package.json"), "utf8")).version, "1.2.3");
+    await rm(join(root, "package-lock.json"));
+    const localOps = createCodeRepositorySyncLocalOps({
+      spawnSyncImpl: () => assert.fail("no program runs before the preflight passes"),
+    });
+    await assert.rejects(localOps.inspectCodeRepository(root), /requires .*package-lock\.json/u);
   } finally {
-    await rm(codeRepositoryDir, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true });
   }
 });
 
-test("local preflight accepts a repository-root Vite application", async () => {
-  const codeRepositoryDir = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-root-"));
+test("local preflight accepts the root of a Git clone and of a linked worktree", async () => {
+  const clone = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-root-"));
+  const worktree = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-worktree-"));
   try {
-    await writeFile(join(codeRepositoryDir, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
-    await writeFile(join(codeRepositoryDir, "package-lock.json"), "{}\n", "utf8");
-    const initialized = spawnSync("git", ["init", "-b", "main"], {
-      cwd: codeRepositoryDir,
-      encoding: "utf8",
-    });
+    for (const root of [clone, worktree]) {
+      await writeFile(join(root, "package.json"), JSON.stringify({ version: "1.2.3" }), "utf8");
+      await writeFile(join(root, "package-lock.json"), "{}\n", "utf8");
+    }
+    // The test creates the clone with Git; the sync itself finds `.git` without running Git.
+    const initialized = spawnSync("git", ["init", "-b", "main"], { cwd: clone, encoding: "utf8" });
     assert.equal(initialized.status, 0, initialized.stderr);
-    const remote = spawnSync(
-      "git",
-      ["remote", "add", "origin", "git@github.com:organization/project.git"],
-      { cwd: codeRepositoryDir, encoding: "utf8" },
-    );
-    assert.equal(remote.status, 0, remote.stderr);
-    const staged = spawnSync("git", ["add", "package.json", "package-lock.json"], {
-      cwd: codeRepositoryDir,
-      encoding: "utf8",
-    });
-    assert.equal(staged.status, 0, staged.stderr);
-    const committed = spawnSync(
-      "git",
-      [
-        "-c",
-        "user.name=Command Center SDK Test",
-        "-c",
-        "user.email=command-center-sdk@example.invalid",
-        "commit",
-        "-m",
-        "Initial project",
-      ],
-      { cwd: codeRepositoryDir, encoding: "utf8" },
-    );
-    assert.equal(committed.status, 0, committed.stderr);
-    const head = spawnSync("git", ["rev-parse", "--verify", "HEAD^{commit}"], {
-      cwd: codeRepositoryDir,
-      encoding: "utf8",
-    });
-    assert.equal(head.status, 0, head.stderr);
+    // A linked worktree or a submodule has a `.git` file instead of a folder.
+    await writeFile(join(worktree, ".git"), "gitdir: /elsewhere/.git/worktrees/application\n", "utf8");
 
-    const localOps = createCodeRepositorySyncLocalOps();
-    assert.deepEqual(await localOps.inspectCodeRepository(codeRepositoryDir), {
-      currentVersion: "1.2.3",
-      canonicalRepositoryIdentity: TEST_REPOSITORY_IDENTITY,
-      gitBranch: "main",
-      repositoryRef: "refs/heads/main",
-      commitSha: head.stdout.trim(),
-      origin: "git@github.com:organization/project.git",
+    const localOps = createCodeRepositorySyncLocalOps({
+      spawnSyncImpl: () => assert.fail("the preflight runs no program"),
     });
+    for (const root of [clone, worktree]) {
+      assert.deepEqual(await localOps.inspectCodeRepository(root), {
+        repositoryRoot: await realpath(root),
+      });
+    }
   } finally {
-    await rm(codeRepositoryDir, { recursive: true, force: true });
+    await rm(clone, { recursive: true, force: true });
+    await rm(worktree, { recursive: true, force: true });
   }
 });
 
@@ -1019,177 +222,114 @@ test("local preflight rejects a Vite application below the Git repository root",
   }
 });
 
-test("repository-key preflight never overwrites an existing private key", async () => {
-  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-key-"));
-  const sshDirectory = join(homeDirectory, ".ssh");
-  const keyName = "mainsequence-project-0b359d1a1ee13a62";
-  try {
-    await mkdir(sshDirectory, { recursive: true });
-    await writeFile(join(sshDirectory, keyName), "existing private key", "utf8");
-    const localOps = createCodeRepositorySyncLocalOps({
-      homeDirectory,
-      spawnSyncImpl() {
-        assert.fail("ssh-keygen must not overwrite an existing private key");
-      },
-    });
-    await assert.rejects(
-      localOps.ensureRepositoryKey("git@github.com:organization/project.git"),
-      /SSH public key is missing/u,
-    );
-    assert.equal(await readFile(join(sshDirectory, keyName), "utf8"), "existing private key");
-  } finally {
-    await rm(homeDirectory, { recursive: true, force: true });
-  }
-});
-
-test("repository-key preflight returns registration metadata for a newly generated key", async () => {
-  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-key-"));
-  try {
-    const localOps = createCodeRepositorySyncLocalOps({
-      homeDirectory,
-      hostName: "developer-workstation",
-      spawnSyncImpl(command, args) {
-        assert.equal(command, "ssh-keygen");
-        const keyPath = args[args.indexOf("-f") + 1];
-        writeFileSync(keyPath, "generated private key", "utf8");
-        writeFileSync(`${keyPath}.pub`, "ssh-ed25519 AAAATEST generated\n", "utf8");
-        return { status: 0, stdout: "", stderr: "" };
-      },
-    });
-    assert.deepEqual(
-      await localOps.ensureRepositoryKey("git@github.com:organization/project.git"),
-      {
-        created: true,
-        keyPath: join(
-          homeDirectory,
-          ".ssh",
-          "mainsequence-project-0b359d1a1ee13a62",
-        ),
-        keyTitle: "developer-workstation",
-        publicKey: "ssh-ed25519 AAAATEST generated",
-      },
-    );
-  } finally {
-    await rm(homeDirectory, { recursive: true, force: true });
-  }
-});
-
-test("same-basename repositories generate distinct keys without touching the legacy basename", async () => {
-  const homeDirectory = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-key-"));
-  const generatedPaths = [];
-  const sshDirectory = join(homeDirectory, ".ssh");
-  try {
-    await mkdir(sshDirectory, { recursive: true });
-    await writeFile(join(sshDirectory, "app"), "unrelated legacy key", "utf8");
-    const localOps = createCodeRepositorySyncLocalOps({
-      homeDirectory,
-      spawnSyncImpl(command, args) {
-        assert.equal(command, "ssh-keygen");
-        const keyPath = args[args.indexOf("-f") + 1];
-        generatedPaths.push(keyPath);
-        writeFileSync(keyPath, "generated private key", "utf8");
-        writeFileSync(`${keyPath}.pub`, "ssh-ed25519 AAAATEST generated\n", "utf8");
-        return { status: 0, stdout: "", stderr: "" };
-      },
-    });
-
-    const first = await localOps.ensureRepositoryKey("git@github.com:org-a/app.git");
-    const second = await localOps.ensureRepositoryKey("git@github.com:org-b/app.git");
-
-    assert.equal(first.keyPath, join(sshDirectory, "mainsequence-app-30cab1d6d9237dda"));
-    assert.equal(second.keyPath, join(sshDirectory, "mainsequence-app-8a36e97017a59942"));
-    assert.notEqual(first.keyPath, second.keyPath);
-    assert.deepEqual(generatedPaths, [first.keyPath, second.keyPath]);
-    assert.equal(await readFile(join(sshDirectory, "app"), "utf8"), "unrelated legacy key");
-  } finally {
-    await rm(homeDirectory, { recursive: true, force: true });
-  }
-});
-
-test("repository-key preflight rejects non-SSH origins", async () => {
-  const localOps = createCodeRepositorySyncLocalOps();
-  await assert.rejects(
-    localOps.ensureRepositoryKey("https://github.com/organization/project.git"),
-    /must use SSH/u,
+test("CLI forwards --path to the repository preflight", () => {
+  const missingCodeRepository = join(
+    tmpdir(),
+    `command-center-sdk-missing-code-repository-${process.pid}`,
   );
+  const result = spawnSync(
+    process.execPath,
+    [cliPath, "code-repository", "sync", "--path", missingCodeRepository, "--json"],
+    { encoding: "utf8" },
+  );
+
+  assert.equal(result.status, 1);
+  const payload = JSON.parse(result.stderr);
+  assert.equal(payload.stage, "resolve-code-repository-directory");
+  assert.match(payload.error, /Code repository directory does not exist/u);
+  assert.equal(payload.codeRepositoryDir, null);
+  assert.deepEqual(payload.completed, []);
 });
 
-test("Git push preflight uses the forced identity without mutating the remote", () => {
-  const calls = [];
-  const localOps = createCodeRepositorySyncLocalOps({
-    spawnSyncImpl(command, args, options) {
-      calls.push({ command, args, options });
-      return { status: 0, stdout: "", stderr: "" };
-    },
-  });
-  const env = { GIT_SSH_COMMAND: 'ssh -i "/keys/project" -o IdentitiesOnly=yes' };
-  localOps.verifyGitPush("/project", "feature/dashboard", env);
-  assert.deepEqual(calls, [
-    {
-      command: "git",
-      args: [
-        "push",
-        "--dry-run",
-        "--follow-tags",
-        "origin",
-        "HEAD:refs/heads/feature/dashboard",
-      ],
-      options: {
-        cwd: "/project",
-        env,
-        encoding: "utf8",
-        stdio: "pipe",
-      },
-    },
-  ]);
-});
-
-test("remote tag preflight queries the exact tag ref with the forced identity", () => {
-  const calls = [];
-  const env = { GIT_SSH_COMMAND: 'ssh -i "/keys/project" -o IdentitiesOnly=yes' };
-  const localOps = createCodeRepositorySyncLocalOps({
-    spawnSyncImpl(command, args, options) {
-      calls.push({ command, args, options });
-      return { status: 2, stdout: "", stderr: "" };
-    },
-  });
-
-  localOps.validateRemoteGitTag("/project", "v1.2.4-feature.1", env);
-
-  assert.deepEqual(calls, [
-    {
-      command: "git",
-      args: [
-        "ls-remote",
-        "--exit-code",
-        "--refs",
-        "--tags",
-        "origin",
-        "refs/tags/v1.2.4-feature.1",
-      ],
-      options: {
-        cwd: "/project",
-        env,
-        encoding: "utf8",
-        stdio: "pipe",
-      },
-    },
-  ]);
-});
-
-test("remote tag preflight distinguishes a collision from a transport failure", () => {
-  for (const [status, stderr, expected] of [
-    [0, "", /already exists remotely/u],
-    [1, "Permission denied", /Permission denied/u],
+test("CLI refuses the removed commit, tag, preview, and timeout arguments", () => {
+  for (const [args, named] of [
+    [["Describe the change"], "a commit message or CodeRepository UID"],
+    [["-m", "Describe the change"], "-m"],
+    [["--message=Describe the change"], "--message"],
+    [["--dry-run"], "--dry-run"],
+    [["--timeout-ms", "60000"], "--timeout-ms"],
+    [["--timeout-ms=60000"], "--timeout-ms"],
   ]) {
-    const localOps = createCodeRepositorySyncLocalOps({
-      spawnSyncImpl() {
-        return { status, stdout: "", stderr };
-      },
-    });
-    assert.throws(
-      () => localOps.validateRemoteGitTag("/project", "v1.2.4", {}),
-      expected,
+    const result = spawnSync(
+      process.execPath,
+      [cliPath, "code-repository", "sync", ...args, "--json"],
+      { encoding: "utf8" },
     );
+    assert.equal(result.status, 1, args.join(" "));
+    assert.deepEqual(JSON.parse(result.stderr), {
+      error: `code-repository sync no longer takes ${named}: it refreshes package-lock.json and runs npm ci, and does not commit, tag, or push. Commit and push the changes yourself.`,
+    });
   }
 });
+
+test(
+  "the CLI runs only npm in the repository root, sends no request, and creates no SSH key",
+  { skip: process.platform === "win32" ? "stand-in programs are POSIX shell scripts" : false },
+  async () => {
+    const root = await applicationAtRepositoryRoot();
+    const scratch = await mkdtemp(join(tmpdir(), "command-center-code-repository-sync-cli-"));
+    const binDirectory = join(scratch, "bin");
+    const home = join(scratch, "home");
+    const commandLog = join(scratch, "commands.log");
+    const requests = [];
+    const server = createServer((request, response) => {
+      requests.push(`${request.method} ${request.url}`);
+      response.writeHead(500).end();
+    });
+    try {
+      await mkdir(binDirectory);
+      await mkdir(home);
+      // Stand-ins for every program the sync used to start: each records where and how it ran.
+      for (const program of ["npm", "git", "ssh-keygen"]) {
+        const path = join(binDirectory, program);
+        await writeFile(
+          path,
+          `#!/bin/sh\nprintf '%s|%s\\n' "$(pwd -P)" "${program} $*" >> "$COMMAND_LOG"\n`,
+          "utf8",
+        );
+        await chmod(path, 0o755);
+      }
+      await new Promise((listening) => server.listen(0, "127.0.0.1", listening));
+      const backend = `http://127.0.0.1:${server.address().port}`;
+      const env = {
+        PATH: `${binDirectory}${delimiter}${process.env.PATH}`,
+        HOME: home,
+        COMMAND_LOG: commandLog,
+        // A backend and a token are set, so a request, if one were sent, would reach the server.
+        MAINSEQUENCE_ENDPOINT: backend,
+        MAINSEQUENCE_ACCESS_TOKEN: "test-access-token",
+      };
+
+      const human = await execFileAsync(
+        process.execPath,
+        [cliPath, "code-repository", "sync", "--path", root],
+        { env, encoding: "utf8" },
+      );
+      assert.match(human.stdout, /Synced dependencies in .*: npm install --package-lock-only, then npm ci\./u);
+      assert.match(human.stdout, /Nothing was committed, tagged, or pushed\. Commit and push the changed files yourself\./u);
+
+      const json = await execFileAsync(
+        process.execPath,
+        [cliPath, "code-repository", "sync", "--path", root, "--json"],
+        { env, encoding: "utf8" },
+      );
+      assert.deepEqual(JSON.parse(json.stdout), {
+        command: "command-center-sdk code-repository sync",
+        codeRepositoryDir: root,
+        commands: ["npm install --package-lock-only", "npm ci"],
+        completed: ALL_STAGES,
+      });
+
+      const canonicalRoot = await realpath(root);
+      const ran = (await readFile(commandLog, "utf8")).trim().split("\n");
+      const once = DEPENDENCY_COMMANDS.map(([command, args]) => `${canonicalRoot}|${command} ${args.join(" ")}`);
+      assert.deepEqual(ran, [...once, ...once]);
+      assert.deepEqual(requests, []);
+      await assert.rejects(access(join(home, ".ssh")), { code: "ENOENT" });
+    } finally {
+      await new Promise((closed) => server.close(closed));
+      await rm(root, { recursive: true, force: true });
+      await rm(scratch, { recursive: true, force: true });
+    }
+  },
+);

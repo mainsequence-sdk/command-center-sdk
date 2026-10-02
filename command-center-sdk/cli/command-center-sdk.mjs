@@ -7,7 +7,6 @@ import {
   updateApplicationSdk,
 } from "./application-sdk-maintenance.mjs";
 import { initializeApplicationDocumentation } from "./application-docs.mjs";
-import { parseCodeRepositorySyncTimeoutMs } from "./code-repository-sync-api.mjs";
 import { syncCodeRepository } from "./code-repository-sync.mjs";
 import {
   authStatus,
@@ -33,7 +32,7 @@ Usage:
   command-center-sdk application docs init [--path <repository-root>] [--dry-run] [--skip-install] [--json]
   command-center-sdk application sdk-status [--path <repository-root>] [--json]
   command-center-sdk application update-sdk [--path <repository-root>] [--dry-run] [--json]
-  command-center-sdk code-repository sync [message] [expectedCodeRepositoryUid] [--path <repository-root>] [-m <message>] [--timeout-ms <milliseconds>] [--dry-run] [--json]
+  command-center-sdk code-repository sync [--path <repository-root>] [--json]
   command-center-sdk theme audit [--path <css-file-or-directory>] [--json]
   command-center-sdk --version
   command-center-sdk --help
@@ -55,11 +54,11 @@ The sync command refreshes packaged skills and authenticated MCP skills in:
 It also removes the MCP skills versions before 0.5.12 recorded in .agents/skills/mainsequence/,
 which the Python Main Sequence SDK owns, and leaves everything else there.
 
-The CodeRepository sync command requires the Vite application at the Git repository root, bumps the npm
-patch version, requests the current CodeRepositoryBranch's backend-owned deployment tag, refreshes
-package-lock.json, commits all changes, tags, and pushes. It resolves CodeRepository identity from the
-canonical Git origin, attached branch, and exact HEAD commit; an optional expected CodeRepository UID is
-only a consistency assertion.
+The CodeRepository sync command requires the Vite application at the Git repository root. It
+refreshes package-lock.json (npm install --package-lock-only) and installs it (npm ci), and nothing
+else: it calls no backend and does not version, commit, tag, or push. Commit and push the changes
+yourself. The platform deploys from Git pushes as the repository's .mainsequence/workflows/*.yaml
+says (tag_regex), and release tags come from the repository's own CI.
 
 The SDK status and update commands compare and refresh only the application's declared Command Center
 SDK dependency. Updates respect its existing npm semver policy and do not commit, tag, push, or
@@ -154,34 +153,22 @@ function parseSkillArguments(args, { allowMcpUrl = false } = {}) {
   return { help: false, projectDir, dryRun, json, mcpUrl };
 }
 
+// What earlier versions took to commit, tag, and push. Named in the error so a person who still
+// passes one learns that the command no longer does any of that.
+const REMOVED_CODE_REPOSITORY_SYNC_OPTIONS = new Set(["--message", "-m", "--dry-run", "--timeout-ms"]);
+
 export function parseCodeRepositorySyncArguments(args) {
   let codeRepositoryDir = process.cwd();
-  let messageOption;
-  let timeoutMs;
-  let dryRun = false;
   let json = false;
-  const positional = [];
 
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
-    if (argument === "--dry-run") {
-      dryRun = true;
-      continue;
-    }
     if (argument === "--json") {
       json = true;
       continue;
     }
     if (argument === "--help" || argument === "-h") {
-      return {
-        help: true,
-        codeRepositoryDir,
-        message: null,
-        codeRepositoryUid: null,
-        timeoutMs,
-        dryRun,
-        json,
-      };
+      return { help: true, codeRepositoryDir, json };
     }
     if (argument === "--path" || argument === "-p") {
       index += 1;
@@ -194,48 +181,17 @@ export function parseCodeRepositorySyncArguments(args) {
       if (!codeRepositoryDir) throw new Error("--path requires a code repository directory.");
       continue;
     }
-    if (argument === "--message" || argument === "-m") {
-      index += 1;
-      if (!args[index]) throw new Error(`${argument} requires a commit message.`);
-      messageOption = args[index];
-      continue;
+    const option = argument.split("=", 1)[0];
+    if (!argument.startsWith("-") || REMOVED_CODE_REPOSITORY_SYNC_OPTIONS.has(option)) {
+      const removed = argument.startsWith("-") ? option : "a commit message or CodeRepository UID";
+      throw new Error(
+        `code-repository sync no longer takes ${removed}: it refreshes package-lock.json and runs npm ci, and does not commit, tag, or push. Commit and push the changes yourself.`,
+      );
     }
-    if (argument.startsWith("--message=")) {
-      messageOption = argument.slice("--message=".length);
-      if (!messageOption) throw new Error("--message requires a commit message.");
-      continue;
-    }
-    if (argument === "--timeout-ms") {
-      index += 1;
-      if (!args[index]) throw new Error("--timeout-ms requires a number of milliseconds.");
-      timeoutMs = parseCodeRepositorySyncTimeoutMs(args[index]);
-      continue;
-    }
-    if (argument.startsWith("--timeout-ms=")) {
-      const value = argument.slice("--timeout-ms=".length);
-      if (!value) throw new Error("--timeout-ms requires a number of milliseconds.");
-      timeoutMs = parseCodeRepositorySyncTimeoutMs(value);
-      continue;
-    }
-    if (argument.startsWith("-")) throw new Error(`Unknown argument: ${argument}`);
-    positional.push(argument);
+    throw new Error(`Unknown argument: ${argument}`);
   }
 
-  if (positional.length > 2) {
-    throw new Error("code-repository sync accepts at most two positional arguments.");
-  }
-  if (positional[0] !== undefined && messageOption !== undefined) {
-    throw new Error("Pass the commit message either positionally or with --message, not both.");
-  }
-  return {
-    help: false,
-    codeRepositoryDir,
-    message: positional[0] ?? messageOption,
-    codeRepositoryUid: positional[1] ?? null,
-    timeoutMs,
-    dryRun,
-    json,
-  };
+  return { help: false, codeRepositoryDir, json };
 }
 
 function parseApplicationSdkArguments(args, { allowDryRun = false } = {}) {
@@ -374,28 +330,9 @@ function printHumanThemeAudit(result) {
   console.error(`Theme audit failed with ${result.diagnostics.length} violation(s).`);
 }
 
-function printHumanCodeRepositorySyncPlan(plan) {
-  console.log(`Repository: ${plan.canonicalRepositoryIdentity}`);
-  console.log(`CodeRepository: ${plan.codeRepositoryUid}`);
-  console.log(`Git branch: ${plan.gitBranch}`);
-  console.log(`Git ref: ${plan.repositoryRef}`);
-  console.log(`Git HEAD: ${plan.commitSha}`);
-  console.log(`CodeRepositoryBranch: ${plan.codeRepositoryBranchUid}`);
-  console.log(`Current version: ${plan.currentVersion}`);
-  console.log(`Next version: ${plan.nextVersion}`);
-  console.log(`Branch tag: ${plan.tagName}`);
-  console.log("Sync plan:");
-  plan.commands.forEach((command, index) => console.log(`  ${index + 1}. ${command}`));
-}
-
 function printHumanCodeRepositorySyncResult(result) {
-  if (result.dryRun) {
-    console.log("Dry run: no files, commits, tags, keys, or remote state were changed.");
-    return;
-  }
-  console.log(`Synced ${result.codeRepositoryDir}.`);
-  console.log(`Version: ${result.version}`);
-  console.log(`Branch tag: ${result.tagName}`);
+  console.log(`Synced dependencies in ${result.codeRepositoryDir}: ${result.commands.join(", then ")}.`);
+  console.log("Nothing was committed, tagged, or pushed. Commit and push the changed files yourself.");
 }
 
 function printHumanApplicationSdkStatus(result) {
@@ -550,14 +487,8 @@ async function main() {
       return;
     }
     const result = await syncCodeRepository({
-      message: options.message,
-      codeRepositoryUid: options.codeRepositoryUid,
       codeRepositoryDir: options.codeRepositoryDir,
-      timeoutMs: options.timeoutMs,
-      dryRun: options.dryRun,
       quiet: options.json,
-      sessionAccess: resolvePlatformAccess,
-      onPlan: options.json ? undefined : printHumanCodeRepositorySyncPlan,
     });
     if (options.json) console.log(JSON.stringify(result, null, 2));
     else printHumanCodeRepositorySyncResult(result);

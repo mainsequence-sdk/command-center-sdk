@@ -107,11 +107,6 @@ test("consumer guidance documents SDK status and update as a separate applicatio
   }
   assert.match(useSdkSkill, /declared.*locked.*installed.*wanted.*latest/isu);
   assert.match(maintainCodeRepositorySkill, /does not change the application version/iu);
-  for (const value of [maintainCodeRepositorySkill, gettingStarted]) {
-    assert.match(value, /(?:next|preview\w*)[^.]*npm[^.]*patch[^.]*version/iu);
-    assert.match(value, /exact.*tag.*origin|exact `refs\/tags/isu);
-    assert.match(value, /--atomic --follow-tags/iu);
-  }
 });
 
 test("active application lifecycle guidance does not revive the retired platform ontology", async () => {
@@ -131,22 +126,35 @@ test("active application lifecycle guidance does not revive the retired platform
   }
 });
 
-test("CodeRepository sync guidance uses Git-native identity without a local CodeRepository UID marker", async () => {
+test("CodeRepository guidance leaves versions, tags, and pushes to the repository", async () => {
   const maintainCodeRepositorySkill = await readFile(
     join(skillsRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
     "utf8",
   );
   const gettingStarted = await readFile(join(docsRoot, "getting-started.md"), "utf8");
+  const operations = await readFile(join(docsRoot, "application-operations.md"), "utf8");
   const packageReadme = await readFile(resolve(packageRoot, "README.md"), "utf8");
   const cliReadme = await readFile(resolve(packageRoot, "cli", "README.md"), "utf8");
 
-  for (const value of [maintainCodeRepositorySkill, gettingStarted, packageReadme, cliReadme]) {
-    assert.match(value, /canonical[^.]*origin[^.]*branch[^.]*HEAD/isu);
-    assert.match(value, /assertion/iu);
-    assert.doesNotMatch(value, /requires?[^.]*local repository identity/iu);
+  for (const value of [maintainCodeRepositorySkill, gettingStarted, operations, packageReadme, cliReadme]) {
+    assert.match(value, /code-repository sync/u);
+    assert.match(value, /npm install --package-lock-only/u);
+    assert.match(value, /npm ci/u);
+    assert.match(value, /\.mainsequence\/workflows\/\*\.yaml/u);
+    assert.match(value, /tag_regex/u);
+    assert.match(value, /commit and push/iu);
+    assert.doesNotMatch(
+      value,
+      /--follow-tags|default-redeployment-tag|resolve-git-context|add-deploy-key|--timeout-ms|COMMAND_CENTER_SDK_CODE_REPOSITORY_TIMEOUT_MS|backend-owned tag/iu,
+    );
   }
-  assert.match(cliReadme, /resolve-git-context/u);
-  assert.match(maintainCodeRepositorySkill, /Do not add or restore superseded caller-supplied repository/u);
+  for (const value of [maintainCodeRepositorySkill, gettingStarted, operations]) {
+    assert.match(value, /own CI/u);
+  }
+  for (const value of [maintainCodeRepositorySkill, operations]) {
+    assert.match(value, /git tag "\$TAG" "\$GITHUB_SHA"/u);
+    assert.match(value, /example/iu);
+  }
 });
 
 test("contract skills point to the canonical manifest without bundling contract copies", async () => {
