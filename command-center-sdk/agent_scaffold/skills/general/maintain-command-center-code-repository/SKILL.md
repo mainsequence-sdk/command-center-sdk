@@ -24,7 +24,8 @@ commit the change like any other file; no command or platform request sets them.
 Versions and release tags are repository code. The Main Sequence platform no longer provides tag
 names, and `command-center-sdk code-repository sync` no longer versions, commits, tags, or pushes.
 When the workflow file sets a `tag_regex`, the repository's own CI creates the matching release
-tags (see the example below). Never invent a tag by hand to force a deployment.
+tags (see the example below). Do not create a tag by hand unless the user asks for it; "Creating A
+Release Tag" below shows how.
 
 ## Preflight The CodeRepository
 
@@ -142,6 +143,83 @@ example with `npm version patch --no-git-tag-version`, which updates `package.js
 deploys exactly those tagged commits. `fetch-depth: 0` brings the existing tags so the check sees
 them, `contents: write` lets the job push the tag, and the `concurrency` group keeps two releases
 from racing.
+
+### Development Deploys Every Push, Production Deploys Tags
+
+A common setup uses two workflow files scoped to Environments. On the production branch only the
+first applies; on the development branch only the second:
+
+```yaml
+# .mainsequence/workflows/app-production.yaml
+api_version: "2.3.0"
+name: app-production
+scope:
+  environments: [production]
+resources:
+  - key: app
+    kind: static_site
+    spec:
+      name: My App
+      framework: vite
+      output_directory: dist
+      routing_mode: spa
+      automatic_deployment: true
+      automatic_redeployment:
+        enabled: true
+        tag_regex: "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+```
+
+```yaml
+# .mainsequence/workflows/app-development.yaml
+api_version: "2.3.0"
+name: app-development
+scope:
+  environments: [development]  # the development Environment's exact name
+resources:
+  - key: app
+    kind: static_site
+    spec:
+      name: My App
+      framework: vite
+      output_directory: dist
+      routing_mode: spa
+      automatic_deployment: true
+      automatic_redeployment:
+        enabled: true
+```
+
+A push to the development branch deploys at once. A merge to `main` deploys nothing until a matching
+tag points at a commit on `main`; with the release job above, CI creates that tag after the checks
+pass. Take the exact fields from the branch's workflow template and validate each file with the
+platform before committing it.
+
+### Creating A Release Tag
+
+The platform reacts to the tag push, however the tag was made. The short tag name must fully match
+`tag_regex`, and the tagged commit must be on the branch (its latest commit or an older one).
+
+- CI, as in the release job above. This is the recommended path.
+- By hand, only when the user asks for it:
+
+  ```bash
+  git tag v1.3.0 <commit>
+  git push origin v1.3.0
+  ```
+
+  Lightweight and annotated tags both work. Push one tag at a time: GitHub sends no event when more
+  than three tags are pushed at once, so `git push --tags` can deploy nothing.
+- A GitHub Release: publishing a release with a new tag, in the web UI or with
+  `gh release create v1.3.0 --target main`, creates the tag, and that tag deploys like a pushed one.
+
+A tag created with the Actions `GITHUB_TOKEN` starts no other GitHub Actions workflow, but it still
+reaches Main Sequence. Deleting a tag deploys nothing and removes nothing. A tag that does not match,
+or whose commit is only on another branch, deploys nothing for that application.
+
+### Going Back To An Older Version
+
+Revert the change and release a new version: `git revert <commit>`, raise the patch version with
+`npm version patch --no-git-tag-version`, commit, push, and let CI tag the result. The version keeps
+moving forward and every deployed commit matches its tag.
 
 ## Handle Failures Without Hiding State
 
