@@ -173,7 +173,7 @@ decides which pushes deploy:
 | `tag_regex` in the workflow file | What deploys |
 | --- | --- |
 | omitted or `null` | Every push to the branch. |
-| a regular expression | A push, once a tag that matches it points at the branch's latest commit. |
+| a regular expression | The commit a matching tag points at, whether it is the branch's latest commit or an older one. |
 
 `automatic_deployment` and `tag_regex` are set only in that workflow file: change them there and
 commit the change. The Main Sequence platform no longer provides tag names, and
@@ -236,9 +236,9 @@ the job push the tag, and the `concurrency` group keeps two releases from racing
 | `update-lockfile` | `package-lock.json` may be partly refreshed | Read the npm output, fix the dependency declaration, and rerun |
 | `install-lockfile` | `node_modules` may be partly installed | Read the npm output and rerun; the lockfile is already current |
 
-When a push did not deploy and the workflow file sets a `tag_regex`, check whether a matching tag
-points at the branch's latest commit: look at the release job's run, and at `git tag --points-at
-origin/<branch>` after `git fetch --tags origin`. Do not use destructive reset commands as generic
+When a commit did not deploy and the workflow file sets a `tag_regex`, check whether a matching tag
+points at that commit: look at the release job's run, and at `git tag --points-at <commit>` after
+`git fetch --tags origin`. Do not use destructive reset commands as generic
 recovery; preserve user work.
 
 ## Release readiness checklist

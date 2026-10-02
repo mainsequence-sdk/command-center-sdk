@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+Documentation only: the Main Sequence platform deploys the commit a matching release tag points at,
+whether it is the branch's latest commit or an older commit on that branch; targets that deploy
+every push ignore tags. The README, CLI reference, operations and getting-started guides, and the
+`maintain-command-center-code-repository` skill no longer say the tag must point at the latest
+commit. No code, export, contract, or CLI change.
+
 ## 0.5.13
 
 Compatibility axes: the CLI command `code-repository sync` (breaking: its arguments, its behavior,

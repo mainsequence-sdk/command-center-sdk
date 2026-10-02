@@ -303,8 +303,9 @@ and does not version, commit, tag, or push. Commit and push the changes yourself
 change.
 
 The platform deploys from Git pushes as the repository's `.mainsequence/workflows/*.yaml` file says.
-With `tag_regex` omitted, every push to the branch deploys; with a regular expression, a push
-deploys only when a matching tag points at the branch's latest commit. The Main Sequence platform
+With `tag_regex` omitted, every push to the branch deploys; with a regular expression, a matching
+tag deploys the commit it points at, whether that is the branch's latest commit or an older commit
+on the branch. The Main Sequence platform
 no longer provides tag names: release tags come from the repository's own CI.
 [Application operations](./application-operations.md#release-tags-from-the-repositorys-own-ci) has
 an example workflow.

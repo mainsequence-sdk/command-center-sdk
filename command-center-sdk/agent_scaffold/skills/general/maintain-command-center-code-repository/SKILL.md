@@ -90,8 +90,9 @@ git push origin HEAD
 ```
 
 Include `package-lock.json` whenever the sync changed it. With `tag_regex` omitted, this push
-deploys. With a `tag_regex`, the push deploys once a matching tag points at the branch's latest
-commit, which the repository's CI normally creates after the push.
+deploys. With a `tag_regex`, a commit deploys once a matching tag points at it, which the
+repository's CI normally creates after the push; a tag on an older commit of the branch deploys that
+commit.
 
 ## Release Tags Come From The Repository's Own CI
 

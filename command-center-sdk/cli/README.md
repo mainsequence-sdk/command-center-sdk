@@ -205,7 +205,7 @@ error that says the command no longer commits, tags, or pushes.
 
 Deployment is not this command's business. The platform deploys from Git pushes as the repository's
 `.mainsequence/workflows/*.yaml` says: `tag_regex` omitted or `null` deploys every push, a regular
-expression deploys only when a matching tag points at the branch's latest commit. Release tags are
+expression deploys the commit a matching tag points at, latest or older, on that branch. Release tags are
 created by the repository's own CI. Do not add tag naming, version bumps, or platform calls back to
 this command. `code-repository-sync.mjs` holds the steps and `code-repository-sync-local-ops.mjs`
 the root check and the npm runner; both stay dependency-free and bin-only.

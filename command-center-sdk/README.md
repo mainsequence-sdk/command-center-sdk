@@ -282,8 +282,9 @@ stages. The arguments earlier versions took to commit, tag, and push (a commit m
 CodeRepository UID, a dry run, a timeout) are refused with an error that says so.
 
 The platform deploys from Git pushes as the repository's `.mainsequence/workflows/*.yaml` file says:
-with `tag_regex` omitted or `null`, every push deploys; with a regular expression, a push deploys
-only when a matching tag points at the branch's latest commit. `automatic_deployment` and
+with `tag_regex` omitted or `null`, every push deploys; with a regular expression, a matching tag
+deploys the commit it points at, whether that is the branch's latest commit or an older commit on
+the branch. `automatic_deployment` and
 `tag_regex` are set only in that file. The Main Sequence platform no longer provides tag names;
 versions and release tags are repository code, created by the repository's own CI. See
 [Refresh dependencies and deploy from Git](./docs/getting-started.md#refresh-dependencies-and-deploy-from-git),
