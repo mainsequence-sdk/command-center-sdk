@@ -2,11 +2,29 @@
 
 ## Unreleased
 
-Documentation only: the Main Sequence platform deploys the commit a matching release tag points at,
+The Main Sequence platform deploys the commit a matching release tag points at,
 whether it is the branch's latest commit or an older commit on that branch; targets that deploy
 every push ignore tags. The README, CLI reference, operations and getting-started guides, and the
 `maintain-command-center-code-repository` skill no longer say the tag must point at the latest
-commit. No code, export, contract, or CLI change.
+commit. No export, contract, or CLI change.
+
+A static site points each Environment at its own API releases. Every branch deploys its own
+release of an API, with its own UID, and delegation does not compare Environments, so a
+development build that names a production release reaches production without an error. The
+`maintain-command-center-code-repository` skill gains "Point Each Environment At Its Own APIs"
+(Environment-scoped workflow files carrying `spec.build_environment`, finding each Environment's
+release, reserved keys, and checks), and the application-operations guide a matching section. The
+`integrate-static-site-iframe` skill, the static-site guide, and the static-site example read the
+host origin from `VITE_COMMAND_CENTER_ORIGIN`, which the platform sets in every Vite build, instead
+of "trusted deployment configuration" or the example's `VITE_HOST_ORIGIN`. Documentation only: no
+export, contract, or CLI change.
+
+- **`ResourceListPage` polling no longer overlaps slow loads** (#10). `pollIntervalMs` used a fixed
+  interval: a tick started a new list request while the previous one was still pending, and every
+  tick also fetched discovery again. A slow list was then requested again every interval, and the
+  aborted requests kept running on the server. A poll now starts `pollIntervalMs` after the previous
+  list load settles and reloads the list only. The prop, its type, and the refresh control, Retry,
+  and `refreshKey` behavior are unchanged.
 
 ## 0.5.13
 

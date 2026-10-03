@@ -217,6 +217,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
   const [loading, setLoading] = useState(!initialResult);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [pollToken, setPollToken] = useState(0);
   const [bulkActions, setBulkActions] = useState<readonly ResourceBulkActionDefinition[]>(
     initialResult?.bulkActions ?? initialBulkActions,
   );
@@ -466,7 +467,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
       });
 
     return () => controller.abort();
-  }, [activeFilters, bulkQuery, definition.adapter, pageIndex, pageSize, refreshKey, reloadToken, search, sort]);
+  }, [activeFilters, bulkQuery, definition.adapter, pageIndex, pageSize, pollToken, refreshKey, reloadToken, search, sort]);
 
   useEffect(() => {
     if (!definition.adapter.discover) {
@@ -507,16 +508,22 @@ export function ResourceListPage<T, Id extends ResourceId>({
     return () => controller.abort();
   }, [bulkQuery, definition.adapter, definition.columns, refreshKey, reloadToken]);
 
+  // The next poll is scheduled only once the current load has settled, so a list
+  // request slower than the interval is never overlapped by another one. A poll
+  // reloads the list only; discovery depends on search and filters, not on time.
+  const pollDelayMs = loading
+    ? undefined
+    : typeof pollIntervalMs === "function" ? pollIntervalMs(result) : pollIntervalMs;
+
   useEffect(() => {
-    const intervalMs = typeof pollIntervalMs === "function" ? pollIntervalMs(result) : pollIntervalMs;
-    if (!intervalMs || intervalMs <= 0) {
+    if (!pollDelayMs || pollDelayMs <= 0) {
       return;
     }
-    const interval = window.setInterval(() => {
-      setReloadToken((current) => current + 1);
-    }, intervalMs);
-    return () => window.clearInterval(interval);
-  }, [pollIntervalMs, result]);
+    const timeout = window.setTimeout(() => {
+      setPollToken((current) => current + 1);
+    }, pollDelayMs);
+    return () => window.clearTimeout(timeout);
+  }, [pollDelayMs, result]);
 
   useEffect(() => {
     if (loading) {

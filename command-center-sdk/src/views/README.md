@@ -114,6 +114,10 @@ applications supply their own icons, labels, metadata, and semantic tones; the S
 layout and visual language without learning application-specific resource types.
 Use `embedded` for the same list lifecycle inside a detail tab, `pollIntervalMs` for
 authoritative read-only registries that need polling, and `renderCard` for card-oriented resources.
+A poll starts `pollIntervalMs` after the previous list load settles, never while one is in flight,
+so a list slower than the interval is not requested twice. A poll reloads the list only; discovery
+is fetched again only when search, filters, `refreshKey`, the refresh control, Retry, or a completed
+bulk action ask for it.
 Browser-ready styles ship in the package-level `styles.css` and consume theme variables supplied by
 the host.
 

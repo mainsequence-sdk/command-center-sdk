@@ -245,6 +245,101 @@ describe("ResourceListPage discovered row actions", () => {
     expect(discover).toHaveBeenCalledTimes(1);
   });
 
+  it("polls only after the previous load settles and never refetches discovery on a poll", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+    try {
+      let answerSlowLoad: (value: typeof page) => void = () => undefined;
+      const list = vi.fn()
+        .mockResolvedValueOnce(page)
+        .mockImplementationOnce(() => new Promise<typeof page>((resolve) => {
+          answerSlowLoad = resolve;
+        }))
+        .mockResolvedValue(page);
+      const discover = vi.fn().mockResolvedValue({
+        contract: "command-center.resource_discovery@v1",
+        resource: {
+          id: "buckets",
+          label: "Buckets",
+          item_label: "bucket",
+          identity: { fields: ["uid"] },
+        },
+        list: {
+          controls: { search: null, filters: [], ordering: [] },
+          columns: [{ id: "name", header: "Name", default_visible: true, hideable: false }],
+        },
+        bulk_actions: [],
+      });
+      const definition: ResourceApplicationDefinition<Bucket, string> = {
+        id: "buckets",
+        label: "Buckets",
+        getId: (bucket) => bucket.uid,
+        adapter: { list, discover },
+        columns: [{ id: "name", header: "Name", getValue: (bucket) => bucket.name }],
+      };
+      const container = document.createElement("div");
+      const root = createRoot(container);
+      roots.push(root);
+
+      await act(async () => {
+        root.render(
+          <ResourceListPage definition={definition} initialResult={page} pollIntervalMs={5_000} />,
+        );
+      });
+      expect(list).toHaveBeenCalledTimes(1);
+
+      await act(async () => vi.advanceTimersByTime(5_000));
+      expect(list).toHaveBeenCalledTimes(2);
+
+      // The second load is still unanswered: no further poll may start.
+      await act(async () => vi.advanceTimersByTime(30_000));
+      expect(list).toHaveBeenCalledTimes(2);
+
+      await act(async () => answerSlowLoad(page));
+      await act(async () => vi.advanceTimersByTime(4_999));
+      expect(list).toHaveBeenCalledTimes(2);
+      await act(async () => vi.advanceTimersByTime(1));
+      expect(list).toHaveBeenCalledTimes(3);
+      expect(discover).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stops polling when the result no longer asks for it", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+    try {
+      const idle = { ...page, items: [] };
+      const list = vi.fn().mockResolvedValueOnce(page).mockResolvedValue(idle);
+      const definition: ResourceApplicationDefinition<Bucket, string> = {
+        id: "buckets",
+        label: "Buckets",
+        getId: (bucket) => bucket.uid,
+        adapter: { list },
+        columns: [{ id: "name", header: "Name", getValue: (bucket) => bucket.name }],
+      };
+      const container = document.createElement("div");
+      const root = createRoot(container);
+      roots.push(root);
+
+      await act(async () => {
+        root.render(
+          <ResourceListPage
+            definition={definition}
+            initialResult={page}
+            pollIntervalMs={(result) => (result.items.length ? 5_000 : undefined)}
+          />,
+        );
+      });
+      await act(async () => vi.advanceTimersByTime(5_000));
+      expect(list).toHaveBeenCalledTimes(2);
+
+      await act(async () => vi.advanceTimersByTime(60_000));
+      expect(list).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("executes a row action through the discovered bulk contract with one explicit UID", async () => {
     const executeBulkAction = vi.fn().mockResolvedValue([]);
     const definition: ResourceApplicationDefinition<Bucket, string> = {
