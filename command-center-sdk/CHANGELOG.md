@@ -7,6 +7,12 @@ deployed once per branch, so a site that opens an Agent conversation writes each
 UID and the Environment's own UID in that Environment's workflow file, next to its API releases. No
 export, contract, or CLI change.
 
+- **`ResourceListPage` stops polling in a hidden tab** (#11). `pollIntervalMs` kept polling while the
+  document was hidden, so every background tab kept requesting its list. No poll starts now while
+  `document.visibilityState` is `hidden`. When the document is shown again, a poll that came due in
+  the meantime runs at once, and one that is not yet due keeps its time. The prop and its type are
+  unchanged.
+
 ## 0.5.14
 
 Compatibility axes: `ResourceListPage` poll timing (a poll waits for the previous list load and no

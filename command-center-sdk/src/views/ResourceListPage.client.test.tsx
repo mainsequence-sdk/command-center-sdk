@@ -53,6 +53,15 @@ const allowedPreflight: ResourceBulkActionPreflightResult<string> = {
   raw: {},
 };
 
+function setDocumentVisibility(state: DocumentVisibilityState) {
+  Object.defineProperty(document, "visibilityState", { configurable: true, get: () => state });
+  document.dispatchEvent(new Event("visibilitychange"));
+}
+
+function restoreDocumentVisibility() {
+  delete (document as { visibilityState?: DocumentVisibilityState }).visibilityState;
+}
+
 describe("ResourceListPage discovered row actions", () => {
   const roots: Array<ReturnType<typeof createRoot>> = [];
 
@@ -246,7 +255,7 @@ describe("ResourceListPage discovered row actions", () => {
   });
 
   it("polls only after the previous load settles and never refetches discovery on a poll", async () => {
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
     try {
       let answerSlowLoad: (value: typeof page) => void = () => undefined;
       const list = vi.fn()
@@ -306,7 +315,7 @@ describe("ResourceListPage discovered row actions", () => {
   });
 
   it("stops polling when the result no longer asks for it", async () => {
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
     try {
       const idle = { ...page, items: [] };
       const list = vi.fn().mockResolvedValueOnce(page).mockResolvedValue(idle);
@@ -336,6 +345,81 @@ describe("ResourceListPage discovered row actions", () => {
       await act(async () => vi.advanceTimersByTime(60_000));
       expect(list).toHaveBeenCalledTimes(2);
     } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not poll while the document is hidden and polls at once on return when one came due", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+    try {
+      const list = vi.fn().mockResolvedValue(page);
+      const definition: ResourceApplicationDefinition<Bucket, string> = {
+        id: "buckets",
+        label: "Buckets",
+        getId: (bucket) => bucket.uid,
+        adapter: { list },
+        columns: [{ id: "name", header: "Name", getValue: (bucket) => bucket.name }],
+      };
+      const container = document.createElement("div");
+      const root = createRoot(container);
+      roots.push(root);
+
+      await act(async () => {
+        root.render(
+          <ResourceListPage definition={definition} initialResult={page} pollIntervalMs={5_000} />,
+        );
+      });
+      expect(list).toHaveBeenCalledTimes(1);
+
+      await act(async () => setDocumentVisibility("hidden"));
+      await act(async () => vi.advanceTimersByTime(60_000));
+      expect(list).toHaveBeenCalledTimes(1);
+
+      await act(async () => setDocumentVisibility("visible"));
+      await act(async () => vi.advanceTimersByTime(0));
+      expect(list).toHaveBeenCalledTimes(2);
+
+      await act(async () => vi.advanceTimersByTime(4_999));
+      expect(list).toHaveBeenCalledTimes(2);
+      await act(async () => vi.advanceTimersByTime(1));
+      expect(list).toHaveBeenCalledTimes(3);
+    } finally {
+      restoreDocumentVisibility();
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps the poll's due time when the document is shown again before it", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+    try {
+      const list = vi.fn().mockResolvedValue(page);
+      const definition: ResourceApplicationDefinition<Bucket, string> = {
+        id: "buckets",
+        label: "Buckets",
+        getId: (bucket) => bucket.uid,
+        adapter: { list },
+        columns: [{ id: "name", header: "Name", getValue: (bucket) => bucket.name }],
+      };
+      const container = document.createElement("div");
+      const root = createRoot(container);
+      roots.push(root);
+
+      await act(async () => {
+        root.render(
+          <ResourceListPage definition={definition} initialResult={page} pollIntervalMs={5_000} />,
+        );
+      });
+      await act(async () => vi.advanceTimersByTime(2_000));
+      await act(async () => setDocumentVisibility("hidden"));
+      await act(async () => vi.advanceTimersByTime(1_000));
+      await act(async () => setDocumentVisibility("visible"));
+
+      await act(async () => vi.advanceTimersByTime(1_999));
+      expect(list).toHaveBeenCalledTimes(1);
+      await act(async () => vi.advanceTimersByTime(1));
+      expect(list).toHaveBeenCalledTimes(2);
+    } finally {
+      restoreDocumentVisibility();
       vi.useRealTimers();
     }
   });

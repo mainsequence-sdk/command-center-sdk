@@ -143,6 +143,10 @@ interface InternalBulkActionPreflightState<Id extends ResourceId> {
   state: ResourceBulkActionPreflightState<Id>;
 }
 
+function isDocumentVisible() {
+  return typeof document === "undefined" || document.visibilityState !== "hidden";
+}
+
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "The resource list could not be loaded.";
 }
@@ -218,6 +222,8 @@ export function ResourceListPage<T, Id extends ResourceId>({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [pollToken, setPollToken] = useState(0);
+  const [documentVisible, setDocumentVisible] = useState(isDocumentVisible);
+  const lastSettledAt = useRef(Date.now());
   const [bulkActions, setBulkActions] = useState<readonly ResourceBulkActionDefinition[]>(
     initialResult?.bulkActions ?? initialBulkActions,
   );
@@ -462,6 +468,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
       })
       .finally(() => {
         if (sequence === requestSequence.current) {
+          lastSettledAt.current = Date.now();
           setLoading(false);
         }
       });
@@ -511,19 +518,31 @@ export function ResourceListPage<T, Id extends ResourceId>({
   // The next poll is scheduled only once the current load has settled, so a list
   // request slower than the interval is never overlapped by another one. A poll
   // reloads the list only; discovery depends on search and filters, not on time.
+  // A hidden document schedules nothing; when it is shown again, a poll that came
+  // due meanwhile runs at once and an earlier one keeps its due time.
   const pollDelayMs = loading
     ? undefined
     : typeof pollIntervalMs === "function" ? pollIntervalMs(result) : pollIntervalMs;
 
   useEffect(() => {
-    if (!pollDelayMs || pollDelayMs <= 0) {
+    if (typeof document === "undefined") {
       return;
     }
+    const onVisibilityChange = () => setDocumentVisible(isDocumentVisible());
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
+  useEffect(() => {
+    if (!pollDelayMs || pollDelayMs <= 0 || !documentVisible) {
+      return;
+    }
+    const remainingMs = Math.max(0, pollDelayMs - (Date.now() - lastSettledAt.current));
     const timeout = window.setTimeout(() => {
       setPollToken((current) => current + 1);
-    }, pollDelayMs);
+    }, remainingMs);
     return () => window.clearTimeout(timeout);
-  }, [pollDelayMs, result]);
+  }, [documentVisible, pollDelayMs, result]);
 
   useEffect(() => {
     if (loading) {

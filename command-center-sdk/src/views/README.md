@@ -118,6 +118,8 @@ A poll starts `pollIntervalMs` after the previous list load settles, never while
 so a list slower than the interval is not requested twice. A poll reloads the list only; discovery
 is fetched again only when search, filters, `refreshKey`, the refresh control, Retry, or a completed
 bulk action ask for it.
+Polling pauses while the document is hidden. When it is shown again, a poll that came due in the
+meantime runs at once; one that is not yet due keeps its time.
 Browser-ready styles ship in the package-level `styles.css` and consume theme variables supplied by
 the host.
 
