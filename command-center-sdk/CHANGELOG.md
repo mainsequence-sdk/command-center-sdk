@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.5.14
+
+Compatibility axes: `ResourceListPage` poll timing (a poll waits for the previous list load and no
+longer fetches discovery); the packaged skills `general/maintain-command-center-code-repository`
+and `embed/integrate-static-site-iframe`, and the static-site example's host-origin variable
+(`VITE_COMMAND_CENTER_ORIGIN` instead of `VITE_HOST_ORIGIN`). No npm export, contract ID, JSON
+Schema, fixture, iframe protocol, theme, or storage change.
 
 The Main Sequence platform deploys the commit a matching release tag points at,
 whether it is the branch's latest commit or an older commit on that branch; targets that deploy
