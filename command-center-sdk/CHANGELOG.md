@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+Documentation only: the `maintain-command-center-code-repository` skill says that an Agent is
+deployed once per branch, so a site that opens an Agent conversation writes each Environment's Agent
+UID and the Environment's own UID in that Environment's workflow file, next to its API releases. No
+export, contract, or CLI change.
+
 ## 0.5.14
 
 Compatibility axes: `ResourceListPage` poll timing (a poll waits for the previous list load and no

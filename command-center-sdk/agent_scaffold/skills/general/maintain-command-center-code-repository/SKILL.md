@@ -311,7 +311,10 @@ Keep to these rules:
   or a matching tag on a commit that carries the change. Pushing an older tag again deploys that
   commit's workflow file, with the UIDs it held.
 
-The same applies to anything else the site names per Environment, such as an Agent's release.
+The same applies to anything else the site names per Environment. An Agent is deployed once per
+branch too, so a site that opens an Agent conversation writes that Environment's Agent UID and the
+Environment's own UID in the same file; the platform lists no sessions for an Agent outside the
+Environment the site passes.
 
 ## Handle Failures Without Hiding State
 

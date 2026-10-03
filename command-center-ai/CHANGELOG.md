@@ -2,8 +2,22 @@
 
 ## Unreleased
 
-Compatibility axes: the skill installer's behavior only. No export, packaged skill, provenance
-field, platform route, or storage change.
+Compatibility axes: the skill installer's behavior, and the content of the packaged skills
+`mount-agent-conversation` and `build-command-center-ai-application`. No export, skill name or
+path, provenance field, platform route, or storage change.
+
+- **An embedded application names its Environment and its Agent for each Environment.** The
+  engine's `environmentUid` must be the Agent's own Environment: an Agent belongs to the branch it
+  was deployed from, and the platform lists only the sessions of Agents in the Environment passed,
+  so a mismatched pair shows an empty session list without an error. An application embedded in
+  Command Center gets no Environment from the host and must not use the person's Command Center
+  Environment, which the platform keeps to Command Center's own screens. It now writes both as
+  build values (`spec.build_environment`, for example `VITE_ENVIRONMENT_UID` and
+  `VITE_AGENT_UID`) in the Environment-scoped workflow file that already names its API releases,
+  shows the assistant as unavailable when either is missing, and keeps local values in
+  `.env.development`. `mount-agent-conversation` gains "Name The Environment And The Agent Per
+  Environment" and a check for every deployed Environment, `build-command-center-ai-application` a
+  "Which Environment" decision, and the application and session-resolution guides the same.
 
 - **Concurrent installs no longer fail.** Installing the package into several workspaces at once
   (`npm install @dev-mainsequence/command-center-ai --workspace a --workspace b`) nests one copy per
