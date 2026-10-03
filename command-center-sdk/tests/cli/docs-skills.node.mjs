@@ -157,6 +157,40 @@ test("CodeRepository guidance leaves versions, tags, and pushes to the repositor
   }
 });
 
+test("static-site deployment guidance points each Environment at its own API releases", async () => {
+  const maintainCodeRepositorySkill = await readFile(
+    join(skillsRoot, "general", "maintain-command-center-code-repository", "SKILL.md"),
+    "utf8",
+  );
+  const embedSkill = await readFile(
+    join(skillsRoot, "embed", "integrate-static-site-iframe", "SKILL.md"),
+    "utf8",
+  );
+  const operations = await readFile(join(docsRoot, "application-operations.md"), "utf8");
+  const staticSiteGuide = await readFile(join(docsRoot, "static-site-embeds.md"), "utf8");
+
+  for (const value of [maintainCodeRepositorySkill, operations]) {
+    assert.match(value, /Point each Environment at its own APIs/iu);
+    assert.match(value, /build_environment:\n\s+VITE_API_TRANSPORT: hosted\n\s+VITE_FASTAPI_RELEASES:/u);
+    assert.match(value, /scope:\n\s+environments: \[development\]/u);
+    assert.match(value, /organization_environment_uid=/u);
+    assert.match(value, /single unscoped file/iu);
+    assert.match(value, /VITE_COMMAND_CENTER_ORIGIN/u);
+    assert.match(value, /MAINSEQUENCE_/u);
+  }
+  for (const value of [maintainCodeRepositorySkill, operations, embedSkill, staticSiteGuide]) {
+    assert.match(value, /not compare Environments|but not the Environments/iu);
+  }
+  for (const value of [embedSkill, staticSiteGuide]) {
+    assert.match(value, /import\.meta\.env\.VITE_COMMAND_CENTER_ORIGIN/u);
+    assert.match(value, /spec\.build_environment/u);
+  }
+  assert.match(embedSkill, /\$maintain-command-center-code-repository/u);
+  assert.match(embedSkill, /X-Resource-Release-UID/u);
+  assert.match(maintainCodeRepositorySkill, /X-Resource-Release-UID/u);
+  assert.doesNotMatch(embedSkill, /trusted deployment configuration/u);
+});
+
 test("contract skills point to the canonical manifest without bundling contract copies", async () => {
   const contractSkills = (await listSkillPaths()).filter((skillPath) =>
     skillPath.startsWith("contracts/"),

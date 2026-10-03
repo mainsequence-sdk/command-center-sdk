@@ -17,7 +17,7 @@ async function run(): Promise<void> {
     const transport = createLocalApiTransport();
     getIdentity = () => transport.get("/api/me");
   } else if (mode === "hosted") {
-    const hostOrigin = import.meta.env.VITE_HOST_ORIGIN;
+    const hostOrigin = import.meta.env.VITE_COMMAND_CENTER_ORIGIN;
     if (!hostOrigin || window.parent === window) {
       throw new Error("Hosted transport needs a trusted iframe host and public routing values");
     }

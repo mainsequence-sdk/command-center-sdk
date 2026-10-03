@@ -1,6 +1,6 @@
 ---
 name: maintain-command-center-code-repository
-description: Finish, commit, and deploy a Main Sequence Command Center application code repository. Use when an application change is ready to commit, when dependencies changed and package-lock.json must be refreshed with command-center-sdk code-repository sync, or when deciding how a push, a release tag, and the workflow file's tag_regex deploy the application.
+description: Finish, commit, and deploy a Main Sequence Command Center application code repository. Use when an application change is ready to commit, when dependencies changed and package-lock.json must be refreshed with command-center-sdk code-repository sync, when deciding how a push, a release tag, and the workflow file's tag_regex deploy the application, or when a static site must call a different API release in each Environment (development, production).
 ---
 
 # Maintain And Deploy A Command Center CodeRepository
@@ -191,7 +191,8 @@ resources:
 A push to the development branch deploys at once. A merge to `main` deploys nothing until a matching
 tag points at a commit on `main`; with the release job above, CI creates that tag after the checks
 pass. Take the exact fields from the branch's workflow template and validate each file with the
-platform before committing it.
+platform before committing it. When the site calls an API, each of these files also names its own
+Environment's API releases; see "Point Each Environment At Its Own APIs" below.
 
 ### Creating A Release Tag
 
@@ -239,6 +240,79 @@ Two ways work. Use either only when the user asks for it.
   may forbid deleting it; use the revert route then. The next release tag deploys a newer version
   again.
 
+## Point Each Environment At Its Own APIs
+
+An Environment is one branch, and the platform makes a separate release for every branch it
+deploys. The FastAPI release on `development` and the one on `main` are two releases with two UIDs.
+A static site reaches an API only by its release UID, and the platform tells the site nothing about
+its Environment or its APIs. The only per-Environment values a site receives are the ones its own
+workflow file writes in `spec.build_environment`, which the platform passes to the build. So each
+Environment's workflow file must name that Environment's API releases.
+
+The platform does not catch a mismatch. Delegated access checks the Organization, that the person
+can view both releases, and the API's CORS policy; it does not compare Environments. A development
+build holding the production API's UID works, and reads and writes production data, without an
+error.
+
+1. Deploy the API on the branch first. Its release in an Environment exists only after a push of
+   its workflow file reaches that Environment's branch.
+2. Find the API's release in each Environment. Release names repeat across branches, so never take
+   a UID without its Environment. List the Organization Environments
+   (`organization_environment.list`, or `GET /api/v1/organization-environments/`) for each
+   Environment's UID and branch, then list the API's releases by exact name and kind in that
+   Environment:
+   `GET /api/v1/resource-releases/?name=<API name>&release_kind=fastapi&organization_environment_uid=<Environment UID>`.
+   When you cannot query the platform, ask the user for each Environment's UID.
+3. Write each Environment's UIDs into that Environment's workflow file, under the static site's
+   `spec.build_environment`, a map of string values. The variable name and its format belong to the
+   application; this one is the JSON map that the SDK's static-site example reads:
+
+```yaml
+# .mainsequence/workflows/app-development.yaml
+api_version: "2.3.0"
+name: app-development
+scope:
+  environments: [development]
+resources:
+  - key: app
+    kind: static_site
+    spec:
+      name: My App
+      framework: vite
+      output_directory: dist
+      routing_mode: spa
+      build_environment:
+        VITE_API_TRANSPORT: hosted
+        VITE_FASTAPI_RELEASES: '{"reports":"<reports API release UID in development>"}'
+      automatic_deployment: true
+      automatic_redeployment:
+        enabled: true
+```
+
+`app-production.yaml` carries the same keys with the production UIDs, next to its `tag_regex`.
+Read the values in the application with `import.meta.env`, never with a UID written in source code.
+
+Keep to these rules:
+
+- Use one workflow file per Environment, each scoped with `scope.environments`. Both files travel
+  with every merge, and each applies only on its own branch. A single unscoped file carries the
+  development UIDs into `main` on the next merge.
+- Write only public routing values: release UIDs, API names, public URLs. Vite writes every
+  `VITE_*` value into the bundle, and the file is in Git; never put a credential, token, or secret
+  there.
+- Keys starting with `MAINSEQUENCE_`, and `VITE_COMMAND_CENTER_ORIGIN`, are reserved and refused.
+  The platform sets `VITE_COMMAND_CENTER_ORIGIN` itself in every Vite build, to the Command Center
+  origin that embeds the site; read it as the host origin instead of defining your own. The map
+  holds at most 100 variables, and a value at most 8192 characters.
+- Values are literals: the file has no interpolation, and the platform fills in no UID.
+- Keep the values in the workflow file. The platform returns only their names, never their values,
+  so the file on the branch is the record.
+- A changed value reaches the site only with a deploy: the push on a branch that deploys every push,
+  or a matching tag on a commit that carries the change. Pushing an older tag again deploys that
+  commit's workflow file, with the UIDs it held.
+
+The same applies to anything else the site names per Environment, such as an Agent's release.
+
 ## Handle Failures Without Hiding State
 
 `code-repository sync` stops at the first failure and rolls nothing back. Read the reported stage,
@@ -263,6 +337,11 @@ git fetch --tags origin
 git log -1 --decorate --oneline origin/<branch>
 git tag --points-at <pushed commit>
 ```
+
+When the site names API releases, check each Environment's workflow file on its branch against the
+Environment lookup from "Point Each Environment At Its Own APIs" before you push. After the deploy,
+open each Environment's site in Command Center and confirm in the browser's network panel
+that its API requests carry that Environment's release UID in `X-Resource-Release-UID`.
 
 Report the branch, the pushed commit, the version, and the release tag when there is one, without
 reporting credentials.

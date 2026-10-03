@@ -226,6 +226,62 @@ without creating a tag. A `tag_regex` such as `^v\d+\.\d+\.\d+$` then deploys ex
 commits. `fetch-depth: 0` brings the existing tags so the check sees them, `contents: write` lets
 the job push the tag, and the `concurrency` group keeps two releases from racing.
 
+## Point each Environment at its own APIs
+
+An Environment is one branch, and the platform makes a separate release for every branch it
+deploys: the FastAPI release on `development` and the one on `main` have different UIDs. A static
+site reaches an API only by its release UID, and the platform tells it nothing about its
+Environment. The only per-Environment values the site receives are those its own workflow file
+writes in `spec.build_environment`, which the platform passes to the build.
+
+The platform does not catch a mismatch. Delegated FastAPI access checks the Organization, that the
+person can view both releases, and the API's CORS policy, but not the Environments. A development
+build holding the production API's UID reads and writes production data without an error.
+
+So give each Environment its own workflow file, scoped with `scope.environments`, and write that
+Environment's UIDs in it:
+
+```yaml
+# .mainsequence/workflows/app-development.yaml
+api_version: "2.3.0"
+name: app-development
+scope:
+  environments: [development]
+resources:
+  - key: app
+    kind: static_site
+    spec:
+      name: My App
+      framework: vite
+      output_directory: dist
+      routing_mode: spa
+      build_environment:
+        VITE_API_TRANSPORT: hosted
+        VITE_FASTAPI_RELEASES: '{"reports":"<reports API release UID in development>"}'
+      automatic_deployment: true
+      automatic_redeployment:
+        enabled: true
+```
+
+`app-production.yaml` carries the same keys with the production UIDs, next to its `tag_regex`. Both
+files travel with every merge and each applies only on its own branch; a single unscoped file
+would carry the development UIDs into `main`. The variable name and format belong to the
+application; `VITE_FASTAPI_RELEASES` is the map the
+[static-site example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/static-site-vite-fastapi)
+reads.
+
+- Deploy the API on a branch before naming it: its release in an Environment exists only after a
+  push of its workflow file reaches that branch. Find it by exact name, kind, and Environment, for
+  example `GET /api/v1/resource-releases/?name=<API name>&release_kind=fastapi&organization_environment_uid=<Environment UID>`;
+  names repeat across branches.
+- Write only public routing values. Vite writes every `VITE_*` value into the bundle, and the file
+  is in Git.
+- Keys starting with `MAINSEQUENCE_`, and `VITE_COMMAND_CENTER_ORIGIN`, are reserved. The platform
+  sets `VITE_COMMAND_CENTER_ORIGIN` in every Vite build to the Command Center origin that embeds
+  the site; read it as the iframe client's `hostOrigin`.
+- Values are literals, and the platform returns only their names, so the file on the branch is
+  the record. A changed value reaches the site with the next deploy of a commit that carries it.
+
 ## Recovery
 
 `code-repository sync` stops at the first failure, names the stage, and rolls nothing back.
@@ -250,8 +306,10 @@ Before you push a change meant for deployment:
 3. run the consumer's typecheck, unit tests, production build, and relevant browser tests;
 4. verify only declared package exports are imported;
 5. refresh version-matched skills if the SDK changed;
-6. keep credentials out of committed files; and
-7. when the workflow file sets a `tag_regex`, raise the version for a release and confirm the
+6. keep credentials out of committed files;
+7. when the site calls APIs, confirm each Environment's workflow file names that Environment's
+   releases; and
+8. when the workflow file sets a `tag_regex`, raise the version for a release and confirm the
    repository's CI tags the pushed commit.
 
 Application documentation has its own build and deep-link requirements; see

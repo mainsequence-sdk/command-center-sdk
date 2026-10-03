@@ -50,7 +50,9 @@ messages. Wait for the initial `onContext` callback before requesting delegated 
 
 ## Build The Hosted Child Application
 
-1. Read the exact parent origin from trusted deployment configuration.
+1. Read the exact parent origin from `import.meta.env.VITE_COMMAND_CENTER_ORIGIN`. The platform
+   sets it in every Vite build it makes, to the Command Center origin that embeds the site, and
+   refuses it in a workflow file. Set it yourself only for a hosted build you make by hand.
 2. Choose one stable, application-specific channel beginning with `mainsequence.`.
 3. Create the client with `createStaticSiteIframeClient` and `window.parent`.
 4. Install the message listener before calling `announceReady()`.
@@ -83,6 +85,12 @@ const response = await client.fetchFastApi(
   { method: "GET", signal },
 );
 ```
+
+`configuredFastApiReleaseUid` is a build value, never a UID written in source code. Each
+Environment deploys its own release of the API, with its own UID, so each Environment's workflow
+file sets the site's value in `spec.build_environment`; follow "Point Each Environment At Its Own
+APIs" in `$maintain-command-center-code-repository`. Delegation does not compare Environments: a
+development build that names the production release reaches production without an error.
 
 Pass a relative path only. The SDK uses the backend-issued RPC URL and adds the delegated bearer
 credential plus canonical `X-Resource-Release-UID` header. Normal application code must not call
@@ -285,6 +293,8 @@ For delegated FastAPI access, also test exact source/origin/target binding, sing
 refresh before expiry, `401` reacquisition, non-retryable `403`/`404`, bounded `502`/`503`/`504`,
 opaque CORS/transport failure, cancellation, user/navigation/disposal clearing, direct-link
 failure, and target CORS. Use a real cross-origin browser test, not only mocked `postMessage`.
+In every deployed Environment, confirm that requests carry that Environment's release UID in
+`X-Resource-Release-UID`.
 Confirm no host session or delegated token appears in DOM, URLs, browser storage, logs, analytics,
 or serialized application state.
 

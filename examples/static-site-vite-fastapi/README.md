@@ -45,15 +45,23 @@ separately. Run `mainsequence login` again in the Python process's environment w
 
 ## Hosted transport
 
-Build with `VITE_API_TRANSPORT=hosted`, `VITE_HOST_ORIGIN=<exact HTTPS host origin>`, and a JSON
-map of application API names to authorized canonical release UIDs. For example:
+Build with `VITE_API_TRANSPORT=hosted`, `VITE_COMMAND_CENTER_ORIGIN=<exact HTTPS host origin>`,
+and a JSON map of application API names to authorized canonical release UIDs. For a build by
+hand, for example:
 
 ```bash
 VITE_API_TRANSPORT=hosted \
-VITE_HOST_ORIGIN=https://command-center.example.com \
+VITE_COMMAND_CENTER_ORIGIN=https://command-center.example.com \
 VITE_FASTAPI_RELEASES='{"identity":"00000000-0000-4000-8000-000000000001","reports":"00000000-0000-4000-8000-000000000002"}' \
 npm run build
 ```
+
+When the platform builds the site, it sets `VITE_COMMAND_CENTER_ORIGIN` itself and refuses it in a
+workflow file. The other two values come from `spec.build_environment` in the workflow file of each
+Environment. Each Environment deploys its own release of every API, with its own UID, so the
+development and production files carry different maps. Delegation does not compare Environments: a
+development build that names a production release reaches production without an error. See
+[Point each Environment at its own APIs](../../command-center-sdk/docs/application-operations.md#point-each-environment-at-its-own-apis).
 
 The page uses the `identity` entry for `/api/me`. Add any number of names to the map, then select
 the target for each request through the same transport:

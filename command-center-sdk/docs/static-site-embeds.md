@@ -156,7 +156,8 @@ import {
 
 const client = createStaticSiteIframeClient({
   channel: "mainsequence.reports",
-  hostOrigin: "https://command-center.example.com",
+  // The platform sets this in every Vite build to the Command Center origin that embeds the site.
+  hostOrigin: import.meta.env.VITE_COMMAND_CENTER_ORIGIN,
   parentWindow: window.parent,
   onContext(context: StaticSiteIframeContext) {
     const theme = resolveCommandCenterThemeById(context.themeId);
@@ -253,7 +254,11 @@ The hosted branch is valid only inside an iframe with a trusted parent credentia
 deployed direct link cannot use the local CLI identity as a fallback. The example's hosted build
 reports the missing handshake as unavailable when opened directly.
 `configuredFastApiReleaseUid` is public routing configuration for an authorized deployed release,
-not a local development prerequisite.
+not a local development prerequisite. It is a build value: each Environment deploys its own release
+of the API with its own UID, so each Environment's workflow file sets the site's value in
+`spec.build_environment`. Delegation does not compare Environments, and a development build that
+names the production release reaches production without an error. See
+[Point each Environment at its own APIs](./application-operations.md#point-each-environment-at-its-own-apis).
 
 ## Use delegated HTTP through `fetchFastApi`
 

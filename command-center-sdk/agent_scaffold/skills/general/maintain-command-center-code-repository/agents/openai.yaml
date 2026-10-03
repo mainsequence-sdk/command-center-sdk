@@ -1,4 +1,4 @@
 interface:
   display_name: "Maintain Command Center CodeRepository"
-  short_description: "Refresh dependencies, commit, and deploy a registered code repository"
+  short_description: "Refresh dependencies, deploy, and point each Environment at its own APIs"
   default_prompt: "Use $maintain-command-center-code-repository to refresh this code repository's dependencies, commit and push the change, and confirm how its workflow file deploys it."
