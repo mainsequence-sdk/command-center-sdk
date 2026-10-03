@@ -1,10 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.0.9
 
 Compatibility axes: the skill installer's behavior, and the content of the packaged skills
 `mount-agent-conversation` and `build-command-center-ai-application`. No export, skill name or
-path, provenance field, platform route, or storage change.
+path, provenance field, platform route, storage, or SDK peer change: the peer range stays `^0.5.3`.
+The skills route to the section "Point Each Environment At Its Own APIs" of the SDK's
+`maintain-command-center-code-repository` skill, which SDK `0.5.14` and later install.
 
 - **An embedded application names its Environment and its Agent for each Environment.** The
   engine's `environmentUid` must be the Agent's own Environment: an Agent belongs to the branch it
@@ -18,7 +20,6 @@ path, provenance field, platform route, or storage change.
   `.env.development`. `mount-agent-conversation` gains "Name The Environment And The Agent Per
   Environment" and a check for every deployed Environment, `build-command-center-ai-application` a
   "Which Environment" decision, and the application and session-resolution guides the same.
-
 - **Concurrent installs no longer fail.** Installing the package into several workspaces at once
   (`npm install @dev-mainsequence/command-center-ai --workspace a --workspace b`) nests one copy per
   workspace, and npm runs their postinstalls together into the same repository. One install renamed
