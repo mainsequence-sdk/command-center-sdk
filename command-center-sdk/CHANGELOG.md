@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.5.15
+
+Compatibility axes: `ResourceListPage` poll timing (no poll while the document is hidden; a poll that
+came due meanwhile runs when it is shown again); the packaged skill
+`general/maintain-command-center-code-repository`. No npm export, contract ID, JSON Schema, fixture,
+iframe protocol, theme, or storage change.
 
 Documentation only: the `maintain-command-center-code-repository` skill says that an Agent is
 deployed once per branch, so a site that opens an Agent conversation writes each Environment's Agent
