@@ -64,21 +64,24 @@ function load({
   token,
   tokenType,
   userUid,
+  organizationEnvironmentUid,
 }: {
   connection: ChatBackendConnection;
   force: boolean;
   token: string | null;
   tokenType: string;
   userUid: string;
+  organizationEnvironmentUid?: string | null;
 }) {
-  const current = entries.get(userUid);
+  const key = JSON.stringify([connection.apiBaseUrl, userUid, organizationEnvironmentUid ?? null]);
+  const current = entries.get(key);
   if (!force && isFresh(current)) {
     return;
   }
-  if (inFlight.has(userUid)) {
+  if (inFlight.has(key)) {
     return;
   }
-  entries.set(userUid, {
+  entries.set(key, {
     data: current?.data ?? null,
     error: null,
     fetchedAt: current?.fetchedAt ?? 0,
@@ -97,20 +100,21 @@ function load({
         const data = await fetchModelProviderCatalog({
           connection,
           createdByUserUid: userUid,
+          organizationEnvironmentUid,
           token,
           tokenType,
         });
-        if (inFlight.get(userUid) === request) {
-          entries.set(userUid, { data, error: null, fetchedAt: Date.now(), loading: false });
+        if (inFlight.get(key) === request) {
+          entries.set(key, { data, error: null, fetchedAt: Date.now(), loading: false });
         }
         return;
       } catch (error) {
         lastError = error;
       }
     }
-    if (inFlight.get(userUid) === request) {
-      const previous = entries.get(userUid);
-      entries.set(userUid, {
+    if (inFlight.get(key) === request) {
+      const previous = entries.get(key);
+      entries.set(key, {
         data: previous?.data ?? null,
         error: lastError instanceof Error ? lastError : new Error("Available models request failed."),
         fetchedAt: previous?.fetchedAt ?? 0,
@@ -118,12 +122,12 @@ function load({
       });
     }
   })().finally(() => {
-    if (inFlight.get(userUid) === request) {
-      inFlight.delete(userUid);
+    if (inFlight.get(key) === request) {
+      inFlight.delete(key);
     }
     emit();
   });
-  inFlight.set(userUid, request);
+  inFlight.set(key, request);
 }
 
 /** The platform's model catalog for the person, from the shared store. */
@@ -133,31 +137,33 @@ export function useModelProviderCatalog({
   token,
   tokenType = "Bearer",
   userUid,
+  organizationEnvironmentUid,
 }: {
   connection: ChatBackendConnection;
   enabled: boolean;
   token: string | null;
   tokenType?: string;
   userUid: string | null;
+  organizationEnvironmentUid?: string | null;
 }) {
   const catalogVersion = useSyncExternalStore(subscribe, getVersion, getVersion);
   const [refetchNonce, setRefetchNonce] = useState(0);
   const canRequest = Boolean(token) || Boolean(connection.sendPlatformRequest);
-  const key = enabled && canRequest && userUid ? userUid : null;
+  const key = enabled && canRequest && userUid ? JSON.stringify([connection.apiBaseUrl, userUid, organizationEnvironmentUid ?? null]) : null;
 
   useEffect(() => {
     if (!key) {
       return;
     }
-    load({ connection, force: false, token, tokenType, userUid: key });
-  }, [catalogVersion, connection, key, token, tokenType]);
+    load({ connection, force: false, token, tokenType, userUid: userUid!, organizationEnvironmentUid });
+  }, [catalogVersion, connection, key, token, tokenType, userUid, organizationEnvironmentUid]);
 
   useEffect(() => {
     if (!key || refetchNonce === 0) {
       return;
     }
-    load({ connection, force: true, token, tokenType, userUid: key });
-  }, [connection, key, refetchNonce, token, tokenType]);
+    load({ connection, force: true, token, tokenType, userUid: userUid!, organizationEnvironmentUid });
+  }, [connection, key, refetchNonce, token, tokenType, userUid, organizationEnvironmentUid]);
 
   const refetch = useCallback(() => {
     setRefetchNonce((nonce) => nonce + 1);

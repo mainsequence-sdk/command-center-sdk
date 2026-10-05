@@ -976,6 +976,7 @@ function CustomProviderCard({
   onDeleteProvider,
   onEditModel,
   onEditProvider,
+  onDetails,
   onTestModel,
   provider,
 }: {
@@ -984,6 +985,7 @@ function CustomProviderCard({
   onDeleteProvider: () => void;
   onEditModel: (model: CustomModelProviderModel) => void;
   onEditProvider: () => void;
+  onDetails?: () => void;
   onTestModel: (model: CustomModelProviderModel) => void;
   provider: CustomModelProvider;
 }) {
@@ -1004,6 +1006,7 @@ function CustomProviderCard({
           </div>
         </div>
         <div className="ms-chat-custom-providers__card-actions">
+          {onDetails ? <Button size="small" variant="outline" onClick={onDetails}>Details and sharing</Button> : null}
           <Button size="small" variant="outline" onClick={onEditProvider}>
             <Pencil className="ms-chat-icon-md" /> Edit
           </Button>
@@ -1166,7 +1169,11 @@ function useCustomModelProviders(requestOptions: CustomModelProviderRequestOptio
   return { ...state, isError: Boolean(state.error), reload: load };
 }
 
+import type { ProviderSharingTarget } from "./ProviderSharingDetails.js";
+
 export interface CustomModelProviderSettingsProps {
+  organizationEnvironmentUid?: string | null;
+  onDetails?: (target: ProviderSharingTarget) => void;
   auth: ChatAuth;
   connection: ChatBackendConnection;
   notify?: ChatNotify;
@@ -1177,7 +1184,7 @@ export interface CustomModelProviderSettingsProps {
  * endpoint and authentication, edit its models, test a model in a direct conversation, and delete
  * providers and models. Stored secrets never come back to the browser.
  */
-export function CustomModelProviderSettings({ auth, connection, notify }: CustomModelProviderSettingsProps) {
+export function CustomModelProviderSettings({ auth, connection, notify, organizationEnvironmentUid, onDetails }: CustomModelProviderSettingsProps) {
   const sessionToken = auth.token ?? null;
   const sessionTokenType = auth.tokenType ?? "Bearer";
   const sessionUserUid = auth.userUid;
@@ -1194,10 +1201,11 @@ export function CustomModelProviderSettings({ auth, connection, notify }: Custom
     () => ({
       connection,
       createdByUserUid: sessionUserUid,
+      organizationEnvironmentUid,
       token: sessionToken,
       tokenType: sessionTokenType,
     }),
-    [connection, sessionToken, sessionTokenType, sessionUserUid],
+    [connection, sessionToken, sessionTokenType, sessionUserUid, organizationEnvironmentUid],
   );
 
   const providersQuery = useCustomModelProviders(requestOptions, Boolean(sessionUserUid));
@@ -1347,6 +1355,9 @@ export function CustomModelProviderSettings({ auth, connection, notify }: Custom
           <CustomProviderCard
             key={provider.uid}
             provider={provider}
+            onDetails={onDetails ? () => onDetails({ uid: provider.uid, name: provider.identifier,
+              ownerUserUid: provider.createdByUserUid, organizationEnvironmentUid: provider.organizationEnvironmentUid ?? organizationEnvironmentUid ?? "",
+              resource: "custom-model-providers" }) : undefined}
             onEditProvider={() => {
               resetMutation();
               setFormError(null);

@@ -87,6 +87,7 @@ describe("ModelProviderSettings sign-in", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     vi.useFakeTimers();
     vi.clearAllMocks();
+    delete catalog.providers[0].configuredCredentials;
     mocks.refetch.mockResolvedValue(undefined);
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -183,4 +184,41 @@ describe("ModelProviderSettings sign-in", () => {
     expect(dialog()).not.toBeNull();
     expect(container.textContent).not.toContain("Already signing in.");
   });
+  it("shows the selected name, owner, Environment and credential disclosure before sharing", async () => {
+    catalog.providers[0].configuredCredentials = [{
+      uid: "credential-one", customId: "openai-work", userUid: "owner-one",
+      organizationEnvironmentUid: "environment-one", status: "active", authenticated: true,
+    }];
+    const renderSharing = vi.fn(() => <button>Share with selected recipient</button>);
+    await act(async () => root.render(<ModelProviderSettings auth={auth} connection={connection}
+      organizationEnvironmentUid="environment-one" renderSharing={renderSharing} />));
+    await act(async () => {
+      Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Details and sharing")?.click();
+    });
+    expect(renderSharing).toHaveBeenCalledWith({
+      uid: "credential-one", name: "openai-work", ownerUserUid: "owner-one",
+      organizationEnvironmentUid: "environment-one", resource: "model-provider-credentials",
+    });
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("owner-one");
+    expect(text).toContain("environment-one");
+    expect(text).toContain("including local Tau");
+    expect(text).toContain("credentials already received may work until they expire");
+    expect(text.indexOf("Sharing this configured provider lets recipients")).toBeLessThan(text.indexOf("Share with selected recipient"));
+  });
+
+  it("reconnects the named credential rather than the provider default", async () => {
+    catalog.providers[0].configuredCredentials = [{
+      uid: "credential-two", customId: "openai-work", userUid: "owner-one",
+      organizationEnvironmentUid: "environment-one", status: "revoked", authenticated: false,
+    }];
+    mocks.start.mockResolvedValue({ ok: true, statusCode: 201, provider: "openai-codex", attempt: attempt("completed") });
+    mocks.fetchAttempt.mockResolvedValue(attempt("completed"));
+    await act(async () => root.render(<ModelProviderSettings auth={auth} connection={connection} organizationEnvironmentUid="environment-one" />));
+    await act(async () => {
+      Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Sign in openai-work")?.click();
+    });
+    expect(mocks.start).toHaveBeenCalledWith(expect.objectContaining({ provider: "openai-codex", customId: "openai-work", organizationEnvironmentUid: "environment-one" }));
+  });
+
 });

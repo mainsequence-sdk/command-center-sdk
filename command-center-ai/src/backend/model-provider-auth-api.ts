@@ -27,6 +27,7 @@ export type SignInAttemptNextAction =
     };
 
 export interface SignInAttempt {
+  customId?: string;
   id: string;
   provider: string;
   status: SignInAttemptStatus;
@@ -122,6 +123,7 @@ function normalizeSignInAttempt(value: unknown): SignInAttempt | null {
   return {
     id,
     provider,
+    customId: normalizeString(candidate.custom_id) ?? undefined,
     status,
     nextAction,
     authKind: "oauth",
@@ -194,12 +196,16 @@ export async function startModelProviderSignIn({
   connection,
   createdByUserUid,
   provider,
+  customId,
+  organizationEnvironmentUid,
   token,
   tokenType = "Bearer",
 }: {
   connection: ChatBackendConnection;
   createdByUserUid?: string | null;
   provider: string;
+  customId?: string;
+  organizationEnvironmentUid?: string | null;
   token?: string | null;
   tokenType?: string;
 }): Promise<ProviderSignInStartResult> {
@@ -208,7 +214,7 @@ export async function startModelProviderSignIn({
   const response = await requestPlatform(connection, url, {
     method: "POST",
     headers: buildHeaders(token, tokenType),
-    body: JSON.stringify({ provider }),
+    body: JSON.stringify({ provider, ...(customId ? { custom_id: customId } : {}), ...(organizationEnvironmentUid ? { organization_environment_uid: organizationEnvironmentUid } : {}) }),
   });
 
   if (!response.ok) {
@@ -337,12 +343,16 @@ export async function signOffModelProvider({
   connection,
   createdByUserUid,
   provider,
+  customId,
+  organizationEnvironmentUid,
   token,
   tokenType = "Bearer",
 }: {
   connection: ChatBackendConnection;
   createdByUserUid?: string | null;
   provider: string;
+  customId?: string;
+  organizationEnvironmentUid?: string | null;
   token?: string | null;
   tokenType?: string;
 }) {
@@ -351,7 +361,7 @@ export async function signOffModelProvider({
   const response = await requestPlatform(connection, url, {
     method: "POST",
     headers: buildHeaders(token, tokenType),
-    body: JSON.stringify({ provider, reason: "user_signoff" }),
+    body: JSON.stringify({ provider, reason: "user_signoff", ...(customId ? { custom_id: customId } : {}), ...(organizationEnvironmentUid ? { organization_environment_uid: organizationEnvironmentUid } : {}) }),
   });
 
   if (!response.ok) {

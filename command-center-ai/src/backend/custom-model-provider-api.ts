@@ -40,6 +40,7 @@ export interface CustomModelProviderModel extends CustomModelProviderModelInput 
 }
 
 export interface CustomModelProvider {
+  organizationEnvironmentUid?: string;
   uid: string;
   identifier: string;
   displayName: string;
@@ -73,6 +74,7 @@ export interface UpdateCustomModelProviderInput {
 }
 
 export interface CustomModelProviderRequestOptions {
+  organizationEnvironmentUid?: string | null;
   connection: ChatBackendConnection;
   createdByUserUid?: string | null;
   signal?: AbortSignal;
@@ -182,6 +184,7 @@ function normalizeProvider(value: unknown): CustomModelProvider {
 
   return {
     uid: stringValue(candidate.uid, "uid"),
+    organizationEnvironmentUid: typeof candidate.organization_environment_uid === "string" ? candidate.organization_environment_uid : undefined,
     identifier: stringValue(candidate.identifier, "identifier"),
     displayName: stringValue(candidate.display_name, "display_name"),
     baseUrl: stringValue(candidate.base_url, "base_url"),
@@ -236,11 +239,13 @@ async function requestJson({
   payload?: Record<string, unknown>;
 }) {
   requireCreatedByUserUid(options.createdByUserUid, "Custom model providers");
-  const url = resolvePlatformApiUrl(options.connection, path);
+  const url = resolvePlatformApiUrl(options.connection, path + (options.organizationEnvironmentUid ? `?organization_environment_uid=${encodeURIComponent(options.organizationEnvironmentUid)}` : ""));
   const response = await requestPlatform(options.connection, url, {
     method,
     headers: buildHeaders(options.token, options.tokenType),
-    body: payload === undefined ? undefined : JSON.stringify(payload),
+    body: payload === undefined ? undefined : JSON.stringify({ ...payload,
+      ...(method === "POST" && path === collectionPath && options.organizationEnvironmentUid ? { organization_environment_uid: options.organizationEnvironmentUid } : {}),
+    }),
     signal: options.signal,
   });
 
@@ -261,7 +266,7 @@ async function requestJson({
 
 async function requestDelete(path: string, options: CustomModelProviderRequestOptions) {
   requireCreatedByUserUid(options.createdByUserUid, "Custom model providers");
-  const url = resolvePlatformApiUrl(options.connection, path);
+  const url = resolvePlatformApiUrl(options.connection, path + (options.organizationEnvironmentUid ? `?organization_environment_uid=${encodeURIComponent(options.organizationEnvironmentUid)}` : ""));
   const response = await requestPlatform(options.connection, url, {
     method: "DELETE",
     headers: buildHeaders(options.token, options.tokenType),

@@ -58,6 +58,7 @@ export interface ModelCatalogItem {
 }
 
 export interface ModelProviderCatalogProvider {
+  configuredCredentials?: Array<{ uid: string; customId: string; userUid: string; organizationEnvironmentUid: string; status: string; authenticated: boolean }>;
   provider: string;
   displayName: string;
   authMethods: string[];
@@ -358,6 +359,15 @@ export function normalizeModelProviderCatalog(payload: unknown): ModelProviderCa
       }
 
       const providerState: Omit<ModelProviderCatalogProvider, "models"> = {
+        ...(Array.isArray(providerCandidate.configured_credentials) ? {
+          configuredCredentials: providerCandidate.configured_credentials.map((value: unknown) => {
+            const row = value as Record<string, unknown>;
+            return { uid: requireString(row.uid, "configured credential uid"),
+              customId: requireString(row.custom_id, "custom_id"), userUid: requireString(row.user_uid, "user_uid"),
+              organizationEnvironmentUid: requireString(row.organization_environment_uid, "organization_environment_uid"),
+              status: requireString(row.status, "status"), authenticated: requireBoolean(row.authenticated, "authenticated") };
+          }),
+        } : {}),
         provider,
         displayName,
         authMethods: requireStringArray(providerCandidate.auth_methods, `${provider}.auth_methods`),
@@ -437,12 +447,14 @@ export function projectModelProviderCatalogToRunConfigOptions(
 
 export async function fetchModelProviderCatalog({
   connection,
+  organizationEnvironmentUid,
   createdByUserUid,
   signal,
   token,
   tokenType = "Bearer",
 }: {
   connection: ChatBackendConnection;
+  organizationEnvironmentUid?: string | null;
   createdByUserUid?: string | null;
   signal?: AbortSignal;
   token?: string | null;
@@ -455,7 +467,7 @@ export async function fetchModelProviderCatalog({
     headers.set("Authorization", `${tokenType} ${token}`);
   }
 
-  const url = resolvePlatformApiUrl(connection, modelProviderCatalogPath);
+  const url = resolvePlatformApiUrl(connection, modelProviderCatalogPath + (organizationEnvironmentUid ? `?organization_environment_uid=${encodeURIComponent(organizationEnvironmentUid)}` : ""));
   const response = await requestPlatform(connection, url, {
     method: "GET",
     headers,
