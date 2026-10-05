@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.10
+
+- Existing provider settings support multiple named configurations, Environment-scoped catalog reads, and per-configuration sign-in/revoke.
+- Provider details show the credential-delivery disclosure before the host application’s sharing controls, for built-ins and custom endpoints. Command Center reuses its existing user/team/workload permissions editor.
+- npm API: optional `organizationEnvironmentUid` and `renderSharing` props on `ModelProviderSettings`; configured names are additive catalog data. Platform paths and schema versions are unchanged; optional `custom_id` and Environment fields extend existing operations. Deploy the supporting platform before this package and its product integration.
+- The existing provider guide and installed skill are updated. No skill names, stylesheet classes, browser storage keys, installer behavior or SDK peer range change. Catalog caches now distinguish Environments.
+
 ## 0.0.9
 
 Compatibility axes: the skill installer's behavior, and the content of the packaged skills

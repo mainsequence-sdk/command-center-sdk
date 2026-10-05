@@ -141,7 +141,17 @@ export function PackedChatApplication({ userUid }: { userUid: string }) {
           <ChatThread copy={copy} surface="overlay" viewer={{ uid: userUid }} />
         </ChatRail>
       ) : (
-        <ModelProviderSettings auth={auth} connection={connection} notify={notify} />
+        <ModelProviderSettings
+          auth={auth}
+          connection={connection}
+          notify={notify}
+          organizationEnvironmentUid="00000000-0000-4000-8000-000000000002"
+          renderSharing={(provider) => (
+            <p data-provider-uid={provider.uid} data-resource={provider.resource}>
+              {provider.name} in {provider.organizationEnvironmentUid}
+            </p>
+          )}
+        />
       )}
       <output>{notices.map((notice) => notice.title).join("\n")}</output>
     </ChatEngineProvider>

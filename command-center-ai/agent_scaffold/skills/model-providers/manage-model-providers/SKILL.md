@@ -83,3 +83,30 @@ again. The settings never change a session's model; the session's picker does.
 2. Create a custom provider with two models, edit it, and delete a model; the thread's picker offers
    the change without a reload.
 3. Against the platform, sign in to a provider and pick one of its models in the thread.
+
+
+## Named configurations, Environment and sharing
+
+Each configured credential has its own `custom_id`, owner and Environment. The
+provider integration remains one catalog row. Existing callers may omit a name;
+named sign-in and sign-off target the selected record. Custom endpoints keep
+their existing identifier and authentication fields.
+
+Pass `organizationEnvironmentUid` to `ModelProviderSettings` for the current
+Environment. Catalog caches distinguish the person and Environment. Pass
+`renderSharing` to embed the host's existing permissions editor; it receives the
+record UID, name, owner, Environment and existing resource name. Command Center
+uses its standard editor for user, team and workload grants. No credential bytes
+are returned to this screen.
+
+The Details and sharing dialog always shows this before any sharing controls:
+
+> Sharing this configured provider lets recipients receive and copy its
+> credentials in their own runtime, including local Tau. Only share with people
+> and workload operators you trust. Their usage counts against the provider quota
+> or billing associated with these credentials. Removing access stops future
+> credential retrieval; credentials already received may work until they expire
+> or are revoked at the provider.
+
+Retain the disclosure in details after sharing. A view grant allows credential
+use and delivery; it does not authorize editing or revoking the stored credential.

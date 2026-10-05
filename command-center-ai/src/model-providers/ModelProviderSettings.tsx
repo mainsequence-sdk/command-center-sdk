@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ChevronDown, ExternalLink, Loader2 } from "lucide-react";
-import { Badge, Button } from "@dev-mainsequence/command-center-sdk/controls";
+import { Badge, Button, Input } from "@dev-mainsequence/command-center-sdk/controls";
 
 import type { ChatBackendConnection } from "../backend/connection.js";
 import type { ModelCatalogItem, ModelProviderCatalogProvider } from "../backend/model-catalog-api.js";
@@ -19,6 +19,8 @@ import { cx } from "../ui/class-names.js";
 import { Dialog } from "../ui/Dialog.js";
 import { CustomModelProviderSettings } from "./CustomModelProviderSettings.js";
 import { getProviderAuthenticationLabel } from "./model-provider-auth-state.js";
+
+import { ProviderSharingDetails, type ProviderSharingTarget } from "./ProviderSharingDetails.js";
 
 function formatProviderLabel(provider: string) {
   return provider
@@ -85,16 +87,19 @@ function ProviderAuthCard({
   models,
   onSignIn,
   onSignOff,
+  onDetails,
   pendingProvider,
 }: {
   authState: ModelProviderCatalogProvider;
   models: ModelCatalogItem[];
-  onSignIn: () => void;
-  onSignOff: () => void;
+  onSignIn: (customId?: string) => void;
+  onSignOff: (customId?: string) => void;
+  onDetails: (target: ProviderSharingTarget) => void;
   pendingProvider: string | null;
 }) {
   const pending = pendingProvider === authState.provider;
   const [modelsOpen, setModelsOpen] = useState(false);
+  const [customId, setCustomId] = useState("");
   const authKind = authState.authMethods.includes("oauth") ? "oauth" : "api_key";
   const selectableModelCount = models.filter((model) => model.selectable).length;
 
@@ -119,18 +124,31 @@ function ProviderAuthCard({
         </div>
 
         {authState.authenticated ? (
-          <Button size="small" variant="outline" disabled={pending} onClick={onSignOff}>
+          <Button size="small" variant="outline" disabled={pending} onClick={() => onSignOff()}>
             {pending ? <Loader2 className="ms-chat-icon-md ms-chat-spin" /> : null}
             Sign off
           </Button>
         ) : authState.signInAvailable ? (
-          <Button variant="primary" size="small" disabled={pending} onClick={onSignIn}>
+          <Button variant="primary" size="small" disabled={pending} onClick={() => onSignIn()}>
             {pending ? <Loader2 className="ms-chat-icon-md ms-chat-spin" /> : null}
             Sign in
           </Button>
         ) : null}
       </div>
 
+      {(authState.configuredCredentials ?? []).map((configured) => <div key={configured.uid} className="ms-chat-providers__model-row">
+        <span>{configured.customId}</span>
+        <Badge variant={configured.authenticated ? "success" : "warning"}>{configured.authenticated ? "Signed in" : "Requires sign-in"}</Badge>
+        <Button size="small" variant="outline" onClick={() => onDetails({ uid: configured.uid, name: configured.customId,
+          ownerUserUid: configured.userUid, organizationEnvironmentUid: configured.organizationEnvironmentUid,
+          resource: "model-provider-credentials" })}>Details and sharing</Button>
+        {configured.authenticated ? <Button size="small" variant="outline" disabled={pending} onClick={() => onSignOff(configured.customId)}>Sign off {configured.customId}</Button>
+          : authState.signInAvailable ? <Button size="small" disabled={pending} onClick={() => onSignIn(configured.customId)}>Sign in {configured.customId}</Button> : null}
+      </div>)}
+      {authState.signInAvailable ? <div className="ms-chat-form">
+        <label>Configured provider name<Input value={customId} onChange={(event) => setCustomId(event.target.value)} placeholder="openai-work" /></label>
+        <Button size="small" variant="outline" disabled={pending || !customId.trim()} onClick={() => onSignIn(customId.trim())}>Add configuration</Button>
+      </div> : null}
       <div className="ms-chat-providers__models">
         <button
           type="button"
@@ -269,6 +287,8 @@ function ProviderSignInModal({
 }
 
 export interface ModelProviderSettingsProps {
+  organizationEnvironmentUid?: string | null;
+  renderSharing?: (target: ProviderSharingTarget) => ReactNode;
   /** The connection to the platform. */
   connection: ChatBackendConnection;
   /** The person's token and user uid; credentials and custom providers are theirs. */
@@ -301,11 +321,12 @@ function wait(ms: number, signal: AbortSignal) {
  * the built-in providers, with the models the platform's catalog publishes for each. It reads the
  * same catalog store as the chat's model pickers, so a change here refreshes them too.
  */
-export function ModelProviderSettings({ auth, connection, notify }: ModelProviderSettingsProps) {
+export function ModelProviderSettings({ auth, connection, notify, organizationEnvironmentUid, renderSharing }: ModelProviderSettingsProps) {
   const sessionToken = auth.token ?? null;
   const sessionTokenType = auth.tokenType ?? "Bearer";
   const sessionUserUid = auth.userUid;
   const hasSessionUserUid = Boolean(sessionUserUid);
+  const [sharingTarget, setSharingTarget] = useState<ProviderSharingTarget | null>(null);
   const [activeAttempt, setActiveAttempt] = useState<SignInAttempt | null>(null);
   const [attemptError, setAttemptError] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
@@ -317,6 +338,7 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
     token: sessionToken,
     tokenType: sessionTokenType,
     userUid: sessionUserUid,
+    organizationEnvironmentUid,
   });
   const catalogIsError = Boolean(catalogQuery.error);
   const refetchCatalog = catalogQuery.refetch;
@@ -328,8 +350,8 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
   }, [refetchCatalog]);
 
   const requestBase = useMemo(
-    () => ({ connection, createdByUserUid: sessionUserUid, token: sessionToken, tokenType: sessionTokenType }),
-    [connection, sessionToken, sessionTokenType, sessionUserUid],
+    () => ({ connection, createdByUserUid: sessionUserUid, token: sessionToken, tokenType: sessionTokenType, organizationEnvironmentUid }),
+    [connection, sessionToken, sessionTokenType, sessionUserUid, organizationEnvironmentUid],
   );
 
   // Follow the active attempt until it ends. A new attempt starts a new loop; reading the same
@@ -399,7 +421,7 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
     };
   }, [attemptKey, refresh, requestBase]);
 
-  const startSignIn = async (provider: string) => {
+  const startSignIn = async (provider: string, customId?: string) => {
     setPendingProvider(provider);
     try {
       if (!sessionUserUid) {
@@ -410,6 +432,7 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
         ...requestBase,
         createdByUserUid: sessionUserUid,
         provider,
+        customId,
       });
       setAttemptError(null);
       setActiveAttempt(result.attempt);
@@ -426,7 +449,7 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
     }
   };
 
-  const signOff = async (provider: string) => {
+  const signOff = async (provider: string, customId?: string) => {
     setPendingProvider(provider);
     try {
       if (!sessionUserUid) {
@@ -437,6 +460,7 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
         ...requestBase,
         createdByUserUid: sessionUserUid,
         provider,
+        customId,
       });
       await refresh();
     } catch {
@@ -534,7 +558,7 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
         </div>
       </div>
 
-      <CustomModelProviderSettings auth={auth} connection={connection} notify={notify} />
+      <CustomModelProviderSettings auth={auth} connection={connection} notify={notify} organizationEnvironmentUid={organizationEnvironmentUid} onDetails={setSharingTarget} />
 
       {catalogQuery.isLoading ? (
         <div className="ms-chat-providers__loading">
@@ -596,13 +620,14 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
                 authState={authState}
                 models={models}
                 pendingProvider={pendingProvider}
-                onSignIn={() => {
+                onDetails={setSharingTarget}
+                onSignIn={(customId) => {
                   setAttemptError(null);
-                  void startSignIn(provider);
+                  void startSignIn(provider, customId);
                 }}
-                onSignOff={() => {
+                onSignOff={(customId) => {
                   setAttemptError(null);
-                  void signOff(provider);
+                  void signOff(provider, customId);
                 }}
               />
             );
@@ -610,6 +635,7 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
         </div>
       ) : null}
 
+      {sharingTarget ? <ProviderSharingDetails target={sharingTarget} renderSharing={renderSharing} onClose={() => setSharingTarget(null)} /> : null}
       {activeAttempt ? (
         <ProviderSignInModal
           attempt={activeAttempt}
@@ -636,7 +662,7 @@ export function ModelProviderSettings({ auth, connection, notify }: ModelProvide
           }}
           onRetry={() => {
             setAttemptError(null);
-            void startSignIn(activeAttempt.provider);
+            void startSignIn(activeAttempt.provider, activeAttempt.customId);
           }}
         />
       ) : null}
