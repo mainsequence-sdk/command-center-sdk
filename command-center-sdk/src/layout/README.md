@@ -106,7 +106,11 @@ below 44px; inline links are exempt) and `sticky-hover` (a warning for a hover r
 input under 16px). Warnings are returned in `warnings` and never change `ok`. Rules apply by the
 declared pointer because the adapter cannot toggle a browser context's touch emulation; configure
 `hasTouch` and `isMobile` on the driver for coarse entries. Keep the stable `data-cc-*` attributes
-because the verifier measures them in the rendered document.
+because the verifier measures them in the rendered document. Elements the browser does not show
+are skipped: `hidden` and `aria-hidden="true"` subtrees, `display: none` and `visibility: hidden`
+ancestors, content the browser reports as not visible (`checkVisibility()`), and the content of a
+closed `<details>` other than its `<summary>`. To check a collapsed section's content, open it
+before verifying.
 
 ## Maintenance constraints
 

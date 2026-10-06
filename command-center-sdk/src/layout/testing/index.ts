@@ -268,8 +268,29 @@ export async function verifyCommandCenterPageLayout(
           addFinding("error", code, message, element);
         }
 
+        // A closed <details> shows only its first <summary>; the browser lays out the rest of
+        // its content but does not paint it, so the content still reports a box.
+        function isInsideClosedDetails(element: HTMLElement) {
+          let details = element.parentElement?.closest("details:not([open])") ?? null;
+          while (details) {
+            const summary = Array.from(details.children).find((child) => child.localName === "summary");
+            if (!summary?.contains(element)) return true;
+            details = details.parentElement?.closest("details:not([open])") ?? null;
+          }
+          return false;
+        }
+
         function isRendered(element: HTMLElement) {
           if (element.closest("[hidden], [aria-hidden='true']")) return false;
+          if (isInsideClosedDetails(element)) return false;
+          // Also covers content the browser skips, such as a content-visibility: hidden subtree.
+          // An element with display: contents has no box of its own, so it is left to the walk below.
+          if (
+            getComputedStyle(element).display !== "contents" &&
+            element.checkVisibility?.({ visibilityProperty: true }) === false
+          ) {
+            return false;
+          }
           let current: HTMLElement | null = element;
           while (current) {
             const style = getComputedStyle(current);

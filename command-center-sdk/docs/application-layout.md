@@ -157,6 +157,11 @@ Coarse entries add `touch-target` (an error below 24px and a warning below 44px;
 exempt) and `sticky-hover` (a warning for any hover rule with no `@media (hover: hover)` guard).
 Entries narrower than 768px add `input-zoom` (an error for a text input under 16px). Findings carry
 a `severity`; `warnings` are returned separately and never change `ok`.
+Elements the browser does not show are skipped: `hidden` and `aria-hidden="true"` subtrees,
+`display: none` and `visibility: hidden` ancestors, content the browser reports as not visible
+(`checkVisibility()`), and the content of a closed `<details>` other than its `<summary>`. A page
+with collapsed sections is verified as people first see it; open a section before verifying to
+check its content too.
 `verifyCommandCenterPageLayout` returns a structured report when a test runner needs custom
 assertions; `assertCommandCenterPageLayout` throws `CommandCenterPageLayoutError` with the same
 report.

@@ -119,7 +119,9 @@ and 1024×768 and 1280×800 with a fine pointer. Coarse entries report `touch-ta
 `sticky-hover`; entries narrower than 768px report `input-zoom`. Configure `hasTouch` and
 `isMobile` on the Playwright context for coarse entries and keep a viewport meta tag in the
 document. Exercise at least one dark and one light preset and representative loaded, loading, error, empty, long-title, dense-table, and
-variable-card-count states. Treat every reported overflow, missing stack gap, missing standard card
+variable-card-count states. The verifier skips what the browser does not show, including the
+content of a closed `<details>` other than its `<summary>`, so verify a page with collapsible
+sections closed as it loads, then again after opening them. Treat every reported overflow, missing stack gap, missing standard card
 inset, card overlap/collapse failure, header collision, or clipped interactive element as a failure.
 Use screenshots for review when layout changes, but do not replace geometry assertions with visual
 approval alone.

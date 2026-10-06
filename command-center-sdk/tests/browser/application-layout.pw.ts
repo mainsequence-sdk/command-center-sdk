@@ -282,4 +282,74 @@ test.describe("public application layout", () => {
     expect(warningCodes).not.toContain("1280:sticky-hover");
     expect(report.violations.some((violation) => violation.element?.startsWith("a"))).toBe(false);
   });
+
+  test("skips the content of a closed <details> and checks it once open", async ({ page }) => {
+    const [componentStyles, themeStyles] = await Promise.all([
+      readFile(componentStylesPath, "utf8"),
+      readFile(themeStylesPath, "utf8"),
+    ]);
+    const markup = renderToStaticMarkup(
+      createElement(
+        ApplicationPage,
+        null,
+        createElement(ApplicationPageHeader, { title: "Sharing" }),
+        createElement(
+          ApplicationPageStack,
+          null,
+          createElement(
+            ApplicationCard,
+            null,
+            createElement(
+              "details",
+              { id: "access-check" },
+              createElement(
+                "summary",
+                null,
+                "Check a user's access ",
+                createElement("button", { className: "summary-tool", type: "button" }, "?"),
+              ),
+              createElement("input", { "aria-label": "Access preview user", className: "closed-input" }),
+              createElement("button", { className: "tiny closed-tool", type: "button" }, "x"),
+              createElement(
+                "details",
+                null,
+                createElement("summary", null, "Access history"),
+                createElement("button", { className: "tiny nested-tool", type: "button" }, "x"),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await page.setContent(`<!doctype html>
+      <html>
+        <head>
+          <style>
+            ${themeStyles}
+            ${componentStyles}
+            .tiny, .summary-tool { border: 0; height: 18px; padding: 0; width: 18px; }
+            .closed-input { font-size: 12px; width: 200vw; }
+          </style>
+        </head>
+        <body>${markup}</body>
+      </html>`);
+    const viewports = [{ width: 375, height: 812, pointer: "coarse" as const }];
+    const elementsWithFindings = async () => {
+      const report = await verifyCommandCenterPageLayout(page, { viewports });
+      return [...report.violations, ...report.warnings].map((finding) => `${finding.code}:${finding.element}`);
+    };
+
+    const closed = await elementsWithFindings();
+    expect(closed).toContain("touch-target:button.summary-tool");
+    expect(closed.filter((finding) => /closed-|nested-/u.test(finding))).toEqual([]);
+
+    await page.locator("#access-check").evaluate((details) => {
+      (details as HTMLDetailsElement).open = true;
+    });
+    const open = await elementsWithFindings();
+    expect(open).toContain("touch-target:button.summary-tool");
+    expect(open).toContain("touch-target:button.tiny.closed-tool");
+    expect(open).toContain("input-zoom:input.closed-input");
+    expect(open.filter((finding) => finding.includes("nested-tool"))).toEqual([]);
+  });
 });
