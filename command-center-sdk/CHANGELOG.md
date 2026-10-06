@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.16
+
+Compatibility axes: which elements the `layout/testing` verifier measures; the packaged skill
+`layout/compose-command-center-page`. No npm export, contract ID, JSON Schema, fixture, iframe
+protocol, theme, or storage change.
+
+- **The layout verifier skips the content of a closed `<details>`** (#13).
+  `verifyCommandCenterPageLayout` and `assertCommandCenterPageLayout` measured the controls inside a
+  closed `<details>` as if they were shown. The browser still lays that content out without
+  painting it, so a page whose collapsible sections were closed failed with `touch-target`,
+  `interactive-clipping`, `interactive-size`, and `input-zoom` findings, and passed once they were
+  opened. The verifier now skips everything in a closed `<details>` except its `<summary>`, and any
+  element whose `checkVisibility()` is `false`. A `<summary>` is still checked, and a section's
+  content is checked again once it is open. Pages that pass today still pass. The layout guide,
+  the layout README, and the `compose-command-center-page` skill say which elements are skipped
+  and that a page with collapsible sections is verified closed and then open.
+
 ## 0.5.15
 
 Compatibility axes: `ResourceListPage` poll timing (no poll while the document is hidden; a poll that
