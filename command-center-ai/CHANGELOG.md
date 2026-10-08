@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.11
 
 Compatibility axes: the words people read, and the content of the packaged skills
 `mount-agent-conversation` and `build-command-center-ai-application`. No export, stylesheet class,

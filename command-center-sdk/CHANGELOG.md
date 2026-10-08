@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.17
 
 Compatibility axes: the packaged skill `general/maintain-command-center-code-repository`. No npm
 export, contract ID, JSON Schema, fixture, iframe protocol, theme, or storage change.
