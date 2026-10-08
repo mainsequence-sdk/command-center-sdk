@@ -273,7 +273,7 @@ describe("command center runtime access contract", () => {
     );
   });
 
-  it("keeps platform runtime-access failures out of the Agent runtime HTTP source", async () => {
+  it("keeps platform runtime-access failures out of the Sending to the Agent source", async () => {
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ detail: "Runtime activation is unavailable." }), {
         status: 503,
@@ -288,6 +288,6 @@ describe("command center runtime access contract", () => {
 
     expect(error).toBeInstanceOf(MainSequenceAiError);
     expect((error as MainSequenceAiError).source).toBe("assistant_runtime_access");
-    expect((error as Error).message).not.toContain("Agent runtime HTTP");
+    expect((error as Error).message).not.toContain("Sending to the Agent");
   });
 });

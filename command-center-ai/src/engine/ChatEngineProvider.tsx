@@ -1458,7 +1458,7 @@ function PlatformChatEngineProvider({
       }
 
       return createErrorAgentSessionReadiness({
-        error: "A backend AgentSession is required before chat can accept input.",
+        error: "Choose or start a session before writing.",
         sessionId: null,
       });
     }
@@ -1486,7 +1486,7 @@ function PlatformChatEngineProvider({
 
     if (activeSessionDetail?.status === "not_found") {
       return createErrorAgentSessionReadiness({
-        error: activeSessionDetail.detailError ?? "AgentSession not found.",
+        error: activeSessionDetail.detailError ?? "Session not found.",
         sessionId,
         status: "not_found",
       });
@@ -1494,7 +1494,7 @@ function PlatformChatEngineProvider({
 
     if (activeSessionDetail?.status === "error") {
       return createErrorAgentSessionReadiness({
-        error: activeSessionDetail.detailError ?? "Failed to load AgentSession detail.",
+        error: activeSessionDetail.detailError ?? "The session details could not be loaded.",
         sessionId,
       });
     }
@@ -1921,7 +1921,7 @@ function PlatformChatEngineProvider({
         // the latest-N page entirely. Matching on every stable identity — and
         // re-anchoring the match to the existing client id — stops the
         // selection + hydration guards from treating it as a different session
-        // and tearing down the live conversation ("Loading AgentSession…").
+        // and tearing down the live conversation ("Loading the session…").
         const activeRemoteIndex =
           currentSession !== null
             ? remoteSessions.findIndex((session) =>
@@ -2768,7 +2768,7 @@ function PlatformChatEngineProvider({
     if (launchAgentId === null || launchAgentId === undefined) {
       notify({
         title: "Agent session not created",
-        description: "The current agent does not include a backend agent id.",
+        description: "This agent has no identifier, so a session cannot start.",
         variant: "error",
       });
       return;
@@ -2882,7 +2882,7 @@ function PlatformChatEngineProvider({
       if (!backendSessionId) {
         notify({
           title: "Session not archived",
-          description: "This session does not expose a backend session uid.",
+          description: "This session has no identifier.",
           variant: "error",
         });
         return false;
@@ -2987,7 +2987,7 @@ function PlatformChatEngineProvider({
       if (!lookupKey) {
         notify({
           title: "Agent session not created",
-          description: "The selected agent does not expose a valid backend agent uid.",
+          description: "The selected agent has no valid identifier.",
           variant: "error",
         });
         return;
@@ -3062,7 +3062,7 @@ function PlatformChatEngineProvider({
       if (!normalizedAgentId) {
         notify({
           title: "Agent session not created",
-          description: "The selected code repository agent does not expose a valid backend agent id.",
+          description: "The selected code repository agent has no valid identifier.",
           variant: "error",
         });
         return;
@@ -3145,7 +3145,7 @@ function PlatformChatEngineProvider({
       if (!normalizedAgentId) {
         notify({
           title: "Agent session not opened",
-          description: "The selected code repository agent does not expose a valid backend agent id.",
+          description: "The selected code repository agent has no valid identifier.",
           variant: "error",
         });
         return;
@@ -3292,7 +3292,7 @@ function PlatformChatEngineProvider({
       // Defense-in-depth: the list rebuild keeps client ids stable, but if any
       // other path re-selects the *same* backend session under a new client id,
       // re-anchor the loaded id instead of tearing down and refetching the
-      // thread (which flashes "Loading AgentSession…" over a live conversation).
+      // thread (which flashes "Loading the session…" over a live conversation).
       if (
         lookupSessionId &&
         loadedSessionLookupIdRef.current !== null &&
@@ -3458,7 +3458,7 @@ function PlatformChatEngineProvider({
           setRunStatus("error");
           setRunStatusDetail(errorMessage);
           setSessionNotice(
-            "Failed to rehydrate the selected AgentSession. Interaction is disabled until session history loads.",
+            "The selected session could not be loaded. You can write again once its history loads.",
           );
           setSessionHistoryReadyBySessionId((current) => ({
             ...current,
@@ -3616,7 +3616,7 @@ function PlatformChatEngineProvider({
       if (activeSessionReadiness.status !== "ready") {
         throw new MainSequenceAiError(
           activeSessionReadiness.error ??
-            "AgentSession is still loading. Wait for session detail and history before sending.",
+            "The session is still loading. Wait for it to finish before sending.",
           {
             source: "frontend_runtime_guard",
           },
@@ -3632,7 +3632,7 @@ function PlatformChatEngineProvider({
 
       if (!isNewChatRequest && !serializedSession) {
         throw new MainSequenceAiError(
-          "AgentSession detail payload is unavailable. Wait for the session detail to finish loading before sending.",
+          "The session details are not loaded yet. Wait for them before sending.",
           {
             source: "frontend_runtime_guard",
           },
@@ -3730,7 +3730,7 @@ function PlatformChatEngineProvider({
                   ? data.message.trim()
                   : typeof data.error_detail === "string" && data.error_detail.trim()
                     ? data.error_detail.trim()
-                    : "The assistant runtime reported an error.",
+                    : "The agent reported an error.",
             source:
               typeof data.error_source === "string" && data.error_source.trim()
                 ? data.error_source.trim()
@@ -3805,9 +3805,9 @@ function PlatformChatEngineProvider({
       if (expectedNewSessionRef.current) {
         if (runSessionIsCurrent) {
           setRunStatus("error");
-          setRunStatusDetail("The assistant did not assign a runtime session.");
+          setRunStatusDetail("The agent did not start a session for this conversation.");
           setSessionNotice(
-            "This new conversation did not receive the required session assignment. Retry the message before continuing.",
+            "This new conversation did not get a session. Send the message again before continuing.",
           );
         }
         shouldSignalNewChatRef.current = true;
@@ -4098,7 +4098,7 @@ function PlatformChatEngineProvider({
     if (!activeSession || !runtimeSessionId || !threadId) {
       notify({
         title: "Unable to stop session",
-        description: "No active runtime session is available to cancel.",
+        description: "There is no running work to stop.",
         variant: "error",
       });
       return;

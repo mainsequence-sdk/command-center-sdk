@@ -111,5 +111,5 @@ export async function buildRuntimeHttpErrorMessage({
     fallbackMessage,
   );
 
-  return `${operation}. Status: ${formatRuntimeHttpStatus(response)}. Call: ${method.toUpperCase()} ${url}. Backend response: ${backendMessage}`;
+  return `${operation}. Status: ${formatRuntimeHttpStatus(response)}. Call: ${method.toUpperCase()} ${url}. Server response: ${backendMessage}`;
 }

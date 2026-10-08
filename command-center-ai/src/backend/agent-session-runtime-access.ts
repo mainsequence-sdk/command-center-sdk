@@ -127,7 +127,7 @@ function buildAgentSessionRuntimeAccessUrl(
 ) {
   const normalizedSessionId = requireAgentSessionLookupId(
     sessionId,
-    "AgentSession runtime access",
+    "Connecting to the Agent",
   );
   return resolvePlatformApiUrl(
     connection,
@@ -149,7 +149,7 @@ function normalizeRuntimeAccess(
     normalizeAgentSessionLookupId(candidate.sessionUid) ??
     normalizeAgentSessionLookupId(candidate.runtime_session_uid) ??
     normalizeAgentSessionLookupId(candidate.runtimeSessionUid) ??
-    requireAgentSessionLookupId(options.fallbackSessionId, "AgentSession runtime access");
+    requireAgentSessionLookupId(options.fallbackSessionId, "Connecting to the Agent");
   const runtimeInteraction = normalizeAgentRuntimeInteraction(
     candidate.runtime_interaction ?? candidate.runtimeInteraction,
   );
@@ -158,7 +158,7 @@ function normalizeRuntimeAccess(
   );
   if (!runtimeInteraction || !runtimePresence) {
     throw new MainSequenceAiError(
-      "Runtime access response is missing the runtime interaction or presence contract.",
+      "The platform's answer about the Agent's readiness was incomplete.",
       { source: "frontend_runtime_parser" },
     );
   }
@@ -230,7 +230,7 @@ export async function fetchAgentSessionRuntimeAccess({
     throw new MainSequenceAiError(
       error instanceof Error
         ? error.message
-        : "AgentSession runtime access request failed before receiving a response.",
+        : "Connecting to the Agent failed before the platform answered.",
       { source: "assistant_runtime_access" },
     );
   }
@@ -238,9 +238,9 @@ export async function fetchAgentSessionRuntimeAccess({
   if (!response.ok) {
     throw new MainSequenceAiError(
       await buildRuntimeHttpErrorMessage({
-        fallbackMessage: `AgentSession runtime access failed with status ${response.status}.`,
+        fallbackMessage: `Connecting to the Agent failed with status ${response.status}.`,
         method: "POST",
-        operation: `AgentSession runtime access request failed for session ${sessionId}`,
+        operation: `Connecting to the Agent failed for session ${sessionId}`,
         response,
         url: requestUrl,
       }),

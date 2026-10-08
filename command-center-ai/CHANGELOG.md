@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: none beyond the words people read. No export, stylesheet class, browser storage
+key, skill, installer behavior, SDK peer range, platform route, or payload changes.
+
+- **Messages people read use plain words.** The `Source:` label on an error now names what was
+  happening ("Connecting to the Agent", "Loading the session", "Sending to the Agent", "Loading
+  available models", …) instead of internal API names. A failed request reports the "Server
+  response" instead of the "Backend response". Session, model and thread notices no longer
+  mention AgentSession, the backend or the runtime.
+- The session-reload notice now matches the engine's message. Before, the thread looked for a
+  different sentence, so its "Session not loaded" title never showed.
+- The [AgentSession Resolution](./docs/agent-session-resolution.md) guide quotes the new
+  history-failure notice.
+
 ## 0.0.10
 
 - Existing provider settings support multiple named configurations, Environment-scoped catalog reads, and per-configuration sign-in/revoke.

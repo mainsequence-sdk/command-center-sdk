@@ -521,7 +521,7 @@ describe("agent session api", () => {
         agentUid: "agent-uid-123",
         handleUniqueId: "code-repository:alpha:primary-agent",
       }),
-    ).rejects.toThrow("no AgentSession uid was returned");
+    ).rejects.toThrow("no session uid was returned");
   });
 
   it("returns the platform's canonical AgentSession after a model selection update", async () => {

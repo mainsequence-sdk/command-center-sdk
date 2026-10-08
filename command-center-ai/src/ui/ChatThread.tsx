@@ -118,7 +118,7 @@ type ComposerReasoningEffort = string;
 function formatModelsUnavailableMessage(error: string | null) {
   const normalized = error?.trim();
   const fallback =
-    "Chat runtime available-models request failed. The assistant cannot accept a message until sendable models are loaded.";
+    "The available models could not be loaded. The assistant can take a message once they load.";
 
   if (!normalized) {
     return fallback;
@@ -134,18 +134,17 @@ function formatModelsUnavailableMessage(error: string | null) {
 
   if (
     normalized.startsWith("Source: ") ||
-    normalized.includes("Available model catalog request failed") ||
-    normalized.includes("Chat runtime available-models request failed") ||
-    normalized.includes("Model provider catalog request failed")
+    normalized.includes("The available models could not be loaded") ||
+    normalized.includes("Loading the available models failed")
   ) {
     return normalized;
   }
 
-  return `Chat runtime available-models request failed. ${normalized}`;
+  return `The available models could not be loaded. ${normalized}`;
 }
 
 function formatEmptyModelCatalogMessage() {
-  return "The chat runtime did not return any sendable models. Open model providers to inspect catalog and credential state.";
+  return "No model is available yet. Open Model Providers to connect a provider.";
 }
 
 function isGenericFetchFailure(message: string | null | undefined) {
@@ -166,7 +165,7 @@ function formatSessionUnavailableMessage(message: string | null | undefined, api
   }
 
   if (isGenericFetchFailure(normalized)) {
-    return `Could not reach the platform API at ${apiBaseUrl}. Start the backend and try again.`;
+    return `Could not reach Main Sequence at ${apiBaseUrl}. Try again in a moment.`;
   }
 
   return normalized;
@@ -992,21 +991,21 @@ function SessionReadinessState({
 function formatSessionNotice(value: string) {
   const normalized = value.trim();
 
-  if (normalized.startsWith("Failed to rehydrate the selected session.")) {
+  if (normalized.startsWith("The selected session could not be loaded.")) {
     return {
       detail:
-        "The selected session could not be restored from the backend. A locally cached transcript is being shown and may be stale.",
+        "The selected session could not be loaded from Main Sequence. A copy saved in this browser is shown and may be out of date.",
       tone: "warning" as const,
-      title: "Session restore failed",
+      title: "Session not loaded",
     };
   }
 
-  if (normalized.startsWith("This new conversation did not receive the required session assignment.")) {
+  if (normalized.startsWith("This new conversation did not get a session.")) {
     return {
       detail:
-        "The backend did not assign a runtime session to this conversation. Retry before continuing.",
+        "The agent did not start a session for this conversation. Send the message again before continuing.",
       tone: "danger" as const,
-      title: "Session assignment missing",
+      title: "No session",
     };
   }
 

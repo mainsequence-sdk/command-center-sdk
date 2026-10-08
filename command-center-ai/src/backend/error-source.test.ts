@@ -35,6 +35,6 @@ describe("assistant request error provenance", () => {
       }),
     ).toBe(guarded);
     expect(guarded.message).toContain("Request was never sent");
-    expect(guarded.message).not.toContain("Agent runtime HTTP");
+    expect(guarded.message).not.toContain("Sending to the Agent");
   });
 });

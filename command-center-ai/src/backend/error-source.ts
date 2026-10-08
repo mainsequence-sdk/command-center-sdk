@@ -1,21 +1,21 @@
 export type MainSequenceAiErrorSource = string;
 
 const SOURCE_LABELS: Record<string, string> = {
-  agent_session_detail: "Main Sequence AgentSession detail API",
-  agent_session_history: "Agent runtime session history",
-  agent_session_insights: "Main Sequence AgentSession insights API",
-  agent_session_selection: "Main Sequence AgentSession selection API",
-  agent_session_tools: "Agent runtime session tools",
-  agent_tasks: "Main Sequence Agent Tasks API",
-  assistant_available_models: "Chat runtime available models",
-  assistant_backend_http: "Agent runtime HTTP",
-  assistant_runtime_access: "Main Sequence AgentSession runtime access",
-  assistant_runtime_stream: "Agent runtime stream",
-  local_agent_runtime: "Local Agent runtime",
+  agent_session_detail: "Loading the session",
+  agent_session_history: "Loading the conversation",
+  agent_session_insights: "Loading session usage",
+  agent_session_selection: "Choosing the session",
+  agent_session_tools: "The Agent's tools",
+  agent_tasks: "Agent tasks",
+  assistant_available_models: "Loading available models",
+  assistant_backend_http: "Sending to the Agent",
+  assistant_runtime_access: "Connecting to the Agent",
+  assistant_runtime_stream: "Receiving the Agent's reply",
+  local_agent_runtime: "Local Agent",
   frontend: "Command Center",
   frontend_request_not_sent: "Request was never sent",
   frontend_runtime_guard: "Request was never sent",
-  frontend_runtime_parser: "Command Center runtime parser",
+  frontend_runtime_parser: "Reading the Agent's reply",
 };
 
 function humanizeSourceKey(value: string) {

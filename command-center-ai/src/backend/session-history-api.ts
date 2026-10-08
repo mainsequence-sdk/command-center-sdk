@@ -32,7 +32,7 @@ function createEmptySessionHistorySnapshot(sessionId: string): SessionHistorySna
 function buildSessionHistoryUrl(connection: ChatBackendConnection, sessionId: string | number) {
   const normalizedSessionId = requireAgentSessionLookupId(
     sessionId,
-    "AgentSession history",
+    "Session history",
   );
   return resolvePlatformApiUrl(
     connection,

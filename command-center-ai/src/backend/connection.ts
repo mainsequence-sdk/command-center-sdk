@@ -70,7 +70,7 @@ export function createChatBackendConnection({
 
   if (!parsed || (parsed.protocol !== "http:" && parsed.protocol !== "https:")) {
     throw new Error(
-      "The chat backend connection requires an absolute http(s) platform API base URL.",
+      "The chat connection requires an absolute http(s) platform API base URL.",
     );
   }
 

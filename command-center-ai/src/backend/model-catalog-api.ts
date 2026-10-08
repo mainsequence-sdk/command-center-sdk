@@ -141,7 +141,7 @@ function formatReasoningLabel(value: string) {
 }
 
 function invalidCatalog(message: string): never {
-  throw new Error(`The platform's model catalog response was invalid: ${message}`);
+  throw new Error(`The platform's list of models was invalid: ${message}`);
 }
 
 function requireBoolean(value: unknown, field: string) {
@@ -312,13 +312,13 @@ function normalizeModel(
 
 export function normalizeModelProviderCatalog(payload: unknown): ModelProviderCatalog {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error("The platform's model catalog response was invalid.");
+    throw new Error("The platform's list of models was invalid.");
   }
 
   const candidate = payload as Record<string, unknown>;
 
   if (!Array.isArray(candidate.providers)) {
-    throw new Error("The platform's model catalog response did not contain providers.");
+    throw new Error("The platform's list of models did not contain providers.");
   }
 
   if (candidate.schema_version !== 1) {
@@ -460,7 +460,7 @@ export async function fetchModelProviderCatalog({
   token?: string | null;
   tokenType?: string;
 }) {
-  requireCreatedByUserUid(createdByUserUid, "Model catalog");
+  requireCreatedByUserUid(createdByUserUid, "Available models");
   const headers = new Headers({ Accept: "application/json" });
 
   if (token) {
@@ -477,9 +477,9 @@ export async function fetchModelProviderCatalog({
   if (!response.ok) {
     throw new Error(
       await buildRuntimeHttpErrorMessage({
-        fallbackMessage: `Model catalog failed with status ${response.status}.`,
+        fallbackMessage: `Loading the available models failed with status ${response.status}.`,
         method: "GET",
-        operation: "Model provider catalog request failed",
+        operation: "Loading the available models failed",
         response,
         url,
       }),

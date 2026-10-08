@@ -89,7 +89,7 @@ describe("assistant endpoint resolver", () => {
         organizationEnvironmentUid,
         sessionToken: "session-token",
       }),
-    ).rejects.toThrow("requires a concrete session id");
+    ).rejects.toThrow("Connecting to the Agent requires a session id.");
   });
 
   it("sends requests to the runtime resolved from the AgentSession", async () => {
@@ -118,7 +118,7 @@ describe("assistant endpoint resolver", () => {
     ]);
   });
 
-  it("uses Agent runtime HTTP only after invoking the runtime transport", async () => {
+  it("uses Sending to the Agent only after invoking the runtime transport", async () => {
     mocks.fetchAgentSessionRuntimeAccess.mockResolvedValue(readyRuntimeAccess());
     vi.stubGlobal(
       "fetch",
@@ -140,7 +140,7 @@ describe("assistant endpoint resolver", () => {
     expect(error).toBeInstanceOf(MainSequenceAiError);
     expect((error as MainSequenceAiError).source).toBe("assistant_backend_http");
     expect((error as MainSequenceAiError).code).toBe("agent_unreachable");
-    expect((error as Error).message).toContain("Agent runtime HTTP");
+    expect((error as Error).message).toContain("Sending to the Agent");
   });
 
   it("holds the message while an Agent the platform calls ready does not answer", async () => {

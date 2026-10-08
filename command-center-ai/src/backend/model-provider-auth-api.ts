@@ -367,7 +367,7 @@ export async function signOffModelProvider({
   if (!response.ok) {
     const payload = await parseJsonSafe(response);
     throw new ModelProviderApiError(
-      `Model provider sign-off failed. Status: ${formatRuntimeHttpStatus(response)}. Backend response: ${extractErrorMessage(payload, "Unable to revoke the provider credential.")}`,
+      `Model provider sign-off failed. Status: ${formatRuntimeHttpStatus(response)}. Server response: ${extractErrorMessage(payload, "Unable to revoke the provider credential.")}`,
       {
         code: extractErrorCode(payload),
         status: response.status,

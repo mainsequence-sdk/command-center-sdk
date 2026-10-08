@@ -93,6 +93,6 @@ describe("runtime interaction contract", () => {
 
     expect(error.source).toBe("frontend_request_not_sent");
     expect(error.message).toContain("Request was never sent");
-    expect(error.message).not.toContain("Agent runtime HTTP");
+    expect(error.message).not.toContain("Sending to the Agent");
   });
 });

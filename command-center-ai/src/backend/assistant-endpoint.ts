@@ -43,7 +43,7 @@ export function normalizeMainSequenceAiAssistantEndpoint(endpoint: string) {
   const trimmed = endpoint.trim();
 
   if (!trimmed) {
-    throw new MainSequenceAiError("The Agent runtime endpoint is blank.", {
+    throw new MainSequenceAiError("The Agent's address is missing.", {
       source: "frontend",
     });
   }
@@ -127,7 +127,7 @@ function normalizeDynamicAssistantAccess(
 ): MainSequenceAiResolvedAssistantAccess {
   if (!payload.runtimeInteraction) {
     throw new MainSequenceAiError(
-      "Runtime access response is missing the runtime interaction contract.",
+      "The platform's answer about the Agent's readiness was incomplete.",
       { source: "frontend_runtime_parser" },
     );
   }
@@ -144,7 +144,7 @@ function normalizeDynamicAssistantAccess(
     const detail =
       payload.detail?.trim() ||
       readyDetail ||
-      "The agent runtime is unavailable while its service is being reconciled.";
+      "The agent is unavailable while it is being updated.";
 
     throw new MainSequenceAiError(detail, {
       code: "runtime_unavailable",
@@ -184,7 +184,7 @@ function normalizeDynamicAssistantAccess(
 
   if (!normalizedEnvironmentUid) {
     throw new MainSequenceAiError(
-      "Runtime access requires an active Organization Environment.",
+      "Connecting to the Agent requires an active Organization Environment.",
       { source: "frontend_runtime_guard" },
     );
   }
@@ -234,7 +234,7 @@ function requireOrganizationEnvironmentUid(value: string | null | undefined) {
   const normalized = value?.trim() || null;
   if (!normalized) {
     throw new MainSequenceAiError(
-      "An active Organization Environment is required for Agent runtime access.",
+      "Connecting to the Agent requires an active Organization Environment.",
       { source: "frontend_runtime_guard" },
     );
   }
@@ -243,7 +243,7 @@ function requireOrganizationEnvironmentUid(value: string | null | undefined) {
 }
 
 function createAbortReason(signal: AbortSignal) {
-  return signal.reason ?? new DOMException("The runtime access request was aborted.", "AbortError");
+  return signal.reason ?? new DOMException("Connecting to the Agent was cancelled.", "AbortError");
 }
 
 // Lets a caller stop waiting on a SHARED in-flight refresh without
@@ -361,7 +361,7 @@ export async function fetchMainSequenceAiAgentRuntimeHandle({
   );
 
   if (!normalizedCurrentSessionId) {
-    throw new MainSequenceAiError("AgentSession runtime access requires a concrete session id.", {
+    throw new MainSequenceAiError("Connecting to the Agent requires a session id.", {
       source: "frontend_runtime_guard",
     });
   }
@@ -520,7 +520,7 @@ export async function resolveMainSequenceAiAssistantAccess({
   }
 
   throw new MainSequenceAiError(
-    "AgentSession runtime access requires a concrete session id.",
+    "Connecting to the Agent requires a session id.",
     {
       source: "frontend_runtime_guard",
     },
@@ -610,7 +610,7 @@ export async function fetchMainSequenceAiAssistantResponse({
       throw new MainSequenceAiError(
         error instanceof Error
           ? error.message
-          : "Agent runtime request failed before receiving a response.",
+          : "The message to the Agent failed before the Agent answered.",
         {
           code: init.signal?.aborted ? null : "agent_unreachable",
           source: "assistant_backend_http",

@@ -108,7 +108,7 @@ export class AgentSessionNotFoundError extends Error {
   readonly status = 404;
   readonly sessionId: string;
 
-  constructor(sessionId: string | number, message = "AgentSession not found.") {
+  constructor(sessionId: string | number, message = "Session not found.") {
     super(message);
     this.name = "AgentSessionNotFoundError";
     this.sessionId = String(sessionId);
@@ -213,7 +213,7 @@ function buildDeleteAgentSessionUrl(
   connection: ChatBackendConnection,
   sessionId: string | number,
 ) {
-  const normalizedSessionId = requireAgentSessionLookupId(sessionId, "AgentSession delete");
+  const normalizedSessionId = requireAgentSessionLookupId(sessionId, "Session delete");
   return resolvePlatformApiUrl(
     connection,
     `/api/v1/agent-sessions/${encodeURIComponent(normalizedSessionId)}/`,
@@ -227,7 +227,7 @@ function buildAgentSessionArchiveActionUrl(
 ) {
   const normalizedSessionId = requireAgentSessionLookupId(
     sessionId,
-    `AgentSession ${action}`,
+    `Session ${action}`,
   );
   return resolvePlatformApiUrl(
     connection,
@@ -239,7 +239,7 @@ function buildAgentSessionDetailUrl(
   connection: ChatBackendConnection,
   sessionId: string | number,
 ) {
-  const normalizedSessionId = requireAgentSessionLookupId(sessionId, "AgentSession detail");
+  const normalizedSessionId = requireAgentSessionLookupId(sessionId, "Session detail");
   return resolvePlatformApiUrl(
     connection,
     `/api/v1/agent-sessions/${encodeURIComponent(normalizedSessionId)}/`,
@@ -252,7 +252,7 @@ function buildAgentSessionModelConfigUrl(
 ) {
   const normalizedSessionId = requireAgentSessionLookupId(
     sessionId,
-    "AgentSession model config",
+    "Session model",
   );
   return resolvePlatformApiUrl(
     connection,
@@ -298,7 +298,7 @@ function requireOrganizationEnvironmentUid(value: unknown) {
 
   if (!normalized) {
     throw new MainSequenceAiError(
-      "AgentSession requests require organization_environment_uid.",
+      "Session requests require organization_environment_uid.",
       { source: "frontend_runtime_guard" },
     );
   }
@@ -320,8 +320,8 @@ export function assertAgentSessionEnvironment(
   if (actualEnvironmentUid !== expectedEnvironmentUid) {
     throw new MainSequenceAiError(
       actualEnvironmentUid
-        ? `AgentSession belongs to Organization Environment ${actualEnvironmentUid}, not ${expectedEnvironmentUid}.`
-        : "AgentSession response did not include organization_environment_uid.",
+        ? `The session belongs to Organization Environment ${actualEnvironmentUid}, not ${expectedEnvironmentUid}.`
+        : "The session response did not include organization_environment_uid.",
       { source: "frontend_runtime_guard" },
     );
   }
@@ -347,7 +347,7 @@ export function normalizeAgentSessionLookupId(value: unknown) {
 
 export function requireAgentSessionLookupId(
   value: unknown,
-  contextLabel = "AgentSession",
+  contextLabel = "Session",
 ) {
   const normalized = normalizeAgentSessionLookupId(value);
 
@@ -682,7 +682,7 @@ export async function fetchArchivedAgentSessions({
 
   if (!normalizedAgentUid || !normalizedCreatedByUserUid) {
     throw new MainSequenceAiError(
-      "Archived AgentSession list requires agent_uid and created_by_user_uid.",
+      "Archived session list requires agent_uid and created_by_user_uid.",
       {
         source: "frontend_runtime_guard",
       },
@@ -715,7 +715,7 @@ export async function fetchArchivedAgentSessions({
       await buildRuntimeHttpErrorMessage({
         fallbackMessage: `Archived session list failed with status ${response.status}.`,
         method: "GET",
-        operation: `Archived AgentSession list request failed for agent ${normalizedAgentUid}`,
+        operation: `Archived session list request failed for agent ${normalizedAgentUid}`,
         response,
         url: requestUrl,
       }),
@@ -751,7 +751,7 @@ export async function searchAgentSessions({
 
   if (!normalizedCreatedByUserUid || !normalizedQuery) {
     throw new MainSequenceAiError(
-      "AgentSession search requires created_by_user_uid and a query.",
+      "Session search requires created_by_user_uid and a query.",
       {
         source: "frontend_runtime_guard",
       },
@@ -784,7 +784,7 @@ export async function searchAgentSessions({
       await buildRuntimeHttpErrorMessage({
         fallbackMessage: `Conversation search failed with status ${response.status}.`,
         method: "GET",
-        operation: "AgentSession conversation search failed",
+        operation: "Conversation search failed",
         response,
         url: requestUrl,
       }),
@@ -870,7 +870,7 @@ async function mutateAgentSessionArchiveState({
       await buildRuntimeHttpErrorMessage({
         fallbackMessage: `Session ${action} failed with status ${response.status}.`,
         method: "POST",
-        operation: `AgentSession ${action} request failed for session ${sessionId}`,
+        operation: `Session ${action} request failed for session ${sessionId}`,
         response,
         url: requestUrl,
       }),
@@ -1024,7 +1024,7 @@ export async function startNewAgentSessionRequest({
   const sessionId = extractStartedAgentSessionId(payload);
 
   if (!sessionId) {
-    throw new Error("Session creation succeeded but no AgentSession uid was returned.");
+    throw new Error("Session creation succeeded but no session uid was returned.");
   }
 
   return {
@@ -1074,7 +1074,7 @@ export async function getOrCreateAgentSessionRequest({
 
   if (Boolean(normalizedSessionUid) === Boolean(normalizedHandleUniqueId)) {
     throw new MainSequenceAiError(
-      "AgentSession get-or-create requires exactly one of session_uid or handle_unique_id.",
+      "Session get-or-create requires exactly one of session_uid or handle_unique_id.",
       {
         source: "frontend_runtime_guard",
       },
@@ -1150,14 +1150,14 @@ export async function getOrCreateAgentSessionRequest({
   }
 
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error("AgentSession get-or-create succeeded but did not return an AgentSession object.");
+    throw new Error("Session get-or-create succeeded but did not return a session.");
   }
 
   const record = payload as AgentSessionApiRecord;
   const sessionId = normalizeAgentSessionLookupId(record.uid);
 
   if (!sessionId) {
-    throw new Error("AgentSession get-or-create succeeded but no AgentSession uid was returned.");
+    throw new Error("Session get-or-create succeeded but no session uid was returned.");
   }
 
   return {
@@ -1236,7 +1236,7 @@ export async function patchAgentSessionModelConfig({
 
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new MainSequenceAiError(
-      "AgentSession model update succeeded without returning the canonical AgentSession.",
+      "Session model update succeeded without returning the session.",
       { source: "agent_session_selection", status: response.status },
     );
   }

@@ -12,7 +12,7 @@ import {
 function buildSessionInsightsUrl(connection: ChatBackendConnection, sessionId: string | number) {
   const normalizedSessionId = requireAgentSessionLookupId(
     sessionId,
-    "AgentSession insights",
+    "Session usage",
   );
   return resolvePlatformApiUrl(
     connection,

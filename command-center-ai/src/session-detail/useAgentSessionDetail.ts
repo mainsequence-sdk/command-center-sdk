@@ -165,7 +165,7 @@ export function useAgentSessionDetail({
 
         const nextStatus = isAgentSessionNotFoundError(error) ? "not_found" : "error";
         const message =
-          error instanceof Error ? error.message : "Failed to load AgentSession detail.";
+          error instanceof Error ? error.message : "The session details could not be loaded.";
 
         setDetailStatusBySessionId((current) => ({
           ...current,

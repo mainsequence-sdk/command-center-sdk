@@ -167,7 +167,7 @@ export function toAgentSessionRecordFromApi(
   const sessionId = getAgentSessionRecordSessionId(record);
   if (!sessionId) {
     throw new Error(
-      "AgentSession response did not include uid, agent_session_uid, session_uid, or runtime_session_uid.",
+      "Session response did not include uid, agent_session_uid, session_uid, or runtime_session_uid.",
     );
   }
   const updatedAt = record.ended_at || record.started_at || new Date().toISOString();

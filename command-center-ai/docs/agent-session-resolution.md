@@ -293,8 +293,8 @@ in Command Center names both as build values for each Environment; see
 - Latest sessions failure: `latestSessionsError`; with nothing selected, readiness is an error.
 - Requested session unavailable: the newest session is selected, with a notice.
 - Session detail failure: keep the error owned by session readiness (`not_found` for a `404`).
-- History failure: an error owned by session readiness, with the notice "Failed to rehydrate the
-  selected AgentSession. Interaction is disabled until session history loads."
+- History failure: an error owned by session readiness, with the notice "The selected session could
+  not be loaded. You can write again once its history loads."
 - Insights failure: kept on the detail snapshot (`insightsError`); it never blocks the chat.
 - Session creation failure: a notice through `notify`. Cancelling the model choice is not a
   failure.

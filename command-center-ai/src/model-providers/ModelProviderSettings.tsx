@@ -207,7 +207,7 @@ function ProviderSignInModal({
       open
       onClose={onClose}
       title={`${providerLabel} sign-in`}
-      description="This flow is driven by the provider sign-in attempt state returned by the backend."
+      description="Follow the provider's sign-in steps; this dialog updates as they complete."
       className="ms-chat-providers__signin"
     >
       <div className="ms-chat-providers__signin-body">
