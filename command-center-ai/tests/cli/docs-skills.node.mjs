@@ -52,7 +52,7 @@ test("every guide names its skill, and every skill names its guide", async () =>
   }
 });
 
-test("an embedded application names its Environment and its Agent for each Environment", async () => {
+test("an embedded application gets its Environment and its Agent from its own API", async () => {
   const skillsRoot = join(packageRoot, "agent_scaffold", "skills");
   const mountSkill = await readFile(join(skillsRoot, "engine", "mount-agent-conversation", "SKILL.md"), "utf8");
   const applicationSkill = await readFile(
@@ -63,17 +63,17 @@ test("an embedded application names its Environment and its Agent for each Envir
   const resolutionGuide = await readFile(join(docsRoot, "agent-session-resolution.md"), "utf8");
 
   for (const value of [mountSkill, applicationGuide]) {
-    assert.match(value, /Name The Environment And The Agent Per Environment/iu);
-    assert.match(value, /build_environment:\n\s+VITE_ENVIRONMENT_UID: .+\n\s+VITE_AGENT_UID: /u);
-    assert.match(value, /organization_environment_uid=<Environment UID>/u);
-    assert.match(value, /status: environmentUid && agentUid \? "ready" : "error"/u);
-    assert.match(value, /\.env\.development/u);
+    assert.match(value, /Get The Environment And The Agent From Your API/iu);
+    assert.match(value, /MAINSEQUENCE_ORGANIZATION_ENVIRONMENT_UID/u);
+    assert.match(value, /code_repository_branch_uid/u);
+    assert.match(value, /status: context === null \? "loading" : environmentUid && agentUid \? "ready" : "error"/u);
     assert.match(value, /person's Command Center Environment/u);
+    assert.doesNotMatch(value, /VITE_AGENT_UID|VITE_ENVIRONMENT_UID/u);
   }
   for (const value of [mountSkill, applicationGuide, resolutionGuide]) {
     assert.match(value, /empty (?:session list|without an error)|come back empty/iu);
   }
-  assert.match(mountSkill, /\$maintain-command-center-code-repository/u);
+  assert.match(resolutionGuide, /#get-the-environment-and-the-agent-from-your-api/u);
   assert.match(applicationSkill, /\*\*Which Environment\.\*\*/u);
   assert.match(applicationSkill, /\$mount-agent-conversation/u);
 });

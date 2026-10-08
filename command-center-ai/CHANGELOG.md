@@ -2,9 +2,23 @@
 
 ## Unreleased
 
-Compatibility axes: none beyond the words people read. No export, stylesheet class, browser storage
-key, skill, installer behavior, SDK peer range, platform route, or payload changes.
+Compatibility axes: the words people read, and the content of the packaged skills
+`mount-agent-conversation` and `build-command-center-ai-application`. No export, stylesheet class,
+browser storage key, skill name or path, installer behavior, SDK peer range, platform route, or
+payload changes.
 
+- **An embedded application gets its Environment and its Agent from its own API.** It no longer
+  pins both as build values per Environment, which went stale when the Agent was re-created with a
+  new UID. Its own API, a FastAPI release in the same Environment, knows the Environment
+  (`MAINSEQUENCE_ORGANIZATION_ENVIRONMENT_UID`), finds the Agent its branch deploys once its
+  `access` block names that Agent, and returns both from an endpoint the application already calls;
+  the assistant shows as `loading` until then. `mount-agent-conversation` replaces "Name The
+  Environment And The Agent Per Environment" with "Get The Environment And The Agent From Your
+  API", and `build-command-center-ai-application`, the
+  [application guide](./docs/build-an-ai-application.md) and the
+  [AgentSession Resolution](./docs/agent-session-resolution.md) guide say the same. SDK `0.5.17`'s
+  `maintain-command-center-code-repository` skill stops asking for the Agent's UIDs in the
+  workflow file.
 - **The sharing disclosure names Organization admins.** The Details and sharing dialog, the
   [model providers](./docs/model-providers.md) guide and the `manage-model-providers` skill now
   say that Organization admins can receive and use any configured provider in the Organization

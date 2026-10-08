@@ -24,9 +24,9 @@ Settle these before writing code:
   platform requests as the person through the SDK's embed protocol; see
   [Connect to the platform](./connect-to-the-platform.md#inside-an-application-embedded-in-command-center).
   A standalone application on its own origin sends them itself.
-- **Which Environment.** The Agent's own; an embedded application names it and the Agent as build
-  values for each Environment; see
-  [Name the Environment and the Agent per Environment](#name-the-environment-and-the-agent-per-environment).
+- **Which Environment.** The Agent's own; an embedded application's own API tells it the
+  Environment and the Agent when the page loads; see
+  [Get the Environment and the Agent from your API](#get-the-environment-and-the-agent-from-your-api).
 
 ## Install
 
@@ -132,7 +132,7 @@ The engine's inputs:
 | --- | --- |
 | `connection` | The connection to the platform; see [Connect to the platform](./connect-to-the-platform.md). |
 | `auth` | Who is signed in: `{ userUid }`. The connection's `sendPlatformRequest` adds the credential and renews it. |
-| `environmentUid` | The active Organization Environment, which must be the Agent's own. An embedded application passes the build value of the next section. |
+| `environmentUid` | The active Organization Environment, which must be the Agent's own. An embedded application passes what its API answers; see the next section. |
 | `defaultSession`, `showsDefaultSession` | The Agent and a stable handle. The platform returns the same session for the same person, Agent, and handle, so every visit continues the same conversation. |
 | `notify` | Shows a short notice (`title`, `description`, `variant`) the application's way; the package has no toaster. |
 | `isVisible` | Whether the rail or the expanded rail is on screen. Off screen, the engine stops loading and checking. |
@@ -152,7 +152,7 @@ model providers" button do not appear. The package also draws the frame around i
 [The right rail and the expanded rail](./rail-and-expanded-rail.md); the
 [UI README](../src/ui/README.md) describes the thread, `ChatComposer`, and `useChatComposerState()`.
 
-## Name the Environment and the Agent per Environment
+## Get the Environment and the Agent from your API
 
 An Agent is deployed once per branch and belongs to that branch's Environment, so the development
 and production Agents of one repository are two Agents. The platform lists only the sessions of
@@ -161,40 +161,40 @@ an error.
 
 An application embedded in Command Center gets no Environment from the host, and must not take the
 person's Command Center Environment: the platform keeps that preference to Command Center's own
-screens. It names its Environment and that Environment's Agent as build values, in the
-Environment-scoped workflow file that already names its API releases (see the SDK's application
-operations guide, "Point each Environment at its own APIs"):
+screens. Its build holds neither UID. Its own API, a FastAPI release in the same Environment, tells
+it both when the page loads:
 
-```yaml
-# .mainsequence/workflows/app-development.yaml, in the static site's spec
-build_environment:
-  VITE_ENVIRONMENT_UID: <development Environment UID>
-  VITE_AGENT_UID: <the Agent's UID in development>
-```
-
-`app-production.yaml` names the production Environment and Agent. The variable names belong to the
-application. The Environment's UID comes from `GET /api/v1/organization-environments/`, and the
-Agent its branch deployed from `GET /api/v1/agents/?organization_environment_uid=<Environment UID>`.
+- The release runs with its Environment's UID in `MAINSEQUENCE_ORGANIZATION_ENVIRONMENT_UID`.
+- The API's workflow resource declares the Agent in its `access` block, by the Harness Agent
+  resource's key under `resources` when the same workflow file declares it, or by its name under
+  `agents`. The API lists Agents with its own credentials (`GET /api/v1/agents/`; a deployed
+  release reads its own Environment) and takes the one whose `code_repository_branch_uid` is its
+  own branch: a branch deploys one Agent. Because it answers each request, it can also choose a
+  different Agent for different people.
+- The API returns both from an endpoint the application already calls when it starts. The endpoint
+  and its field names belong to the application.
 
 ```tsx
-const environmentUid = import.meta.env.VITE_ENVIRONMENT_UID || null;
-const agentUid = import.meta.env.VITE_AGENT_UID || null;
+// `context` is the application's own call to its API; null until it answers.
+const environmentUid = context?.environmentUid ?? null;
+const agentUid = context?.agentUid ?? null;
 
 const defaultSession = useMemo<ChatDefaultSession>(
   () => ({
     agentUid,
     handleUniqueId: "my_application_assistant",
     name: "My application assistant",
-    status: environmentUid && agentUid ? "ready" : "error",
+    status: context === null ? "loading" : environmentUid && agentUid ? "ready" : "error",
     unavailableMessage: "The assistant is not set up for this Environment.",
   }),
-  [agentUid, environmentUid],
+  [agentUid, context, environmentUid],
 );
 ```
 
-Take both values from the same file so they cannot drift apart, and show the assistant as
-unavailable when either is missing. For local development, put the development values in
-`.env.development`, which only the dev server reads, never in `.env`, which `vite build` reads too.
+Take both values from the same answer so they cannot drift apart, and show the assistant as
+unavailable when either is missing. A re-created Agent has a new UID; it reaches the application
+with the API's next deployment, and the application is not rebuilt for it. For local development,
+run the API against the platform so it answers the same way, or use the scripted stand-in.
 
 ## Start from the standalone application
 

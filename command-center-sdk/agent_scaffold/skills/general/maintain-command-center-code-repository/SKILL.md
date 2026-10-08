@@ -311,10 +311,9 @@ Keep to these rules:
   or a matching tag on a commit that carries the change. Pushing an older tag again deploys that
   commit's workflow file, with the UIDs it held.
 
-The same applies to anything else the site names per Environment. An Agent is deployed once per
-branch too, so a site that opens an Agent conversation writes that Environment's Agent UID and the
-Environment's own UID in the same file; the platform lists no sessions for an Agent outside the
-Environment the site passes.
+An Agent conversation is the exception: the site does not name its Agent or its Environment here.
+Its own API tells it both when the page loads (Command Center AI's `mount-agent-conversation`
+skill), so a re-created Agent, which has a new UID, needs no change to this file.
 
 ## Handle Failures Without Hiding State
 

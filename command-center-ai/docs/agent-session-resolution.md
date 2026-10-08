@@ -280,8 +280,8 @@ user-scoped lists also carry `created_by_user_uid`.
 The platform lists only the sessions of Agents in that Environment. An Agent belongs to the branch
 it was deployed from, so `environmentUid` must be the Environment of `defaultSession.agentUid`.
 With any other Environment, the lists come back empty without an error. An application embedded
-in Command Center names both as build values for each Environment; see
-[Name the Environment and the Agent per Environment](./build-an-ai-application.md#name-the-environment-and-the-agent-per-environment).
+in Command Center takes both from its own API when the page loads; see
+[Get the Environment and the Agent from your API](./build-an-ai-application.md#get-the-environment-and-the-agent-from-your-api).
 
 ## Failure Rules
 

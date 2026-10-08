@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: the packaged skill `general/maintain-command-center-code-repository`. No npm
+export, contract ID, JSON Schema, fixture, iframe protocol, theme, or storage change.
+
+- **A site's workflow file no longer names its Agent.** "Point Each Environment At Its Own APIs"
+  asked a site that opens an Agent conversation to write the Agent's UID and its Environment's UID
+  in the Environment-scoped workflow file. A re-created Agent has a new UID, so that value went
+  stale. The site now gets both from its own API when the page loads, as Command Center AI's
+  `mount-agent-conversation` skill describes, and this skill says so.
+
 ## 0.5.16
 
 Compatibility axes: which elements the `layout/testing` verifier measures; the packaged skill

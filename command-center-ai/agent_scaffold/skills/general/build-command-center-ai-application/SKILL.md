@@ -42,9 +42,9 @@ notifications, and the forwarder to the platform. The SDK owns the application's
    forwarder.
 6. **Which Environment.** The engine's Environment must be the Agent's own, and an Agent belongs to
    the branch it was deployed from. An embedded application gets no Environment from the host and
-   must not use the person's Command Center Environment. It names its Environment and that
-   Environment's Agent as build values in each Environment's workflow file. Follow "Name The
-   Environment And The Agent Per Environment" in `$mount-agent-conversation`.
+   must not use the person's Command Center Environment. Its own API tells it the Environment and
+   the Agent when the page loads. Follow "Get The Environment And The Agent From Your API" in
+   `$mount-agent-conversation`.
 7. **Controls, pages, and theme.** The application's own buttons, badges, and fields come from the
    SDK's `/controls` (`$compose-command-center-controls`), its pages from `/layout`
    (`$compose-command-center-page`), and its styling from SDK tokens checked by
@@ -64,7 +64,7 @@ Rail modes (docked from 1400px, overlay below):
 Agent and handle (default session), requested sessions, or launch targets:
 Session explorer, search, archive, new session:
 Platform request sender (embedded: the static-site client; standalone: credential and renewal):
-Environment and Agent source (embedded: build values per Environment):
+Environment and Agent source (embedded: the application's own API):
 Forwarder for the platform and the Agent runtime:
 Model provider settings location:
 The thread's words (copy):

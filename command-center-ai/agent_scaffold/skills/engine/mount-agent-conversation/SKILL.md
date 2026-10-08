@@ -110,8 +110,8 @@ Rules for the inputs:
   the platform lists only the sessions of Agents in the Environment you pass. Pass another one and
   the session list comes back empty, without an error. An application embedded through the
   SDK's static-site iframe gets no Environment from the host, and must not take the person's
-  Command Center Environment either. It names its Environment and its Agent as build values (see
-  "Name The Environment And The Agent Per Environment" below).
+  Command Center Environment either. Its own API tells it the Environment and the Agent when the
+  page loads (see "Get The Environment And The Agent From Your API" below).
 - `defaultSession` with `showsDefaultSession`: the Agent (`agentUid`), a stable `handleUniqueId`,
   the `name` a new session gets, `status` (`loading` until the application knows the Agent), and
   an optional `unavailableMessage`. The platform returns the same session for the same person,
@@ -127,53 +127,50 @@ Rules for the inputs:
 - `requestedSessionId`, `launchTarget`, `avoidImplicitSessionSelection`, and
   `onRequestedSessionRemoved` choose other sessions; follow `$manage-agent-sessions`.
 
-## Name The Environment And The Agent Per Environment
+## Get The Environment And The Agent From Your API
 
 An Agent is deployed once per branch, so the development and production Agents of one repository
-are two Agents, each in its own Environment. A deployed application names both, for each
-Environment, in the Environment-scoped workflow file that already names its API releases (follow
-"Point Each Environment At Its Own APIs" in `$maintain-command-center-code-repository`):
+are two Agents, each in its own Environment. A deployed application never holds either UID in its
+build. Its own API, a FastAPI release in the same Environment, tells it both when the page loads:
 
-```yaml
-# .mainsequence/workflows/app-development.yaml, in the static site's spec
-build_environment:
-  VITE_ENVIRONMENT_UID: <development Environment UID>
-  VITE_AGENT_UID: <the Agent's UID in development>
-```
-
-`app-production.yaml` names the production Environment and the production Agent. The variable
-names belong to the application. Find the values on the platform: the Environment with
-`organization_environment.list` (`GET /api/v1/organization-environments/`), then the Agent its
-branch deployed with `agent.list` filtered by that Environment
-(`GET /api/v1/agents/?organization_environment_uid=<Environment UID>`). When you cannot query the
-platform, ask the user for both.
+- **The Environment.** The release runs with its Environment's UID in
+  `MAINSEQUENCE_ORGANIZATION_ENVIRONMENT_UID`.
+- **The Agent.** The API's workflow resource declares the Agent in its `access` block: under
+  `resources` by the Harness Agent resource's key when the same workflow file declares it, under
+  `agents` by its name otherwise. The API then lists Agents with its own credentials
+  (`GET /api/v1/agents/`; a deployed release reads its own Environment) and takes the one whose
+  `code_repository_branch_uid` is its own branch, the one Agent that branch deploys. Because it
+  answers each request, it can also choose a different Agent for different people.
+- **The answer.** The API returns both from an endpoint the application already calls when it
+  starts. The endpoint and its field names belong to the application.
 
 ```tsx
-const environmentUid = import.meta.env.VITE_ENVIRONMENT_UID || null;
-const agentUid = import.meta.env.VITE_AGENT_UID || null;
+// `context` is the application's own call to its API; null until it answers.
+const environmentUid = context?.environmentUid ?? null;
+const agentUid = context?.agentUid ?? null;
 
 const defaultSession = useMemo<ChatDefaultSession>(
   () => ({
     agentUid,
     handleUniqueId: "my_application_assistant",
     name: "My application assistant",
-    status: environmentUid && agentUid ? "ready" : "error",
+    status: context === null ? "loading" : environmentUid && agentUid ? "ready" : "error",
     unavailableMessage: "The assistant is not set up for this Environment.",
   }),
-  [agentUid, environmentUid],
+  [agentUid, context, environmentUid],
 );
 // <ChatEngineProvider environmentUid={environmentUid} defaultSession={defaultSession} ...>
 ```
 
-- Take both values from the same file, so they cannot drift apart. Never take the Environment from
-  the host's iframe context, from the person's Command Center Environment, or from a lookup at run
-  time: the platform keeps that preference to Command Center's own screens, and an embedded
-  application's Environment is the one it was built for.
-- When either value is missing, show the assistant as unavailable, as above, instead of guessing.
-- For local development, put the development values in `.env.development`, which only the dev
-  server reads. Never put them in `.env`: `vite build` reads it too, so a build without its own
-  values would talk to the development Agent. Values from the workflow file's
-  `build_environment` win over any `.env` file.
+- Take both values from the same answer, so they cannot drift apart. Never take the Environment
+  from the host's iframe context or from the person's Command Center Environment: the platform
+  keeps that preference to Command Center's own screens.
+- When the API names neither or only one, show the assistant as unavailable, as above, instead of
+  guessing.
+- A re-created Agent has a new UID. It reaches the application with the API's next deployment,
+  which the same push starts; the application is not rebuilt for it.
+- For local development, run the API against the platform so it answers the same way, or use the
+  scripted stand-in.
 
 ## Render The Thread And The Settings
 
@@ -239,6 +236,7 @@ storage and the build.
    has browser tests.
 4. Against the platform, through the forwarder of `$connect-command-center-ai-to-the-platform`.
 5. In every deployed Environment, open the conversation and confirm in the network panel that the
-   `agent-sessions` requests carry that Environment's `organization_environment_uid` and that the
-   default session opens with that Environment's Agent. An empty session list for a person who has
-   sessions means the Environment and the Agent do not match.
+   API's answer names that Environment and its Agent, that the `agent-sessions` requests carry that
+   Environment's `organization_environment_uid`, and that the default session opens with that
+   Environment's Agent. An empty session list for a person who has sessions means the Environment
+   and the Agent do not match.
