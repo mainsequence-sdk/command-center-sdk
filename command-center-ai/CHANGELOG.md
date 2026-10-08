@@ -5,6 +5,12 @@
 Compatibility axes: none beyond the words people read. No export, stylesheet class, browser storage
 key, skill, installer behavior, SDK peer range, platform route, or payload changes.
 
+- **The sharing disclosure names Organization admins.** The Details and sharing dialog, the
+  [model providers](./docs/model-providers.md) guide and the `manage-model-providers` skill now
+  say that Organization admins can receive and use any configured provider in the Organization
+  without a share, that their usage counts against it, and that an admin with none of their own
+  for a provider gets the first one added in that Environment. The platform always behaved
+  this way; only the words are new.
 - **Messages people read use plain words.** The `Source:` label on an error now names what was
   happening ("Connecting to the Agent", "Loading the session", "Sending to the Agent", "Loading
   available models", …) instead of internal API names. A failed request reports the "Server

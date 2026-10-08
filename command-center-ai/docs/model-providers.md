@@ -94,7 +94,11 @@ The Details and sharing dialog always shows this before any sharing controls:
 > and workload operators you trust. Their usage counts against the provider quota
 > or billing associated with these credentials. Removing access stops future
 > credential retrieval; credentials already received may work until they expire
-> or are revoked at the provider.
+> or are revoked at the provider. Organization admins don't need a share: they
+> can receive and use the credentials of any configured provider in the
+> Organization, and their usage counts against it too. An admin with none of
+> their own for a provider gets the first one added in that Environment.
 
 Retain the disclosure in details after sharing. A view grant allows credential
 use and delivery; it does not authorize editing or revoking the stored credential.
+Organization admins hold both on every configured provider without a grant.

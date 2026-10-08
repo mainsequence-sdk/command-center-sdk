@@ -204,6 +204,7 @@ describe("ModelProviderSettings sign-in", () => {
     expect(text).toContain("environment-one");
     expect(text).toContain("including local Tau");
     expect(text).toContain("credentials already received may work until they expire");
+    expect(text).toContain("Organization admins don't need a share");
     expect(text.indexOf("Sharing this configured provider lets recipients")).toBeLessThan(text.indexOf("Share with selected recipient"));
   });
 
