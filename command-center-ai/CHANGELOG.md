@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: one new regular dependency, `zustand`. No export, stylesheet class, browser
+storage key, skill, installer behavior, SDK peer range, platform route, or payload changes.
+
+- **The chat installs the zustand `@assistant-ui/core` needs.** Core imports `useShallow` from
+  `zustand/shallow` but declares zustand `^5.0.11` only as an optional peer. In an application
+  whose own zustand is 4.x, for example through `@xyflow/react` 12, npm left core resolving that
+  zustand 4 and Vite's dependency prebundle failed with `"useShallow" is not exported by
+  node_modules/zustand/esm/shallow.mjs`. The package now depends on `zustand` `^5.0.11`, so npm
+  installs zustand 5 next to core while the application's other packages keep their zustand 4. An
+  application that added zustand 5 as its own dependency only for this can drop it.
+
 ## 0.0.11
 
 Compatibility axes: the words people read, and the content of the packaged skills

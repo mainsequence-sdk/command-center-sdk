@@ -100,7 +100,8 @@ platform API or to the Agent's runtime. Whether and when to rewrite is the appli
 - `npm run check` runs the boundary check, which fails on a dependency outside the allowlist, a
   peer (the SDK or React) listed as a regular dependency, an `@/` import, an import that leaves
   the package, or an environment read, and then type-checks the package and the standalone
-  application. It is part of the repository's `check`.
+  application. It is part of the repository's `check`. `zustand` is allowed only as a regular
+  dependency, never as an import: the package installs it for `@assistant-ui/core`.
 
 ## Agent Skills
 

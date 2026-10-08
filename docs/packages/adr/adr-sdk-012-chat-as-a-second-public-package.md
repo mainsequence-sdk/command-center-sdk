@@ -166,8 +166,8 @@ without its tests or its build, `README.md`, `CHANGELOG.md` and `LICENSE`. `npm 
 lists nothing else. The binary is `command-center-ai`.
 
 **Dependencies.** `@assistant-ui/react`, `@assistant-ui/core`, `@assistant-ui/store`,
-`assistant-stream`, `lucide-react`, `react-markdown`, `remark-gfm`, `rehype-raw` and
-`rehype-sanitize`, with registry versions only.
+`assistant-stream`, `lucide-react`, `react-markdown`, `remark-gfm`, `rehype-raw`,
+`rehype-sanitize` and `zustand`, with registry versions only.
 
 - `@assistant-ui/react`, `@assistant-ui/core`, `@assistant-ui/store` and `assistant-stream` are one
   family, used partly through unstable entry points, and move together, in a chat release, with
@@ -179,6 +179,10 @@ lists nothing else. The binary is `command-center-ai`.
   caret stops installing. Moving to the family's current line (`@assistant-ui/react` 0.15) is a
   change of its own. The thread imports `useAuiState` from `@assistant-ui/store` directly, so the
   chat declares it instead of reaching it through `@assistant-ui/react`.
+- `zustand` `^5.0.11` is installed for `@assistant-ui/core`, which imports `zustand/shallow` but
+  declares zustand only as an optional peer of that range. Without it, an application whose own
+  zustand is 4.x leaves core resolving zustand 4, which has no `useShallow`. The chat never imports
+  zustand; its boundary check allows it only as a regular dependency.
 - `lucide-react` uses the SDK's range, so an application gets one copy.
 - The markdown renderer keeps its order: `remark-gfm`, then `rehype-raw`
   followed by `rehype-sanitize`, so raw HTML in an Agent's answer is sanitized before it renders.

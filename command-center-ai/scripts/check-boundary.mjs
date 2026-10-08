@@ -35,6 +35,11 @@ const runtimeAllowlist = new Set([
 // build and tests), never as regular ones.
 const peerOnly = new Set(["@dev-mainsequence/command-center-sdk", "react", "react-dom"]);
 
+// Regular dependencies the package installs for a dependency and never imports itself.
+// `@assistant-ui/core` imports `zustand/shallow` but declares zustand only as an optional peer, so
+// without this a consumer whose own zustand is 4.x hands core a zustand without `useShallow`.
+const installedForDependencies = new Set(["zustand"]);
+
 // What tests and build configuration may import on top of the runtime allowlist.
 const toolingAllowlist = new Set(["@playwright/test", "@vitejs/plugin-react", "jsdom", "vite", "vitest"]);
 
@@ -172,6 +177,10 @@ function checkManifest() {
 
   for (const field of ["dependencies", "peerDependencies", "optionalDependencies"]) {
     Object.keys(manifest[field] ?? {}).forEach((name) => {
+      if (field === "dependencies" && installedForDependencies.has(name)) {
+        return;
+      }
+
       if (!runtimeAllowlist.has(name)) {
         fail(manifestPath, 0, `${field} lists "${name}", which is not on the allowlist.`);
       } else if (peerOnly.has(name) && field !== "peerDependencies") {
