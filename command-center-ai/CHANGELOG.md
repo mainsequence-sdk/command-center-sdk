@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.12
 
 Compatibility axes: one new regular dependency, `zustand`; additive npm API (`describeToolActivity`
 takes the call's arguments, `ToolActivity.application`, the `ToolActivityApplication` type); the
