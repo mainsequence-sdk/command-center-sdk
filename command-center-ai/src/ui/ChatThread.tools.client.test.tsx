@@ -273,6 +273,44 @@ describe("ChatThread tools", () => {
     expect(card?.textContent).not.toContain("Main Sequence MCP");
   });
 
+  it.each(["page", "overlay"] as const)(
+    "shows timeout metadata as a failed call even when the outer flag is false on the %s",
+    async (surface) => {
+      const text = "The metatables tool list_namespaces did not answer within 60 seconds.";
+      act(() => {
+        root.render(<Harness messages={applicationToolThread({
+          content: [{ type: "text", text }],
+          details: {
+            application: "metatables", mcp_tool: "list_namespaces", is_error: true,
+            failure: "timeout", timeout_seconds: 60,
+          },
+        })} surface={surface} />);
+      });
+
+      await expandChainOfThought(container);
+      const card = container.querySelector<HTMLElement>('[data-tool-kind="mcp"]');
+      expect(card?.querySelector(".ms-chat-tool__header")?.textContent).toContain("Timed out");
+      expect(card?.querySelector(".ms-chat-tool__header")?.textContent).not.toContain("Done");
+      expect(card?.querySelector(".ms-chat-tool__output--error")?.textContent).toBe(text);
+      expect(card?.textContent).toContain('"failure": "timeout"');
+      expect(card?.textContent).not.toContain("access_unavailable");
+    },
+  );
+
+  it("keeps genuine access failures distinct from timeouts", async () => {
+    act(() => {
+      root.render(<Harness messages={applicationToolThread({
+        content: [{ type: "text", text: "Main Sequence could not provide access to the metatables application." }],
+        details: { application: "metatables", is_error: true, failure: "access_unavailable" },
+      })} surface="page" />);
+    });
+    await expandChainOfThought(container);
+    const card = container.querySelector<HTMLElement>('[data-tool-kind="mcp"]');
+    expect(card?.querySelector(".ms-chat-tool__header")?.textContent).toContain("Failed");
+    expect(card?.querySelector(".ms-chat-tool__header")?.textContent).not.toContain("Timed out");
+    expect(card?.querySelector(".ms-chat-tool__output--error")).not.toBeNull();
+  });
+
   it("keeps naming the application's tool once it ran", async () => {
     act(() => {
       root.render(

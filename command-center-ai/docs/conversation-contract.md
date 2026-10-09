@@ -32,6 +32,11 @@ reasoning, a tool call with its result, a `data-sources` part, and text.
 Tool frames with the older AI SDK v5 names (`tool-input-available`, `tool-output-available`) are
 translated; `tool-output-delta` frames are dropped, so only a tool's final result shows.
 
+A tool result is failed when either its outer `isError` is true or its `details.is_error` is
+true. This applies to streamed results and reloaded history. `details.failure: "timeout"` shows a
+"Timed out" badge; the output preserves the runtime's explanation and the details keep its limit
+or HTTP status. Other failure codes are not reclassified as timeouts.
+
 Not drawn:
 
 - `data-<name>` parts. They reach the engine, which reads the provenance they carry, such as which

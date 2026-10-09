@@ -314,12 +314,26 @@ function getToolActivities(parts: ReadonlyArray<ChainOfThoughtPartLike>): ToolAc
   return activities;
 }
 
+function getToolFailure(part: { result?: unknown; isError?: boolean }): "timeout" | "failed" | null {
+  const result = part.result;
+  const details = result && typeof result === "object" && "details" in result ? result.details : null;
+  if (details && typeof details === "object") {
+    if ("failure" in details && details.failure === "timeout") {
+      return "timeout";
+    }
+    if ("is_error" in details && details.is_error === true) {
+      return "failed";
+    }
+  }
+  return part.isError ? "failed" : null;
+}
+
 function getToolPhase(part: {
   result?: unknown;
   isError?: boolean;
   status?: { type?: string };
 }): "running" | "done" | "failed" {
-  if (part.isError) {
+  if (getToolFailure(part)) {
     return "failed";
   }
   if (part.status?.type === "running" || part.result === undefined) {
@@ -364,8 +378,9 @@ function ToolFallbackPart({ argsText, isError, result, toolName }: ToolCallMessa
     resultDetails !== null && resultDetails !== undefined
       ? formatStructuredValue(resultDetails)
       : null;
-  const statusLabel = result === undefined ? "Running" : isError ? "Failed" : "Done";
-  const statusVariant = result === undefined ? "neutral" : isError ? "danger" : "success";
+  const failure = getToolFailure({ result, isError });
+  const statusLabel = failure === "timeout" ? "Timed out" : failure ? "Failed" : result === undefined ? "Running" : "Done";
+  const statusVariant = failure ? "danger" : result === undefined ? "neutral" : "success";
 
   return (
     <div
@@ -408,7 +423,7 @@ function ToolFallbackPart({ argsText, isError, result, toolName }: ToolCallMessa
             Output
           </div>
           <div
-            className={cx("ms-chat-tool__output", isError && "ms-chat-tool__output--error")}
+            className={cx("ms-chat-tool__output", failure && "ms-chat-tool__output--error")}
           >
             <MarkdownContent
               content={resultText}

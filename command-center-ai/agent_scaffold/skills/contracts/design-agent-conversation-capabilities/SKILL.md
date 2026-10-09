@@ -41,6 +41,11 @@ complete example: `start`, `start-step`, `reasoning-start`, `reasoning-delta`, `
   `<name>__list_tools` shows as the application's tool listing. The older AI SDK v5 tool
   frames (`tool-input-available`, `tool-output-available`) are translated; `tool-output-delta`
   frames are dropped, so only a final result shows.
+A tool result is failed when either its outer `isError` is true or its `details.is_error` is
+true. This applies to streamed results and reloaded history. `details.failure: "timeout"` shows a
+"Timed out" badge; the output preserves the runtime's explanation and the details keep its limit
+or HTTP status. Other failure codes are not reclassified as timeouts.
+
 - **Errors**: an `error` frame's `errorText` is shown as the turn's error, with "Send again". Put the
   provider's reason in `errorText` and never the raw provider response.
 - **Notices**: readiness and the platform's runtime notices (starting, waking, updating, blocked)

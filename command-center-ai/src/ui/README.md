@@ -62,6 +62,11 @@ The frame Command Center draws around the thread, so every application looks lik
 The thread draws text, reasoning, tool calls, errors, and notices. `data-<name>` parts reach the
 engine, which reads the provenance they carry; the thread does not draw them.
 
+A tool result is failed when either its outer `isError` is true or its `details.is_error` is
+true. This applies to streamed results and reloaded history. `details.failure: "timeout"` shows a
+"Timed out" badge; the output preserves the runtime's explanation and the details keep its limit
+or HTTP status. Other failure codes are not reclassified as timeouts.
+
 The rest is internal: `MessageActions.tsx`, `SessionModelRequiredState.tsx`,
 `ChatRunConfigRow.tsx`, `Select.tsx` (a native-select contract drawn by the SDK's picker),
 `MarkdownContent.tsx`, `chat-ui-context.tsx` (the copy, the viewer, and the settings callback), and

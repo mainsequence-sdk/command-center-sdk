@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Tool timeouts show as "Timed out", and returned tool errors no longer show "Done".**
+  The thread honors `details.is_error` as well as the outer `isError`, including saved history.
+  It shows a timeout badge only for `details.failure: "timeout"` and preserves the runtime's
+  explanation; genuine `access_unavailable` failures stay distinct. The UI README, conversation
+  contract, and `design-agent-conversation-capabilities` skill describe this behavior.
+  For this correction there are no npm API, stylesheet class, browser storage, skill name/path,
+  installer, SDK peer range, platform route, or payload changes. The existing payload is read;
+  no backend deployment or storage migration is required for the rendering correction.
+
 ## 0.0.12
 
 Compatibility axes: one new regular dependency, `zustand`; additive npm API (`describeToolActivity`
