@@ -137,6 +137,42 @@ const toolThread: ThreadMessageLike[] = [
   },
 ];
 
+function applicationToolThread(result?: unknown): ThreadMessageLike[] {
+  return [
+    { id: "u_1", role: "user", content: [{ type: "text", text: "How many namespaces are there?" }] },
+    {
+      id: "a_1",
+      role: "assistant",
+      status: { type: "complete", reason: "stop" },
+      content: [
+        { type: "reasoning", text: "Counting available namespaces" },
+        {
+          type: "tool-call",
+          toolCallId: "call-1",
+          toolName: "metatables__call_tool",
+          args: { tool: "list_namespaces", arguments: { limit: 500 } },
+          ...(result === undefined ? {} : { result }),
+          isError: false,
+        },
+      ],
+    },
+  ];
+}
+
+async function expandChainOfThought(container: HTMLElement) {
+  const trigger = container.querySelector<HTMLButtonElement>("button[aria-expanded]");
+  expect(trigger).not.toBeNull();
+  if (trigger?.getAttribute("aria-expanded") === "false") {
+    // The chain-of-thought store applies the toggle asynchronously.
+    await act(async () => {
+      trigger.click();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+  }
+  expect(trigger?.getAttribute("aria-expanded")).toBe("true");
+  return trigger!;
+}
+
 describe("ChatThread tools", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -216,4 +252,45 @@ describe("ChatThread tools", () => {
       expect(container.textContent).toContain("You have no repositories.");
     },
   );
+
+  it("names an application's tool, not the runtime's call_tool, while it runs", async () => {
+    act(() => {
+      root.render(<Harness messages={applicationToolThread()} surface="page" />);
+    });
+
+    const trigger = await expandChainOfThought(container);
+    expect(trigger.querySelector("[data-tool-summary]")?.textContent).toBe("1 MCP tool");
+
+    const card = container.querySelector<HTMLElement>('[data-tool-kind="mcp"]');
+    expect(card).not.toBeNull();
+    expect(card?.dataset.toolName).toBe("metatables__call_tool");
+    expect(card?.querySelector(".ms-chat-tool__name")?.textContent).toBe("list_namespaces");
+    expect(card?.querySelector(".ms-chat-tool__provider")?.textContent).toBe("metatables");
+    expect(card?.textContent).toContain("Running");
+    // The input is the tool's own arguments, without the call_tool envelope.
+    const input = card?.querySelector(".ms-chat-tool__code")?.textContent ?? "";
+    expect(JSON.parse(input)).toEqual({ limit: 500 });
+    expect(card?.textContent).not.toContain("Main Sequence MCP");
+  });
+
+  it("keeps naming the application's tool once it ran", async () => {
+    act(() => {
+      root.render(
+        <Harness
+          messages={applicationToolThread({
+            content: [{ type: "text", text: "12 namespaces" }],
+            details: { mcp_tool: "list_namespaces", is_error: false, application: "metatables" },
+          })}
+          surface="overlay"
+        />,
+      );
+    });
+
+    await expandChainOfThought(container);
+    const card = container.querySelector<HTMLElement>('[data-tool-kind="mcp"]');
+    expect(card?.querySelector(".ms-chat-tool__name")?.textContent).toBe("list_namespaces");
+    expect(card?.querySelector(".ms-chat-tool__provider")?.textContent).toBe("metatables");
+    expect(card?.textContent).toContain("Done");
+    expect(card?.textContent).toContain("12 namespaces");
+  });
 });

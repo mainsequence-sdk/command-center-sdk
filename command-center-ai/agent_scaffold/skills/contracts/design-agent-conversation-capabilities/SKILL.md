@@ -35,7 +35,10 @@ complete example: `start`, `start-step`, `reasoning-start`, `reasoning-delta`, `
   the page and the rail show it. Keep reasoning worth reading; it is visible.
 - **Tool calls**: the tool's name, its status (running, done, failed), its input as JSON, and its
   result. A tool whose name starts with `mainsequence__`, or whose result carries
-  `details.mcp_tool`, is marked MCP and shown by its canonical MCP name. The older AI SDK v5 tool
+  `details.mcp_tool`, is marked MCP and shown by its canonical MCP name. A declared application's
+  `<name>__call_tool` is marked MCP, labelled with the application's name, and shown by the tool
+  named in its `tool` argument (then by `details.mcp_tool`); its input shows only `arguments`.
+  `<name>__list_tools` shows as the application's tool listing. The older AI SDK v5 tool
   frames (`tool-input-available`, `tool-output-available`) are translated; `tool-output-delta`
   frames are dropped, so only a final result shows.
 - **Errors**: an `error` frame's `errorText` is shown as the turn's error, with "Send again". Put the

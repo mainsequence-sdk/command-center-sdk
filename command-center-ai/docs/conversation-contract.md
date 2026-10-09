@@ -25,7 +25,7 @@ reasoning, a tool call with its result, a `data-sources` part, and text.
 | --- | --- |
 | Text | GitHub-flavoured Markdown, with tables and fenced code that carries a copy control. Raw HTML is parsed and then sanitized. |
 | Reasoning | Folded with the tool calls into a collapsed block, "Thinking" while it runs and "Reasoning" after, with a one-line preview and a count of the tools, on the page and in the rail. |
-| Tool calls | The tool's name, its status (running, done, failed), its input as JSON, and its result. Tools named `mainsequence__...`, or whose result carries `details.mcp_tool`, are marked MCP and shown by their MCP name. |
+| Tool calls | The tool's name, its status (running, done, failed), its input as JSON, and its result. Tools named `mainsequence__...`, or whose result carries `details.mcp_tool`, are marked MCP and shown by their MCP name. A declared application's `<name>__call_tool` is marked MCP, labelled with the application's name, and shown by the tool it calls: `tool` in its input while it runs, `details.mcp_tool` once it ran; its input shows only `arguments`. `<name>__list_tools` shows as that application's tool listing. |
 | An `error` frame | Its `errorText` as the turn's error, with "Send again". The provider's reason belongs there, never the raw provider response ([provider errors](./main-sequence-ai-provider-errors.md)). |
 | Notices | Starting, waking, updating, or blocked, from the platform's decisions rather than from the answer. |
 

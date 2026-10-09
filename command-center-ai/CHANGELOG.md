@@ -2,9 +2,26 @@
 
 ## Unreleased
 
-Compatibility axes: one new regular dependency, `zustand`. No export, stylesheet class, browser
-storage key, skill, installer behavior, SDK peer range, platform route, or payload changes.
+Compatibility axes: one new regular dependency, `zustand`; additive npm API (`describeToolActivity`
+takes the call's arguments, `ToolActivity.application`, the `ToolActivityApplication` type); the
+words people read for an application's tools; the content of the packaged skill
+`design-agent-conversation-capabilities`. No stylesheet class, browser storage key, skill name or
+path, installer behavior, SDK peer range, platform route, or payload changes.
 
+- **The chat names an application's tool, not the runtime's `call_tool`.** Since ms-tau ADR 0021
+  each application an Agent declares reaches the model as `<name>__list_tools` and
+  `<name>__call_tool`, and a call names the application's tool in its arguments
+  (`{ "tool": "list_namespaces", "arguments": { ... } }`). The tool card showed
+  `metatables__call_tool` as a built-in tool while the call ran, and once it ran labelled
+  `list_namespaces` as a Main Sequence MCP tool. It now shows `list_namespaces`, marked MCP and
+  labelled `metatables`, from the first moment; its input shows only the tool's `arguments`;
+  `<name>__list_tools` shows as `list_tools` of that application. The header counts both as MCP
+  tools, and the run status and collapsed preview say "Using metatables MCP tool
+  list_namespaces" and "Listing metatables MCP tools". `describeToolActivity(toolName, result,
+  args)` takes the call's arguments as an optional third argument, and `ToolActivity` gains
+  `application` (`{ name, operation }`, or `null`). The
+  [conversation contract](./docs/conversation-contract.md) and
+  `design-agent-conversation-capabilities` describe the application tools.
 - **The chat installs the zustand `@assistant-ui/core` needs.** Core imports `useShallow` from
   `zustand/shallow` but declares zustand `^5.0.11` only as an optional peer. In an application
   whose own zustand is 4.x, for example through `@xyflow/react` 12, npm left core resolving that

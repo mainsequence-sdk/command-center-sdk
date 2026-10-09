@@ -58,7 +58,11 @@ import {
 } from "../backend/runtime-interaction.js";
 import { cancelChatSession } from "../backend/session-cancel-api.js";
 import { fetchSessionHistory } from "../backend/session-history-api.js";
-import { describeToolActivity, describeToolStatus } from "../backend/tool-activity.js";
+import {
+  describeStreamedToolCallStatus,
+  followStreamedToolCall,
+  type StreamedToolCall,
+} from "../backend/tool-activity.js";
 import type { ChatBackendConnection } from "../backend/connection.js";
 import {
   buildActiveSessionSummary,
@@ -858,6 +862,9 @@ function PlatformChatEngineProvider({
   // id can re-anchor instead of wiping + refetching the thread.
   const loadedSessionLookupIdRef = useRef<string | null>(null);
   const activeChatStreamSessionIdRef = useRef<string | null>(null);
+  // The tool call the stream is announcing, so its status can name an
+  // application's tool once the call's arguments arrive.
+  const streamedToolCallRef = useRef<StreamedToolCall | null>(null);
   const activeChatStreamLookupSessionIdRef = useRef<string | null>(null);
   const sessionPickerSyncRef = useRef<string | null>(null);
   const unavailableSessionModelNoticeRef = useRef<string | null>(null);
@@ -3770,10 +3777,15 @@ function PlatformChatEngineProvider({
         setHasVisibleAssistantOutput(true);
         return;
       }
-      if (type === "tool-call-start") {
+      if (type === "tool-call-start" || type === "tool-call-delta") {
         // The tool card streams into the thread; the status mirrors it so
         // every surface can say which tool, and that it is an MCP tool.
-        const status = describeToolStatus(describeToolActivity(data.toolName), "running");
+        const call = followStreamedToolCall(streamedToolCallRef.current, type, data);
+        streamedToolCallRef.current = call;
+        if (!call) {
+          return;
+        }
+        const status = describeStreamedToolCallStatus(call);
         setRunStatus("thinking");
         setRunStatusDetail(status);
         setThinkingSummary(status);

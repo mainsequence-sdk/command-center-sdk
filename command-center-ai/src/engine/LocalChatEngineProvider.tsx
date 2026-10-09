@@ -36,7 +36,11 @@ import type {
   AvailableChatReasoningEffortOption,
 } from "../backend/model-catalog-api.js";
 import type { AgentRuntimeInteraction } from "../backend/runtime-interaction.js";
-import { describeToolActivity, describeToolStatus } from "../backend/tool-activity.js";
+import {
+  describeStreamedToolCallStatus,
+  followStreamedToolCall,
+  type StreamedToolCall,
+} from "../backend/tool-activity.js";
 import type { ActiveSessionSummary } from "../session-detail/model.js";
 import type { AgentSessionAgent, AgentSessionSummary } from "./agent-sessions.js";
 import type {
@@ -449,6 +453,7 @@ export function LocalChatEngineProvider({
   const [hasVisibleAssistantOutput, setHasVisibleAssistantOutput] = useState(false);
   const [isCancellingSession, setIsCancellingSession] = useState(false);
   const runSessionIdRef = useRef<string | null>(null);
+  const streamedToolCallRef = useRef<StreamedToolCall | null>(null);
   const viewContextRef = useRef(viewContext);
   viewContextRef.current = viewContext;
   const [queues, setQueues] = useState<Record<string, MessageQueue>>({});
@@ -582,8 +587,11 @@ export function LocalChatEngineProvider({
         setHasVisibleAssistantOutput(true);
         return;
       }
-      if (type === "tool-call-start") {
-        const status = describeToolStatus(describeToolActivity(data.toolName), "running");
+      if (type === "tool-call-start" || type === "tool-call-delta") {
+        const call = followStreamedToolCall(streamedToolCallRef.current, type, data);
+        streamedToolCallRef.current = call;
+        if (!call) return;
+        const status = describeStreamedToolCallStatus(call);
         setRunStatus("thinking");
         setRunStatusDetail(status);
         setThinkingSummary(status);

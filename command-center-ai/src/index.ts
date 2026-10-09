@@ -147,6 +147,7 @@ export {
   describeToolStatus,
   summarizeToolActivities,
   type ToolActivity,
+  type ToolActivityApplication,
 } from "./backend/tool-activity.js";
 export {
   MainSequenceAiError,

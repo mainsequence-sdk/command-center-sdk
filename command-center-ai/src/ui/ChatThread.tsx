@@ -51,6 +51,7 @@ import {
 } from "../backend/runtime-interaction.js";
 import {
   describeToolActivity,
+  describeToolInput,
   describeToolStatus,
   summarizeToolActivities,
   type ToolActivity,
@@ -297,6 +298,7 @@ type ChainOfThoughtPartLike =
   | {
       type: "tool-call";
       toolName?: string;
+      args?: unknown;
       result?: unknown;
       isError?: boolean;
       status?: { type?: string };
@@ -306,7 +308,7 @@ function getToolActivities(parts: ReadonlyArray<ChainOfThoughtPartLike>): ToolAc
   const activities: ToolActivity[] = [];
   for (const part of parts) {
     if (part.type === "tool-call" && typeof part.toolName === "string" && part.toolName.trim()) {
-      activities.push(describeToolActivity(part.toolName, part.result));
+      activities.push(describeToolActivity(part.toolName, part.result, part.args));
     }
   }
   return activities;
@@ -339,7 +341,10 @@ function getThinkingPreview(parts: ReadonlyArray<ChainOfThoughtPartLike>) {
 
     if (part.type === "tool-call" && typeof part.toolName === "string" && part.toolName.trim()) {
       return trimThinkingPreview(
-        describeToolStatus(describeToolActivity(part.toolName, part.result), getToolPhase(part)),
+        describeToolStatus(
+          describeToolActivity(part.toolName, part.result, part.args),
+          getToolPhase(part),
+        ),
       );
     }
   }
@@ -349,7 +354,10 @@ function getThinkingPreview(parts: ReadonlyArray<ChainOfThoughtPartLike>) {
 
 function ToolFallbackPart({ argsText, isError, result, toolName }: ToolCallMessagePartProps) {
   const parsedArgs = argsText ? tryParseJson(argsText) : null;
-  const formattedArgs = argsText ? formatStructuredValue(parsedArgs ?? argsText) : null;
+  const activity = describeToolActivity(toolName, result, parsedArgs);
+  const formattedArgs = argsText
+    ? formatStructuredValue(describeToolInput(activity, parsedArgs ?? argsText))
+    : null;
   const resultText = extractToolTextContent(result);
   const resultDetails = getToolResultDetails(result);
   const formattedResultDetails =
@@ -358,7 +366,6 @@ function ToolFallbackPart({ argsText, isError, result, toolName }: ToolCallMessa
       : null;
   const statusLabel = result === undefined ? "Running" : isError ? "Failed" : "Done";
   const statusVariant = result === undefined ? "neutral" : isError ? "danger" : "success";
-  const activity = describeToolActivity(toolName, result);
 
   return (
     <div
