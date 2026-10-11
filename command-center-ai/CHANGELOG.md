@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: additive npm API on `ChatRailProps` (`resizable`, `width`, `defaultWidth`,
+`minWidth`, `maxWidth`, `onWidthChange`); additive stylesheet classes
+`ms-chat-rail__resize-handle` and `ms-chat-rail--resizing`; and the content and description of the
+packaged skill `compose-command-center-ai-rail`. No browser storage key or value, skill name or
+path, installer behavior, SDK peer range, platform route, or payload changes. No backend action or
+storage migration is required: sizing is presentation state and the application owns persistence.
+
+- **People can resize the AI right rail.** Drag its left edge or focus "Resize chat rail" and use
+  Left/Right, Shift+Left/Right, Home, or End. Double-click restores its default width. It starts at
+  540px, with 360–900px defaults and viewport/right-offset limits. The rail keeps its preferred
+  width when a smaller viewport temporarily constrains it.
+- Docked hosts use an `auto` grid column or share controlled `width` and `onWidthChange` with
+  their layout column. `resizable={false}` preserves the previous fill-column docked behavior and
+  fixed overlay. The rail guide, UI README, packaged skill, consumer fixture, and standalone demo
+  describe or exercise this API. The demo retains width across closing and expanding, docks from
+  1400px, and floats below it.
+
 ## 0.0.13
 
 Compatibility axes: the picker's behavior and words for a session whose stored model the catalog

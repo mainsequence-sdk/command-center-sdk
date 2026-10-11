@@ -17,7 +17,9 @@ It may read its own environment; the package in `../src` may not.
   the Organization Environment, and an Agent. Connecting mounts `ChatEngineProvider` with the
   Agent's default session behind the handle `standalone_chat`, so every visit continues the same
   conversation, and shows `ChatThread` in the package's frame: `ChatPageLayout` with its session
-  explorer first; Minimize opens `ChatRail` over a placeholder page, whose Expand returns and whose
+  explorer first; Minimize opens `ChatRail` beside a placeholder page from 1400px or over it below,
+  with a draggable left edge and keyboard resizing. Its controlled width survives Close and Expand
+  while the application is mounted. Expand returns and
   Close leaves `ChatLauncher`. A header button switches to `ModelProviderSettings`, and notices from
   the chat appear in a small stack in the corner.
 - `main.tsx` applies the Main Sequence theme with `applyThemePresetToRoot`, or the preset named by
@@ -57,5 +59,6 @@ request from the stand-in and prefills the form; any token works.
   with it (`connection.ts`); `auth` carries only the person. The other fields are remembered in
   `localStorage` under `chat-standalone.settings`.
 - Never put a token in an environment file.
+- Rail width stays in memory in `ChatScreens`; it adds no stored preference or platform payload.
 - `npm run build:standalone` bundles the application into `standalone/dist/`; `dist/` at the package
   root is the library build.

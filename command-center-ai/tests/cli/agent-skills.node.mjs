@@ -139,7 +139,7 @@ test("screen-building skills use the SDK's controls, render no raw control, and 
     "the package's stylesheet loads after the SDK's",
   );
   const rail = await skillText("ui/compose-command-center-ai-rail");
-  for (const rule of [/540px/u, /1400px/u, /Expand/u, /Close chat rail/u, /surface="page"/u, /useChatComposerState/u, /375×812/u]) {
+  for (const rule of [/540px/u, /1400px/u, /Expand/u, /Close chat rail/u, /surface="page"/u, /useChatComposerState/u, /375×812/u, /onWidthChange/u, /minWidth/u, /maxWidth/u, /resizable/u]) {
     assert.match(rail, rule);
   }
   // The package draws the frame: the examples use its components, not a panel of the application's.

@@ -12,6 +12,8 @@ session behind a stable handle, and renders `ChatThread` inside the package's fr
 `useChatComposerState()`, `ModelProviderSettings`, and `AgentConnectingState` with the SDK's
 `Button`. Its connection's `sendPlatformRequest` adds the
 application's own credential and renews it once after a `401`.
+The rail uses controlled `width` and `onWidthChange` with explicit default and minimum/maximum
+widths, proving the resizing API survives packing.
 
 `src/embedded.tsx` is an application embedded in Command Center: it holds no platform credential,
 and its connection sends platform requests through the SDK static-site client's

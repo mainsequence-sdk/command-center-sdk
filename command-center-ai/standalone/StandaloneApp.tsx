@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { Button, Input } from "@dev-mainsequence/command-center-sdk/controls";
 
@@ -261,6 +261,15 @@ function ChatScreens({
   viewer: ChatViewer | null;
 }) {
   const openProviders = providers ? () => setView("providers") : undefined;
+  const [railWidth, setRailWidth] = useState(540);
+  const [docked, setDocked] = useState(() => window.matchMedia("(min-width: 1400px)").matches);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1400px)");
+    const update = () => setDocked(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   return (
     <div className="standalone-chat">
@@ -284,7 +293,7 @@ function ChatScreens({
           ) : null}
         </nav>
       </header>
-      <main className="standalone-chat__main">
+      <main className={`standalone-chat__main${view === "rail" && docked ? " standalone-chat__main--rail" : ""}`}>
         {view === "chat" ? (
           <ChatPageLayout
             explorer={{ onOpenSession }}
@@ -302,7 +311,9 @@ function ChatScreens({
               <ChatRail
                 title={title}
                 subtitle="Assistant rail."
-                mode="overlay"
+                mode={docked ? "docked" : "overlay"}
+                width={railWidth}
+                onWidthChange={setRailWidth}
                 onExpand={() => setView("chat")}
                 onClose={() => setView("app")}
               >

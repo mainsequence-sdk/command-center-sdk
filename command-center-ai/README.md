@@ -26,6 +26,9 @@ exports (`src/index.ts`).
   Command Center draws around the thread (`ChatRail`, `ChatLauncher`, `ChatPageLayout`, and
   `AgentSessionExplorer`); `AgentConnectingState`; and `AgentIcon`. See its
   [README](./src/ui/README.md).
+- `ChatRail` starts at 540px and lets people drag its left edge or use the keyboard to resize it.
+  Applications can control `width` with `onWidthChange`, including their docked layout column;
+  [the rail guide](./docs/rail-and-expanded-rail.md) covers sizing and limits.
 - An Agent on the developer's machine: `ChatEngineProvider source={createLocalAgentSource(...)}`
   talks to `ms-tau` in local mode instead of the platform, with the same chat
   ([guide](./docs/local-agents.md), ADR 099).
@@ -141,7 +144,8 @@ builds the library into `dist/` with `tsc`;
 `npm --workspace @dev-mainsequence/command-center-ai run build:standalone` bundles the standalone application
 into `standalone/dist/`. `npm --workspace @dev-mainsequence/command-center-ai run test:browser` runs the
 standalone application on the stand-in in Chromium with Playwright (`tests/browser/`): it connects,
-sends a message and watches the reply stream in, and opens the model provider settings.
+sends a message and watches the reply stream in, opens the model provider settings, and resizes
+docked and overlay rails, including phone viewports.
 
 `ai:dev` serves the standalone application on port 5183. Open `/?stand-in` to run it on the
 scripted stand-in, with no platform and no token. To reach a platform that does not allow

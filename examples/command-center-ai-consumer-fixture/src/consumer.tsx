@@ -97,6 +97,7 @@ export function PackedChatApplication({ userUid }: { userUid: string }) {
   const auth = useMemo<ChatAuth>(() => ({ userUid }), [userUid]);
   const [view, setView] = useState<"chat" | "rail" | "providers">("chat");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [railWidth, setRailWidth] = useState(540);
   const [notices, setNotices] = useState<ChatNotice[]>([]);
   const notify: ChatNotify = (notice) => setNotices((current) => [...current, notice]);
 
@@ -132,6 +133,12 @@ export function PackedChatApplication({ userUid }: { userUid: string }) {
         </ChatPageLayout>
       ) : view === "rail" ? (
         <ChatRail
+          resizable
+          width={railWidth}
+          defaultWidth={540}
+          minWidth={360}
+          maxWidth={900}
+          onWidthChange={setRailWidth}
           title="Packed agent"
           subtitle="Assistant rail."
           mode="overlay"

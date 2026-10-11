@@ -40,13 +40,44 @@ import { ChatLauncher, ChatRail, ChatThread } from "@dev-mainsequence/command-ce
 
 | Aspect | Rule |
 | --- | --- |
-| Size and place | 540px wide, on the right edge, the full height below the application's top bar. |
-| Docked | From a 1400px viewport: `mode="docked"` in a column of the layout grid (`grid-template-columns: <sidebar> minmax(0, 1fr) 540px`), so the page narrows. |
-| Overlay | Below 1400px: `mode="overlay"` fixes it over the page, `min(540px, 100vw - 10px)` wide, with a shadow. `rightOffset` keeps it clear of a column the application holds at the right. |
+| Size and place | Initially 540px wide (`defaultWidth`), on the right edge, the full height below the application's top bar. Drag the left edge to resize. |
+| Docked | From a 1400px viewport: `mode="docked"` in an `auto` layout column (`grid-template-columns: <sidebar> minmax(0, 1fr) auto`), so the page narrows as the rail grows. A fixed column must follow the controlled `width`. |
+| Overlay | Below 1400px: `mode="overlay"` fixes it over the page with a shadow. Its width fits `100vw - 10px - rightOffset`; `rightOffset` keeps it clear of a column the application holds at the right. |
+| Limits | `minWidth` defaults to 360px, `maxWidth` to 900px. The viewport and the rail's right edge take precedence, including on phones. A smaller screen temporarily reduces the rendered width; the preferred width returns when space allows. |
+| Keyboard | Focus the left-edge separator, labelled "Resize chat rail". Left widens by 20px, Right narrows by 20px; Shift uses 100px steps. Home chooses the minimum, End the maximum. Double-click resets to `defaultWidth`. |
 | Header | `title` and `subtitle`; `detail` adds a pill, for example the session; `onExpand` adds Expand. The tile shows the engine's active Agent unless `agentUid` names one. |
 | Tone | `tone="accent"` for a rail opened directly on one Agent, as Command Center does for a code repository's Agent. |
 | Closing | Close returns the engine to the default session when another Agent's session was open, then calls `onClose`. |
 | Opening | A top-bar toggle or `ChatLauncher`. Show the launcher only while neither the rail nor the expanded rail is on screen. |
+
+`resizable` defaults to true. Pass `resizable={false}` for the original fixed overlay or a docked
+rail that fills its parent column. A supplied `width` still controls its size.
+
+For a controlled docked rail, share one width with the layout. Keep this state above the rail's
+conditional mount so closing or expanding preserves the person's preference:
+
+```tsx
+import { useState, type ReactNode } from "react";
+import { ChatRail, ChatThread } from "@dev-mainsequence/command-center-ai";
+
+function PageWithAssistant({ close, children }: { close: () => void; children: ReactNode }) {
+  const [railWidth, setRailWidth] = useState(540);
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: `minmax(0, 1fr) ${railWidth}px`, height: "100%" }}>
+      <main style={{ minWidth: 0 }}>{children}</main>
+      <ChatRail title="Main Sequence AI" width={railWidth} onWidthChange={setRailWidth} onClose={close}>
+        <ChatThread surface="overlay" />
+      </ChatRail>
+    </div>
+  );
+}
+```
+
+Use this docked layout at wide viewports and `mode="overlay"` below 1400px. `onWidthChange` reports
+user resizing in pixels, including keyboard steps and reset. Viewport changes constrain the
+rendered rail without overwriting the preference or invoking that callback. An uncontrolled rail
+remembers its width while mounted. The package adds no browser storage; persistence belongs to the
+application.
 
 ## The expanded rail
 
@@ -111,6 +142,7 @@ use theme variables, loaded after its stylesheet. The application's words go thr
 ## Verify
 
 Open the rail at 1440×900 (docked) and 1280×800 (overlay); expand, send a message, and minimize, and
-the conversation is the same in both; check 375×812 in a dark and a light theme; and run the theme
+the conversation is the same in both. Drag and keyboard-resize it, check that a docked page follows
+its width, and confirm the viewport limits at 375×812 in a dark and a light theme; run the theme
 audit. The [Build an AI application](./build-an-ai-application.md) guide covers the scripted
 stand-in.

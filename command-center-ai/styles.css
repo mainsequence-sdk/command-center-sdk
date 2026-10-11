@@ -3299,6 +3299,36 @@
     box-shadow: -26px 0 80px color-mix(in srgb, var(--background) 72%, transparent);
   }
 
+  .ms-chat-rail__resize-handle {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 2;
+    width: 10px;
+    cursor: col-resize;
+    touch-action: none;
+    outline: none;
+  }
+
+  .ms-chat-rail__resize-handle::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: transparent;
+  }
+
+  .ms-chat-rail__resize-handle:hover::after,
+  .ms-chat-rail__resize-handle:focus-visible::after,
+  .ms-chat-rail--resizing .ms-chat-rail__resize-handle::after {
+    background: var(--primary);
+  }
+
+  .ms-chat-rail--accent .ms-chat-rail__resize-handle:hover::after,
+  .ms-chat-rail--accent .ms-chat-rail__resize-handle:focus-visible::after,
+  .ms-chat-rail--accent.ms-chat-rail--resizing .ms-chat-rail__resize-handle::after {
+    background: var(--accent);
+  }
+
   .ms-chat-rail__decor {
     pointer-events: none;
     position: absolute;

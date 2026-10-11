@@ -44,7 +44,11 @@ The frame Command Center draws around the thread, so every application looks lik
   `subtitle`, an optional `detail` pill, Expand (with `onExpand`), and Close; and a body for the
   thread. `tone="accent"` draws a directly launched Agent's rail. Close returns the engine to the
   default session when another Agent's session was open, unless `restoreDefaultSessionOnClose` is
-  false.
+  false. The left edge resizes by pointer or keyboard by default: `defaultWidth` is 540px,
+  `minWidth` 360px, and `maxWidth` 900px. Viewport space and `rightOffset` take precedence over the
+  minimum. `width` and `onWidthChange` let a host control its layout column and keep the preference
+  across mounts. Use an `auto` grid column for an uncontrolled docked rail. `resizable={false}`
+  removes the handle and retains the original fill-column behavior unless `width` is supplied.
 - `ChatLauncher` (`ChatRail.tsx`): the floating button that opens the rail.
 - `ChatPageLayout` (`ChatPageLayout.tsx`): the expanded rail: the session explorer at the left (a
   column from 1024px, an overlay with a scrim below), a header with the Agent, the session, and the
@@ -72,6 +76,8 @@ The rest is internal: `MessageActions.tsx`, `SessionModelRequiredState.tsx`,
 `MarkdownContent.tsx`, `chat-ui-context.tsx` (the copy, the viewer, and the settings callback), and
 `class-names.ts`. `Dialog.tsx`, `ConfirmationDialog.tsx` (the person types a word to confirm), and
 `PasswordInput.tsx` serve the [model provider settings](../model-providers/README.md).
+`useChatRailResize.ts` owns the rail's internal presentation state, pointer capture, keyboard
+steps, viewport measurements, and drag cleanup. Width stays in memory; no storage key is added.
 
 ## Dependencies
 

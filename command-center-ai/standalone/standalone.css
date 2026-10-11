@@ -78,9 +78,14 @@ body,
 }
 
 .standalone-chat__app {
+  min-width: 0;
   flex: 1 1 0%;
   padding: 1.5rem 1.25rem;
   color: var(--muted-foreground);
+}
+
+.standalone-chat__main--rail {
+  flex-direction: row;
 }
 
 .standalone-chat__settings {

@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useId, useRef, type CSSProperties, type ReactNode } from "react";
 
 import { Expand, Sparkles, X } from "lucide-react";
 import { Button } from "@dev-mainsequence/command-center-sdk/controls";
@@ -6,6 +6,7 @@ import { Button } from "@dev-mainsequence/command-center-sdk/controls";
 import { useOptionalChatEngine } from "../engine/ChatEngineProvider.js";
 import { AgentIcon } from "./AgentIcon.js";
 import { cx } from "./class-names.js";
+import { useChatRailResize } from "./useChatRailResize.js";
 
 export interface ChatRailProps {
   /** The rail's content, usually `<ChatThread surface="overlay" />`. */
@@ -17,10 +18,22 @@ export interface ChatRailProps {
   /** A pill under the subtitle, for example the session the rail shows. */
   detail?: ReactNode;
   /**
-   * `docked` fills a column of the application's layout, so the page narrows beside it.
-   * `overlay` floats over the page at the right edge, `min(540px, 100vw - 10px)` wide.
+   * `docked` occupies a column of the application's layout, so the page narrows beside it.
+   * `overlay` floats over the page at the right edge. Both resize from their left edge.
    */
   mode?: "docked" | "overlay";
+  /** Show the draggable, keyboard-accessible left edge. Default true. */
+  resizable?: boolean;
+  /** Controlled width in pixels. Pair with onWidthChange and the host's docked grid column. */
+  width?: number;
+  /** Initial uncontrolled width in pixels. Default 540. */
+  defaultWidth?: number;
+  /** Minimum resize width in pixels. Default 360; a smaller viewport takes precedence. */
+  minWidth?: number;
+  /** Maximum resize width in pixels. Default 900; the viewport and right offset also limit it. */
+  maxWidth?: number;
+  /** Receives the requested width on drag, keyboard resize, or double-click reset. No persistence. */
+  onWidthChange?: (width: number) => void;
   /** The colour of the Agent tile, the rail's edge, and its glow. */
   tone?: "primary" | "accent";
   /** The Agent drawn in the header tile. Defaults to the engine's active Agent. */
@@ -42,7 +55,7 @@ export interface ChatRailProps {
 }
 
 /**
- * Command Center's right rail: a 540px panel with the theme's gradient and glow, a header with the
+ * Command Center's right rail: a resizable panel, initially 540px, with the theme's gradient and glow, a header with the
  * Agent's icon, the assistant's name, Expand, and Close, and a body that scrolls its content. Put
  * `ChatThread surface="overlay"` inside it, under the application's `ChatEngineProvider`.
  */
@@ -51,22 +64,36 @@ export function ChatRail({
   agentUid,
   children,
   className,
+  defaultWidth = 540,
   detail,
   icon,
+  maxWidth = 900,
+  minWidth = 360,
   mode = "docked",
   onClose,
   onExpand,
+  onWidthChange,
+  resizable = true,
   restoreDefaultSessionOnClose = true,
   rightOffset,
   subtitle,
   title,
   tone = "primary",
+  width,
 }: ChatRailProps) {
   const engine = useOptionalChatEngine();
   const railAgentUid = agentUid === undefined ? (engine?.activeAgentUid ?? null) : agentUid;
   const overlay = mode === "overlay";
-  const style: CSSProperties | undefined =
-    overlay && rightOffset !== undefined && rightOffset !== 0 ? { right: rightOffset } : undefined;
+  const railRef = useRef<HTMLElement>(null);
+  const railId = useId();
+  const resize = useChatRailResize(railRef, { defaultWidth, maxWidth, minWidth, mode, onWidthChange, resizable, rightOffset, width });
+  const style: CSSProperties = {
+    ...(overlay && rightOffset !== undefined ? { right: rightOffset } : {}),
+    ...(resizable || width !== undefined ? { width: resize.railWidth, flexShrink: 0 } : {}),
+    maxWidth: overlay && rightOffset !== undefined
+      ? `max(0px, calc(100vw - 10px - ${typeof rightOffset === "number" ? `${rightOffset}px` : rightOffset}))`
+      : "calc(100vw - 10px)",
+  };
 
   function close() {
     if (restoreDefaultSessionOnClose && engine?.hasDirectLaunchSelection()) {
@@ -80,13 +107,32 @@ export function ChatRail({
       aria-label={ariaLabel ?? title}
       className={cx(
         "ms-chat-rail",
+        resize.resizing && "ms-chat-rail--resizing",
         overlay && "ms-chat-rail--overlay",
         tone === "accent" && "ms-chat-rail--accent",
         className,
       )}
       data-chat-rail={mode}
+      id={railId}
+      ref={railRef}
       style={style}
     >
+      {resizable ? (
+        <div
+          aria-controls={railId}
+          aria-label="Resize chat rail"
+          aria-orientation="vertical"
+          aria-valuemax={resize.maximum}
+          aria-valuemin={resize.minimum}
+          aria-valuenow={resize.measuredWidth}
+          aria-valuetext={`${resize.measuredWidth} pixels`}
+          className="ms-chat-rail__resize-handle"
+          role="separator"
+          tabIndex={0}
+          title="Drag to resize. Use arrow keys, or double-click to reset."
+          {...resize.handleProps}
+        />
+      ) : null}
       <div aria-hidden="true" className="ms-chat-rail__decor">
         <div className="ms-chat-rail__sheen" />
         <div className="ms-chat-rail__edge" />

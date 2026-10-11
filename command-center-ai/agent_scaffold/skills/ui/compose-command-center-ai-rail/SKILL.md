@@ -1,6 +1,6 @@
 ---
 name: compose-command-center-ai-rail
-description: Compose Command Center AI's right rail and expanded rail in an application that uses @dev-mainsequence/command-center-sdk and @dev-mainsequence/command-center-ai with the package's own frame - ChatRail (the 540px rail docked or floating, with the theme's gradient and glows, the Agent's icon, Expand, and Close), ChatLauncher, ChatPageLayout (the expanded rail with its session explorer and run status), AgentSessionExplorer, the standalone ChatComposer and useChatComposerState for whether the assistant can take a message, switching between them over one engine, the thread's words, and phone presentation. Use when placing the conversation in an application or reviewing how it looks and behaves.
+description: Compose Command Center AI's right rail and expanded rail in an application that uses @dev-mainsequence/command-center-sdk and @dev-mainsequence/command-center-ai with the package's own frame - ChatRail (the resizable rail, initially 540px, docked or floating, with the theme's gradient and glows, the Agent's icon, Expand, and Close), ChatLauncher, ChatPageLayout (the expanded rail with its session explorer and run status), AgentSessionExplorer, the standalone ChatComposer and useChatComposerState for whether the assistant can take a message, switching between them over one engine, the thread's words, and phone presentation. Use when placing the conversation in an application or reviewing how it looks and behaves.
 ---
 
 # Compose The Right Rail And The Expanded Rail
@@ -68,12 +68,19 @@ export function AssistantRail({ copy, docked, open, viewer, onClose, onExpand, o
 }
 ```
 
-- **Size and place.** The rail is 540px wide, on the right edge, the full height below the
-  application's top bar.
+- **Size and place.** The rail starts at 540px (`defaultWidth`), on the right edge, the full height
+  below the application's top bar. Its left edge resizes by pointer and keyboard by default.
 - **Two modes.** `mode="docked"`: put `ChatRail` in a column of the application's layout grid, so
-  the page narrows to make room (`grid-template-columns: <sidebar> minmax(0, 1fr) 540px`).
-  `mode="overlay"`: it floats over the page at the right edge, `min(540px, 100vw - 10px)` wide.
+  the page narrows to make room (`grid-template-columns: <sidebar> minmax(0, 1fr) auto`). A fixed
+  column must follow `width` and `onWidthChange`, with state above the rail's conditional mount.
+  `mode="overlay"`: it floats over the page at the right edge, limited to `100vw - 10px - rightOffset`.
   Dock the rail when the viewport is at least 1400px wide and float it below.
+- **Resizing.** `minWidth` defaults to 360px and `maxWidth` to 900px; the viewport and right edge
+  take precedence. The separator labelled "Resize chat rail" takes Left/Right (20px), Shift with
+  Left/Right (100px), Home/End (minimum/maximum), and double-click (reset to `defaultWidth`).
+  `resizable={false}` removes it and restores the fill-column docked layout unless `width` is given.
+  Width is in memory only; the host owns persistence. A smaller viewport constrains the rendered
+  width without changing the preferred width or calling `onWidthChange`.
 - **Header.** `ChatRail` draws the Agent's icon tile, `title`, `subtitle`, an optional `detail`
   pill, `Expand` (when `onExpand` is given), and the icon-only close button labelled
   `Close chat rail`. Its buttons are the SDK's `/controls` (`$compose-command-center-controls`).
@@ -187,7 +194,8 @@ stays above the on-screen keyboard, and nothing scrolls sideways.
 ## Verify
 
 1. At 1440×900 open the rail: it docks, and the page narrows. At 1280×800 it floats, and the page
-   does not move.
+   does not move. Drag the left edge, resize with the keyboard, and verify the docked column
+   follows the rail's width. Check minimum, maximum, and double-click reset.
 2. Expand, send a message, and minimize: the same conversation shows in both, and the person is back
    where they were.
 3. Close with another Agent's session open: the default session returns.
