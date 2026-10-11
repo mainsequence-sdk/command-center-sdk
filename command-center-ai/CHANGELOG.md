@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.13
 
 Compatibility axes: the picker's behavior and words for a session whose stored model the catalog
 does not offer under its stored provider. No npm API, stylesheet class, browser storage key, skill
