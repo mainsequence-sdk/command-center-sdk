@@ -335,6 +335,39 @@ describe("the standalone chat against the stand-in", () => {
     expect(standIn.unhandledRequests).toEqual([]);
   });
 
+  it("finds a stranded session's model under the one provider that publishes it, or lets the person choose", async () => {
+    const pickerValue = (label: string) =>
+      container.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)?.value ?? null;
+    const pickerTrigger = (label: string) =>
+      container.querySelector<HTMLElement>(`[aria-label="${label}"]:not(select)`)?.textContent ?? "";
+    const reopenWith = async (provider: string, model: string) => {
+      const session = theSession();
+      session.llmProvider = provider;
+      session.llmModel = model;
+      await closeApplication();
+      await openApplication();
+      await connect();
+      await waitUntilReadyToWrite();
+    };
+
+    await openApplication();
+    await connect();
+    await waitUntilReadyToWrite();
+
+    // The platform never publishes "stand-in-classic", but it publishes Deep 1 under Stand-in Cloud.
+    await reopenWith("stand-in-classic", "deep-1");
+    await waitFor(() => expect(pickerValue("Model")).toBe("stand-in-cloud::deep-1"));
+    expect(pickerValue("Provider")).toBe("stand-in-cloud");
+    expect(text()).toContain("Using Deep 1 via Stand-in Cloud instead.");
+
+    // No provider publishes the model: the picker selects nothing and asks.
+    await reopenWith("stand-in-classic", "retired-1");
+    await waitFor(() => expect(text()).toContain("Choose a model from the picker."));
+    // The hidden native select falls back to its first option, so read what the picker shows.
+    expect(pickerTrigger("Model")).toContain("Choose a model");
+    expect(pickerTrigger("Provider")).toContain("Choose a provider");
+  });
+
   it("streams the reply in: reasoning, the tool call with its input and output, and the text", async () => {
     await openApplication();
     await connect();

@@ -125,6 +125,7 @@ import {
   type SessionModelSelectionRequest,
 } from "./session-model-fallback.js";
 import { useRunConfigOptions } from "./run-config-options.js";
+import { resolveSessionPickerModel } from "./session-model-match.js";
 import type {
   ChatAuth,
   ChatDefaultSession,
@@ -403,47 +404,6 @@ function isAbortLikeError(error: unknown) {
 
   const message = error.message.trim().toLowerCase();
   return message.includes("abort");
-}
-
-function findProviderValueBySessionProvider(
-  providers: readonly AvailableChatProviderOption[],
-  provider: string | null | undefined,
-) {
-  const normalizedProvider = normalizeCatalogKey(provider);
-
-  if (!normalizedProvider) {
-    return null;
-  }
-
-  const match = providers.find((entry) => normalizeCatalogKey(entry.value) === normalizedProvider);
-  return match?.value ?? null;
-}
-
-function findModelIdBySessionModel(
-  models: readonly AvailableChatModelOption[],
-  {
-    model,
-    provider,
-  }: {
-    model: string | null | undefined;
-    provider?: string | null;
-  },
-) {
-  const normalizedModel = normalizeCatalogKey(model);
-
-  if (!normalizedModel) {
-    return null;
-  }
-
-  const normalizedProvider = normalizeCatalogKey(provider);
-  const scopedModels = normalizedProvider
-    ? models.filter((entry) => normalizeCatalogKey(entry.provider) === normalizedProvider)
-    : models;
-  const match =
-    scopedModels.find((entry) => normalizeCatalogKey(entry.value) === normalizedModel) ??
-    scopedModels.find((entry) => normalizeCatalogKey(entry.label) === normalizedModel);
-
-  return match?.id ?? null;
 }
 
 function normalizeSessionModelValue(value: string | null | undefined) {
@@ -867,6 +827,8 @@ function PlatformChatEngineProvider({
   const streamedToolCallRef = useRef<StreamedToolCall | null>(null);
   const activeChatStreamLookupSessionIdRef = useRef<string | null>(null);
   const sessionPickerSyncRef = useRef<string | null>(null);
+  // The sync signature whose stored model the picker could not match: the person chooses.
+  const sessionModelChoicePendingRef = useRef<string | null>(null);
   const unavailableSessionModelNoticeRef = useRef<string | null>(null);
   const sessionHistoryRequestRef = useRef<AbortController | null>(null);
   const sessionRuntimeAccessMetaRequestRef = useRef<AbortController | null>(null);
@@ -2534,12 +2496,14 @@ function PlatformChatEngineProvider({
         setAvailableReasoningEfforts([]);
       }
       unavailableSessionModelNoticeRef.current = null;
+      sessionModelChoicePendingRef.current = null;
       sessionPickerSyncRef.current = null;
       return;
     }
 
     let nextProvider = selectedProviderValue;
     let nextModelId = selectedModelValue;
+    let awaitingSessionModelChoice = false;
 
     const { model: sessionModel, provider: sessionProvider } =
       resolveSessionModelPreference(selectedSession);
@@ -2560,30 +2524,25 @@ function PlatformChatEngineProvider({
       ].join("::");
 
       if (sessionPickerSyncRef.current !== syncSignature) {
-        const matchedProviderValue = findProviderValueBySessionProvider(
-          availableProviders,
-          sessionProvider,
-        );
-        const matchedModelId = findModelIdBySessionModel(availableModels, {
+        const resolution = resolveSessionPickerModel({
           model: sessionModel,
-          provider: matchedProviderValue ?? sessionProvider,
+          models: availableModels,
+          provider: sessionProvider,
+          providers: availableProviders,
         });
-        const matchedModel =
-          availableModels.find((model) => model.id === matchedModelId) ?? null;
 
-        if (matchedModel) {
-          nextProvider = matchedProviderValue ?? matchedModel.provider ?? null;
-          nextModelId = matchedModel.id;
+        nextProvider = resolution.providerValue;
+
+        if (resolution.kind === "stored") {
+          nextModelId = resolution.modelId;
+          sessionModelChoicePendingRef.current = null;
           unavailableSessionModelNoticeRef.current = null;
         } else {
-          const fallbackProvider =
-            matchedProviderValue ?? availableProviders[0]?.value ?? null;
-          const fallbackModels = fallbackProvider
-            ? availableModels.filter((model) => model.provider === fallbackProvider)
-            : availableModels;
-
-          nextProvider = fallbackProvider;
-          nextModelId = fallbackModels[0]?.id ?? availableModels[0]?.id ?? null;
+          // Never preselect a model the session did not ask for: without a single
+          // match under another provider, the picker waits for the person.
+          nextModelId = resolution.kind === "other-provider" ? resolution.modelId : null;
+          sessionModelChoicePendingRef.current =
+            resolution.kind === "other-provider" ? null : syncSignature;
 
           if (unavailableSessionModelNoticeRef.current !== syncSignature) {
             unavailableSessionModelNoticeRef.current = syncSignature;
@@ -2592,7 +2551,11 @@ function PlatformChatEngineProvider({
               description: [
                 sessionProvider ? `Provider: ${sessionProvider}` : null,
                 sessionModel ? `Model: ${sessionModel}` : null,
-                "Using the first available model from the picker instead.",
+                resolution.kind === "other-provider"
+                  ? `Using ${resolution.label} instead.`
+                  : resolution.offeredBy.length > 0
+                    ? `Offered by ${resolution.offeredBy.join(", ")}. Choose a model from the picker.`
+                    : "Choose a model from the picker.",
               ]
                 .filter(Boolean)
                 .join(" · "),
@@ -2603,6 +2566,9 @@ function PlatformChatEngineProvider({
 
         sessionPickerSyncRef.current = syncSignature;
       }
+
+      awaitingSessionModelChoice =
+        !nextModelId && sessionModelChoicePendingRef.current === syncSignature;
     }
 
     if (
@@ -2612,7 +2578,7 @@ function PlatformChatEngineProvider({
       nextProvider = null;
     }
 
-    if (!nextProvider && availableProviders.length > 0) {
+    if (!nextProvider && availableProviders.length > 0 && !awaitingSessionModelChoice) {
       const modelForSelection =
         availableModels.find((model) => model.id === nextModelId) ?? null;
       nextProvider =
@@ -2623,7 +2589,9 @@ function PlatformChatEngineProvider({
       ? availableModels.filter((model) => model.provider === nextProvider)
       : availableModels;
 
-    if (!nextModelId || !scopedModels.some((model) => model.id === nextModelId)) {
+    if (awaitingSessionModelChoice) {
+      nextModelId = null;
+    } else if (!nextModelId || !scopedModels.some((model) => model.id === nextModelId)) {
       nextModelId = scopedModels[0]?.id ?? availableModels[0]?.id ?? null;
     }
 

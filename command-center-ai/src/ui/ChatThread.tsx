@@ -2322,8 +2322,9 @@ function useThreadComposerModel() {
     value: entry.id,
   }));
   const reasoningEffortOptions = availableReasoningEfforts;
-  const selectedModel = selectedModelValue ?? modelOptions[0]?.value ?? "";
-  const selectedProvider = selectedProviderValue ?? providerOptions[0]?.value ?? "";
+  // No fallback to the first option: an empty selection means the person chooses.
+  const selectedModel = selectedModelValue ?? "";
+  const selectedProvider = selectedProviderValue ?? "";
   const selectedReasoningEffort =
     selectedReasoningEffortValue ?? reasoningEffortOptions[0]?.value ?? "";
   const sessionBusy =

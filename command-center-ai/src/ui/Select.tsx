@@ -18,6 +18,8 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   emptyMessage?: string;
   fitContent?: boolean;
   listboxPlacement?: "bottom" | "top";
+  /** Shown while no option is selected; defaults to the first option's label. */
+  placeholder?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
 }
@@ -97,6 +99,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       multiple = false,
       name,
       onChange,
+      placeholder,
       searchable = false,
       searchPlaceholder = "Search options",
       value,
@@ -182,7 +185,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             headerAction={headerAction}
             options={options}
             placement={listboxPlacement}
-            placeholder={singleValue || options[0]?.label || "Select an option"}
+            placeholder={singleValue || placeholder || options[0]?.label || "Select an option"}
             searchable={searchable}
             searchPlaceholder={searchPlaceholder}
             value={singleValue}

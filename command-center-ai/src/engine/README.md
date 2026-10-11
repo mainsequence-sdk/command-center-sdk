@@ -108,6 +108,9 @@ An application may layer its own fields over the engine's value, as Command Cent
   platform refuses to create a session without one, and `createFreshSessionHandleId`.
 - `session-model-default.ts`: `pickDefaultSessionModel`, the model the "choose a model" state
   offers first.
+- `session-model-match.ts`: `resolveSessionPickerModel`, where the picker starts for an open
+  session: its stored model, the same model under the one other provider that offers it, or no
+  model, so the person chooses.
 - `run-config-options.ts`: the model catalog store, below.
 - `useLatestMessageDataStreamRuntime.ts`: the assistant-ui local runtime adapter. It sends only the
   newest user message, decodes `ui-message-stream`, rewrites the tool chunks of older Agent

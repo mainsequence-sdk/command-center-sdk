@@ -59,6 +59,7 @@ export function ChatRunConfigRow({
           disabled={disabled}
           fitContent
           listboxPlacement={listboxPlacement}
+          placeholder="Choose a provider"
           value={provider}
           onChange={(event) => {
             onProviderChange?.(event.target.value);
@@ -77,6 +78,7 @@ export function ChatRunConfigRow({
         disabled={disabled}
         fitContent
         listboxPlacement={listboxPlacement}
+        placeholder="Choose a model"
         value={model}
         onChange={(event) => {
           onModelChange(event.target.value);

@@ -259,8 +259,21 @@ provider is signed in or out or a custom provider changes. `requestAvailableMode
 at once.
 
 The engine applies the session's stored provider and model to the picker once per session, stored
-choice, and catalog. When the stored model is not in the catalog, it selects the first model of the
-session's provider, or of the first provider, and notifies "Session model is not available".
+choice, and catalog (`src/engine/session-model-match.ts`). When the stored provider does not offer
+the stored model (for example, the provider is not published), the engine looks for that model under
+the other published providers. It considers only models a person can select there, and notifies
+"Session model is not available" in every case:
+
+- Exactly one other provider offers it: the picker selects that model there and the notice names it,
+  for example "Using GPT-5.6 Luna via OpenAI Codex subscription instead."
+- No other provider, or several, offer it: the picker selects no model. It keeps the session's
+  provider when the catalog publishes it, otherwise no provider. The picker shows "Choose a model"
+  and the notice asks the person to choose one, naming the providers that offer the model when
+  there are several.
+
+The picker never stands in an unrelated model. Selecting a model in the picker does not patch the
+session; only the person's own change does, as below. Until then, the session keeps its stored choice
+on the platform, which re-resolves sessions whose stored choice can no longer be selected.
 Changing the provider, the model, or the thinking level of a ready session patches the session:
 
 ```http

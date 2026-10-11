@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+Compatibility axes: the picker's behavior and words for a session whose stored model the catalog
+does not offer under its stored provider. No npm API, stylesheet class, browser storage key, skill
+name or path, skill content, installer behavior, SDK peer range, platform route, or payload changes.
+No backend deployment or storage migration is required; the platform's re-resolution of stranded
+sessions (tdag-django#919) is independent of this release.
+
+- **A session's model is found under the provider that publishes it, and the picker never stands in
+  an unrelated model** (#14). When the session's stored provider does not offer its model, for
+  example a session stored as `openai` / `gpt-5.6-luna` when the platform publishes that model only
+  under `openai-codex`, the picker selects the same model under the one other provider that offers
+  it, and the "Session model is not available" notice names it ("Using GPT-5.6 Luna via OpenAI Codex
+  subscription instead."). When no other provider offers it, or several do, the picker selects no
+  model and shows "Choose a model", and the notice asks the person to choose. Before, it selected
+  the first model of the first provider. The picker selection still does not patch the session.
+  `docs/agent-session-resolution.md` and the engine README describe this behavior.
 - **Tool timeouts show as "Timed out", and returned tool errors no longer show "Done".**
   The thread honors `details.is_error` as well as the outer `isError`, including saved history.
   It shows a timeout badge only for `details.failure: "timeout"` and preserves the runtime's
