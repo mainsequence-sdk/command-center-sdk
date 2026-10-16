@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.15
 
 Compatibility axes: additive npm API on `AgentIcon` (`activity`), on `CommandCenterAgentIcon`
 (optional `poses` and `toolPoses`), on `ChatRunStatusValue` (optional `currentTool`), and new
