@@ -5,6 +5,8 @@
 - Amended: 2026-09-16 for the unified Agent shortcut
 - Amended: 2026-10-16 for animated and pixel-art icons (section 6), following the platform's
   ADR-033 amendment of the same day
+- Amended: 2026-10-16 for poses that follow the agent's run and tools (section 7), following the
+  platform's per-tool animations
 - Moved: 2026-09-23 into the chat package with its code (ADR 096, step 4); the code paths below
   are the package's
 - Related:
@@ -127,6 +129,28 @@ frame 0 is its still, and may mark a colour icon `imageRendering: "pixelated"`.
 - **Pixel art stays sharp.** A colour icon marked `pixelated` is drawn with CSS
   `image-rendering: pixelated`. Mask icons are always smooth.
 
+### 7. Poses that follow the run and its tools
+
+Amended 2026-10-16. The projection may carry, per agent, `poses` (pose name to its delivery URL)
+and `toolPoses` (a declared application to a pose); the platform delivers a pose at
+`/api/v1/command-center/agents/<agent_uid>/icon/<pose>/`. Three names also follow the run:
+`thinking`, `working` and `error`.
+
+- **Where.** Only the places that animate follow the run: the thread avatar of the agent that is
+  working and the rail header. `AgentIcon` takes `activity` (`thinking`, the latest tool and its
+  phase, a failed run); every other place keeps the idle icon's frame 0.
+- **Which pose** (`resolveAgentIconPose`, `src/engine/agent-icon-pose.ts`): while a tool runs, the
+  rule of its application (`<application>__call_tool` or `__list_tools`), otherwise `working`;
+  after a failed tool or run, `error`; while the agent works, `thinking`; otherwise, or when the
+  pose is not declared, the idle icon.
+- **Signals.** The thread reads the latest tool call of the active message from its parts (as the
+  working preview already does). The rail header reads `useChatRunStatus().currentTool`, which
+  the engine follows from the stream's `tool-call-start` and `tool-result` chunks; it is null
+  outside a run and optional on the public type.
+- **Loading.** A place that animates loads the agent's poses ahead of use through the same byte
+  cache; until a pose's bytes are ready the idle icon stays. Each pose gets its frame 0 still, so
+  reduced motion shows the chosen pose still.
+
 ## Non-goals
 
 - Uploading or editing icons from the Command Center; the repository workflow owns that.
@@ -147,6 +171,10 @@ frame 0 is its still, and may mark a colour icon `imageRendering: "pixelated"`.
   scaling.
 - `src/engine/apng-still.ts`: frame 0 of an APNG as a static PNG; tested with the platform's own
   sanitizer output beside the cache tests.
+- `src/engine/agent-icon-pose.ts`: the pose resolver; `AgentIcon` (`activity`), `ChatThread`
+  (the working agent), `ChatRail` (the header) and the engine's `currentTool`; tested for the
+  resolver, the projection's poses, pose choice and loading, and a thread whose running
+  application tool shows its pose.
 - `ChatEngineProvider` mounts the provider and exposes `activeAgentUid`; the package's
   `ChatThread.tsx` (`ActorAvatar`, the connecting stage prop) and `AgentConnectingState.tsx` use
   the component, and so do the application's own agent surfaces in section 4.

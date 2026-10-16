@@ -35,9 +35,27 @@ describe("command center agent icons api", () => {
       rendering: "mask",
       imageRendering: "auto",
       url: "https://api.test/icon/a1/",
+      poses: {},
+      toolPoses: {},
     });
     expect(icons.get("a5")?.rendering).toBe("color");
     expect(normalizeCommandCenterAgentIcons({ not: "an array" }).size).toBe(0);
+  });
+
+  it("reads pose urls and keeps only tool rules whose pose exists", () => {
+    const icon = normalizeCommandCenterAgentIcons([
+      {
+        agentUid: "a1",
+        commandCenterIcon: {
+          rendering: "color",
+          url: "https://api.test/icon/",
+          poses: { reading: "https://api.test/icon/reading/", broken: 7 },
+          toolPoses: { tutorial_api: "reading", orders: "missing" },
+        },
+      },
+    ]).get("a1");
+    expect(icon?.poses).toEqual({ reading: "https://api.test/icon/reading/" });
+    expect(icon?.toolPoses).toEqual({ tutorial_api: "reading" });
   });
 
   it("keeps pixelated scaling only for colour icons", () => {

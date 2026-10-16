@@ -60,6 +60,7 @@ import { cancelChatSession } from "../backend/session-cancel-api.js";
 import { fetchSessionHistory } from "../backend/session-history-api.js";
 import {
   describeStreamedToolCallStatus,
+  describeToolActivity,
   followStreamedToolCall,
   type StreamedToolCall,
 } from "../backend/tool-activity.js";
@@ -73,6 +74,7 @@ import {
   type AgentSessionDetailSnapshot,
 } from "../session-detail/model.js";
 import { useAgentSessionDetail } from "../session-detail/useAgentSessionDetail.js";
+import type { AgentIconToolSignal } from "./agent-icon-pose.js";
 import { AgentIconsProvider } from "./agent-icons-context.js";
 import { ChatEngineContext, ChatRunStatusContext } from "./engine-context.js";
 import { LocalChatEngineProvider, type LocalChatEngineProviderProps } from "./LocalChatEngineProvider.js";
@@ -280,6 +282,11 @@ interface SessionRuntimeAccessUiMeta {
 // useChatRunStatus().
 export interface ChatRunStatusValue {
   hasVisibleAssistantOutput: boolean;
+  /**
+   * The tool the running turn uses, from the stream: the declared application whose tool runs,
+   * if any, and its phase. Null outside a run; absent from engines that do not track it.
+   */
+  currentTool?: AgentIconToolSignal | null;
   runStatus: ChatRunStatus;
   runStatusDetail: string | null;
   thinkingSummary: string | null;
@@ -729,6 +736,7 @@ function PlatformChatEngineProvider({
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [runStatus, setRunStatus] = useState<ChatRunStatus>("idle");
   const [runStatusDetail, setRunStatusDetail] = useState<string | null>(null);
+  const [currentTool, setCurrentTool] = useState<AgentIconToolSignal | null>(null);
   const [thinkingSummary, setThinkingSummary] = useState<string | null>(null);
   const [availableModels, setAvailableModels] = useState<AvailableChatModelOption[]>([]);
   const [availableModelsError, setAvailableModelsError] = useState<string | null>(null);
@@ -3646,6 +3654,7 @@ function PlatformChatEngineProvider({
     onRequestStart: async () => {
       const queuedSend = queueSendingRef.current;
       setRunStatus("queued");
+      setCurrentTool(null);
       setRunStatusDetail(
         queuedSend
           ? `Sending queued message ${queuedSend.position} of ${queuedSend.total}`
@@ -3754,6 +3763,12 @@ function PlatformChatEngineProvider({
           return;
         }
         const status = describeStreamedToolCallStatus(call);
+        const application = describeToolActivity(call.toolName, undefined, null).application?.name ?? null;
+        setCurrentTool((previous) =>
+          previous?.phase === "running" && previous.application === application
+            ? previous
+            : { application, phase: "running" },
+        );
         setRunStatus("thinking");
         setRunStatusDetail(status);
         setThinkingSummary(status);
@@ -3761,6 +3776,13 @@ function PlatformChatEngineProvider({
         return;
       }
       if (type === "tool-result") {
+        const details =
+          data.result && typeof data.result === "object" && "details" in data.result
+            ? (data.result as { details?: { is_error?: unknown; failure?: unknown } }).details
+            : null;
+        const failed =
+          data.isError === true || details?.is_error === true || details?.failure === "timeout";
+        setCurrentTool((previous) => (previous ? { ...previous, phase: failed ? "failed" : "done" } : previous));
         setRunStatus("thinking");
         setRunStatusDetail("Thinking...");
         setThinkingSummary(null);
@@ -4444,12 +4466,16 @@ function PlatformChatEngineProvider({
   );
   const runStatusValue = useMemo<ChatRunStatusValue>(
     () => ({
+      currentTool:
+        runStatus === "queued" || runStatus === "thinking" || runStatus === "responding"
+          ? currentTool
+          : null,
       hasVisibleAssistantOutput,
       runStatus,
       runStatusDetail,
       thinkingSummary,
     }),
-    [hasVisibleAssistantOutput, runStatus, runStatusDetail, thinkingSummary],
+    [currentTool, hasVisibleAssistantOutput, runStatus, runStatusDetail, thinkingSummary],
   );
 
   return (

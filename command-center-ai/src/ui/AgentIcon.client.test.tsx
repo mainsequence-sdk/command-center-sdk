@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type CommandCenterAgentIcon } from "../backend/command-center-agent-icons-api.js";
 import { createChatBackendConnection } from "../backend/connection.js";
 import { clearAgentIconCache } from "../engine/agent-icon-cache.js";
+import type { AgentIconActivity } from "../engine/agent-icon-pose.js";
 import { AgentIconAuthContext, type AgentIconLookup, AgentIconsContext } from "../engine/agent-icons-context.js";
 
 // What the chat engine's icon provider supplies: the platform connection and the person's token.
@@ -23,6 +24,13 @@ const APNG = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0A
 const icons: Record<string, CommandCenterAgentIcon> = {
   masked: { agentUid: "masked", rendering: "mask", url: "https://api.test/agents/masked/icon/" },
   colored: { agentUid: "colored", rendering: "color", url: "https://api.test/agents/colored/icon/" },
+  posing: {
+    agentUid: "posing",
+    rendering: "color",
+    url: "https://api.test/agents/posing/icon/",
+    poses: { reading: "https://api.test/agents/posing/icon/reading/" },
+    toolPoses: { tutorial_api: "reading" },
+  },
   animated: {
     agentUid: "animated",
     rendering: "color",
@@ -61,9 +69,20 @@ describe("AgentIcon", () => {
     clearAgentIconCache();
     vi.unstubAllGlobals();
   });
-  function render(agentUid: string | null, withProvider = true, motion?: "still" | "animate") {
+  function render(
+    agentUid: string | null,
+    withProvider = true,
+    motion?: "still" | "animate",
+    activity?: AgentIconActivity | null,
+  ) {
     const element = (
-      <AgentIcon agentUid={agentUid} className="h-5 w-5" fallback={<span data-fallback="robot" />} motion={motion} />
+      <AgentIcon
+        agentUid={agentUid}
+        className="h-5 w-5"
+        fallback={<span data-fallback="robot" />}
+        motion={motion}
+        activity={activity}
+      />
     );
     act(() => {
       root.render(
@@ -163,5 +182,33 @@ describe("AgentIcon", () => {
     const image = container.querySelector<HTMLImageElement>("img")!;
     expect(image.dataset.agentIconMotion).toBeUndefined();
     expect(image.style.imageRendering).toBe("");
+  });
+
+  describe("poses", () => {
+    const requested = () => fetchMock.mock.calls.map(([input]) => String(input));
+
+    it("shows the pose of the application whose tool runs", async () => {
+      render("posing", true, "animate", {
+        thinking: true,
+        tool: { application: "tutorial_api", phase: "running" },
+      });
+      await vi.waitFor(() =>
+        expect(container.querySelector('img[data-agent-icon-pose="reading"]')).not.toBeNull(),
+      );
+      expect(requested()).toContain("https://api.test/agents/posing/icon/reading/");
+    });
+
+    it("loads the poses ahead where it animates, and keeps the idle icon without activity", async () => {
+      render("posing", true, "animate");
+      await vi.waitFor(() => expect(requested()).toContain("https://api.test/agents/posing/icon/reading/"));
+      await vi.waitFor(() => expect(container.querySelector('img[data-agent-icon="color"]')).not.toBeNull());
+      expect(container.querySelector("[data-agent-icon-pose]")).toBeNull();
+    });
+
+    it("loads no pose where it stays still", async () => {
+      render("posing");
+      await vi.waitFor(() => expect(container.querySelector('img[data-agent-icon="color"]')).not.toBeNull());
+      expect(requested()).toEqual(["https://api.test/agents/posing/icon/"]);
+    });
   });
 });

@@ -1,9 +1,11 @@
-import { useId, useRef, type CSSProperties, type ReactNode } from "react";
+import { useContext, useId, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 
 import { Expand, Sparkles, X } from "lucide-react";
 import { Button } from "@dev-mainsequence/command-center-sdk/controls";
 
+import type { AgentIconActivity } from "../engine/agent-icon-pose.js";
 import { useOptionalChatEngine } from "../engine/ChatEngineProvider.js";
+import { ChatRunStatusContext } from "../engine/engine-context.js";
 import { AgentIcon } from "./AgentIcon.js";
 import { cx } from "./class-names.js";
 import { useChatRailResize } from "./useChatRailResize.js";
@@ -83,6 +85,19 @@ export function ChatRail({
 }: ChatRailProps) {
   const engine = useOptionalChatEngine();
   const railAgentUid = agentUid === undefined ? (engine?.activeAgentUid ?? null) : agentUid;
+  // Outside an engine there is no run, so the header shows the idle icon.
+  const runStatus = useContext(ChatRunStatusContext);
+  const status = runStatus?.runStatus;
+  const currentTool = runStatus?.currentTool ?? null;
+  const railActivity = useMemo<AgentIconActivity | null>(
+    () =>
+      status === "queued" || status === "thinking" || status === "responding"
+        ? { thinking: true, tool: currentTool }
+        : status === "error"
+          ? { thinking: false, tool: null, failed: true }
+          : null,
+    [currentTool, status],
+  );
   const overlay = mode === "overlay";
   const railRef = useRef<HTMLElement>(null);
   const railId = useId();
@@ -148,6 +163,7 @@ export function ChatRail({
               agentUid={railAgentUid}
               className="ms-chat-rail__tile-icon"
               motion="animate"
+              activity={railActivity}
               fallback={icon ?? <Sparkles className="ms-chat-icon-lg" />}
             />
           </span>
