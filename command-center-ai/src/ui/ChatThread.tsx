@@ -93,6 +93,11 @@ import {
 } from "./AgentConnectingState.js";
 import { AgentIcon } from "./AgentIcon.js";
 import {
+  decodeToolSignal,
+  encodeToolSignal,
+  type AgentIconActivity,
+} from "../engine/agent-icon-pose.js";
+import {
   AssistantErrorRetry,
   AssistantMessageActions,
   MessageActionsProvider,
@@ -340,6 +345,21 @@ function getToolPhase(part: {
     return "running";
   }
   return "done";
+}
+
+/** The latest tool call of a message as an encoded signal, for the agent's pose. */
+function getLatestToolSignal(parts: ReadonlyArray<ChainOfThoughtPartLike>): string {
+  for (let index = parts.length - 1; index >= 0; index -= 1) {
+    const part = parts[index];
+    if (part.type === "tool-call" && typeof part.toolName === "string" && part.toolName.trim()) {
+      const activity = describeToolActivity(part.toolName, part.result, part.args);
+      return encodeToolSignal({
+        application: activity.application?.name ?? null,
+        phase: getToolPhase(part),
+      });
+    }
+  }
+  return "";
 }
 
 function getThinkingPreview(parts: ReadonlyArray<ChainOfThoughtPartLike>) {
@@ -606,12 +626,15 @@ function getActorAvatarVariant(actor: MessageActor, context: MessageActorContext
 function ActorAvatar({
   actor,
   active = false,
+  activity = null,
   className,
   size = "md",
   variant,
 }: {
   actor: MessageActor;
   active?: boolean;
+  /** What the agent is doing while active, for its pose. */
+  activity?: AgentIconActivity | null;
   className?: string;
   size?: "md" | "sm";
   variant: ActorAvatarVariant;
@@ -651,6 +674,7 @@ function ActorAvatar({
           agentUid={actor.uid}
           className={cx(size === "md" ? "ms-chat-icon-lg" : "ms-chat-icon-xs", active && "ms-chat-pulse")}
           motion={active ? "animate" : "still"}
+          activity={active ? activity : null}
           fallback={
             <Bot
               className={cx(size === "md" ? "ms-chat-icon-md" : "ms-chat-icon-xs", active && "ms-chat-pulse")}
@@ -907,6 +931,14 @@ function AssistantMessage({
   const isActiveAssistant =
     isLastAssistantMessage &&
     (threadIsRunning || Boolean(activeSessionSummary?.working));
+  // An encoded string, so the selector returns a stable value while the parts stream.
+  const toolSignal = useAuiState((s) =>
+    getLatestToolSignal(s.message.parts as ReadonlyArray<ChainOfThoughtPartLike>),
+  );
+  const agentActivity = useMemo<AgentIconActivity | null>(
+    () => (isActiveAssistant ? { thinking: true, tool: decodeToolSignal(toolSignal) } : null),
+    [isActiveAssistant, toolSignal],
+  );
 
   return (
     <MessagePrimitive.Root
@@ -916,6 +948,7 @@ function AssistantMessage({
       <ActorAvatar
         actor={actor}
         active={isActiveAssistant}
+        activity={agentActivity}
         className="ms-chat-message__assistant-avatar"
         variant={getActorAvatarVariant(actor, context)}
       />

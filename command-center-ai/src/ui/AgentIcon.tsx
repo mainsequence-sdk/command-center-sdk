@@ -1,6 +1,8 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useCommandCenterViewport } from "@dev-mainsequence/command-center-sdk/layout";
 
+import { ensureAgentIcon } from "../engine/agent-icon-cache.js";
+import { resolveAgentIconPose, type AgentIconActivity } from "../engine/agent-icon-pose.js";
 import {
   useAgentIconAuth,
   useAgentIconImage,
@@ -22,22 +24,42 @@ import { cx } from "./class-names.js";
  * large single places pass (the rail header, the connecting stage, the agent that is working),
  * and always shows the still when the person asks for reduced motion. `imageRendering:
  * "pixelated"` keeps pixel art sharp when it is scaled.
+ *
+ * `activity` says what the agent is doing; with it the icon shows the matching pose sprite (the
+ * application's tool rule, `working`, `thinking`, `error`) and falls back to the idle icon. A
+ * place that animates also loads the agent's poses ahead of use.
  */
 export function AgentIcon({
   agentUid,
   className,
   fallback,
   motion = "still",
+  activity = null,
 }: {
   agentUid?: string | null;
   className?: string;
   fallback: ReactNode;
   motion?: "still" | "animate";
+  activity?: AgentIconActivity | null;
 }) {
   const lookup = useAgentIconLookup();
   const icon = lookup(agentUid);
   const auth = useAgentIconAuth();
-  const { objectUrl, stillObjectUrl } = useAgentIconImage(icon?.url ?? null, auth);
+  const pose = icon ? resolveAgentIconPose(icon, activity) : null;
+  const poseUrl = pose ? icon?.poses?.[pose] ?? null : null;
+  const idle = useAgentIconImage(icon?.url ?? null, auth);
+  const posed = useAgentIconImage(poseUrl, auth);
+  // A pose still loading keeps the idle icon in place.
+  const { objectUrl, stillObjectUrl } = posed.objectUrl ? posed : idle;
+  const poseUrls = motion === "animate" && icon?.poses ? Object.values(icon.poses).join("\n") : "";
+  useEffect(() => {
+    if (!poseUrls || !auth?.connection) {
+      return;
+    }
+    for (const url of poseUrls.split("\n")) {
+      ensureAgentIcon({ connection: auth.connection, url, token: auth.token, tokenType: auth.tokenType });
+    }
+  }, [auth, poseUrls]);
   const { reducedMotion } = useCommandCenterViewport();
   if (!icon || !objectUrl) {
     return <>{fallback}</>;
@@ -70,6 +92,7 @@ export function AgentIcon({
       className={cx("ms-chat-agent-icon ms-chat-agent-icon--image", className)}
       data-agent-icon="color"
       data-agent-icon-motion={stillObjectUrl ? (animates ? "animated" : "still") : undefined}
+      data-agent-icon-pose={posed.objectUrl ? pose ?? undefined : undefined}
       draggable={false}
       src={stillObjectUrl && !animates ? stillObjectUrl : objectUrl}
       style={icon.imageRendering === "pixelated" ? { imageRendering: "pixelated" } : undefined}

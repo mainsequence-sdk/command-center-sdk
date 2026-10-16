@@ -74,7 +74,9 @@ answers so the text and the tool calls tell the story on their own.
   theme-following mask or a colour image, with a robot as the fallback. A colour icon may be an
   animated pixel-art sprite: it moves only in the rail header, the connecting stage and while its
   Agent works, shows its first frame everywhere else and under reduced motion, and keeps sharp
-  pixels when the platform marks it pixelated. During a live turn the avatar
+  pixels when the platform marks it pixelated. While the Agent works, those places show the pose
+  the Agent declares for the application whose tool runs, or its `working`, `thinking` or `error`
+  pose. During a live turn the avatar
   is the robot until the next reload; that is reported to the package's owner.
 
 ## The Session Around The Answers

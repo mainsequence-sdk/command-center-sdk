@@ -24,6 +24,10 @@ export interface CommandCenterAgentIcon {
   /** `pixelated` only for color icons; absent or `auto` scales smoothly. */
   imageRendering?: CommandCenterAgentIconImageRendering;
   url: string;
+  /** Delivery URL of each declared pose sprite, keyed by pose name. */
+  poses?: Readonly<Record<string, string>>;
+  /** The pose a declared application's tools show while they run, keyed by application. */
+  toolPoses?: Readonly<Record<string, string>>;
 }
 
 export type CommandCenterAgentIconMap = ReadonlyMap<string, CommandCenterAgentIcon>;
@@ -39,6 +43,19 @@ export function buildCommandCenterAgentIconsUrl(
 
 function readString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readStringMap(value: unknown) {
+  const entries: Record<string, string> = {};
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      const text = readString(entry);
+      if (key && text) {
+        entries[key] = text;
+      }
+    }
+  }
+  return entries;
 }
 
 export function normalizeCommandCenterAgentIcons(payload: unknown): Map<string, CommandCenterAgentIcon> {
@@ -66,7 +83,11 @@ export function normalizeCommandCenterAgentIcons(payload: unknown): Map<string, 
       rendering === "color" && readString(iconRecord.imageRendering ?? iconRecord.image_rendering) === "pixelated"
         ? "pixelated"
         : "auto";
-    icons.set(agentUid, { agentUid, rendering, imageRendering, url });
+    const poses = readStringMap(iconRecord.poses);
+    const toolPoses = Object.fromEntries(
+      Object.entries(readStringMap(iconRecord.toolPoses ?? iconRecord.tool_poses)).filter(([, pose]) => pose in poses),
+    );
+    icons.set(agentUid, { agentUid, rendering, imageRendering, url, poses, toolPoses });
   }
   return icons;
 }

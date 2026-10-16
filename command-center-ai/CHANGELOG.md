@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: additive npm API on `AgentIcon` (`activity`), on `CommandCenterAgentIcon`
+(optional `poses` and `toolPoses`), on `ChatRunStatusValue` (optional `currentTool`), and new
+exports `resolveAgentIconPose`, `AGENT_ICON_RUN_STATUS_POSES` and the `AgentIconActivity` and
+`AgentIconToolSignal` types; the read of the platform's additive `commandCenterIcon.poses` and
+`toolPoses` and of its pose route; and the content of the packaged skill
+`design-agent-conversation-capabilities`. No stylesheet class, browser storage key, skill name or
+path, installer behavior, or SDK peer range changes. An agent without poses renders as before.
+
+- **The working agent shows what it is doing.** When the platform declares poses for an agent
+  (the platform's ADR-033, amended 2026-10-16), the thread avatar of the agent that is working and
+  the rail header show the pose for the application whose tool runs, otherwise its `working`,
+  `thinking` or `error` pose, and the idle icon when a pose is missing. The thread reads the
+  latest tool call from the message; the rail reads the engine's new `currentTool`. Poses load
+  ahead where icons animate, and reduced motion shows the chosen pose still.
+
 ## 0.0.14
 
 Compatibility axes: additive npm API on `ChatRailProps` (`resizable`, `width`, `defaultWidth`,

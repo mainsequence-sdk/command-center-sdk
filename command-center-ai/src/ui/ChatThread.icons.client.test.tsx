@@ -133,16 +133,24 @@ const iconAuth = {
   tokenType: "Bearer",
 };
 
-function Harness({ messages }: { messages: ThreadMessageLike[] }) {
+function Harness({
+  iconLookup = lookup,
+  isRunning = false,
+  messages,
+}: {
+  iconLookup?: AgentIconLookup;
+  isRunning?: boolean;
+  messages: ThreadMessageLike[];
+}) {
   const runtime = useExternalStoreRuntime<ThreadMessageLike>({
     messages,
-    isRunning: false,
+    isRunning,
     onNew: async () => {},
     convertMessage: (message) => message,
   });
   return (
     <AgentIconAuthContext.Provider value={iconAuth}>
-      <AgentIconsContext.Provider value={lookup}>
+      <AgentIconsContext.Provider value={iconLookup}>
         <AssistantRuntimeProvider runtime={runtime}>
           <ChatThread viewer={VIEWER} surface="page" />
         </AssistantRuntimeProvider>
@@ -226,4 +234,46 @@ describe("ChatThread agent icons", () => {
     const viewerTurn = roots().find((element) => element.dataset.actorKey === `user:${VIEWER_UID}`)!;
     expect(viewerTurn.querySelector("[data-agent-icon]")).toBeNull();
   });
+
+  it("draws the working agent in the pose its running application tool declares", async () => {
+    const posingLookup: AgentIconLookup = (uid) =>
+      uid === SESSION_AGENT_UID
+        ? {
+            agentUid: SESSION_AGENT_UID,
+            rendering: "color",
+            url: "https://api.test/agents/session/icon/",
+            poses: { reading: "https://api.test/agents/session/icon/reading/" },
+            toolPoses: { tutorial_api: "reading" },
+          }
+        : null;
+    const running = [
+      thread[2],
+      withProvenance(
+        {
+          id: "a_2",
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call" as const,
+              toolCallId: "call_1",
+              toolName: "tutorial_api__call_tool",
+              args: { tool: "search_docs", arguments: { query: "jobs" } },
+            },
+          ],
+          status: { type: "running" },
+        } as ThreadMessageLike,
+        { origin: "agent", channel: "command-center", targetAgentUid: SESSION_AGENT_UID },
+      ),
+    ];
+    act(() => {
+      root.render(<Harness iconLookup={posingLookup} isRunning messages={running} />);
+    });
+    await vi.waitFor(() =>
+      expect(container.querySelector('img[data-agent-icon-pose="reading"]')).not.toBeNull(),
+    );
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toContain(
+      "https://api.test/agents/session/icon/reading/",
+    );
+  });
 });
+

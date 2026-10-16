@@ -273,6 +273,12 @@ export {
   type AgentConnectionStep,
 } from "./ui/AgentConnectingState.js";
 export { AgentIcon } from "./ui/AgentIcon.js";
+export {
+  AGENT_ICON_RUN_STATUS_POSES,
+  resolveAgentIconPose,
+  type AgentIconActivity,
+  type AgentIconToolSignal,
+} from "./engine/agent-icon-pose.js";
 
 // Model provider settings (ADR 096, step 5)
 export {

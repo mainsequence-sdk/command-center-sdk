@@ -35,7 +35,9 @@ The thread:
   ([ADR 090](../../docs/adr/adr-090-agent-icons-in-command-center-surfaces.md)). It reads the
   projection and the credentials from the engine's icon provider, so outside the engine it draws
   the fallback. An animated icon shows its first frame unless `motion="animate"` is passed, and
-  always under reduced motion; a pixel-art icon is drawn with sharp pixels.
+  always under reduced motion; a pixel-art icon is drawn with sharp pixels. With `activity` it shows
+  the agent's pose for what it is doing: its application tool's pose, `working`, `thinking` or
+  `error`.
 
 The frame Command Center draws around the thread, so every application looks like Command Center
 ([the rail guide](../../docs/rail-and-expanded-rail.md)):
