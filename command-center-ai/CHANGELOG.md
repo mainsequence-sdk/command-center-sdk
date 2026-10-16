@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.14
 
 Compatibility axes: additive npm API on `ChatRailProps` (`resizable`, `width`, `defaultWidth`,
 `minWidth`, `maxWidth`, `onWidthChange`), on `AgentIcon` (`motion`) and on
