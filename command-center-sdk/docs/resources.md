@@ -285,6 +285,7 @@ export function ServiceDetail({ service }: { service: Service }) {
       headerActions={<Button onClick={() => openEditDialog(service)}>Edit</Button>}
       summary={
         <EntitySummary
+          titleLead={<ServiceIcon service={service} />}
           summary={{
             entity: { id: service.uid, type: "service", title: service.name },
             badges: [{ key: "status", label: service.status }],
