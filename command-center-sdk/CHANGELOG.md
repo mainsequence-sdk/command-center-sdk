@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.5.18
+
+Compatibility axes: additive optional `titleLead` prop on `EntitySummaryProps` and the stylesheet
+classes `cc-entity-summary__heading` and `cc-entity-summary__title-lead`. No contract ID, JSON
+Schema, fixture, iframe protocol, theme, or storage change.
 
 - **`EntitySummary` takes a `titleLead`.** A detail page can show the entity's icon or avatar
   before the summary title, at the size the host chooses. The lead and the title sit in a new
