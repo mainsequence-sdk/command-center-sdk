@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **`EntitySummary` takes a `titleLead`.** A detail page can show the entity's icon or avatar
+  before the summary title, at the size the host chooses. The lead and the title sit in a new
+  `cc-entity-summary__heading` row, and a lead that renders nothing takes no space. Without
+  `titleLead` the title renders exactly as before.
+
 ## 0.5.17
 
 Compatibility axes: the packaged skill `general/maintain-command-center-code-repository`. No npm

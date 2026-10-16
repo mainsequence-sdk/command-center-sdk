@@ -24,6 +24,11 @@ export interface EntitySummaryProps {
   onLinkSelect?: (url: string, item: EntitySummaryItem) => void;
   onRemoveLabel?: (label: string) => Promise<void> | void;
   onLabelMutationError?: (error: unknown) => void;
+  /**
+   * Shown before the title, usually the entity's icon or avatar. The host sizes it; a lead that
+   * renders nothing takes no space.
+   */
+  titleLead?: ReactNode;
 }
 
 function getValue(value: unknown): string {
@@ -128,6 +133,7 @@ export function EntitySummary({
   onRemoveLabel,
   renderFieldLead,
   summary,
+  titleLead,
 }: EntitySummaryProps) {
   const summaryLabels = summary.label_management?.labels ?? summary.labels ?? [];
   const [labels, setLabels] = useState(summaryLabels);
@@ -194,7 +200,14 @@ export function EntitySummary({
     <section className="cc-entity-summary">
       <div className="cc-entity-summary__top">
         <div className="cc-entity-summary__identity">
-          <h2>{summary.entity.title}</h2>
+          {titleLead ? (
+            <div className="cc-entity-summary__heading">
+              <span className="cc-entity-summary__title-lead">{titleLead}</span>
+              <h2>{summary.entity.title}</h2>
+            </div>
+          ) : (
+            <h2>{summary.entity.title}</h2>
+          )}
           <div className="cc-entity-summary__inline-fields">
             {summary.inline_fields.map((field) => {
               const value = getValue(field.value);

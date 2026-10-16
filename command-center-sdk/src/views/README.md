@@ -138,4 +138,5 @@ fitting rules are pure functions in `detail-tab-layout.ts`, and its More menu is
 in action mode. Hosts resolve tabs once with `resolveResourceDetailTabs` from `/resource`, which is
 the only place `isVisible` and function-valued `disabled` run, and switch the body on that result. `EntitySummary` and `CollapsedEntitySummary` render normalized backend-neutral summary
 data; hosts contribute icons, link handling, editing, label mutations, and notifications through
-callbacks. No view in this module knows a consumer endpoint or application-owned search parameter.
+callbacks. `EntitySummary`'s `titleLead` puts a host node, such as the entity's icon, before the
+title; the host sizes it, and a lead that renders nothing takes no space. No view in this module knows a consumer endpoint or application-owned search parameter.

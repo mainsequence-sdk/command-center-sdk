@@ -55,4 +55,32 @@ describe("EntitySummary field information", () => {
     await act(async () => toggle.click());
     expect(container.querySelector(".cc-entity-summary__info-note")).toBeNull();
   });
+
+  it("puts the title lead before the title and leaves the title alone without one", async () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    roots.push(root);
+    const summary = {
+      entity: { id: "agent-1", type: "agent", title: "Tutorial Helper" },
+      badges: [],
+      inline_fields: [],
+      highlight_fields: [],
+      stats: [],
+    };
+
+    await act(async () => {
+      root.render(<EntitySummary summary={summary} titleLead={<img alt="" data-testid="lead" />} />);
+    });
+    const heading = container.querySelector(".cc-entity-summary__heading")!;
+    expect(heading.firstElementChild?.className).toBe("cc-entity-summary__title-lead");
+    expect(heading.querySelector("[data-testid='lead']")).not.toBeNull();
+    expect(heading.querySelector("h2")?.textContent).toBe("Tutorial Helper");
+
+    await act(async () => {
+      root.render(<EntitySummary summary={summary} />);
+    });
+    expect(container.querySelector(".cc-entity-summary__heading")).toBeNull();
+    expect(container.querySelector(".cc-entity-summary__identity > h2")?.textContent).toBe("Tutorial Helper");
+  });
 });
