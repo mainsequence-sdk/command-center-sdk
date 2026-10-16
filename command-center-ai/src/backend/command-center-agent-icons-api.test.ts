@@ -30,9 +30,25 @@ describe("command center agent icons api", () => {
       "junk",
     ]);
     expect(Array.from(icons.keys())).toEqual(["a1", "a5"]);
-    expect(icons.get("a1")).toEqual({ agentUid: "a1", rendering: "mask", url: "https://api.test/icon/a1/" });
+    expect(icons.get("a1")).toEqual({
+      agentUid: "a1",
+      rendering: "mask",
+      imageRendering: "auto",
+      url: "https://api.test/icon/a1/",
+    });
     expect(icons.get("a5")?.rendering).toBe("color");
     expect(normalizeCommandCenterAgentIcons({ not: "an array" }).size).toBe(0);
+  });
+
+  it("keeps pixelated scaling only for colour icons", () => {
+    const icons = normalizeCommandCenterAgentIcons([
+      { agentUid: "pixel", commandCenterIcon: { rendering: "color", imageRendering: "pixelated", url: "https://api.test/p/" } },
+      { agentUid: "mask", commandCenterIcon: { rendering: "mask", imageRendering: "pixelated", url: "https://api.test/m/" } },
+      { agentUid: "odd", commandCenterIcon: { rendering: "color", imageRendering: "crisp", url: "https://api.test/o/" } },
+    ]);
+    expect(icons.get("pixel")?.imageRendering).toBe("pixelated");
+    expect(icons.get("mask")?.imageRendering).toBe("auto");
+    expect(icons.get("odd")?.imageRendering).toBe("auto");
   });
 });
 

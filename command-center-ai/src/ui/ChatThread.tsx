@@ -650,6 +650,7 @@ function ActorAvatar({
         <AgentIcon
           agentUid={actor.uid}
           className={cx(size === "md" ? "ms-chat-icon-lg" : "ms-chat-icon-xs", active && "ms-chat-pulse")}
+          motion={active ? "animate" : "still"}
           fallback={
             <Bot
               className={cx(size === "md" ? "ms-chat-icon-md" : "ms-chat-icon-xs", active && "ms-chat-pulse")}

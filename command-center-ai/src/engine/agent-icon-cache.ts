@@ -1,6 +1,7 @@
 
 import { fetchCommandCenterAgentIconBytes } from "../backend/command-center-agent-icons-api.js";
 import type { ChatBackendConnection } from "../backend/connection.js";
+import { apngStill } from "./apng-still.js";
 
 /**
  * Bytes of agent icons, shared by every avatar on the page (ADR 090).
@@ -11,6 +12,9 @@ import type { ChatBackendConnection } from "../backend/connection.js";
  * AGENT_ICON_REVALIDATE_MS: the browser sends If-None-Match, and the object URL
  * is replaced only when the bytes' fingerprint (ETag when exposed, otherwise a
  * SHA-256 of the bytes) differs. Sign-out clears everything.
+ *
+ * An animated PNG also gets a still: a static PNG of its frame 0, made once from the same bytes,
+ * for the places that should not move (ADR 090, amended 2026-10-16).
  */
 export const AGENT_ICON_REVALIDATE_MS = 5 * 60_000;
 export const AGENT_ICON_RETRY_MS = 60_000;
@@ -18,6 +22,8 @@ export const AGENT_ICON_RETRY_MS = 60_000;
 export interface AgentIconCacheEntry {
   status: "loading" | "ready" | "error";
   objectUrl: string | null;
+  /** A static PNG of frame 0 when the icon is an animated PNG; null otherwise. */
+  stillObjectUrl: string | null;
   fingerprint: string | null;
   checkedAt: number;
 }
@@ -64,6 +70,27 @@ function revokeObjectUrl(objectUrl: string) {
   }
 }
 
+async function createStillObjectUrl(blob: Blob) {
+  if (blob.type && blob.type !== "image/png") {
+    return null;
+  }
+  try {
+    const still = apngStill(new Uint8Array(await blob.arrayBuffer()));
+    return still ? createObjectUrl(new Blob([still], { type: "image/png" })) : null;
+  } catch {
+    return null;
+  }
+}
+
+function revokeEntryUrls(entry: AgentIconCacheEntry) {
+  if (entry.objectUrl) {
+    revokeObjectUrl(entry.objectUrl);
+  }
+  if (entry.stillObjectUrl) {
+    revokeObjectUrl(entry.stillObjectUrl);
+  }
+}
+
 async function fingerprintBlob(blob: Blob, etag: string | null) {
   if (etag) {
     return etag;
@@ -104,7 +131,7 @@ export function ensureAgentIcon({
     return;
   }
   if (!existing) {
-    entries.set(url, { status: "loading", objectUrl: null, fingerprint: null, checkedAt: now });
+    entries.set(url, { status: "loading", objectUrl: null, stillObjectUrl: null, fingerprint: null, checkedAt: now });
     emit();
   }
   const request = fetchCommandCenterAgentIconBytes({ connection, url, token, tokenType })
@@ -118,12 +145,14 @@ export function ensureAgentIcon({
         return;
       }
       const objectUrl = createObjectUrl(blob);
-      if (current?.objectUrl) {
-        revokeObjectUrl(current.objectUrl);
+      const stillObjectUrl = objectUrl ? await createStillObjectUrl(blob) : null;
+      if (current) {
+        revokeEntryUrls(current);
       }
       entries.set(url, {
         status: objectUrl ? "ready" : "error",
         objectUrl,
+        stillObjectUrl,
         fingerprint: objectUrl ? fingerprint : null,
         checkedAt: Date.now(),
       });
@@ -137,7 +166,7 @@ export function ensureAgentIcon({
         url,
         current?.objectUrl
           ? { ...current, status: "ready", checkedAt: Date.now() }
-          : { status: "error", objectUrl: null, fingerprint: null, checkedAt: Date.now() },
+          : { status: "error", objectUrl: null, stillObjectUrl: null, fingerprint: null, checkedAt: Date.now() },
       );
       emit();
     })
@@ -148,11 +177,7 @@ export function ensureAgentIcon({
 }
 
 export function clearAgentIconCache() {
-  entries.forEach((entry) => {
-    if (entry.objectUrl) {
-      revokeObjectUrl(entry.objectUrl);
-    }
-  });
+  entries.forEach(revokeEntryUrls);
   entries.clear();
   inFlight.clear();
   emit();

@@ -147,6 +147,7 @@ export function ChatRail({
             <AgentIcon
               agentUid={railAgentUid}
               className="ms-chat-rail__tile-icon"
+              motion="animate"
               fallback={icon ?? <Sparkles className="ms-chat-icon-lg" />}
             />
           </span>

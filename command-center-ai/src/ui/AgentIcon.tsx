@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
+import { useCommandCenterViewport } from "@dev-mainsequence/command-center-sdk/layout";
 
 import {
   useAgentIconAuth,
+  useAgentIconImage,
   useAgentIconLookup,
-  useAgentIconObjectUrl,
 } from "../engine/agent-icons-context.js";
 import { cx } from "./class-names.js";
 
@@ -16,20 +17,28 @@ import { cx } from "./class-names.js";
  *
  * It reads the icon projection and the credentials from the chat engine's icon
  * provider, so it draws the built-in icon outside the engine.
+ *
+ * An animated `color` icon shows its frame 0 still unless `motion="animate"`, which only the
+ * large single places pass (the rail header, the connecting stage, the agent that is working),
+ * and always shows the still when the person asks for reduced motion. `imageRendering:
+ * "pixelated"` keeps pixel art sharp when it is scaled.
  */
 export function AgentIcon({
   agentUid,
   className,
   fallback,
+  motion = "still",
 }: {
   agentUid?: string | null;
   className?: string;
   fallback: ReactNode;
+  motion?: "still" | "animate";
 }) {
   const lookup = useAgentIconLookup();
   const icon = lookup(agentUid);
   const auth = useAgentIconAuth();
-  const objectUrl = useAgentIconObjectUrl(icon?.url ?? null, auth);
+  const { objectUrl, stillObjectUrl } = useAgentIconImage(icon?.url ?? null, auth);
+  const { reducedMotion } = useCommandCenterViewport();
   if (!icon || !objectUrl) {
     return <>{fallback}</>;
   }
@@ -53,14 +62,17 @@ export function AgentIcon({
       />
     );
   }
+  const animates = motion === "animate" && !reducedMotion;
   return (
     <img
       alt=""
       aria-hidden="true"
       className={cx("ms-chat-agent-icon ms-chat-agent-icon--image", className)}
       data-agent-icon="color"
+      data-agent-icon-motion={stillObjectUrl ? (animates ? "animated" : "still") : undefined}
       draggable={false}
-      src={objectUrl}
+      src={stillObjectUrl && !animates ? stillObjectUrl : objectUrl}
+      style={icon.imageRendering === "pixelated" ? { imageRendering: "pixelated" } : undefined}
     />
   );
 }

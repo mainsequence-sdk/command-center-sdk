@@ -71,7 +71,10 @@ answers so the text and the tool calls tell the story on their own.
   Agent's with its icon, and labels actors when several take part.
 - Agent names are shown as the platform stores them; the thread does not shorten or rewrite them.
 - An Agent's icon comes from the platform's agent icon projection for the Environment, as a
-  theme-following mask or a colour image, with a robot as the fallback. During a live turn the avatar
+  theme-following mask or a colour image, with a robot as the fallback. A colour icon may be an
+  animated pixel-art sprite: it moves only in the rail header, the connecting stage and while its
+  Agent works, shows its first frame everywhere else and under reduced motion, and keeps sharp
+  pixels when the platform marks it pixelated. During a live turn the avatar
   is the robot until the next reload; that is reported to the package's owner.
 
 ## The Session Around The Answers
