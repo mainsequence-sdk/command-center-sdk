@@ -3,11 +3,15 @@
 ## Unreleased
 
 Compatibility axes: additive npm API on `ChatRailProps` (`resizable`, `width`, `defaultWidth`,
-`minWidth`, `maxWidth`, `onWidthChange`); additive stylesheet classes
-`ms-chat-rail__resize-handle` and `ms-chat-rail--resizing`; and the content and description of the
-packaged skill `compose-command-center-ai-rail`. No browser storage key or value, skill name or
-path, installer behavior, SDK peer range, platform route, or payload changes. No backend action or
-storage migration is required: sizing is presentation state and the application owns persistence.
+`minWidth`, `maxWidth`, `onWidthChange`), on `AgentIcon` (`motion`) and on
+`CommandCenterAgentIcon` (optional `imageRendering`); additive stylesheet classes
+`ms-chat-rail__resize-handle` and `ms-chat-rail--resizing` and a rule that stops `ms-chat-pulse`
+on an animated agent icon; the read of the platform's additive `commandCenterIcon.imageRendering`
+(absent means `auto`); and the content of the packaged skills `compose-command-center-ai-rail`
+(also its description) and `design-agent-conversation-capabilities`. No browser storage key or
+value, skill name or path, installer behavior, SDK peer range, or platform route changes. No
+backend action or storage migration is required: sizing is presentation state and the application
+owns persistence, and an icon the platform does not animate or mark pixelated renders as before.
 
 - **People can resize the AI right rail.** Drag its left edge or focus "Resize chat rail" and use
   Left/Right, Shift+Left/Right, Home, or End. Double-click restores its default width. It starts at
@@ -18,6 +22,14 @@ storage migration is required: sizing is presentation state and the application 
   fixed overlay. The rail guide, UI README, packaged skill, consumer fixture, and standalone demo
   describe or exercise this API. The demo retains width across closing and expanding, docks from
   1400px, and floats below it.
+- **Animated agent icons move only where they help.** A colour agent icon may be an animated PNG
+  (the platform's ADR-033, amended 2026-10-16). `AgentIcon` shows its first frame by default, in
+  lists, the launcher, thread avatars and the application's agent pages, and animates it only with
+  `motion="animate"`, which the rail header, the connecting stage and the avatar of the working
+  agent pass. Reduced motion always shows the first frame, and an animated avatar does not also
+  pulse. The first frame is made once from the same bytes by dropping the APNG animation chunks, so
+  nothing is fetched or decoded twice. A colour icon the platform marks `imageRendering:
+  "pixelated"` keeps sharp pixels when scaled.
 
 ## 0.0.13
 

@@ -163,6 +163,14 @@ const noEntry = () => undefined;
 
 /** The object URL for an icon, or null while it loads, without auth, or after it failed. */
 export function useAgentIconObjectUrl(url: string | null | undefined, auth: AgentIconAuth | null) {
+  return useAgentIconImage(url, auth).objectUrl;
+}
+
+/**
+ * The icon's object URL and, for an animated PNG, the object URL of its frame 0 still; both null
+ * while it loads, without auth, or after it failed.
+ */
+export function useAgentIconImage(url: string | null | undefined, auth: AgentIconAuth | null) {
   const entry = useSyncExternalStore(
     subscribeAgentIconCache,
     () => getAgentIconCacheEntry(url),
@@ -176,5 +184,9 @@ export function useAgentIconObjectUrl(url: string | null | undefined, auth: Agen
       ensureAgentIcon({ connection, url, token, tokenType });
     }
   }, [connection, token, tokenType, url]);
-  return entry?.status === "ready" ? entry.objectUrl : null;
+  const ready = entry?.status === "ready";
+  return {
+    objectUrl: ready ? entry.objectUrl : null,
+    stillObjectUrl: ready ? entry.stillObjectUrl : null,
+  };
 }

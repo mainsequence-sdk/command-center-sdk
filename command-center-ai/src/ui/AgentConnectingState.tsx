@@ -152,7 +152,12 @@ export function AgentConnectingState({
       data-active-step={activeStep}
     >
       <div className="ms-chat-state__badge">
-        <AgentIcon agentUid={agentUid} className="ms-chat-icon-2xl" fallback={<Sparkles className="ms-chat-icon-lg" />} />
+        <AgentIcon
+          agentUid={agentUid}
+          className="ms-chat-icon-2xl"
+          fallback={<Sparkles className="ms-chat-icon-lg" />}
+          motion="animate"
+        />
       </div>
       <div className="ms-chat-state__title">
         Connecting to {resolvedAgentName}

@@ -15,10 +15,14 @@ import { requestPlatform } from "./platform-request.js";
  * fetched with the authenticated client and rendered from an object URL.
  */
 export type CommandCenterAgentIconRendering = "mask" | "color";
+/** How a color icon is scaled: smoothly, or with sharp pixels for pixel art. */
+export type CommandCenterAgentIconImageRendering = "auto" | "pixelated";
 
 export interface CommandCenterAgentIcon {
   agentUid: string;
   rendering: CommandCenterAgentIconRendering;
+  /** `pixelated` only for color icons; absent or `auto` scales smoothly. */
+  imageRendering?: CommandCenterAgentIconImageRendering;
   url: string;
 }
 
@@ -58,7 +62,11 @@ export function normalizeCommandCenterAgentIcons(payload: unknown): Map<string, 
     if ((rendering !== "mask" && rendering !== "color") || !url) {
       continue;
     }
-    icons.set(agentUid, { agentUid, rendering, url });
+    const imageRendering =
+      rendering === "color" && readString(iconRecord.imageRendering ?? iconRecord.image_rendering) === "pixelated"
+        ? "pixelated"
+        : "auto";
+    icons.set(agentUid, { agentUid, rendering, imageRendering, url });
   }
   return icons;
 }

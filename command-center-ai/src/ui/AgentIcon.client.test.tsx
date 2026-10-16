@@ -17,9 +17,18 @@ const auth = {
 
 const { AgentIcon } = await import("./AgentIcon.js");
 
+// A 32 px two-frame APNG from the platform's sanitizer.
+const APNG = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACGFjVEwAAAACAAAAAPONk3AAAAAaZmNUTAAAAAAAAAAgAAAAIAAAAAAAAAAAAGQD6AAAcyZw9wAAAD1JREFUeJxjYBgFo2AUjHTASEjBBxGN/5RYIPDmBl47mCgxnBpg1AGjDhh1wKgDRh0w6oBRB4yCUTAKRgEAcagEIFRAp3wAAAAaZmNUTAAAAAEAAAAQAAAAEAAAAAgAAAAIAGQD6AAAmBjZzgAAACFmZEFUAAAAAnicYxTR+PCfgQLARInmUQNGDRg1YDAZAAANFwJLQfgfzgAAAABJRU5ErkJggg=="), (character) => character.charCodeAt(0));
+
 const icons: Record<string, CommandCenterAgentIcon> = {
   masked: { agentUid: "masked", rendering: "mask", url: "https://api.test/agents/masked/icon/" },
   colored: { agentUid: "colored", rendering: "color", url: "https://api.test/agents/colored/icon/" },
+  animated: {
+    agentUid: "animated",
+    rendering: "color",
+    imageRendering: "pixelated",
+    url: "https://api.test/agents/animated/icon/",
+  },
 };
 const lookup: AgentIconLookup = (uid) => (uid ? icons[uid] ?? null : null);
 
@@ -52,9 +61,9 @@ describe("AgentIcon", () => {
     clearAgentIconCache();
     vi.unstubAllGlobals();
   });
-  function render(agentUid: string | null, withProvider = true) {
+  function render(agentUid: string | null, withProvider = true, motion?: "still" | "animate") {
     const element = (
-      <AgentIcon agentUid={agentUid} className="h-5 w-5" fallback={<span data-fallback="robot" />} />
+      <AgentIcon agentUid={agentUid} className="h-5 w-5" fallback={<span data-fallback="robot" />} motion={motion} />
     );
     act(() => {
       root.render(
@@ -99,5 +108,60 @@ describe("AgentIcon", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(container.querySelector("[data-fallback]")).not.toBeNull();
     expect(container.querySelector("[data-agent-icon]")).toBeNull();
+  });
+
+  describe("an animated pixel-art icon", () => {
+    let objectUrls = 0;
+    beforeEach(() => {
+      objectUrls = 0;
+      fetchMock.mockImplementation(async () =>
+        new Response(APNG, { status: 200, headers: { ETag: '"apng"', "Content-Type": "image/png" } }),
+      );
+      // The first object URL is the animation, the second its frame 0 still.
+      Object.assign(URL, { createObjectURL: () => `blob:test/${(objectUrls += 1) === 1 ? "animated" : "still"}` });
+    });
+
+    function image() {
+      return container.querySelector<HTMLImageElement>('img[data-agent-icon="color"]');
+    }
+
+    it("shows its frame 0 still by default, sharp", async () => {
+      render("animated");
+      await vi.waitFor(() => expect(image()).not.toBeNull());
+      expect(image()?.src).toBe("blob:test/still");
+      expect(image()?.dataset.agentIconMotion).toBe("still");
+      expect(image()?.style.imageRendering).toBe("pixelated");
+    });
+
+    it("animates where asked", async () => {
+      render("animated", true, "animate");
+      await vi.waitFor(() => expect(image()).not.toBeNull());
+      expect(image()?.src).toBe("blob:test/animated");
+      expect(image()?.dataset.agentIconMotion).toBe("animated");
+    });
+
+    it("stays still when the person asks for reduced motion", async () => {
+      vi.stubGlobal(
+        "matchMedia",
+        (query: string) =>
+          ({
+            matches: query.includes("prefers-reduced-motion"),
+            media: query,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+          }) as unknown as MediaQueryList,
+      );
+      render("animated", true, "animate");
+      await vi.waitFor(() => expect(image()).not.toBeNull());
+      expect(image()?.src).toBe("blob:test/still");
+    });
+  });
+
+  it("leaves a static colour icon unmarked and smooth", async () => {
+    render("colored", true, "animate");
+    await vi.waitFor(() => expect(container.querySelector('img[data-agent-icon="color"]')).not.toBeNull());
+    const image = container.querySelector<HTMLImageElement>("img")!;
+    expect(image.dataset.agentIconMotion).toBeUndefined();
+    expect(image.style.imageRendering).toBe("");
   });
 });
