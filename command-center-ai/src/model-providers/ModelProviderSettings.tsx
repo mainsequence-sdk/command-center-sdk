@@ -463,8 +463,9 @@ export function ModelProviderSettings({ auth, connection, notify, organizationEn
         customId,
       });
       await refresh();
-    } catch {
-      // A failed sign-off leaves the provider as it was; the card still shows it signed in.
+    } catch (error) {
+      // The card keeps its state; say why the sign-off did not happen.
+      setAttemptError(error instanceof Error ? error.message : "Unable to sign off the provider.");
     } finally {
       setPendingProvider(null);
     }

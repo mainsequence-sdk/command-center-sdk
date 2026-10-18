@@ -87,6 +87,7 @@ describe("ModelProviderSettings sign-in", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     vi.useFakeTimers();
     vi.clearAllMocks();
+    mocks.signOff.mockReset();
     delete catalog.providers[0].configuredCredentials;
     mocks.refetch.mockResolvedValue(undefined);
     container = document.createElement("div");
@@ -220,6 +221,72 @@ describe("ModelProviderSettings sign-in", () => {
       Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Sign in openai-work")?.click();
     });
     expect(mocks.start).toHaveBeenCalledWith(expect.objectContaining({ provider: "openai-codex", customId: "openai-work", organizationEnvironmentUid: "environment-one" }));
+  });
+
+  it.each(["refusal", "network"])("shows a sign-off %s without changing the signed-in card, and clears it on retry", async (failure) => {
+    catalog.providers[0].configuredCredentials = [{
+      uid: "credential-one", customId: "openai-work", userUid: "owner-one",
+      organizationEnvironmentUid: "environment-one", status: "active", authenticated: true,
+    }];
+    const message = failure === "refusal"
+      ? "This needs the model-provider-credentials.revoke action."
+      : "The network connection was lost.";
+    const sendPlatformRequest = vi.fn();
+    if (failure === "refusal") {
+      sendPlatformRequest.mockResolvedValue(new Response(JSON.stringify({
+        detail: message,
+        code: "missing_action",
+        required_action: "model-provider-credentials.revoke",
+        granting_policies: ["model-provider-credentials.editor", "model-provider-credentials.owner"],
+      }), { status: 403, statusText: "Forbidden", headers: { "Content-Type": "application/json" } }));
+    } else {
+      sendPlatformRequest.mockRejectedValue(new Error(message));
+    }
+    const api = await vi.importActual<typeof import("../backend/model-provider-auth-api.js")>("../backend/model-provider-auth-api.js");
+    mocks.signOff.mockImplementationOnce(api.signOffModelProvider);
+    const testConnection = createChatBackendConnection({ apiBaseUrl: "https://platform.test", sendPlatformRequest });
+    const signOffButton = () => Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Sign off openai-work")!;
+
+    await act(async () => root.render(<ModelProviderSettings auth={auth} connection={testConnection}
+      organizationEnvironmentUid="environment-one" />));
+    await act(async () => signOffButton().click());
+
+    const request = sendPlatformRequest.mock.calls[0][0] as Request;
+    expect(request.url).toBe("https://platform.test/api/v1/model-provider-credentials/revoke/");
+    expect(request.method).toBe("POST");
+    expect(await request.json()).toMatchObject({ provider: "openai-codex", custom_id: "openai-work" });
+    expect(container.querySelector(".ms-chat-providers__error")?.textContent).toContain(message);
+    expect(signOffButton().disabled).toBe(false);
+    expect(signOffButton().parentElement?.textContent).toContain("Signed in");
+    expect(mocks.invalidate).not.toHaveBeenCalled();
+    expect(mocks.refetch).not.toHaveBeenCalled();
+
+    let finishSignOff!: () => void;
+    mocks.signOff.mockImplementationOnce(() => new Promise<void>((resolve) => { finishSignOff = resolve; }));
+    await act(async () => signOffButton().click());
+    expect(container.querySelector(".ms-chat-providers__error")).toBeNull();
+    expect(signOffButton().disabled).toBe(true);
+    await act(async () => finishSignOff());
+    expect(mocks.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a fallback for an unknown sign-off failure and clears it when starting sign-in", async () => {
+    catalog.providers[0].configuredCredentials = [{
+      uid: "credential-one", customId: "openai-work", userUid: "owner-one",
+      organizationEnvironmentUid: "environment-one", status: "active", authenticated: true,
+    }];
+    mocks.signOff.mockRejectedValueOnce(null);
+    mocks.start.mockResolvedValue({ ok: true, statusCode: 201, provider: "openai-codex", attempt: attempt("awaiting_browser") });
+    mocks.fetchAttempt.mockResolvedValue(attempt("awaiting_browser"));
+    await act(async () => root.render(<ModelProviderSettings auth={auth} connection={connection} />));
+    await act(async () => {
+      Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Sign off openai-work")!.click();
+    });
+    expect(container.querySelector(".ms-chat-providers__error")?.textContent).toBe("Unable to sign off the provider.");
+    await act(async () => signIn()!.click());
+    expect(container.querySelector(".ms-chat-providers__error")).toBeNull();
+    expect(dialog()).not.toBeNull();
   });
 
 });

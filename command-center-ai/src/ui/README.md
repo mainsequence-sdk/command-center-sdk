@@ -79,6 +79,8 @@ The rest is internal: `MessageActions.tsx`, `SessionModelRequiredState.tsx`,
 `MarkdownContent.tsx`, `chat-ui-context.tsx` (the copy, the viewer, and the settings callback), and
 `class-names.ts`. `Dialog.tsx`, `ConfirmationDialog.tsx` (the person types a word to confirm), and
 `PasswordInput.tsx` serve the [model provider settings](../model-providers/README.md).
+`Dialog` closes on Escape from inside its panel or the page body, respects an already-handled
+Escape, and stays open when focus is in a host dialog rendered in a separate portal.
 `useChatRailResize.ts` owns the rail's internal presentation state, pointer capture, keyboard
 steps, viewport measurements, and drag cleanup. Width stays in memory; no storage key is added.
 
@@ -191,3 +193,5 @@ engine mocked: message actions, message authors, the connecting stage, agent ico
 tool calls. `ChatComposer.client.test.tsx` covers the standalone composer and every status of
 `useChatComposerState()`; `ChatFrame.client.test.tsx` the rail, the launcher, and the expanded
 rail; `AgentSessionExplorer.client.test.tsx` the explorer. The "choose a model" state and the agent icon have their own.
+`Dialog.client.test.tsx` covers Escape inside the panel, on the page body, in a host dialog's
+separate portal, and after content handles it.
