@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: sign-off error reporting, dialog Escape handling, and the content of the
+packaged `manage-model-providers` skill and its guides. No npm public API or entrypoint,
+stylesheet class, browser storage key or value, skill name or path, installer behavior, SDK peer
+range, or platform route or payload changes. The access guidance describes the platform's
+existing policies; enforcement remains with the platform. No backend deployment or storage
+migration is required. The updated skill ships in the next package release.
+
+- Failed or refused provider sign-off keeps the signed-in card and shows the platform's message
+  or network error above the providers; starting Sign in or Sign off again clears it (#18).
+- The model-provider skill, human guide, and module README describe per-record `user`, `editor`,
+  and `owner` access policies for credentials and custom providers, including `missing_action`
+  refusals, while preserving the credential-delivery disclosure (#19).
+- Escape in a host dialog opened from `renderSharing` closes only that dialog. Package dialogs
+  accept Escape from their own panel or the page body and respect an already-handled event (#20).
+
 ## 0.0.15
 
 Compatibility axes: additive npm API on `AgentIcon` (`activity`), on `CommandCenterAgentIcon`

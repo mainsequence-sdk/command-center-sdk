@@ -41,6 +41,8 @@ The settings never change a session's model. The composer's picker does, on the 
 - Signing in starts an attempt that the screen follows every 1.5 seconds until it completes, fails,
   or is cancelled. The dialog shows only the platform's next step: a browser page whose callback
   completes at the platform, or a device code. The person never pastes a callback URL or a code.
+- A failed or refused sign-off keeps the card signed in and shows the platform's message or
+  network error above the providers. Starting Sign in or Sign off again clears it.
 - Known issue: a card's title is built from the provider id instead of the catalog's name.
 
 ## Organization custom providers
@@ -73,7 +75,7 @@ platform token and never through the application's rewrite or a proxy.
 The [model providers README](../src/model-providers/README.md) records every rule the screens follow.
 
 
-## Named configurations, Environment and sharing
+## Named configurations, Environment and access
 
 Each configured credential has its own `custom_id`, owner and Environment. The
 provider integration remains one catalog row. Existing callers may omit a name;
@@ -82,12 +84,31 @@ their existing identifier and authentication fields.
 
 Pass `organizationEnvironmentUid` to `ModelProviderSettings` for the current
 Environment. Catalog caches distinguish the person and Environment. Pass
-`renderSharing` to embed the host's existing permissions editor; it receives the
+`renderSharing` to embed the host's per-record access panel; it receives the
 record UID, name, owner, Environment and existing resource name. Command Center
-uses its standard editor for user, team and workload grants. No credential bytes
-are returned to this screen.
+passes its Access panel there, where people give and remove policies on the
+record. No credential bytes are returned to this screen. A dialog the host opens
+in its own portal keeps Details and sharing open when Escape closes the host
+dialog; Escape in the inline access panel still closes Details and sharing.
 
-The Details and sharing dialog always shows this before any sharing controls:
+Each record is decided by its own policies:
+
+- A credential: `user` selects it and receives it in sessions and workloads,
+  including local Tau, where it can be copied; `editor` also refreshes it,
+  signs in to the provider again, revokes it and sees who has access; `owner`
+  also decides who has access. The credential's person holds `owner`.
+- A custom provider: `user` sends requests through it and its models, and its
+  stored authentication is delivered to the holder's runtime, including local
+  Tau, where it can be copied; `editor` also changes its endpoint,
+  authentication and models, deletes it and sees who has access; `owner` also
+  decides who has access. Its creator holds `owner`.
+- Organization admins hold every action on their Organization's records.
+
+A refused change answers `403` with `code` `missing_action`, the
+`required_action` and the `granting_policies` that include it: tell the person
+which policy to ask for instead of retrying.
+
+The Details and sharing dialog always shows this before any access controls:
 
 > Sharing this configured provider lets recipients receive and copy its
 > credentials in their own runtime, including local Tau. Only share with people
@@ -99,6 +120,5 @@ The Details and sharing dialog always shows this before any sharing controls:
 > Organization, and their usage counts against it too. An admin with none of
 > their own for a provider gets the first one added in that Environment.
 
-Retain the disclosure in details after sharing. A view grant allows credential
-use and delivery; it does not authorize editing or revoking the stored credential.
-Organization admins hold both on every configured provider without a grant.
+Retain the disclosure in details after a policy is given. Removing a policy
+stops future delivery; it cannot recall credentials already delivered.

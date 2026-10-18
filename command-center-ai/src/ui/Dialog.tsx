@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { X } from "lucide-react";
 import { Button } from "@dev-mainsequence/command-center-sdk/controls";
@@ -21,7 +21,9 @@ interface DialogProps {
 
 /**
  * A modal dialog in a portal: a backdrop, a panel with a title, an optional description, a close
- * button, and a scrolling body. Escape closes it and the page does not scroll while it is open.
+ * button, and a scrolling body. Escape closes it when focus is inside it or nowhere (the page
+ * body), and not when another dialog or an already-handled Escape has it. The page does not
+ * scroll while it is open.
  * `className` sizes the panel; `headerClassName` and `contentClassName` style the header and body.
  */
 export function Dialog({
@@ -36,6 +38,8 @@ export function Dialog({
   open,
   title,
 }: DialogProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     if (!open) {
       return undefined;
@@ -45,9 +49,14 @@ export function Dialog({
     document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
+      if (event.key !== "Escape" || event.defaultPrevented) {
+        return;
       }
+      const target = event.target;
+      if (target instanceof Node && target !== document.body && !panelRef.current?.contains(target)) {
+        return;
+      }
+      onClose();
     }
 
     window.addEventListener("keydown", handleKeyDown);
@@ -75,6 +84,7 @@ export function Dialog({
         <div className="ms-chat-dialog__backdrop" aria-hidden="true" />
       )}
       <div
+        ref={panelRef}
         className={cx("ms-chat-dialog__panel", className)}
         role="dialog"
         aria-modal="true"

@@ -53,6 +53,8 @@ The screens hold their own state; nothing here needs a query client.
   cancelled. A failed read is tried once more after a second. An attempt the platform no longer
   knows (`signin_attempt_not_found`, `signin_attempt_not_active`) closes the dialog and refreshes
   the catalog. Starting a sign-in while one is in progress opens that attempt.
+- A failed or refused sign-off keeps the card as it is and shows the platform's message (or the
+  network error) above the providers. Starting Sign in or Sign off again clears that message.
 - A change to a custom provider or model keeps its editor open, with the error, until the platform
   accepts it; then the list reloads, the editor closes, and `notify` reports it.
 
@@ -104,6 +106,9 @@ The screens hold their own state; nothing here needs a query client.
 - Keep the test chat dialog rendered outside the provider and model `<form>` elements. React events
   bubble through portals, so nesting it would let its events reach the form submit handler. While
   it is open the provider editor ignores Escape so the draft is not discarded.
+- A dialog opened by host content in its own portal, such as Grant access from `renderSharing`,
+  keeps the underlying settings dialog open on Escape. Escape closes a package dialog only from
+  inside its panel or the page body, and already-handled Escape events are ignored.
 - In the test chat only real inputs may look typable. The conversation has no empty state: an empty
   bordered box with hint text reads as the message field and people click and type into it. The
   message box is the labelled, highlighted field, takes the keyboard on open (the first credential
@@ -125,13 +130,14 @@ The screens hold their own state; nothing here needs a query client.
 ## Tests
 
 `ModelProviderSettings.client.test.tsx` covers the sign-in loop: the attempt is followed until it
-completes, an unknown attempt closes the dialog, and a sign-in already in progress opens.
+completes, an unknown attempt closes the dialog, and a sign-in already in progress opens. It also
+covers refused and failed sign-off, preserving the signed-in card, and clearing errors on retry.
 `CustomModelProviderSettings.client.test.tsx` covers the atomic provider editor and a test
 conversation opened from a draft model; `CustomModelTestChatDialog.client.test.tsx` covers the
 test conversation; `model-provider-auth-state.test.ts` covers the credential labels.
 
 
-## Named configurations, Environment and sharing
+## Named configurations, Environment and access
 
 Each configured credential has its own `custom_id`, owner and Environment. The
 provider integration remains one catalog row. Existing callers may omit a name;
@@ -140,12 +146,31 @@ their existing identifier and authentication fields.
 
 Pass `organizationEnvironmentUid` to `ModelProviderSettings` for the current
 Environment. Catalog caches distinguish the person and Environment. Pass
-`renderSharing` to embed the host's existing permissions editor; it receives the
+`renderSharing` to embed the host's per-record access panel; it receives the
 record UID, name, owner, Environment and existing resource name. Command Center
-uses its standard editor for user, team and workload grants. No credential bytes
-are returned to this screen.
+passes its Access panel there, where people give and remove policies on the
+record. No credential bytes are returned to this screen. A dialog the host opens
+in its own portal keeps Details and sharing open when Escape closes the host
+dialog; Escape in the inline access panel still closes Details and sharing.
 
-The Details and sharing dialog always shows this before any sharing controls:
+Each record is decided by its own policies:
+
+- A credential: `user` selects it and receives it in sessions and workloads,
+  including local Tau, where it can be copied; `editor` also refreshes it,
+  signs in to the provider again, revokes it and sees who has access; `owner`
+  also decides who has access. The credential's person holds `owner`.
+- A custom provider: `user` sends requests through it and its models, and its
+  stored authentication is delivered to the holder's runtime, including local
+  Tau, where it can be copied; `editor` also changes its endpoint,
+  authentication and models, deletes it and sees who has access; `owner` also
+  decides who has access. Its creator holds `owner`.
+- Organization admins hold every action on their Organization's records.
+
+A refused change answers `403` with `code` `missing_action`, the
+`required_action` and the `granting_policies` that include it: tell the person
+which policy to ask for instead of retrying.
+
+The Details and sharing dialog always shows this before any access controls:
 
 > Sharing this configured provider lets recipients receive and copy its
 > credentials in their own runtime, including local Tau. Only share with people
@@ -157,6 +182,5 @@ The Details and sharing dialog always shows this before any sharing controls:
 > Organization, and their usage counts against it too. An admin with none of
 > their own for a provider gets the first one added in that Environment.
 
-Retain the disclosure in details after sharing. A view grant allows credential
-use and delivery; it does not authorize editing or revoking the stored credential.
-Organization admins hold both on every configured provider without a grant.
+Retain the disclosure in details after a policy is given. Removing a policy
+stops future delivery; it cannot recall credentials already delivered.
