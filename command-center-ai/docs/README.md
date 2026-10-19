@@ -13,6 +13,8 @@ section 7).
 - [ADR 096: The Chat as One Independent Package](./adr/adr-096-independent-chat-package.md)
 - [ADR 098: One Communication Contract for Every Agent](./adr/adr-098-one-communication-contract-for-every-agent.md)
 - [ADR 099: Local Agents Through the Same Engine](./adr/adr-099-local-agents-through-the-same-engine.md)
+- [SDK ADR 018: File Attachments in the Shared Chat Interface](./adr/adr-sdk-018-chat-file-attachments.md)
+  (Proposed; requirements only, not implemented)
 
 These records moved here from Command Center and keep their numbers and titles, because the code
 cites them. New decisions about the package are `SDK ADR` records in `adr/` with

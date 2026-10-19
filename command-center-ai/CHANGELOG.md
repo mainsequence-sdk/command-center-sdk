@@ -16,6 +16,10 @@ migration is required. The updated skill ships in the next package release.
   refusals, while preserving the credential-delivery disclosure (#19).
 - Escape in a host dialog opened from `renderSharing` closes only that dialog. Package dialogs
   accept Escape from their own panel or the page body and respect an already-handled event (#20).
+- [SDK ADR 018](docs/adr/adr-sdk-018-chat-file-attachments.md) (Proposed) records the
+  requirements for file attachments in the composer and thread, and the versioned runtime
+  contract they depend on in MS Tau SDK ADR 0024. Documentation only: no attachment feature
+  ships, and no compatibility axis changes.
 
 ## 0.0.15
 
