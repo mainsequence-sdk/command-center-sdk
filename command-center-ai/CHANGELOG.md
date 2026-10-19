@@ -1,13 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.0.16
 
 Compatibility axes: sign-off error reporting, dialog Escape handling, and the content of the
 packaged `manage-model-providers` skill and its guides. No npm public API or entrypoint,
 stylesheet class, browser storage key or value, skill name or path, installer behavior, SDK peer
 range, or platform route or payload changes. The access guidance describes the platform's
 existing policies; enforcement remains with the platform. No backend deployment or storage
-migration is required. The updated skill ships in the next package release.
+migration is required. The updated skill ships in this release.
 
 - Failed or refused provider sign-off keeps the signed-in card and shows the platform's message
   or network error above the providers; starting Sign in or Sign off again clears it (#18).
