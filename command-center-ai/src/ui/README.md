@@ -37,7 +37,9 @@ The thread:
   the fallback. An animated icon shows its first frame unless `motion="animate"` is passed, and
   always under reduced motion; a pixel-art icon is drawn with sharp pixels. With `activity` it shows
   the agent's pose for what it is doing: its application tool's pose, `working`, `thinking` or
-  `error`.
+  `error`. With `icon`, an icon the application already holds (an agent read's
+  `command_center_icon`, normalized by `normalizeCommandCenterAgentIcon`), it skips the projection
+  and draws the inline idle sprite without a request, also outside the engine.
 
 The frame Command Center draws around the thread, so every application looks like Command Center
 ([the rail guide](../../docs/rail-and-expanded-rail.md)):

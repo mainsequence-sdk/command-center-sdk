@@ -137,8 +137,10 @@ export {
 export {
   fetchCommandCenterAgentIconBytes,
   fetchCommandCenterAgentIcons,
+  normalizeCommandCenterAgentIcon,
   type CommandCenterAgentIcon,
   type CommandCenterAgentIconBytes,
+  type CommandCenterAgentIconImage,
 } from "./backend/command-center-agent-icons-api.js";
 
 // Tool activity and errors
@@ -226,7 +228,7 @@ export {
   type AgentSessionExplorerAgent,
   type AgentSessionGroup,
 } from "./engine/agent-session-groups.js";
-export { clearAgentIconCache } from "./engine/agent-icon-cache.js";
+export { clearAgentIconCache, primeAgentIcon } from "./engine/agent-icon-cache.js";
 export {
   AgentIconAuthContext,
   AgentIconsContext,

@@ -1,7 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import { useCommandCenterViewport } from "@dev-mainsequence/command-center-sdk/layout";
 
-import { ensureAgentIcon } from "../engine/agent-icon-cache.js";
+import { type CommandCenterAgentIcon } from "../backend/command-center-agent-icons-api.js";
+import { ensureAgentIcon, primeAgentIcon } from "../engine/agent-icon-cache.js";
 import { resolveAgentIconPose, type AgentIconActivity } from "../engine/agent-icon-pose.js";
 import {
   useAgentIconAuth,
@@ -28,23 +29,44 @@ import { cx } from "./class-names.js";
  * `activity` says what the agent is doing; with it the icon shows the matching pose sprite (the
  * application's tool rule, `working`, `thinking`, `error`) and falls back to the idle icon. A
  * place that animates also loads the agent's poses ahead of use.
+ *
+ * `icon` is an icon the caller already holds, such as the `command_center_icon` an agent read
+ * returned with `include_icons`, normalized by `normalizeCommandCenterAgentIcon`. When it is given,
+ * even as null, the provider's projection is not consulted, and its inline idle sprite is drawn
+ * without a request, also outside the engine (ADR 090, section 8).
  */
 export function AgentIcon({
   agentUid,
+  icon: givenIcon,
   className,
   fallback,
   motion = "still",
   activity = null,
 }: {
   agentUid?: string | null;
+  icon?: CommandCenterAgentIcon | null;
   className?: string;
   fallback: ReactNode;
   motion?: "still" | "animate";
   activity?: AgentIconActivity | null;
 }) {
   const lookup = useAgentIconLookup();
-  const icon = lookup(agentUid);
+  const icon = givenIcon === undefined ? lookup(agentUid) : givenIcon;
   const auth = useAgentIconAuth();
+  // Declared before the idle image's own load, so inline bytes are seeded before any request.
+  const idleUrl = icon?.url ?? null;
+  const inlineMime = icon?.idle?.mime ?? null;
+  const inlineBytes = icon?.idle?.bytes ?? null;
+  useEffect(() => {
+    if (!idleUrl || !inlineMime || !inlineBytes) {
+      return;
+    }
+    void primeAgentIcon({ url: idleUrl, idle: { mime: inlineMime, bytes: inlineBytes } }).then((ready) => {
+      if (!ready && auth?.connection) {
+        ensureAgentIcon({ connection: auth.connection, url: idleUrl, token: auth.token, tokenType: auth.tokenType });
+      }
+    });
+  }, [auth, idleUrl, inlineBytes, inlineMime]);
   const pose = icon ? resolveAgentIconPose(icon, activity) : null;
   const poseUrl = pose ? icon?.poses?.[pose] ?? null : null;
   const idle = useAgentIconImage(icon?.url ?? null, auth);
