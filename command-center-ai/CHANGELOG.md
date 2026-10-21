@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.17
 
 Compatibility axes: additive npm API (`normalizeCommandCenterAgentIcon`, `primeAgentIcon`, the
 `CommandCenterAgentIconImage` type, the optional `idle` on `CommandCenterAgentIcon`, and the
