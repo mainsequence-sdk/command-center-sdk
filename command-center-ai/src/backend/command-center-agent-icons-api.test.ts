@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildCommandCenterAgentIconsUrl,
   fetchCommandCenterAgentIconBytes,
+  normalizeCommandCenterAgentIcon,
   normalizeCommandCenterAgentIcons,
 } from "./command-center-agent-icons-api.js";
 import { createChatBackendConnection } from "./connection.js";
@@ -67,6 +68,44 @@ describe("command center agent icons api", () => {
     expect(icons.get("pixel")?.imageRendering).toBe("pixelated");
     expect(icons.get("mask")?.imageRendering).toBe("auto");
     expect(icons.get("odd")?.imageRendering).toBe("auto");
+  });
+});
+
+describe("an icon an agent read carried", () => {
+  const icon = {
+    rendering: "color",
+    imageRendering: "pixelated",
+    url: "https://api.test/api/v1/command-center/agents/a1/icon/",
+    poses: { working: "https://api.test/api/v1/command-center/agents/a1/icon/working/" },
+    toolPoses: { tutorial_api: "working" },
+  };
+
+  it("keeps the inline idle sprite beside the projection's fields", () => {
+    expect(
+      normalizeCommandCenterAgentIcon("a1", { ...icon, idle: { mime: "image/png", bytes: "iVBORw0KGgo=" } }),
+    ).toEqual({
+      agentUid: "a1",
+      rendering: "color",
+      imageRendering: "pixelated",
+      url: icon.url,
+      poses: icon.poses,
+      toolPoses: icon.toolPoses,
+      idle: { mime: "image/png", bytes: "iVBORw0KGgo=" },
+    });
+  });
+
+  it("drops an unusable idle sprite and loads from the url instead", () => {
+    for (const idle of [null, { mime: "image/gif", bytes: "R0lGOD" }, { mime: "image/png", bytes: " " }, "junk"]) {
+      const normalized = normalizeCommandCenterAgentIcon("a1", { ...icon, idle });
+      expect(normalized?.url).toBe(icon.url);
+      expect(normalized).not.toHaveProperty("idle");
+    }
+  });
+
+  it("is null without an agent or a usable icon", () => {
+    expect(normalizeCommandCenterAgentIcon("", icon)).toBeNull();
+    expect(normalizeCommandCenterAgentIcon("a1", null)).toBeNull();
+    expect(normalizeCommandCenterAgentIcon("a1", { ...icon, rendering: "sparkle" })).toBeNull();
   });
 });
 

@@ -1,5 +1,8 @@
 
-import { fetchCommandCenterAgentIconBytes } from "../backend/command-center-agent-icons-api.js";
+import {
+  fetchCommandCenterAgentIconBytes,
+  type CommandCenterAgentIconImage,
+} from "../backend/command-center-agent-icons-api.js";
 import type { ChatBackendConnection } from "../backend/connection.js";
 import { apngStill } from "./apng-still.js";
 
@@ -15,6 +18,9 @@ import { apngStill } from "./apng-still.js";
  *
  * An animated PNG also gets a still: a static PNG of its frame 0, made once from the same bytes,
  * for the places that should not move (ADR 090, amended 2026-10-16).
+ *
+ * Bytes an agent read carried inline seed the entry of their delivery URL through
+ * `primeAgentIcon`, without a request (ADR 090, section 8).
  */
 export const AGENT_ICON_REVALIDATE_MS = 5 * 60_000;
 export const AGENT_ICON_RETRY_MS = 60_000;
@@ -70,13 +76,24 @@ function revokeObjectUrl(objectUrl: string) {
   }
 }
 
+function createStillObjectUrlFromBytes(bytes: Uint8Array, type: string) {
+  if (type && type !== "image/png") {
+    return null;
+  }
+  try {
+    const still = apngStill(bytes);
+    return still ? createObjectUrl(new Blob([still], { type: "image/png" })) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function createStillObjectUrl(blob: Blob) {
   if (blob.type && blob.type !== "image/png") {
     return null;
   }
   try {
-    const still = apngStill(new Uint8Array(await blob.arrayBuffer()));
-    return still ? createObjectUrl(new Blob([still], { type: "image/png" })) : null;
+    return createStillObjectUrlFromBytes(new Uint8Array(await blob.arrayBuffer()), blob.type);
   } catch {
     return null;
   }
@@ -91,20 +108,26 @@ function revokeEntryUrls(entry: AgentIconCacheEntry) {
   }
 }
 
-async function fingerprintBlob(blob: Blob, etag: string | null) {
-  if (etag) {
-    return etag;
-  }
+async function sha256Hex(bytes: BufferSource) {
   try {
     const subtle = globalThis.crypto?.subtle;
     if (subtle) {
-      const digest = await subtle.digest("SHA-256", await blob.arrayBuffer());
+      const digest = await subtle.digest("SHA-256", bytes);
       return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
     }
   } catch {
-    // Fall through to the weak fingerprint.
+    // The caller falls back to the weak fingerprint.
   }
-  return `${blob.size}:${blob.type}`;
+  return null;
+}
+
+// The platform's ETag is the quoted SHA-256 of the bytes, so without its quotes it equals the
+// fingerprint of the same bytes seeded inline.
+async function fingerprintBlob(blob: Blob, etag: string | null) {
+  if (etag) {
+    return etag.replace(/^W\//, "").replace(/"/g, "");
+  }
+  return (await sha256Hex(await blob.arrayBuffer())) ?? `${blob.size}:${blob.type}`;
 }
 
 export function ensureAgentIcon({
@@ -174,6 +197,80 @@ export function ensureAgentIcon({
       inFlight.delete(url);
     });
   inFlight.set(url, request);
+}
+
+function decodeBase64(text: string) {
+  return Uint8Array.from(atob(text), (character) => character.charCodeAt(0));
+}
+
+/**
+ * Seeds the entry of an icon's delivery URL from the idle sprite an agent read carried inline
+ * (the platform's `include_icons`), so the icon draws without a request. A fresh ready entry is
+ * kept as it is; an older one is refreshed, and its object URL replaced only when the bytes
+ * differ. Resolves whether the entry is ready afterwards; when it is not (the bytes do not decode
+ * or no object URL can be made), the caller loads the URL as usual.
+ */
+export function primeAgentIcon({
+  idle,
+  now = Date.now(),
+  url,
+}: {
+  idle: CommandCenterAgentIconImage;
+  now?: number;
+  url: string;
+}): Promise<boolean> {
+  const isReady = () => entries.get(url)?.status === "ready";
+  const running = inFlight.get(url);
+  if (running) {
+    return running.then(isReady);
+  }
+  const existing = entries.get(url);
+  if (existing?.status === "ready" && now - existing.checkedAt < AGENT_ICON_REVALIDATE_MS) {
+    return Promise.resolve(true);
+  }
+  let bytes: Uint8Array<ArrayBuffer>;
+  try {
+    bytes = decodeBase64(idle.bytes);
+  } catch {
+    return Promise.resolve(isReady());
+  }
+  if (!existing) {
+    entries.set(url, { status: "loading", objectUrl: null, stillObjectUrl: null, fingerprint: null, checkedAt: now });
+    emit();
+  }
+  const blob = new Blob([bytes], { type: idle.mime });
+  const seeding = sha256Hex(bytes)
+    .then((digest) => {
+      const fingerprint = digest ?? `${blob.size}:${blob.type}`;
+      const current = entries.get(url);
+      if (current?.objectUrl && current.fingerprint === fingerprint) {
+        entries.set(url, { ...current, status: "ready", checkedAt: Date.now() });
+        return;
+      }
+      const objectUrl = createObjectUrl(blob);
+      if (!objectUrl) {
+        if (!current?.objectUrl) {
+          entries.delete(url);
+        }
+        return;
+      }
+      if (current) {
+        revokeEntryUrls(current);
+      }
+      entries.set(url, {
+        status: "ready",
+        objectUrl,
+        stillObjectUrl: createStillObjectUrlFromBytes(bytes, idle.mime),
+        fingerprint,
+        checkedAt: Date.now(),
+      });
+    })
+    .finally(() => {
+      inFlight.delete(url);
+      emit();
+    });
+  inFlight.set(url, seeding);
+  return seeding.then(isReady);
 }
 
 export function clearAgentIconCache() {

@@ -7,6 +7,7 @@ import {
   ensureAgentIcon,
   getAgentIconCacheEntry,
   isAgentIconRequestInFlight,
+  primeAgentIcon,
 } from "./agent-icon-cache.js";
 import { apngStill } from "./apng-still.js";
 import { createChatBackendConnection } from "../backend/connection.js";
@@ -158,6 +159,85 @@ describe("agent icon cache", () => {
     await vi.waitFor(() => expect(getAgentIconCacheEntry(url)?.status).toBe("ready"));
     expect(getAgentIconCacheEntry(url)?.stillObjectUrl).toBeNull();
     expect(createObjectURL).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("agent icon cache seeded inline", () => {
+  const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
+  const createObjectURL = vi.fn<(blob: Blob) => string>();
+  const revokeObjectURL = vi.fn<(objectUrl: string) => void>();
+  let objectUrlCounter = 0;
+  const base64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
+  const sha256 = async (bytes: Uint8Array<ArrayBuffer>) =>
+    Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
+
+  beforeEach(() => {
+    objectUrlCounter = 0;
+    fetchMock.mockReset();
+    createObjectURL.mockReset();
+    createObjectURL.mockImplementation(() => `blob:test/${(objectUrlCounter += 1)}`);
+    revokeObjectURL.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+    clearAgentIconCache();
+  });
+  afterEach(() => {
+    clearAgentIconCache();
+    vi.unstubAllGlobals();
+  });
+
+  it("makes a ready entry, with the still of an animated PNG, without a request", async () => {
+    const seeding = primeAgentIcon({ url, idle: { mime: "image/png", bytes: base64(APNG) } });
+    // Loading at once, so a request started now waits for the seed instead of fetching.
+    expect(getAgentIconCacheEntry(url)?.status).toBe("loading");
+    ensureAgentIcon({ connection, url, token: "jwt" });
+    await expect(seeding).resolves.toBe(true);
+    expect(getAgentIconCacheEntry(url)).toMatchObject({
+      status: "ready",
+      objectUrl: "blob:test/1",
+      stillObjectUrl: "blob:test/2",
+    });
+    const animation = createObjectURL.mock.calls[0]?.[0];
+    expect(animation?.type).toBe("image/png");
+    expect(Array.from(new Uint8Array(await animation!.arrayBuffer()))).toEqual(Array.from(APNG));
+    ensureAgentIcon({ connection, url, token: "jwt" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps a fresh entry and replaces an older one only when the bytes differ", async () => {
+    await primeAgentIcon({ url, idle: { mime: "image/png", bytes: base64(STATIC_PNG) } });
+    await expect(primeAgentIcon({ url, idle: { mime: "image/png", bytes: base64(APNG) } })).resolves.toBe(true);
+    expect(getAgentIconCacheEntry(url)?.objectUrl).toBe("blob:test/1");
+    const later = Date.now() + AGENT_ICON_REVALIDATE_MS + 1;
+    await primeAgentIcon({ url, idle: { mime: "image/png", bytes: base64(STATIC_PNG) }, now: later });
+    expect(getAgentIconCacheEntry(url)?.objectUrl).toBe("blob:test/1");
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    await primeAgentIcon({ url, idle: { mime: "image/png", bytes: base64(APNG) }, now: later });
+    expect(getAgentIconCacheEntry(url)?.objectUrl).toBe("blob:test/2");
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:test/1");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("agrees with a revalidation whose ETag is the platform's SHA-256 of the same bytes", async () => {
+    await primeAgentIcon({ url, idle: { mime: "image/png", bytes: base64(STATIC_PNG) } });
+    fetchMock.mockResolvedValueOnce(
+      new Response(STATIC_PNG, {
+        status: 200,
+        headers: { ETag: `"${await sha256(STATIC_PNG)}"`, "Content-Type": "image/png" },
+      }),
+    );
+    ensureAgentIcon({ connection, url, token: "jwt", now: Date.now() + AGENT_ICON_REVALIDATE_MS + 1 });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(isAgentIconRequestInFlight(url)).toBe(false));
+    expect(getAgentIconCacheEntry(url)?.objectUrl).toBe("blob:test/1");
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+  });
+
+  it("seeds nothing from bytes that do not decode", async () => {
+    await expect(primeAgentIcon({ url, idle: { mime: "image/png", bytes: "%%%" } })).resolves.toBe(false);
+    expect(getAgentIconCacheEntry(url)).toBeUndefined();
   });
 });
 

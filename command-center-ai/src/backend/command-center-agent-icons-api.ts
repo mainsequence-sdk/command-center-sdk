@@ -13,10 +13,19 @@ import { requestPlatform } from "./platform-request.js";
  * `color` is drawn as an image and never tinted) and a delivery URL. Delivery
  * needs the normal bearer token and has no signed query, so the bytes are
  * fetched with the authenticated client and rendered from an object URL.
+ *
+ * An agent read with `include_icons=true` (the platform's agent list, detail and semantic search)
+ * carries the same icon per agent, plus the idle sprite inline, so a list draws without a request.
  */
 export type CommandCenterAgentIconRendering = "mask" | "color";
 /** How a color icon is scaled: smoothly, or with sharp pixels for pixel art. */
 export type CommandCenterAgentIconImageRendering = "auto" | "pixelated";
+
+/** An idle sprite carried inline: its media type and its bytes, base64-encoded. */
+export interface CommandCenterAgentIconImage {
+  mime: "image/png" | "image/svg+xml";
+  bytes: string;
+}
 
 export interface CommandCenterAgentIcon {
   agentUid: string;
@@ -28,6 +37,11 @@ export interface CommandCenterAgentIcon {
   poses?: Readonly<Record<string, string>>;
   /** The pose a declared application's tools show while they run, keyed by application. */
   toolPoses?: Readonly<Record<string, string>>;
+  /**
+   * The idle sprite inline, the bytes `url` delivers, from an agent read with `include_icons`;
+   * the projection never carries it. Absent or null: the icon is loaded from `url`.
+   */
+  idle?: CommandCenterAgentIconImage | null;
 }
 
 export type CommandCenterAgentIconMap = ReadonlyMap<string, CommandCenterAgentIcon>;
@@ -58,6 +72,43 @@ function readStringMap(value: unknown) {
   return entries;
 }
 
+function readIconImage(value: unknown): CommandCenterAgentIconImage | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const mime = readString(record.mime);
+  const bytes = readString(record.bytes);
+  return (mime === "image/png" || mime === "image/svg+xml") && bytes ? { mime, bytes } : null;
+}
+
+/**
+ * One agent's icon from the projection's `commandCenterIcon` or an agent read's
+ * `command_center_icon`; null when it is missing or unusable.
+ */
+export function normalizeCommandCenterAgentIcon(agentUid: string, value: unknown): CommandCenterAgentIcon | null {
+  if (!agentUid || !value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  const iconRecord = value as Record<string, unknown>;
+  const rendering = readString(iconRecord.rendering);
+  const url = readString(iconRecord.url);
+  if ((rendering !== "mask" && rendering !== "color") || !url) {
+    return null;
+  }
+  const imageRendering =
+    rendering === "color" && readString(iconRecord.imageRendering ?? iconRecord.image_rendering) === "pixelated"
+      ? "pixelated"
+      : "auto";
+  const poses = readStringMap(iconRecord.poses);
+  const toolPoses = Object.fromEntries(
+    Object.entries(readStringMap(iconRecord.toolPoses ?? iconRecord.tool_poses)).filter(([, pose]) => pose in poses),
+  );
+  const icon: CommandCenterAgentIcon = { agentUid, rendering, imageRendering, url, poses, toolPoses };
+  const idle = readIconImage(iconRecord.idle);
+  return idle ? { ...icon, idle } : icon;
+}
+
 export function normalizeCommandCenterAgentIcons(payload: unknown): Map<string, CommandCenterAgentIcon> {
   const icons = new Map<string, CommandCenterAgentIcon>();
   if (!Array.isArray(payload)) {
@@ -69,25 +120,12 @@ export function normalizeCommandCenterAgentIcons(payload: unknown): Map<string, 
     }
     const record = entry as Record<string, unknown>;
     const agentUid = readString(record.agentUid ?? record.agent_uid);
-    const icon = record.commandCenterIcon ?? record.command_center_icon;
-    if (!agentUid || !icon || typeof icon !== "object" || Array.isArray(icon)) {
-      continue;
+    const icon = agentUid
+      ? normalizeCommandCenterAgentIcon(agentUid, record.commandCenterIcon ?? record.command_center_icon)
+      : null;
+    if (agentUid && icon) {
+      icons.set(agentUid, icon);
     }
-    const iconRecord = icon as Record<string, unknown>;
-    const rendering = readString(iconRecord.rendering);
-    const url = readString(iconRecord.url);
-    if ((rendering !== "mask" && rendering !== "color") || !url) {
-      continue;
-    }
-    const imageRendering =
-      rendering === "color" && readString(iconRecord.imageRendering ?? iconRecord.image_rendering) === "pixelated"
-        ? "pixelated"
-        : "auto";
-    const poses = readStringMap(iconRecord.poses);
-    const toolPoses = Object.fromEntries(
-      Object.entries(readStringMap(iconRecord.toolPoses ?? iconRecord.tool_poses)).filter(([, pose]) => pose in poses),
-    );
-    icons.set(agentUid, { agentUid, rendering, imageRendering, url, poses, toolPoses });
   }
   return icons;
 }

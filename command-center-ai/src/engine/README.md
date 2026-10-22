@@ -120,7 +120,8 @@ An application may layer its own fields over the engine's value, as Command Cent
   names.
 - `agent-icons-context.tsx` and `agent-icon-cache.ts`: the agent icon projection, one per
   Environment and trusted for five minutes, and the icon bytes cache, both cleared when no one is
-  signed in (ADR 090).
+  signed in (ADR 090). `primeAgentIcon` seeds the cache from the idle sprite an agent read carried
+  inline, without a request (ADR 090, section 8).
 
 ## The Model Catalog Store
 

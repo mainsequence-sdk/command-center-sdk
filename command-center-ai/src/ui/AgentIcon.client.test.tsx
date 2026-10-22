@@ -184,6 +184,51 @@ describe("AgentIcon", () => {
     expect(image.style.imageRendering).toBe("");
   });
 
+  describe("an icon the caller holds", () => {
+    const inline: CommandCenterAgentIcon = {
+      agentUid: "inline",
+      rendering: "color",
+      url: "https://api.test/agents/inline/icon/",
+      idle: { mime: "image/png", bytes: btoa(String.fromCharCode(...APNG)) },
+    };
+
+    function renderHeld(icon: CommandCenterAgentIcon | null, withProvider = true) {
+      const element = (
+        <AgentIcon agentUid="colored" icon={icon} className="h-5 w-5" fallback={<span data-fallback="robot" />} />
+      );
+      act(() => {
+        root.render(
+          withProvider ? (
+            <AgentIconAuthContext.Provider value={auth}>
+              <AgentIconsContext.Provider value={lookup}>{element}</AgentIconsContext.Provider>
+            </AgentIconAuthContext.Provider>
+          ) : (
+            element
+          ),
+        );
+      });
+    }
+
+    it("draws its inline idle sprite without a request, also outside the engine", async () => {
+      renderHeld(inline, false);
+      await vi.waitFor(() => expect(container.querySelector('img[data-agent-icon="color"]')).not.toBeNull());
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("takes precedence over the projection, even as null", async () => {
+      renderHeld(null);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(container.querySelector("[data-fallback]")).not.toBeNull();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("loads its url when it carries no inline sprite", async () => {
+      renderHeld({ ...inline, idle: null });
+      await vi.waitFor(() => expect(container.querySelector('img[data-agent-icon="color"]')).not.toBeNull());
+      expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([inline.url]);
+    });
+  });
+
   describe("poses", () => {
     const requested = () => fetchMock.mock.calls.map(([input]) => String(input));
 

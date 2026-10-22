@@ -55,8 +55,9 @@ text and the tool calls should tell the answer on their own.
   thread draws the viewer's messages, other people's with their initials, and the Agent's with its
   icon, and labels the actors when more than one takes part.
 - Agent names are shown as the platform stores them.
-- An Agent's icon comes from the platform's agent icon projection for the Environment, as a mask
-  that follows the theme or as a colour image, with a robot as the fallback
+- An Agent's icon comes from the platform's agent icon projection for the Environment, or from an
+  agent read with `include_icons` that the application passes to `AgentIcon`, as a mask that
+  follows the theme or as a colour image, with a robot as the fallback
   ([ADR 090](./adr/adr-090-agent-icons-in-command-center-surfaces.md)).
 - Known issue: during a live turn the avatar is the robot until the next reload.
 

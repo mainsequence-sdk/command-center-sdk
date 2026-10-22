@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.17
+
+Compatibility axes: additive npm API (`normalizeCommandCenterAgentIcon`, `primeAgentIcon`, the
+`CommandCenterAgentIconImage` type, the optional `idle` on `CommandCenterAgentIcon`, and the
+optional `icon` prop of `AgentIcon`), and the read of the platform's additive
+`command_center_icon` on agent reads that ask for `include_icons`. No stylesheet class, browser
+storage key or value, skill name or path, installer behavior, SDK peer range, or route the
+package calls changes. An application that passes no `icon` renders as before. The platform's
+`include_icons` must be deployed before an application asks for it; without it agent reads carry
+no icon and `AgentIcon` falls back to the projection as before.
+
+- **Icons that come with an agent read** ([ADR 090](docs/adr/adr-090-agent-icons-in-command-center-surfaces.md),
+  section 8, following the platform's #1146). `AgentIcon` takes an `icon` the application holds and
+  draws its inline idle sprite without a request; `primeAgentIcon` seeds the byte cache from it so a
+  list draws its icons in its first frame. The cache compares a platform ETag without its quotes,
+  so a seeded icon and a later revalidation of the same bytes keep one object URL.
+
 ## 0.0.16
 
 Compatibility axes: sign-off error reporting, dialog Escape handling, and the content of the

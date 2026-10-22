@@ -87,8 +87,9 @@ proxy.
   Organization custom provider's OpenAI-compatible endpoint (`/chat/completions` or `/responses`)
   and parses the streamed reply. It is the only module here that does not talk to the platform or
   an Agent runtime: no Agent, AgentSession, runtime access, or platform JWT is involved.
-- `command-center-agent-icons-api.ts` reads the agent icon projection and an icon's bytes
-  (ADR 090).
+- `command-center-agent-icons-api.ts` reads the agent icon projection and an icon's bytes, and
+  normalizes one agent's icon, including the idle sprite an agent read carries inline with
+  `include_icons` (`normalizeCommandCenterAgentIcon`, ADR 090).
 - `tool-activity.ts`, `error-source.ts`, `http-error.ts`, and `user-scope.ts` are the shared
   helpers: tool activity labels, where an error came from, HTTP error text, and the user scope of
   a request. See [provider errors](../../docs/main-sequence-ai-provider-errors.md).

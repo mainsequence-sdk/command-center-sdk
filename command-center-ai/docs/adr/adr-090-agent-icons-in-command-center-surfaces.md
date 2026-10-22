@@ -7,6 +7,8 @@
   ADR-033 amendment of the same day
 - Amended: 2026-10-16 for poses that follow the agent's run and tools (section 7), following the
   platform's per-tool animations
+- Amended: 2026-10-22 for icons that come with an agent read (section 8), following the
+  platform's ADR-033 amendment of the same day
 - Moved: 2026-09-23 into the chat package with its code (ADR 096, step 4); the code paths below
   are the package's
 - Related:
@@ -151,6 +153,32 @@ and `toolPoses` (a declared application to a pose); the platform delivers a pose
   cache; until a pose's bytes are ready the idle icon stays. Each pose gets its frame 0 still, so
   reduced motion shows the chosen pose still.
 
+### 8. Icons that come with an agent read
+
+Amended 2026-10-22 for the platform's [issue #1146](https://github.com/Main-Sequence-Server-Side/tdag-django/issues/1146). The platform's agent list, detail and semantic search accept
+`include_icons`; each agent then carries `command_center_icon`, the projection's icon object plus
+`idle`, the idle sprite inline (`{ mime, bytes }`, base64 of exactly what `url` delivers). A list
+can then draw every icon with the list itself, without waiting for the projection or loading one
+sprite per agent.
+
+- **Normalize.** `normalizeCommandCenterAgentIcon(agentUid, value)` reads either shape, the
+  projection's `commandCenterIcon` or an agent read's `command_center_icon`, and keeps a usable
+  `idle` (`image/png` or `image/svg+xml` with non-empty bytes).
+- **Seed the byte cache.** `primeAgentIcon({ url, idle })` fills the cache entry of the icon's
+  delivery URL from the inline bytes, with the still of an animated PNG, and makes no request. The
+  entry is loading at once, so a load started meanwhile waits for it. A fresh ready entry is kept;
+  an older one is refreshed and its object URL replaced only when the bytes differ, as a
+  revalidation would. The platform's ETag is the quoted SHA-256 of the bytes, so the cache compares
+  it without its quotes and a seeded entry and a revalidation of the same bytes agree.
+- **Draw.** `AgentIcon` takes an optional `icon`. When it is given, even as null, the provider's
+  projection is not consulted; its inline sprite is seeded before the idle image's own load, so the
+  icon draws without a request, also outside the engine. Without inline bytes (`idle` null: the
+  platform could not read storage) it loads `url` as before. An application that seeds the cache
+  while it reads the list, before rendering, draws the icons in the first frame.
+- **Unchanged.** Poses are still loaded from their URLs where an icon animates. The projection
+  stays the source for surfaces that know only an agent uid (the thread, the rail, the session
+  explorer), and is still read once per Environment.
+
 ## Non-goals
 
 - Uploading or editing icons from the Command Center; the repository workflow owns that.
@@ -171,6 +199,10 @@ and `toolPoses` (a declared application to a pose); the platform delivers a pose
   scaling.
 - `src/engine/apng-still.ts`: frame 0 of an APNG as a static PNG; tested with the platform's own
   sanitizer output beside the cache tests.
+- Since 2026-10-22, `normalizeCommandCenterAgentIcon`, `primeAgentIcon` and `AgentIcon`'s `icon`;
+  tested for the inline sprite's normalization, seeding without a request, the still, refresh,
+  agreement with an ETag revalidation, undecodable bytes, and drawing a held icon without a
+  provider, null, and without inline bytes.
 - `src/engine/agent-icon-pose.ts`: the pose resolver; `AgentIcon` (`activity`), `ChatThread`
   (the working agent), `ChatRail` (the header) and the engine's `currentTool`; tested for the
   resolver, the projection's poses, pose choice and loading, and a thread whose running
