@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+Compatibility axes: remove the unreleased `ui/design-agent-icons-and-motion` skill and its
+local guide and routing from this package. The skill and worked MetaTables example belong to
+`ms-tau-sdk`. No npm public API, stylesheet class, browser storage key or value, installer
+behavior, SDK peer range, or platform route or payload changes. No backend rollout or storage
+migration is needed; existing agent icons and rendering defaults are unchanged.
+
 ## 0.0.17
 
 Compatibility axes: additive npm API (`normalizeCommandCenterAgentIcon`, `primeAgentIcon`, the
