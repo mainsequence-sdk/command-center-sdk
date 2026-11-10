@@ -394,8 +394,11 @@ export function ResourceListPage<T, Id extends ResourceId>({
   ]);
 
   useEffect(() => {
+    const nextSearch = searchInput.trim();
+    // Mounting, a locale update, or whitespace around the same query must not clear selection.
+    if (nextSearch === search) return undefined;
     const timeout = window.setTimeout(() => {
-      setSearch(searchInput.trim());
+      setSearch(nextSearch);
       setPageIndex(0);
       setAllMatching(false);
       selection.clearSelection();
@@ -403,7 +406,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
     return () => window.clearTimeout(timeout);
     // Selection callbacks intentionally stay outside dependencies: the query value is the reset boundary.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchInput]);
+  }, [searchInput, search]);
 
   useEffect(() => {
     setPageIndex(0);

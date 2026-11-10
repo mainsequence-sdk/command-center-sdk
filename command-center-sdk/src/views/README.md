@@ -144,3 +144,8 @@ title; the host sizes it, and a lead that renders nothing takes no space. No vie
 Shared message defaults now come from `/localization/react`; wrap views in
 `CommandCenterLocalizationProvider` to inject application catalogs. Explicit label
 props retain precedence. See `docs/localization.md` for interpolation/plurals.
+
+`ResourceListPage` resets selection only when the normalized debounced search
+query changes. Mounting, locale updates, and whitespace-only edits to the same
+query preserve selection and any open confirmation. Keep translation callbacks
+out of transport/query dependencies.
