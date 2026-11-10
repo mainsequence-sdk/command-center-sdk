@@ -8,9 +8,9 @@ at `@dev-mainsequence/command-center-sdk/localization/react`.
 import { CommandCenterLocalizationProvider } from '@dev-mainsequence/command-center-sdk/localization/react';
 import type { TranslateSdkMessage } from '@dev-mainsequence/command-center-sdk/localization';
 import { useTranslation } from 'react-i18next';
-import { useCallback } from 'react';
+import { useCallback, type ReactNode } from 'react';
 
-function LocalizedApplication({ children }) {
+function LocalizedApplication({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation('sdk');
   const locale = i18n.resolvedLanguage ?? i18n.language;
   const translate = useCallback<TranslateSdkMessage>((key, values) =>

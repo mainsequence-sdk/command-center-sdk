@@ -16,6 +16,9 @@ test.beforeAll(async () => {
 
 test("localizes resource selection, long pagination labels and an open confirmation in place", async ({ page }) => {
   await page.setContent(`<!doctype html><html><head><style>${styles} body { margin: 0; padding: 16px; } #root { max-width: 1100px; }</style></head><body><div id="root"></div></body></html>`);
+  await page.clock.install();
+  const pageErrors: string[] = [];
+  page.on("pageerror", error => pageErrors.push(error.message));
   await page.addScriptTag({ content: bundle });
   await expect(page.getByRole("button", { name: "Weiter zur nächsten Ergebnisseite" })).toBeVisible();
   const pagination = page.getByRole("navigation", { name: "records pagination" });
@@ -34,6 +37,9 @@ test("localizes resource selection, long pagination labels and an open confirmat
   await dialog.getByLabel("Bestätigungswort").fill("ARC");
   // An application-owned update can arrive while focus is inside a modal.
   await page.getByRole("button", { name: "Change language" }).evaluate((button: HTMLButtonElement) => button.click());
+  // A delayed mount-time search reset used to clear selection and destroy the open dialog.
+  await page.clock.fastForward(1_000);
+  expect(pageErrors).toEqual([]);
   await expect(dialog.getByRole("button", { name: "Cancel", exact: true })).toBeVisible();
   await expect(confirmationInput).toHaveAttribute("aria-label", "Confirmation word");
   await expect(confirmationInput).toHaveValue("ARC");
