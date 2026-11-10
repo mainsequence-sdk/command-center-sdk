@@ -139,3 +139,13 @@ disabled field, one dark and one light preset, 375×812 with a coarse pointer, a
 - Do not attach handlers to a `Badge`.
 - Do not style an anchor with button classes; links keep native semantics.
 - Do not override SDK control variables or geometry and still claim conformance.
+
+## Localize SDK messages (0.5.19+)
+
+Wrap the application in `CommandCenterLocalizationProvider` from the public
+`@dev-mainsequence/command-center-sdk/localization/react` entrypoint. Supply the
+effective `locale` and a `TranslateSdkMessage` callback from `/localization`, backed
+by the application catalog. Return undefined for missing keys to keep English
+defaults; forward interpolation values and numeric `count` for whole-message plurals.
+Explicit labels/renderers override the provider and remain application-owned.
+The SDK creates no i18next instance or preference storage. See `docs/localization.md`.

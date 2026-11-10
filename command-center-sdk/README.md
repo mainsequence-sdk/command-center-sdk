@@ -306,3 +306,9 @@ example release workflow, and the installed `general/maintain-command-center-cod
 - Major modules require a nearest README.
 - Persisted contract, theme-ID, or protocol changes require an explicit compatibility and
   backend/storage assessment.
+
+## Localization
+
+SDK 0.5.19 adds `/localization` and `/localization/react` for application-owned
+translation adapters and English defaults across shared resource controls, plus
+initial/live iframe locale. See [the localization guide](./docs/localization.md).

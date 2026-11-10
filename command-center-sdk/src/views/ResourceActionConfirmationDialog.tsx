@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import { useId, useRef, type ReactNode } from "react";
 import { AlertTriangle, LoaderCircle, ShieldAlert, Siren, X } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -63,17 +64,19 @@ export function ResourceActionConfirmationDialog({
   warning,
   onRetryPreflight,
 }: ResourceActionConfirmationDialogProps) {
+  const { t } = useSdkTranslation();
+
   const generatedId = useId();
   const titleId = `cc-resource-action-confirmation-title-${generatedId}`;
   const preflightAllowsConfirmation =
     !preflight || preflight.status === "not_required" || preflight.status === "allowed";
   const preflightButtonLabel =
     preflight?.status === "blocked"
-      ? "Action blocked"
+      ? t("actionBlocked")
       : preflight?.status === "loading"
-        ? "Checking…"
+        ? t("checking")
         : preflight?.status === "error"
-          ? "Preflight unavailable"
+          ? t("preflightUnavailable")
           : confirmButtonLabel;
   const canConfirm =
     !confirmDisabled &&
@@ -115,7 +118,7 @@ export function ResourceActionConfirmationDialog({
           </span>
           <h2 id={titleId}>{title}</h2>
           <button
-            aria-label="Close dialog"
+            aria-label={t("closeDialog")}
             className="cc-resource-dialog__close"
             disabled={pending}
             type="button"
@@ -128,10 +131,10 @@ export function ResourceActionConfirmationDialog({
         <div className="cc-resource-dialog__body">
           <div className="cc-resource-dialog__introduction">
             <p>
-              Are you sure you want to run <strong>“{actionLabel}”</strong>?
+              {t("confirmAction", { actionLabel })}
               {confirmationWord && preflightAllowsConfirmation ? (
                 <>
-                  {" "}Confirm by typing <code>{confirmationWord}</code>.
+                  {" "}{t("confirmTyping", { word: confirmationWord })}
                 </>
               ) : null}
             </p>
@@ -160,9 +163,9 @@ export function ResourceActionConfirmationDialog({
 
           {confirmationWord && preflightAllowsConfirmation ? (
             <label className="cc-resource-dialog__confirmation">
-              <span>Confirmation word</span>
+              <span>{t("confirmationWord")}</span>
               <input
-                aria-label="Confirmation word"
+                aria-label={t("confirmationWord")}
                 autoCapitalize="off"
                 autoComplete="off"
                 autoCorrect="off"
@@ -173,7 +176,7 @@ export function ResourceActionConfirmationDialog({
                 onChange={(event) => onConfirmationValueChange(event.currentTarget.value)}
               />
               <small>
-                Type <code>{confirmationWord}</code> exactly to continue.
+                {t("typeExactly", { word: confirmationWord })}
               </small>
             </label>
           ) : null}
@@ -182,7 +185,7 @@ export function ResourceActionConfirmationDialog({
 
           <div className="cc-resource-dialog__actions">
             <button type="button" disabled={pending} onClick={onClose}>
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="button"
@@ -198,7 +201,7 @@ export function ResourceActionConfirmationDialog({
               }}
             >
               {pending ? <LoaderCircle aria-hidden="true" className="cc-resource-dialog__spinner" /> : <ToneIcon tone={tone} />}
-              {pending ? "Working…" : preflightButtonLabel}
+              {pending ? t("working") : preflightButtonLabel}
             </button>
           </div>
         </div>

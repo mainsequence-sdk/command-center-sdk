@@ -283,7 +283,7 @@ test("the command installs into --path, -p, and --path=, previews with --dry-run
     const args = form[0] === "--path=" ? [`--path=${project}`] : [form[0], project];
     const install = spawnSync(process.execPath, [cliPath, "skills", "install", ...args], { encoding: "utf8" });
     assert.equal(install.status, 0, install.stderr);
-    assert.match(install.stdout, /Installed 8 Command Center AI skill\(s\)/u);
+    assert.ok(install.stdout.includes(`Installed ${expectedSkills.length} Command Center AI skill(s)`));
     assert.match(install.stdout, /Provenance: .*PINNED_FROM\.txt/u);
   }
 
@@ -336,7 +336,7 @@ test("concurrent postinstalls into one repository both succeed and leave one int
     );
     for (const run of runs) {
       assert.equal(run.status, 0, run.stderr);
-      assert.match(run.stdout, /Installed 8 agent skill\(s\)/u);
+      assert.ok(run.stdout.includes(`Installed ${expectedSkills.length} agent skill(s)`));
     }
 
     assert.deepEqual(await readdir(join(application, ".agents", "skills")), ["command-center-ai"]);

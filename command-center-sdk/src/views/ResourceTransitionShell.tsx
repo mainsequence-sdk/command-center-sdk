@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { ReactNode } from "react";
 
 import { ActivityIndicator } from "../feedback/components.js";
@@ -10,10 +11,14 @@ export interface ResourceTransitionShellProps {
 
 /** Blocking SDK transition state used while one resource surface resolves another. */
 export function ResourceTransitionShell({
-  description = "Preparing the selected resource.",
+  description: descriptionProp,
   embedded = false,
-  title = "Opening…",
+  title: titleProp,
 }: ResourceTransitionShellProps) {
+  const { t } = useSdkTranslation();
+  const description = descriptionProp ?? t("preparingResource");
+  const title = titleProp ?? t("opening");
+
   return (
     <section
       aria-busy="true"

@@ -140,3 +140,7 @@ the only place `isVisible` and function-valued `disabled` run, and switch the bo
 data; hosts contribute icons, link handling, editing, label mutations, and notifications through
 callbacks. `EntitySummary`'s `titleLead` puts a host node, such as the entity's icon, before the
 title; the host sizes it, and a lead that renders nothing takes no space. No view in this module knows a consumer endpoint or application-owned search parameter.
+
+Shared message defaults now come from `/localization/react`; wrap views in
+`CommandCenterLocalizationProvider` to inject application catalogs. Explicit label
+props retain precedence. See `docs/localization.md` for interpolation/plurals.

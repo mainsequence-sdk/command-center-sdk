@@ -239,3 +239,11 @@ and 1280×800.
 The control props are React presentation input, not a backend contract. There is no controls
 contract ID, JSON Schema, fixture bundle, persisted state, or migration. Form payloads, validation
 responses, and error shapes are application and backend concerns.
+
+## Follow the application language
+
+SDK 0.5.19 exposes `/localization` and `/localization/react` for SDK-owned visible
+and accessibility messages. Use the [localization guide](./localization.md) to
+connect your translation library, plural messages, and effective rendered locale.
+Explicit labels/renderers retain priority; application catalogs and language
+persistence stay with the consumer.

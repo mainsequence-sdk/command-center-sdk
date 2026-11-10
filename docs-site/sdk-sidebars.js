@@ -36,6 +36,7 @@ const sdkSidebars = {
       items: [
         "themes",
         "static-site-embeds",
+        "localization",
         "backend-contracts",
         "application-documentation",
       ],
@@ -67,6 +68,7 @@ const sdkSidebars = {
             "adr/adr-sdk-015-detail-tabs",
             "adr/adr-sdk-016-transfer-list",
             "adr/adr-sdk-017-machine-session-for-local-development",
+            "adr/adr-sdk-019-locale-transport-and-control-localization",
           ],
         },
       ],

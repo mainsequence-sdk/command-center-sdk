@@ -72,7 +72,7 @@
         {
           "properties": {
             "type": { "const": "ready" },
-            "payload": { "type": "object" }
+            "payload": { "type": "object", "properties": { "capabilities": { "type": "array", "items": { "type": "string", "pattern": "\\S" } } } }
           }
         }
       ],
@@ -92,6 +92,7 @@
               "properties": {
                 "theme": { "enum": ["dark", "light"] },
                 "themeId": { "type": "string", "minLength": 1 },
+                "locale": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|[0-9]{3}))?$" },
                 "user": {
                   "oneOf": [
                     { "type": "null" },

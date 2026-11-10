@@ -24,3 +24,13 @@ bounds characters, and enforce correlation, cancellation, in-flight limits, and 
 Schema filenames and contract IDs are immutable after release. Additive changes require fixtures;
 breaking semantics require a new versioned schema, a migration plan, mixed-version tests, and a
 coordinated frontend/backend rollout and rollback.
+
+The iframe v1 initialize payload accepts optional `locale` (SDK 0.5.19). The
+`initialize-locale` and `invalid-locale` fixtures cover the additive field; omitted
+locale retains old-host compatibility and normalizes to English in the client.
+
+Locale negotiation preserves strict legacy validators: new clients advertise
+`ready.payload.capabilities: ["locale-context-v1"]`. The host includes locale only
+for that capability. Missing/unknown capabilities retain the frozen legacy payload;
+malformed declarations are rejected. The normalized new-client context still
+defaults to English when an old host omits locale. See SDK ADR 019.

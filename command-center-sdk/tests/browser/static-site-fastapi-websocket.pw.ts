@@ -255,6 +255,7 @@ test.describe("static-site FastAPI native WebSocket ticket bridge", () => {
 
   test.beforeAll(async () => {
     const sdkModule = await readFile(sdkModulePath, "utf8");
+    const localeModule = await readFile(new URL("../../dist/localization/index.js", import.meta.url), "utf8");
     const webSocketRuntime = await listen((_request, response) => {
       response.writeHead(404);
       response.end();
@@ -265,6 +266,11 @@ test.describe("static-site FastAPI native WebSocket ticket bridge", () => {
     );
 
     const child = await listen((request, response) => {
+      if (request.url === "/localization/index.js") {
+        response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8" });
+        response.end(localeModule);
+        return;
+      }
       if (request.url === "/sdk/static-site.js") {
         response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8" });
         response.end(sdkModule);
@@ -276,6 +282,11 @@ test.describe("static-site FastAPI native WebSocket ticket bridge", () => {
     childOrigin = child.origin;
 
     const host = await listen((request, response) => {
+      if (request.url === "/localization/index.js") {
+        response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8" });
+        response.end(localeModule);
+        return;
+      }
       if (request.url === "/sdk/static-site.js") {
         response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8" });
         response.end(sdkModule);

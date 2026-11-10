@@ -160,6 +160,7 @@ test.describe("static-site delegated FastAPI browser bridge", () => {
 
   test.beforeAll(async () => {
     const sdkModule = await readFile(sdkModulePath, "utf8");
+    const localeModule = await readFile(new URL("../../dist/localization/index.js", import.meta.url), "utf8");
     let expectedChildOrigin = "";
     const api = await listen((request, response) => {
       response.setHeader("Access-Control-Allow-Origin", expectedChildOrigin);
@@ -206,6 +207,11 @@ test.describe("static-site delegated FastAPI browser bridge", () => {
     apiOrigin = api.origin;
 
     const child = await listen((request, response) => {
+      if (request.url === "/localization/index.js") {
+        response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8" });
+        response.end(localeModule);
+        return;
+      }
       if (request.url === "/sdk/static-site.js") {
         response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8" });
         response.end(sdkModule);
@@ -218,6 +224,11 @@ test.describe("static-site delegated FastAPI browser bridge", () => {
     expectedChildOrigin = childOrigin;
 
     const host = await listen((request, response) => {
+      if (request.url === "/localization/index.js") {
+        response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8" });
+        response.end(localeModule);
+        return;
+      }
       if (request.url === "/sdk/static-site.js") {
         response.writeHead(200, { "Content-Type": "text/javascript; charset=utf-8" });
         response.end(sdkModule);

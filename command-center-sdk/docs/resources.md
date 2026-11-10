@@ -546,3 +546,11 @@ action is in flight. Do not render a raw `<button>` or restyle the SDK's own act
   (disabled) choices, the change your application saves, and the stacked form on a phone.
 - Bulk actions cover explicit/all-matching selection, options, allowed/blocked/error preflight,
   stale requests, successful refresh, and selection cleanup.
+
+## Follow the application language
+
+SDK 0.5.19 exposes `/localization` and `/localization/react` for SDK-owned visible
+and accessibility messages. Use the [localization guide](./localization.md) to
+connect your translation library, plural messages, and effective rendered locale.
+Explicit labels/renderers retain priority; application catalogs and language
+persistence stay with the consumer.

@@ -104,6 +104,7 @@ view.
 | Resource model | `/resource`, `/resource/react`, `/views` |
 | Application chrome | `/navigation`, `/navigation/testing`, `/layout`, `/layout/testing`, `/feedback`, `/controls` |
 | Visual language | `/theme`, `/theme/presets`, `/theme/data-viz`, theme CSS exports |
+| Localization | `/localization`, `/localization/react` |
 | Static-site integration | `/embed`, `/embed/react`, `/vite` |
 | Language-neutral contracts | `/contracts`, `/contracts/manifest.json`, schemas and fixtures |
 
@@ -152,6 +153,7 @@ specific consuming-application task.
 | Implement resource collections | [Backend contracts](./backend-contracts.md) | `contracts/implement-resource-collection-contract` |
 | Implement bulk actions | [Backend contracts](./backend-contracts.md) | `contracts/implement-bulk-actions-contract` |
 | Theme an application | [Themes](./themes.md) | `theme/theme-command-center-app` |
+| Localize SDK controls and follow host language | [Localization](./localization.md) | `embed/integrate-static-site-iframe`, `controls/compose-command-center-controls` |
 | Integrate a static site locally or as a hosted iframe | [Static-site embeds](./static-site-embeds.md) | `embed/integrate-static-site-iframe` |
 
 Refresh packaged guidance after an upgrade or when lifecycle scripts were disabled:
@@ -169,3 +171,5 @@ These guides describe exports in the current package unless a section explicitly
 ADRs explain decisions and may be marked `Proposed`. Do not treat a proposed identifier, message,
 or code sample as a released capability. For the version actually installed in an application,
 inspect its `package.json` exports, declarations, README, contract manifest, and changelog.
+
+- [Localization](./localization.md): translate SDK messages and follow live host locale.

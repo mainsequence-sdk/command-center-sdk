@@ -40,7 +40,9 @@
           "fixtures/valid/static-site-iframe-v1.platform-error-not-allowed.json",
           "fixtures/valid/static-site-iframe-v1.platform-error-temporarily-unavailable.json",
           "fixtures/valid/static-site-iframe-v1.platform-error-unsupported.json",
-          "fixtures/valid/static-site-iframe-v1.platform-cancel.json"
+          "fixtures/valid/static-site-iframe-v1.platform-cancel.json",
+          "fixtures/valid/static-site-iframe-v1.initialize-locale.json",
+          "fixtures/valid/static-site-iframe-v1.ready-locale-capability.json"
         ],
         "invalid": [
           "fixtures/invalid/static-site-iframe-v1.wrong-version.json",
@@ -66,7 +68,9 @@
           "fixtures/invalid/static-site-iframe-v1.platform-response-extra-header.json",
           "fixtures/invalid/static-site-iframe-v1.platform-response-invalid-status.json",
           "fixtures/invalid/static-site-iframe-v1.platform-response-invalid-base64.json",
-          "fixtures/invalid/static-site-iframe-v1.platform-error-unknown-code.json"
+          "fixtures/invalid/static-site-iframe-v1.platform-error-unknown-code.json",
+          "fixtures/invalid/static-site-iframe-v1.invalid-locale.json",
+          "fixtures/invalid/static-site-iframe-v1.malformed-capabilities.json"
         ]
       }
     },

@@ -1,0 +1,471 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mainsequence:command-center-sdk:schema:static-site-iframe:v1",
+  "title": "Command Center Static-Site Iframe Protocol v1",
+  "description": "Language-neutral messages exchanged between a trusted host and one application-owned static-site iframe.",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/ready" },
+    { "$ref": "#/$defs/initialize" },
+    { "$ref": "#/$defs/fastApiCredentialRequest" },
+    { "$ref": "#/$defs/fastApiCredentialResponse" },
+    { "$ref": "#/$defs/fastApiCredentialError" },
+    { "$ref": "#/$defs/fastApiWebSocketTicketRequest" },
+    { "$ref": "#/$defs/fastApiWebSocketTicketCancel" },
+    { "$ref": "#/$defs/fastApiWebSocketTicketResponse" },
+    { "$ref": "#/$defs/fastApiWebSocketTicketError" },
+    { "$ref": "#/$defs/platformRequest" },
+    { "$ref": "#/$defs/platformResponse" },
+    { "$ref": "#/$defs/platformError" },
+    { "$ref": "#/$defs/platformCancel" }
+  ],
+  "$defs": {
+    "channel": {
+      "type": "string",
+      "pattern": "^mainsequence\\..+$"
+    },
+    "canonicalUuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "requestId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    },
+    "webSocketPath": {
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^(?=.{1,2048}$)/(?!_healthz$)(?!logos/)(?!.*//)(?!.*(?:/\\.\\.?)(?:/|$))[A-Za-z0-9._~!$&'()*+,;=:@/-]*$"
+    },
+    "platformPath": {
+      "description": "An absolute path with an optional query, as the URL parser serializes one. Before the query: no empty segment, no dot segment even percent-encoded, and no encoded slash or backslash. Nowhere: a fragment, a backslash, or malformed percent-encoding.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^(?![^?]*//)(?![^?]*/(?:\\.|%2[eE]){1,2}(?:[/?]|$))(?![^?]*%(?:2[fF]|5[cC]))(?!.*%(?![0-9A-Fa-f]{2}))/[A-Za-z0-9._~!$&'()*+,;=:@/?%\\[\\]^`{|}-]*$"
+    },
+    "platformUserUid": {
+      "description": "The public uid of the person the child believes is signed in, from its current host context. The host sends the request only when this is the person in its own current context.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "platformHeaderValue": {
+      "type": "string",
+      "maxLength": 1024,
+      "pattern": "^[!-~](?:[ -~]*[!-~])?$"
+    },
+    "messageBase": {
+      "type": "object",
+      "required": ["channel", "version", "type", "payload"],
+      "properties": {
+        "channel": { "$ref": "#/$defs/channel" },
+        "version": { "const": 1 },
+        "type": { "type": "string" },
+        "payload": { "type": "object" }
+      }
+    },
+    "ready": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "ready" },
+            "payload": { "type": "object" }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "initialize": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "initialize" },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["theme", "themeId", "user"],
+              "properties": {
+                "theme": { "enum": ["dark", "light"] },
+                "themeId": { "type": "string", "minLength": 1 },
+                "user": {
+                  "oneOf": [
+                    { "type": "null" },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["user_uid"],
+                      "properties": {
+                        "id": { "type": "string", "minLength": 1 },
+                        "uid": { "type": "string", "minLength": 1 },
+                        "user_uid": { "type": "string", "minLength": 1 }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "credentialBinding": {
+      "type": "object",
+      "required": ["requestId", "resourceReleaseUid"],
+      "properties": {
+        "requestId": { "$ref": "#/$defs/requestId" },
+        "resourceReleaseUid": { "$ref": "#/$defs/canonicalUuid" }
+      }
+    },
+    "fastApiCredentialRequest": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-credential-request" },
+            "payload": {
+              "type": "object",
+              "allOf": [{ "$ref": "#/$defs/credentialBinding" }],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "fastApiCredentialResponse": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-credential-response" },
+            "payload": {
+              "type": "object",
+              "allOf": [
+                { "$ref": "#/$defs/credentialBinding" },
+                {
+                  "type": "object",
+                  "required": ["rpcUrl", "token", "expiresAt"],
+                  "properties": {
+                    "rpcUrl": {
+                      "type": "string",
+                      "pattern": "^https?://",
+                      "maxLength": 4096
+                    },
+                    "token": { "type": "string", "minLength": 1, "maxLength": 32768 },
+                    "expiresAt": { "type": "string", "format": "date-time" }
+                  }
+                }
+              ],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "fastApiCredentialError": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-credential-error" },
+            "payload": {
+              "type": "object",
+              "allOf": [
+                { "$ref": "#/$defs/credentialBinding" },
+                {
+                  "type": "object",
+                  "required": ["code"],
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_request",
+                        "access_denied",
+                        "origin_not_allowed",
+                        "release_unavailable",
+                        "runtime_starting",
+                        "temporarily_unavailable",
+                        "unsupported"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "webSocketBinding": {
+      "type": "object",
+      "required": ["requestId", "resourceReleaseUid", "path"],
+      "properties": {
+        "requestId": { "$ref": "#/$defs/requestId" },
+        "resourceReleaseUid": { "$ref": "#/$defs/canonicalUuid" },
+        "path": { "$ref": "#/$defs/webSocketPath" }
+      }
+    },
+    "fastApiWebSocketTicketRequest": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-websocket-ticket-request" },
+            "payload": {
+              "type": "object",
+              "allOf": [{ "$ref": "#/$defs/webSocketBinding" }],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "fastApiWebSocketTicketCancel": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-websocket-ticket-cancel" },
+            "payload": {
+              "type": "object",
+              "allOf": [{ "$ref": "#/$defs/webSocketBinding" }],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "fastApiWebSocketTicketResponse": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-websocket-ticket-response" },
+            "payload": {
+              "type": "object",
+              "allOf": [
+                { "$ref": "#/$defs/webSocketBinding" },
+                {
+                  "type": "object",
+                  "required": ["websocketUrl", "subprotocol", "expiresAt"],
+                  "properties": {
+                    "websocketUrl": {
+                      "type": "string",
+                      "pattern": "^wss?://[^/?#@]+(?:/[^?#]*)?$",
+                      "maxLength": 4096
+                    },
+                    "subprotocol": {
+                      "type": "string",
+                      "pattern": "^mainsequence\\.ws-ticket\\.[A-Za-z0-9_-]{32,256}$"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$"
+                    }
+                  }
+                }
+              ],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "fastApiWebSocketTicketError": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "fastapi-websocket-ticket-error" },
+            "payload": {
+              "type": "object",
+              "allOf": [
+                { "$ref": "#/$defs/webSocketBinding" },
+                {
+                  "type": "object",
+                  "required": ["code"],
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "invalid_request",
+                        "access_denied",
+                        "origin_not_allowed",
+                        "release_unavailable",
+                        "temporarily_unavailable",
+                        "unsupported"
+                      ]
+                    }
+                  }
+                }
+              ],
+              "unevaluatedProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "platformRequest": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "platform-request" },
+            "payload": {
+              "type": "object",
+              "required": ["requestId", "userUid", "method", "path"],
+              "properties": {
+                "requestId": { "$ref": "#/$defs/requestId" },
+                "userUid": { "$ref": "#/$defs/platformUserUid" },
+                "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+                "path": { "$ref": "#/$defs/platformPath" },
+                "headers": {
+                  "type": "object",
+                  "properties": {
+                    "accept": { "$ref": "#/$defs/platformHeaderValue" },
+                    "content-type": { "$ref": "#/$defs/platformHeaderValue" }
+                  },
+                  "additionalProperties": false
+                },
+                "body": {
+                  "description": "Text of at most 1 MiB (1,048,576 bytes) of UTF-8. The schema bounds characters; the runtime counts bytes.",
+                  "type": "string",
+                  "maxLength": 1048576
+                }
+              },
+              "additionalProperties": false,
+              "if": {
+                "type": "object",
+                "required": ["method"],
+                "properties": { "method": { "const": "GET" } }
+              },
+              "then": { "properties": { "body": false } }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "platformResponse": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "platform-response" },
+            "payload": {
+              "type": "object",
+              "required": ["requestId", "status", "headers", "body", "bodyEncoding"],
+              "properties": {
+                "requestId": { "$ref": "#/$defs/requestId" },
+                "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+                "headers": {
+                  "type": "object",
+                  "properties": {
+                    "content-type": { "$ref": "#/$defs/platformHeaderValue" }
+                  },
+                  "additionalProperties": false
+                },
+                "body": {
+                  "description": "At most 8 MiB (8,388,608 bytes) once decoded: UTF-8 text, or canonical padded base64.",
+                  "type": "string"
+                },
+                "bodyEncoding": { "enum": ["text", "base64"] }
+              },
+              "additionalProperties": false,
+              "if": {
+                "type": "object",
+                "required": ["bodyEncoding"],
+                "properties": { "bodyEncoding": { "const": "base64" } }
+              },
+              "then": {
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "maxLength": 11184812,
+                    "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "body": { "type": "string", "maxLength": 8388608 }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "platformError": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "platform-error" },
+            "payload": {
+              "type": "object",
+              "required": ["requestId", "code"],
+              "properties": {
+                "requestId": { "$ref": "#/$defs/requestId" },
+                "code": {
+                  "enum": [
+                    "invalid_request",
+                    "access_denied",
+                    "not_allowed",
+                    "temporarily_unavailable",
+                    "unsupported"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "platformCancel": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/messageBase" },
+        {
+          "properties": {
+            "type": { "const": "platform-cancel" },
+            "payload": {
+              "type": "object",
+              "required": ["requestId"],
+              "properties": {
+                "requestId": { "$ref": "#/$defs/requestId" }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  }
+}

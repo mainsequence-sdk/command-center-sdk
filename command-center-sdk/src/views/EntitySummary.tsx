@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import type {
@@ -31,9 +32,9 @@ export interface EntitySummaryProps {
   titleLead?: ReactNode;
 }
 
-function getValue(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "Not available";
-  if (Array.isArray(value)) return value.length ? value.map(getValue).join(", ") : "Not available";
+function getValue(value: unknown, unavailable: string): string {
+  if (value === null || value === undefined || value === "") return unavailable;
+  if (Array.isArray(value)) return value.length ? value.map((entry) => getValue(entry, unavailable)).join(", ") : unavailable;
   if (typeof value === "object") {
     try {
       return JSON.stringify(value);
@@ -75,16 +76,17 @@ function toneClass(tone?: string) {
 }
 
 function EditButton({ item, onEdit }: { item: EditableSummaryItem; onEdit?: (item: EditableSummaryItem) => void }) {
+  const { t } = useSdkTranslation();
   if (!onEdit || !isEditable(item)) return null;
   return (
     <button
-      aria-label={`Edit ${item.label}`}
+      aria-label={t("editItem", { label: item.label })}
       className="cc-entity-summary__icon-button"
       onClick={(event) => {
         event.stopPropagation();
         onEdit(item);
       }}
-      title={`Edit ${item.label}`}
+      title={t("editItem", { label: item.label })}
       type="button"
     >
       <span aria-hidden="true">✎</span>
@@ -135,6 +137,8 @@ export function EntitySummary({
   summary,
   titleLead,
 }: EntitySummaryProps) {
+  const { t } = useSdkTranslation();
+
   const summaryLabels = summary.label_management?.labels ?? summary.labels ?? [];
   const [labels, setLabels] = useState(summaryLabels);
   const [labelInput, setLabelInput] = useState("");
@@ -210,7 +214,7 @@ export function EntitySummary({
           )}
           <div className="cc-entity-summary__inline-fields">
             {summary.inline_fields.map((field) => {
-              const value = getValue(field.value);
+              const value = getValue(field.value, t("notAvailable"));
               return (
                 <div className="cc-entity-summary__inline-field" key={field.key} title={field.meta || value}>
                   <FieldLead field={field} renderFieldLead={renderFieldLead} />
@@ -243,11 +247,11 @@ export function EntitySummary({
           {displayedLabels.map((label) => (
             <span className="cc-entity-summary__label" key={label}>
               {label}
-              {canRemoveLabel ? <button aria-label={`Remove ${label} label`} disabled={Boolean(pendingLabel)} onClick={() => void removeLabel(label)} type="button">{pendingLabel === label ? "…" : "×"}</button> : null}
+              {canRemoveLabel ? <button aria-label={t("removeLabel", { label })} disabled={Boolean(pendingLabel)} onClick={() => void removeLabel(label)} type="button">{pendingLabel === label ? "…" : "×"}</button> : null}
             </span>
           ))}
-          {canAddLabel && labelInputOpen ? <input aria-label="New label" autoFocus disabled={Boolean(pendingLabel)} onBlur={() => { if (!labelInput.trim()) setLabelInputOpen(false); }} onChange={(event) => setLabelInput(event.currentTarget.value)} onKeyDown={onLabelKeyDown} placeholder="Type a label" value={labelInput} /> : null}
-          {canAddLabel ? <button aria-label="Add label" className="cc-entity-summary__add-label" disabled={Boolean(pendingLabel)} onClick={() => setLabelInputOpen((current) => !current)} type="button">+</button> : null}
+          {canAddLabel && labelInputOpen ? <input aria-label={t("newLabel")} autoFocus disabled={Boolean(pendingLabel)} onBlur={() => { if (!labelInput.trim()) setLabelInputOpen(false); }} onChange={(event) => setLabelInput(event.currentTarget.value)} onKeyDown={onLabelKeyDown} placeholder={t("typeLabel")} value={labelInput} /> : null}
+          {canAddLabel ? <button aria-label={t("addLabel")} className="cc-entity-summary__add-label" disabled={Boolean(pendingLabel)} onClick={() => setLabelInputOpen((current) => !current)} type="button">+</button> : null}
         </div>
       ) : null}
 
@@ -256,10 +260,10 @@ export function EntitySummary({
       {summary.highlight_fields.length || summary.stats.length ? (
         <div className="cc-entity-summary__facts">
           {summary.highlight_fields.map((field) => (
-            <div className="cc-entity-summary__fact" key={field.key} title={field.meta || getValue(field.value)}>
-              <div className="cc-entity-summary__fact-label"><FieldLead field={field} renderFieldLead={renderFieldLead} /><span>{field.label}</span>{field.info ? <button aria-controls={`${field.key}-info`} aria-expanded={openInfoKey === field.key} aria-label={`About ${field.label}`} className="cc-entity-summary__info" onClick={(event) => { event.stopPropagation(); setOpenInfoKey((current) => current === field.key ? null : field.key); }} type="button">i</button> : null}<EditButton item={field} onEdit={onEditItem} /></div>
+            <div className="cc-entity-summary__fact" key={field.key} title={field.meta || getValue(field.value, t("notAvailable"))}>
+              <div className="cc-entity-summary__fact-label"><FieldLead field={field} renderFieldLead={renderFieldLead} /><span>{field.label}</span>{field.info ? <button aria-controls={`${field.key}-info`} aria-expanded={openInfoKey === field.key} aria-label={t("aboutItem", { label: field.label })} className="cc-entity-summary__info" onClick={(event) => { event.stopPropagation(); setOpenInfoKey((current) => current === field.key ? null : field.key); }} type="button">i</button> : null}<EditButton item={field} onEdit={onEditItem} /></div>
               {field.info && openInfoKey === field.key ? <div className="cc-entity-summary__info-note" id={`${field.key}-info`}>{field.info}</div> : null}
-              {field.kind === "badges" && Array.isArray(field.value) ? <div className="cc-entity-summary__badges">{field.value.length ? field.value.map((value, index) => <span className={`cc-entity-summary__badge${toneClass(field.tone)}`} key={`${field.key}-${index}`}>{String(value)}</span>) : <span>Not available</span>}</div> : <LinkedValue className={`cc-entity-summary__fact-value${toneClass(field.tone)}`} item={field} onLinkSelect={onLinkSelect}>{getValue(field.value)}</LinkedValue>}
+              {field.kind === "badges" && Array.isArray(field.value) ? <div className="cc-entity-summary__badges">{field.value.length ? field.value.map((value, index) => <span className={`cc-entity-summary__badge${toneClass(field.tone)}`} key={`${field.key}-${index}`}>{String(value)}</span>) : <span>{t("notAvailable")}</span>}</div> : <LinkedValue className={`cc-entity-summary__fact-value${toneClass(field.tone)}`} item={field} onLinkSelect={onLinkSelect}>{getValue(field.value, t("notAvailable"))}</LinkedValue>}
               {field.meta ? <div className="cc-entity-summary__meta">{field.meta}</div> : null}
             </div>
           ))}

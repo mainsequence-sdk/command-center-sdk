@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { ComponentType } from "react";
 
 import { ResourcePicker, type ResourcePickerPresentation } from "./ResourcePicker.js";
@@ -21,9 +22,12 @@ export interface ResourceBulkActionPickerProps {
 export function ResourceBulkActionPicker({
   actions,
   disabled = false,
-  label = "Actions",
+  label: labelProp,
   presentation = "auto",
 }: ResourceBulkActionPickerProps) {
+  const { t } = useSdkTranslation();
+  const label = labelProp ?? t("actions");
+
   if (actions.length === 0) return null;
 
   return (

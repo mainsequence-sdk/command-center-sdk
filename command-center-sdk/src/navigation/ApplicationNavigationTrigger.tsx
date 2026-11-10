@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { ButtonHTMLAttributes } from "react";
 import { Menu, X } from "lucide-react";
 
@@ -26,12 +27,16 @@ export interface ApplicationNavigationTriggerProps extends Omit<
 export function ApplicationNavigationTrigger({
   className,
   controlsId,
-  label = "Open navigation menu",
+  label: labelProp,
   onOpenChange,
   open,
-  openLabel = "Close navigation menu",
+  openLabel: openLabelProp,
   ...props
 }: ApplicationNavigationTriggerProps) {
+  const { t } = useSdkTranslation();
+  const label = labelProp ?? t("openNavigation");
+  const openLabel = openLabelProp ?? t("closeNavigation");
+
   return (
     <button
       {...props}

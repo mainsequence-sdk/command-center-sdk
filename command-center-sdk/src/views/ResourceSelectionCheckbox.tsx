@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import { forwardRef, useEffect, useRef } from "react";
 
 export interface ResourceSelectionCheckboxProps {
@@ -19,6 +20,8 @@ export const ResourceSelectionCheckbox = forwardRef<HTMLInputElement, ResourceSe
   label,
   onChange,
 }, forwardedRef) {
+  const { t } = useSdkTranslation();
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export const ResourceSelectionCheckbox = forwardRef<HTMLInputElement, ResourceSe
           forwardedRef.current = element;
         }
       }}
-      aria-label={label ?? ariaLabel ?? "Select row"}
+      aria-label={label ?? ariaLabel ?? t("selectRow")}
       checked={checked}
       className={["cc-resource-selection-checkbox", className].filter(Boolean).join(" ")}
       disabled={disabled}

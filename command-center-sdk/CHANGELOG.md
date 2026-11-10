@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.19
+
+- Add optional validated locale to v1 iframe initialization and live context. Older
+  hosts default to English; locale updates preserve authorization and child state.
+- Add public `/localization` and `/localization/react` message adapters, English
+  defaults and live localization of resource controls and accessibility messages.
+- Keep existing schema IDs, protocol versions and component overrides. External
+  strict validators receive the legacy payload unless their child advertises
+  `locale-context-v1`; locale-aware validators adopt the updated schema. No SDK-owned
+  language persistence or backend routes are added.
+
 ## 0.5.18
 
 Compatibility axes: additive optional `titleLead` prop on `EntitySummaryProps` and the stylesheet

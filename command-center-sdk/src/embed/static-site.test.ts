@@ -65,7 +65,7 @@ describe("static-site iframe protocol", () => {
       channel,
       version: 1,
       type: "ready",
-      payload: {},
+      payload: { capabilities: ["locale-context-v1"] },
     });
 
     const initialized = buildStaticSiteIframeInitializeMessage({
@@ -91,6 +91,7 @@ describe("static-site iframe protocol", () => {
       },
     });
     expect(readStaticSiteIframeContext(initialized)).toEqual({
+      locale: "en",
       themeId: "main-sequence-space",
       themeMode: "dark",
       userUid: "user-public-uid",
@@ -259,7 +260,7 @@ describe("static-site iframe host", () => {
     host.updateContext({ themeId: "quartz-light", themeMode: "light", userUid: null });
     expect(targetWindow.postMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        payload: { theme: "light", themeId: "quartz-light", user: null },
+        payload: { theme: "light", themeId: "quartz-light", user: null, locale: "en" },
       }),
       "https://site.example.com",
     );
@@ -486,11 +487,13 @@ describe("static-site iframe client", () => {
       }),
     ).toBe(true);
     expect(onContext).toHaveBeenNthCalledWith(1, {
+      locale: "en",
       themeId: "main-sequence-space",
       themeMode: "dark",
       userUid: "user-1",
     });
     expect(onContext).toHaveBeenNthCalledWith(2, {
+      locale: "en",
       themeId: "quartz-light",
       themeMode: "light",
       userUid: null,

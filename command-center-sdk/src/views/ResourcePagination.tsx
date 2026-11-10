@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { ReactNode } from "react";
 
 import { useCommandCenterViewport } from "../layout/viewport.js";
@@ -41,12 +42,15 @@ export function ResourcePagination({
   count,
   hasNextPage,
   hasPreviousPage,
-  itemLabel = "results",
+  itemLabel: itemLabelProp,
   pageIndex,
   pageSize,
   presentation = "full",
   onPageChange,
 }: ResourcePaginationProps) {
+  const { t } = useSdkTranslation();
+  const itemLabel = itemLabelProp ?? t("results");
+
   const viewport = useCommandCenterViewport();
   const compact = presentation === "compact" ||
     (presentation === "auto" && viewport.breakpoint === "xs");
@@ -72,17 +76,15 @@ export function ResourcePagination({
   };
   const summary: ReactNode =
     count === 0
-      ? `No ${itemLabel}`
-      : `${model.start}-${model.end} of ${
-          model.hasOpenEndedNext ? `at least ${model.minimumTotalCount}` : count
-        } ${itemLabel}`;
+      ? t("noResults", { itemLabel, count })
+      : t(model.hasOpenEndedNext ? "paginationMinimumSummary" : "paginationSummary", { start: model.start, end: model.end, count: model.hasOpenEndedNext ? model.minimumTotalCount : count, itemLabel });
   const pageSummary = model.hasOpenEndedNext
-    ? `Page ${model.pageIndex + 1}`
-    : `Page ${model.pageIndex + 1} of ${Math.max(model.totalPages, 1)}`;
+    ? t("openPageSummary", { page: model.pageIndex + 1 })
+    : t("pageSummary", { page: model.pageIndex + 1, pages: Math.max(model.totalPages, 1) });
 
   return (
     <nav
-      aria-label={`${itemLabel} pagination`}
+      aria-label={t("paginationLabel", { itemLabel })}
       className={`cc-resource-pagination${compact ? " cc-resource-pagination--compact" : ""}`}
       data-cc-presentation={compact ? "compact" : "full"}
     >
@@ -95,7 +97,7 @@ export function ResourcePagination({
           onClick={() => goToPage(model.pageIndex - 1)}
         >
           <PaginationArrow direction="left" />
-          Previous
+          {t("previous")}
         </button>
         {compact ? (
           <span aria-current="page" className="cc-resource-pagination__page-summary">
@@ -106,7 +108,7 @@ export function ResourcePagination({
             return (
               <span
                 key={`${token.kind}-${token.kind === "ellipsis" ? token.position : "next"}-${index}`}
-                aria-label={token.kind === "open-ended" ? "More pages available" : "Skipped pages"}
+                aria-label={t(token.kind === "open-ended" ? "morePages" : "skippedPages")}
                 className="cc-resource-pagination__ellipsis"
               >
                 ...
@@ -139,7 +141,7 @@ export function ResourcePagination({
           disabled={!model.canGoNext}
           onClick={() => goToPage(model.pageIndex + 1)}
         >
-          Next
+          {t("next")}
           <PaginationArrow direction="right" />
         </button>
       </div>

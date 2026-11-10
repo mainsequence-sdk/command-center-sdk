@@ -92,3 +92,8 @@ is the status; omit it when nearby text already provides the accessible name.
   change.
 - Test loading, retrying, terminal error, zero/many stages, long copy, 375×812, desktop, dark and
   one light theme, keyboard operation, and live-region behavior.
+
+SDK-owned default and accessibility messages consume `/localization/react`. Applications
+wrap the surface in `CommandCenterLocalizationProvider` and supply their catalog adapter;
+explicit labels retain precedence. No translation instance or preference is owned here.
+See `docs/localization.md` (SDK 0.5.19+).

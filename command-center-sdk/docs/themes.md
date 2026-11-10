@@ -240,3 +240,11 @@ explicit migration and consumer impact review.
 
 See [Application layout](./application-layout.md) for structural composition and
 [Static-site embeds](./static-site-embeds.md) for synchronizing theme context into an iframe.
+
+## Follow the application language
+
+SDK 0.5.19 exposes `/localization` and `/localization/react` for SDK-owned visible
+and accessibility messages. Use the [localization guide](./localization.md) to
+connect your translation library, plural messages, and effective rendered locale.
+Explicit labels/renderers retain priority; application catalogs and language
+persistence stay with the consumer.

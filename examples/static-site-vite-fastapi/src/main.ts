@@ -1,3 +1,4 @@
+import { resolveCommandCenterLocale } from "@dev-mainsequence/command-center-sdk/localization";
 import { createStaticSiteIframeClient } from "@dev-mainsequence/command-center-sdk/embed";
 
 import {
@@ -28,7 +29,12 @@ async function run(): Promise<void> {
       channel: "mainsequence.local-api-example",
       hostOrigin,
       parentWindow: window.parent,
-      onContext() { contextReady(); },
+      onContext(context) {
+        // This minimal example ships English text only and never rewrites the host preference.
+        document.documentElement.lang = resolveCommandCenterLocale(context.locale, ["en"]);
+        document.documentElement.dir = "ltr";
+        contextReady();
+      },
     });
     const onMessage = (event: MessageEvent<unknown>) => client.handleMessage(event);
     window.addEventListener("message", onMessage);
