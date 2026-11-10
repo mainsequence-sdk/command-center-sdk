@@ -1,3 +1,5 @@
+import { normalizeCommandCenterLocale } from "../localization/index.js";
+
 export const STATIC_SITE_IFRAME_CHANNEL_PREFIX = "mainsequence." as const;
 export const STATIC_SITE_IFRAME_PROTOCOL_VERSION = 1 as const;
 export const STATIC_SITE_IFRAME_CONTRACT = "command-center.static_site_iframe@v1" as const;
@@ -55,13 +57,19 @@ const PLATFORM_NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
 export type StaticSiteIframeChannel = `${typeof STATIC_SITE_IFRAME_CHANNEL_PREFIX}${string}`;
 export type StaticSiteIframeThemeMode = "dark" | "light";
 
+export const STATIC_SITE_IFRAME_LOCALE_CAPABILITY = "locale-context-v1";
+
 export interface StaticSiteIframeContextInput {
+  /** Optional for older hosts; canonical BCP 47 locale, defaulting to English. */
+  locale?: string;
   themeId: string;
   themeMode: StaticSiteIframeThemeMode;
   userUid: string | null;
 }
 
-export type StaticSiteIframeContext = StaticSiteIframeContextInput;
+export interface StaticSiteIframeContext extends StaticSiteIframeContextInput {
+  locale: string;
+}
 
 export interface StaticSiteIframeUserPayload {
   id: string;
@@ -83,6 +91,7 @@ export interface StaticSiteIframeInitializeMessage {
   payload: {
     theme: StaticSiteIframeThemeMode;
     themeId: string;
+    locale?: string;
     user: StaticSiteIframeUserPayload | null;
   };
 }
@@ -1345,7 +1354,9 @@ function normalizeContext(context: StaticSiteIframeContextInput): StaticSiteIfra
   if (context.userUid !== null && !userUid) {
     throw new Error("Static-site iframe userUid must be null or a non-empty string.");
   }
-  return { themeId, themeMode: context.themeMode, userUid };
+  const locale = context.locale === undefined ? "en" : normalizeCommandCenterLocale(context.locale);
+  if (!locale) throw new Error("Static-site iframe locale must be a valid BCP 47 language tag.");
+  return { themeId, themeMode: context.themeMode, userUid, locale };
 }
 
 export function readStaticSiteIframeReadyMessage(
@@ -1353,6 +1364,8 @@ export function readStaticSiteIframeReadyMessage(
 ): StaticSiteIframeReadyMessage | null {
   if (!isRecord(value) || !isStaticSiteIframeChannel(value.channel)) return null;
   if (value.version !== STATIC_SITE_IFRAME_PROTOCOL_VERSION || value.type !== "ready") return null;
+  const capabilities = isRecord(value.payload) ? value.payload.capabilities : undefined;
+  if (capabilities !== undefined && (!Array.isArray(capabilities) || capabilities.some((capability) => typeof capability !== "string" || !capability.trim()))) return null;
   return {
     channel: value.channel.trim() as StaticSiteIframeChannel,
     version: STATIC_SITE_IFRAME_PROTOCOL_VERSION,
@@ -1368,16 +1381,19 @@ export function buildStaticSiteIframeReadyMessage(
     channel: requireStaticSiteIframeChannel(channel),
     version: STATIC_SITE_IFRAME_PROTOCOL_VERSION,
     type: "ready",
-    payload: {},
+    payload: { capabilities: [STATIC_SITE_IFRAME_LOCALE_CAPABILITY] },
   };
 }
 
 export function buildStaticSiteIframeInitializeMessage({
   channel,
   context,
+  includeLocale = context.locale !== undefined,
 }: {
   channel: StaticSiteIframeChannel;
   context: StaticSiteIframeContextInput;
+  /** Host controllers enable this only after the child's locale capability handshake. */
+  includeLocale?: boolean;
 }): StaticSiteIframeInitializeMessage {
   const normalized = normalizeContext(context);
   return {
@@ -1387,6 +1403,7 @@ export function buildStaticSiteIframeInitializeMessage({
     payload: {
       theme: normalized.themeMode,
       themeId: normalized.themeId,
+      ...(includeLocale ? { locale: normalized.locale } : {}),
       user: normalized.userUid
         ? { id: normalized.userUid, uid: normalized.userUid, user_uid: normalized.userUid }
         : null,
@@ -1407,6 +1424,8 @@ export function readStaticSiteIframeInitializeMessage(
   const theme = value.payload.theme;
   const themeId = readNonEmptyString(value.payload.themeId);
   const user = value.payload.user;
+  const locale = value.payload.locale === undefined ? "en" : normalizeCommandCenterLocale(value.payload.locale);
+  if (!locale) return null;
   if ((theme !== "dark" && theme !== "light") || !themeId) return null;
   if (user !== null) {
     if (!isRecord(user) || !readNonEmptyString(user.user_uid)) return null;
@@ -1416,7 +1435,8 @@ export function readStaticSiteIframeInitializeMessage(
   const userUid = user === null ? null : (user.user_uid as string).trim();
   return buildStaticSiteIframeInitializeMessage({
     channel,
-    context: { themeId, themeMode: theme, userUid },
+    context: { themeId, themeMode: theme, userUid, locale },
+    includeLocale: value.payload.locale !== undefined,
   });
 }
 
@@ -1425,6 +1445,7 @@ export function readStaticSiteIframeContext(
 ): StaticSiteIframeContext {
   return {
     themeId: message.payload.themeId,
+    locale: message.payload.locale ?? "en",
     themeMode: message.payload.theme,
     userUid: message.payload.user?.user_uid ?? null,
   };
@@ -2254,7 +2275,10 @@ export function createStaticSiteIframeHost(
 
   function postContext(): void {
     if (!handshake || disposed) return;
-    postMessage(buildStaticSiteIframeInitializeMessage({ channel: handshake.channel, context }));
+    postMessage(buildStaticSiteIframeInitializeMessage({
+      channel: handshake.channel, context,
+      includeLocale: Array.isArray(handshake.payload.capabilities) && handshake.payload.capabilities.includes(STATIC_SITE_IFRAME_LOCALE_CAPABILITY),
+    }));
   }
 
   function postCredentialError(

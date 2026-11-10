@@ -140,3 +140,13 @@ Enter selects, that each strip is one Tab stop, that a disabled tab is focusable
 that a deep link to a hidden tab shows the first enabled tab without changing the URL, and that a
 tab picked from More receives focus. Find tabs by their tab role or `data-cc-tab-id`. Confirm
 unknown domain tab content does not take ownership of surrounding SDK chrome.
+
+## Localize SDK messages (0.5.19+)
+
+Wrap the application in `CommandCenterLocalizationProvider` from the public
+`@dev-mainsequence/command-center-sdk/localization/react` entrypoint. Supply the
+effective `locale` and a `TranslateSdkMessage` callback from `/localization`, backed
+by the application catalog. Return undefined for missing keys to keep English
+defaults; forward interpolation values and numeric `count` for whole-message plurals.
+Explicit labels/renderers override the provider and remain application-owned.
+The SDK creates no i18next instance or preference storage. See `docs/localization.md`.

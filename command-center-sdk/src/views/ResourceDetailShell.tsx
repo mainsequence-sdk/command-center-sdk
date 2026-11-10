@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { ReactNode } from "react";
 
 import { resolveResourceDetailTabs } from "../resource/detail-tabs.js";
@@ -70,8 +71,8 @@ export function ResourceDetailShell<T = unknown>({
   error,
   headerActions,
   loading = false,
-  loadingDescription = "Loading the selected resource.",
-  loadingTitle = "Loading details…",
+  loadingDescription: loadingDescriptionProp,
+  loadingTitle: loadingTitleProp,
   onSubTabChange,
   onTabChange,
   renderBreadcrumbLead,
@@ -79,9 +80,14 @@ export function ResourceDetailShell<T = unknown>({
   summary,
   tabs = [],
   tabsAccessory,
-  tabsLabel = "Detail sections",
+  tabsLabel: tabsLabelProp,
   tabsOverflow = "auto",
 }: ResourceDetailShellProps<T>) {
+  const { t } = useSdkTranslation();
+  const loadingDescription = loadingDescriptionProp ?? t("loadingResource");
+  const loadingTitle = loadingTitleProp ?? t("loadingDetails");
+  const tabsLabel = tabsLabelProp ?? t("detailSections");
+
   if (loading) return <ResourceTransitionShell description={loadingDescription} embedded={embedded} title={loadingTitle} />;
 
   const resolved = resolveResourceDetailTabs(tabs, { activeSubTabId, activeTabId });
@@ -93,7 +99,7 @@ export function ResourceDetailShell<T = unknown>({
   return (
     <section className={`cc-resource-detail-shell${embedded ? " cc-resource-detail-shell--embedded" : ""}`}>
       {breadcrumbs.length || headerActions ? <header className="cc-resource-detail-shell__header">
-        <nav aria-label="Breadcrumb" className="cc-resource-breadcrumbs"><ol>{breadcrumbs.map((crumb, index) => {
+        <nav aria-label={t("breadcrumb")} className="cc-resource-breadcrumbs"><ol>{breadcrumbs.map((crumb, index) => {
           const current = index === breadcrumbs.length - 1;
           const lead = renderBreadcrumbLead?.({ crumb, current, index });
           const content = <>{lead === null || lead === undefined || lead === false ? null : <span aria-hidden="true" className="cc-resource-breadcrumbs__lead">{lead}</span>}{crumb.label}</>;

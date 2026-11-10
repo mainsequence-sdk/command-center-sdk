@@ -132,3 +132,8 @@ silently convert forbidden destinations into working links.
 
 The conceptual ownership model is documented in `docs/concepts/sdk-architecture.md`; the full
 task guide and accessibility rules are in `docs/navigation.md`.
+
+SDK-owned default and accessibility messages consume `/localization/react`. Applications
+wrap the surface in `CommandCenterLocalizationProvider` and supply their catalog adapter;
+explicit labels retain precedence. No translation instance or preference is owned here.
+See `docs/localization.md` (SDK 0.5.19+).

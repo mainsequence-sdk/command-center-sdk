@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { ReactNode } from "react";
 
 import type { ResourceId } from "../resource/types.js";
@@ -11,11 +12,14 @@ export interface ResourceCardGridProps<T, Id extends ResourceId> {
 
 /** Standard responsive collection presentation for resources that are better represented as cards. */
 export function ResourceCardGrid<T, Id extends ResourceId>({
-  emptyContent = "No results.",
+  emptyContent: emptyContentProp,
   getId,
   items,
   renderCard,
 }: ResourceCardGridProps<T, Id>) {
+  const { t } = useSdkTranslation();
+  const emptyContent = emptyContentProp ?? t("noTableResults");
+
   if (items.length === 0) {
     return <div className="cc-resource-card-grid__empty">{emptyContent}</div>;
   }

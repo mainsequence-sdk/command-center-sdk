@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import {
   useEffect,
   useId,
@@ -123,28 +124,30 @@ function findEnabledIndex(
 
 
 export function ResourcePicker(props: ResourcePickerProps) {
+  const { t } = useSdkTranslation();
+
   const {
     ariaLabel,
     ariaLabelledBy,
     className,
     disabled = false,
-    emptyMessage = "No options match your search.",
+    emptyMessage = t("noOptions"),
     fitContent = false,
     fullWidth = false,
     headerAction,
     id,
     loading = false,
-    loadingMessage = "Loading options…",
+    loadingMessage = t("loadingOptions"),
     onOpenChange,
     onSearchValueChange,
     options,
     placement = "bottom",
-    placeholder = "Select an option",
+    placeholder = t("selectOption"),
     presentation = "popover",
     renderOption,
     renderValue,
     searchable = false,
-    searchPlaceholder = "Search options",
+    searchPlaceholder = t("searchOptions"),
     searchValue,
   } = props;
   const mode = props.mode ?? "single";

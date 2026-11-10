@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import { type ChangeEventHandler, type ReactNode } from "react";
 
 import {
@@ -23,19 +24,24 @@ export interface ResourceSearchProps {
 }
 
 export function ResourceSearch({
-  actionMenuLabel = "Actions",
+  actionMenuLabel: actionMenuLabelProp,
   accessory,
   bulkActions = [],
   className,
-  clearSelectionLabel = "Clear",
+  clearSelectionLabel: clearSelectionLabelProp,
   onChange,
   onClearSelection,
   placeholder,
-  renderSelectionSummary = (count) => `${count} selected`,
+  renderSelectionSummary: renderSelectionSummaryProp,
   searchClassName,
   selectionCount = 0,
   value,
 }: ResourceSearchProps) {
+  const { t } = useSdkTranslation();
+  const actionMenuLabel = actionMenuLabelProp ?? t("actions");
+  const clearSelectionLabel = clearSelectionLabelProp ?? t("clear");
+  const renderSelectionSummary = renderSelectionSummaryProp ?? ((count: number) => t("selectionCount", { count }));
+
   return (
     <div className={["cc-resource-search", className].filter(Boolean).join(" ")}>
       <div className="cc-resource-search__selection">

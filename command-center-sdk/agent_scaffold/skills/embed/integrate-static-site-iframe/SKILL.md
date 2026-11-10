@@ -314,3 +314,18 @@ For platform requests, test the host's allow-list (`not_allowed` for other paths
 JSON and binary responses, cancellation reaching the host's fetch, a user change, an older host's
 `unsupported`, and that the platform receives only the host's origin and credential while no
 platform credential reaches the child.
+
+## Follow locale updates (SDK 0.5.19+)
+
+Apply every `context.locale` update to the child translation instance. Use
+`resolveCommandCenterLocale` from `/localization` for exact/base/English fallback
+and update document language/direction. Hosts pass `locale` to `StaticSiteIframe`;
+locale-only updates must preserve iframe, launch and authorization state. Use
+`CommandCenterLocalizationProvider` from `/localization/react` to translate SDK
+controls through the app's catalog; return undefined for missing messages to keep
+English defaults. Read `docs/localization.md` for typed keys, interpolation/plurals,
+and explicit component overrides. No SDK-owned persistence or i18next singleton.
+
+Locale is negotiated by the SDK's ready capability `locale-context-v1`. Keep the
+SDK-generated readiness message; raw legacy ready messages deliberately receive
+legacy context without locale, preserving old strict schemas.

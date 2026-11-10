@@ -1,0 +1,8 @@
+{
+  "channel": "mainsequence.portfolio-dashboard",
+  "version": 1,
+  "type": "ready",
+  "payload": {
+    "capabilities": "locale-context-v1"
+  }
+}

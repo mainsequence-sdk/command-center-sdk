@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { CSSProperties, ReactNode } from "react";
 import { useId, useRef } from "react";
 
@@ -70,7 +71,7 @@ export function ApplicationNavigationShell({
   expandedWidth = "248px",
   footerApplications = [],
   menuId,
-  menuLabel = "Navigation menu",
+  menuLabel: menuLabelProp,
   menuOpen = false,
   onMenuOpenChange,
   onNavigate,
@@ -86,6 +87,9 @@ export function ApplicationNavigationShell({
   showDestinationDescriptions,
   ...railProps
 }: ApplicationNavigationShellProps) {
+  const { t } = useSdkTranslation();
+  const menuLabel = menuLabelProp ?? t("navigationMenu");
+
   const viewport = useCommandCenterViewport();
   const generatedMenuId = useId();
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -164,7 +168,7 @@ export function ApplicationNavigationShell({
             <ApplicationNavigationTrigger
               className="cc-application-navigation-floating-trigger"
               controlsId={resolvedMenuId}
-              label="Open application navigation"
+              label={t("openApplicationNavigation")}
               onOpenChange={(open) => onMenuOpenChange?.(open)}
               open={false}
             />

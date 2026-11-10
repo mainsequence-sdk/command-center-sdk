@@ -1,3 +1,5 @@
+import { useSdkTranslation } from "../localization/react.js";
+import type { SdkMessageKey } from "../localization/index.js";
 import { Check, Circle, CircleAlert, LoaderCircle } from "lucide-react";
 import {
   useId,
@@ -73,18 +75,18 @@ export interface ProgressStageListProps extends Omit<
   stages: readonly ProgressStageDefinition[];
 }
 
-const defaultStageLabels: Record<ProgressStageStatus, string> = {
-  pending: "Waiting",
-  active: "In progress",
-  complete: "Complete",
-  error: "Failed",
+const defaultStageLabels: Record<ProgressStageStatus, SdkMessageKey> = {
+  pending: "stagePending",
+  active: "stageActive",
+  complete: "stageComplete",
+  error: "stageError",
 };
 
-function formatElapsedSeconds(value: number | null | undefined) {
+function formatElapsedSeconds(value: number | null | undefined, t: ReturnType<typeof useSdkTranslation>["t"]) {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return null;
-  if (value < 59.95) return `${value.toFixed(1)}s`;
+  if (value < 59.95) return t("elapsedSeconds", { seconds: value.toFixed(1) });
   const roundedSeconds = Math.round(value);
-  return `${Math.floor(roundedSeconds / 60)}m ${roundedSeconds % 60}s`;
+  return t("elapsedMinutes", { minutes: Math.floor(roundedSeconds / 60), seconds: roundedSeconds % 60 });
 }
 
 function shouldShowStageDetails(
@@ -105,13 +107,17 @@ function ProgressStageIcon({ status }: { status: ProgressStageStatus }) {
 
 /** Ordered, truth-based progress for application startup and other long-running operations. */
 export function ProgressStageList({
-  ariaLabel = "Progress",
+  ariaLabel: ariaLabelProp,
   className,
   detailVisibility = "active-and-error",
-  emptyMessage = "Preparing progress details…",
+  emptyMessage: emptyMessageProp,
   stages,
   ...props
 }: ProgressStageListProps) {
+  const { t } = useSdkTranslation();
+  const ariaLabel = ariaLabelProp ?? t("progress");
+  const emptyMessage = emptyMessageProp ?? t("progressEmpty");
+
   if (!stages.length) {
     return (
       <p className={joinClassNames("cc-progress-stage-list__empty", className)}>
@@ -128,7 +134,7 @@ export function ProgressStageList({
       data-cc-progress-stage-list=""
     >
       {stages.map((stage) => {
-        const elapsed = formatElapsedSeconds(stage.elapsedSeconds);
+        const elapsed = formatElapsedSeconds(stage.elapsedSeconds, t);
         const details = stage.details ?? [];
         const showDetails = details.length > 0 && shouldShowStageDetails(
           stage.status,
@@ -147,13 +153,13 @@ export function ProgressStageList({
                 ) : null}
               </div>
               <span className="cc-progress-stage-list__state">
-                {stage.statusLabel ?? defaultStageLabels[stage.status]}
+                {stage.statusLabel ?? t(defaultStageLabels[stage.status])}
                 {elapsed ? ` · ${elapsed}` : ""}
               </span>
             </div>
             {showDetails ? (
               <ul
-                aria-label={`${typeof stage.label === "string" ? stage.label : "Stage"} details`}
+                aria-label={t("stageDetails", { label: typeof stage.label === "string" ? stage.label : t("stage") })}
                 className="cc-progress-stage-list__details"
               >
                 {details.map((detail) => <li key={detail.id}>{detail.label}</li>)}
@@ -211,7 +217,7 @@ export function ApplicationStatusScreen({
   liveMessage,
   message,
   notice,
-  stageAriaLabel = "Application progress",
+  stageAriaLabel: stageAriaLabelProp,
   stages,
   state = "loading",
   title,
@@ -219,6 +225,8 @@ export function ApplicationStatusScreen({
   variant = "viewport",
   ...props
 }: ApplicationStatusScreenProps) {
+  const { t } = useSdkTranslation();
+  const stageAriaLabel = stageAriaLabelProp ?? t("applicationProgress");
   const titleId = useId();
   const isError = state === "error";
   const announcement = liveMessage ?? (

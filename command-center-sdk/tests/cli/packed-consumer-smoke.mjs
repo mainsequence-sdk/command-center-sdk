@@ -70,6 +70,15 @@ try {
     types: "./dist/controls/index.d.ts",
     import: "./dist/controls/index.js",
   });
+  assert.deepEqual(packageJson.exports["./localization"], {
+    types: "./dist/localization/index.d.ts", import: "./dist/localization/index.js",
+  });
+  assert.deepEqual(packageJson.exports["./localization/react"], {
+    types: "./dist/localization/react.d.ts", import: "./dist/localization/react.js",
+  });
+  const locale = await import(pathToFileURL(join(extractedPackage, "dist/localization/index.js")));
+  assert.equal(locale.resolveCommandCenterLocale("de-AT", ["en", "de"]), "de");
+  assert.equal(locale.formatSdkEnglishMessage("selectionCount", { count: 2 }), "2 selected");
   assert.notEqual(
     (await stat(join(extractedPackage, "cli", "command-center-sdk.mjs"))).mode & 0o111,
     0,

@@ -1,6 +1,6 @@
 {
   "name": "@dev-mainsequence/command-center-sdk",
-  "version": "0.5.18",
+  "version": "0.5.19",
   "private": false,
   "description": "The framework-neutral SDK for building Command Center-compatible resource applications, navigation, layouts, themes, feedback, and embeds.",
   "type": "module",
@@ -113,7 +113,15 @@
     "./theme/utilities.css": "./theme/utilities.css",
     "./tailwind.css": "./theme/tailwind.css",
     "./styles.css": "./styles.css",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./localization": {
+      "types": "./dist/localization/index.d.ts",
+      "import": "./dist/localization/index.js"
+    },
+    "./localization/react": {
+      "types": "./dist/localization/react.d.ts",
+      "import": "./dist/localization/react.js"
+    }
   },
   "publishConfig": {
     "access": "public",

@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { HTMLAttributes, MouseEvent, ReactNode } from "react";
 import { useId } from "react";
 import { ChevronLeft } from "lucide-react";
@@ -37,13 +38,16 @@ export interface ApplicationImmersiveBarProps extends Omit<
  */
 export function ApplicationImmersiveBar({
   backHref,
-  backLabel = "Back",
+  backLabel: backLabelProp,
   className,
   onBack,
   title,
   trailing,
   ...props
 }: ApplicationImmersiveBarProps) {
+  const { t } = useSdkTranslation();
+  const backLabel = backLabelProp ?? t("back");
+
   const titleId = useId();
   const backContent = (
     <>

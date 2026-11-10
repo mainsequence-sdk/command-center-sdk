@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { useCommandCenterViewport, type CommandCenterViewportState } from "../layout/viewport.js";
@@ -64,9 +65,14 @@ export function resolveDataTablePresentation(
   return viewport.breakpoint === "xs" ? "stacked" : "table";
 }
 
+function EmptyCell() {
+  const { t } = useSdkTranslation();
+  return <span aria-label={t("notSet")}>—</span>;
+}
+
 function renderValue(value: unknown): ReactNode {
   if (value === null || value === undefined || value === "") {
-    return <span aria-label="Not set">—</span>;
+    return <EmptyCell />;
   }
   if (Array.isArray(value)) {
     return value.join(", ");
@@ -125,23 +131,29 @@ function RowActionMenu<T>({
 export function DataTable<T, Id extends ResourceId>({
   allSelected = false,
   columns,
-  emptyContent = "No results.",
+  emptyContent: emptyContentProp,
   getId,
   isSelected,
   isRowSelectable,
   items,
-  moreDetailsLabel = "More details",
+  moreDetailsLabel: moreDetailsLabelProp,
   onActivateRow,
   onSortChange,
   onToggleAll,
   onToggleSelection,
   presentation = "table",
   rowActions = [],
-  rowActionsLabel = "Actions",
-  selectionLabel = "Select all visible rows",
+  rowActionsLabel: rowActionsLabelProp,
+  selectionLabel: selectionLabelProp,
   someSelected = false,
   sort,
 }: DataTableProps<T, Id>) {
+  const { t } = useSdkTranslation();
+  const emptyContent = emptyContentProp ?? t("noTableResults");
+  const moreDetailsLabel = moreDetailsLabelProp ?? t("moreDetails");
+  const rowActionsLabel = rowActionsLabelProp ?? t("actions");
+  const selectionLabel = selectionLabelProp ?? t("selectAllRows");
+
   const viewport = useCommandCenterViewport();
   const resolvedPresentation = resolveDataTablePresentation(presentation, viewport);
   const selectable = Boolean(isSelected && onToggleAll && onToggleSelection);
@@ -214,7 +226,7 @@ export function DataTable<T, Id extends ResourceId>({
                       {rowSelectable ? (
                         <ResourceSelectionCheckbox
                           checked={isSelected!(id)}
-                          label={`Select ${String(id)}`}
+                          label={t("selectItem", { id: String(id) })}
                           onChange={() => onToggleSelection!(id)}
                         />
                       ) : null}
@@ -336,7 +348,7 @@ export function DataTable<T, Id extends ResourceId>({
                       {rowSelectable ? (
                         <ResourceSelectionCheckbox
                           checked={isSelected!(id)}
-                          label={`Select ${String(id)}`}
+                          label={t("selectItem", { id: String(id) })}
                           onChange={() => onToggleSelection!(id)}
                         />
                       ) : null}

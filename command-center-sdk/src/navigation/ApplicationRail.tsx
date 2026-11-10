@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type {
   CSSProperties,
   KeyboardEvent,
@@ -265,7 +266,7 @@ export interface ApplicationRailProps {
 export function ApplicationRail({
   activeApplicationId,
   applications,
-  ariaLabel = "Applications",
+  ariaLabel: ariaLabelProp,
   children,
   className,
   collapsed,
@@ -273,13 +274,17 @@ export function ApplicationRail({
   expandedWidth = "248px",
   footer,
   footerApplications = [],
-  label = "Applications",
+  label: labelProp,
   onCollapsedChange,
   onOpenApplicationChange,
   openApplicationId,
   renderApplicationTrailing,
   renderHeader,
 }: ApplicationRailProps) {
+  const { t } = useSdkTranslation();
+  const ariaLabel = ariaLabelProp ?? t("applications");
+  const label = labelProp ?? t("applications");
+
   const header = renderHeader?.({ collapsed, onCollapsedChange }) ?? (
     <div className="cc-application-rail__default-header">
       {!collapsed ? (
@@ -287,12 +292,10 @@ export function ApplicationRail({
       ) : null}
       {onCollapsedChange ? (
         <button
-          aria-label={collapsed
-            ? "Expand application navigation"
-            : "Collapse application navigation"}
+          aria-label={t(collapsed ? "expandApplicationNavigation" : "collapseApplicationNavigation")}
           className="cc-application-rail__collapse"
           onClick={() => onCollapsedChange(!collapsed)}
-          title={collapsed ? "Expand navigation" : "Collapse navigation"}
+          title={t(collapsed ? "expandNavigation" : "collapseNavigation")}
           type="button"
         >
           {collapsed ? (

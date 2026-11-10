@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import {
   useEffect,
   useId,
@@ -119,7 +120,7 @@ function CheckMark() {
  * application owns what a choice means and when it is saved.
  */
 export function ResourceTransferList({
-  availableLabel = "Available",
+  availableLabel: availableLabelProp,
   description,
   disabled = false,
   emptyAvailableMessage,
@@ -131,9 +132,13 @@ export function ResourceTransferList({
   pending = false,
   presentation = "auto",
   renderOption,
-  selectedLabel = "Selected",
+  selectedLabel: selectedLabelProp,
   value,
 }: ResourceTransferListProps) {
+  const { t } = useSdkTranslation();
+  const availableLabel = availableLabelProp ?? t("available");
+  const selectedLabel = selectedLabelProp ?? t("selected");
+
   const generatedId = useId();
   const baseId = id ?? `cc-resource-transfer-${generatedId}`;
   const viewport = useCommandCenterViewport();
@@ -193,16 +198,15 @@ export function ResourceTransferList({
 
   function announce(result: TransferResult, side: ResourceTransferListSide) {
     const values = side === "available" ? result.change.added : result.change.removed;
-    const verb = side === "available" ? "added" : "removed";
     if (values.length === 1) {
       const option = options.find((candidate) => candidate.value === values[0]);
       setAnnouncement((current) => {
-        const next = `${option?.label ?? values[0]} ${verb}.`;
+        const next = t(side === "available" ? "transferAdded" : "transferRemoved", { label: option?.label ?? values[0] });
         return current === next ? `${next} ` : next;
       });
     } else if (values.length > 1) {
       setAnnouncement((current) => {
-        const next = `${values.length} ${lowerItemLabel} ${verb}.`;
+        const next = t(side === "available" ? "transferAddedCount" : "transferRemovedCount", { count: values.length, itemLabel: lowerItemLabel });
         return current === next ? `${next} ` : next;
       });
     }
@@ -299,7 +303,7 @@ export function ResourceTransferList({
 
   const noun = lowerItemLabel;
   const counts = (side: ResourceTransferListSide) =>
-    queries[side].trim() ? `${shown[side].length} of ${panes[side].length}` : `${panes[side].length}`;
+    queries[side].trim() ? t("transferCount", { shown: shown[side].length, count: panes[side].length }) : `${panes[side].length}`;
   const addMarked = movable("available", marked.available);
   const addShown = movable("available", shown.available.map((option) => option.value));
   const removeMarked = movable("selected", marked.selected);
@@ -314,19 +318,19 @@ export function ResourceTransferList({
     const tabStop = Math.min(focusIndexes[side], Math.max(list.length - 1, 0));
     const empty = panes[side].length === 0
       ? (side === "available"
-        ? emptyAvailableMessage ?? `All ${noun} are selected.`
-        : emptySelectedMessage ?? `No ${noun} selected.`)
-      : `No ${noun} match this search.`;
+        ? emptyAvailableMessage ?? t("allSelected", { itemLabel: noun })
+        : emptySelectedMessage ?? t("noneSelected", { itemLabel: noun }))
+      : t("noSearchMatches", { itemLabel: noun });
     optionRefs.current[side] = [];
 
     return (
       <div className="cc-resource-transfer__pane" data-side={side}>
         <div className="cc-resource-transfer__pane-header" id={labelId}>
-          <span className="cc-resource-transfer__pane-label">{`${heading} ${noun}`}</span>{" "}
+          <span className="cc-resource-transfer__pane-label">{t("transferHeading", { heading, itemLabel: noun })}</span>{" "}
           <span className="cc-resource-transfer__count">({counts(side)})</span>
         </div>
         <Label className="cc-resource-visually-hidden" htmlFor={searchId}>
-          {`Search ${lowerFirst(heading)} ${noun}`}
+          {t("transferSearch", { heading: lowerFirst(heading), itemLabel: noun })}
         </Label>
         <Input
           className="cc-resource-transfer__search"
@@ -336,7 +340,7 @@ export function ResourceTransferList({
             setQueries((current) => ({ ...current, [side]: query }));
             setFocusIndexes((current) => ({ ...current, [side]: 0 }));
           }}
-          placeholder="Search"
+          placeholder={t("search")}
           type="search"
           value={queries[side]}
         />
@@ -400,10 +404,10 @@ export function ResourceTransferList({
       id={baseId}
     >
       {renderPane("available")}
-      <div aria-label={`Move ${noun}`} className="cc-resource-transfer__actions" role="group">
+      <div aria-label={t("moveItems", { itemLabel: noun })} className="cc-resource-transfer__actions" role="group">
         <Button
           aria-disabled={disabled || pending || addMarked.length === 0 || undefined}
-          aria-label={`Add selected ${noun}`}
+          aria-label={t("addSelected", { itemLabel: noun })}
           iconOnly
           onClick={() => move("available", addMarked)}
           type="button"
@@ -412,7 +416,7 @@ export function ResourceTransferList({
         </Button>
         <Button
           aria-disabled={disabled || pending || addShown.length === 0 || undefined}
-          aria-label={`Add all shown ${noun}`}
+          aria-label={t("addAllShown", { itemLabel: noun })}
           iconOnly
           onClick={() => move("available", addShown)}
           type="button"
@@ -421,7 +425,7 @@ export function ResourceTransferList({
         </Button>
         <Button
           aria-disabled={disabled || pending || removeMarked.length === 0 || undefined}
-          aria-label={`Remove selected ${noun}`}
+          aria-label={t("removeSelected", { itemLabel: noun })}
           iconOnly
           onClick={() => move("selected", removeMarked)}
           type="button"
@@ -430,7 +434,7 @@ export function ResourceTransferList({
         </Button>
         <Button
           aria-disabled={disabled || pending || removeShown.length === 0 || undefined}
-          aria-label={`Remove all shown ${noun}`}
+          aria-label={t("removeAllShown", { itemLabel: noun })}
           iconOnly
           onClick={() => move("selected", removeShown)}
           type="button"

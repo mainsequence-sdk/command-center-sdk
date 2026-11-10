@@ -649,3 +649,49 @@ Cover at least:
 
 The shorter [Themes and embeds](./themes-and-embeds.md) page remains as a compatibility overview.
 The threat model is maintained beside the implementation in `src/embed/THREAT_MODEL.md`.
+
+
+## Follow the host language
+
+The locale/localization public APIs require SDK 0.5.19 or later. Hosts pass `locale`
+to `StaticSiteIframe` or `createStaticSiteIframeHost`'s context. The existing
+`mainsequence.*` numeric v1 initialize payload adds optional `locale` (for example
+`de` or `de-AT`). Every context update republishes it without replacing the iframe,
+re-exchanging a launch, or clearing authorization. Source/origin/channel validation
+and user-change credential revocation are unchanged.
+
+An older host omits locale; a new client normalizes that to `en`. A new host sends
+locale only to a child advertising `locale-context-v1`; older children retain the
+original payload, including with strict legacy validation. Invalid explicit host
+values throw, and invalid incoming messages are rejected without changing the
+last accepted context. A locale-aware child must adopt the updated schema.
+
+```ts
+import { resolveCommandCenterLocale } from '@dev-mainsequence/command-center-sdk/localization';
+
+// In the existing onContext callback; keep the same client and React root.
+const language = resolveCommandCenterLocale(context.locale, ['en', 'de']);
+await i18n.changeLanguage(language);
+document.documentElement.lang = language;
+document.documentElement.dir = i18n.dir(language);
+```
+
+Each child owns its catalogs and translation instance. Resolve an exact supported
+locale, then its base language, then English; child fallback never rewrites the
+host preference. A standalone site without a trusted host uses its own documented
+fallback. Locale is presentation context, not an authentication claim. Use the
+effective locale for Intl dates/numbers, preserving the user's timezone/currency.
+See [localization](./localization.md) for translating SDK-owned controls.
+
+Locale negotiation preserves strict legacy validators: new clients advertise
+`ready.payload.capabilities: ["locale-context-v1"]`. The host includes locale only
+for that capability. Missing/unknown capabilities retain the frozen legacy payload;
+malformed declarations are rejected. The normalized new-client context still
+defaults to English when an old host omits locale. See SDK ADR 019.
+
+SDK 0.5.19 accepts a BCP 47 core profile: two- or three-letter language, optional
+four-letter script, optional two-letter or three-digit region (for example `de-AT`
+or `zh-Hant-TW`). Variants, extensions, private-use tags, underscores, whitespace,
+and repeated subtags are rejected. The runtime and JSON Schema enforce the same
+profile; accepted tags are canonicalized. This transport profile does not expand
+the backend's stored language choices.

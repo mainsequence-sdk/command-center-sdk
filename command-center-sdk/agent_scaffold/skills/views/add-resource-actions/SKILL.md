@@ -65,3 +65,13 @@ outside this frontend view skill.
 Test list action placement, disabled and pending state, detail action placement, every bulk
 selection mode, defaults, confirmation text, allowed and blocked preflight, stale-request
 cancellation, rediscovery, retry, transport failure, successful refresh, and selection cleanup.
+
+## Localize SDK-owned messages
+
+SDK 0.5.19 adds `/localization` (framework-neutral message keys/defaults and locale
+helpers) and `/localization/react` (`CommandCenterLocalizationProvider` and
+`useSdkTranslation`). Supply an application-owned translator and effective locale.
+Forward numeric `count` for plurals; translate complete messages and accessibility
+labels. Explicit component overrides win; absent translations fall back to English.
+For embeds, apply every validated `onContext` locale without remounting the iframe
+or providers. See `docs/localization.md`; persistence remains host/backend-owned.

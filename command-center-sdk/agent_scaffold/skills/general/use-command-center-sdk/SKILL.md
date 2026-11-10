@@ -177,3 +177,13 @@ rerun `command-center-sdk skills sync --path . --json` so authentication, catalo
 filesystem ownership errors remain explicit. For themed consumers, run `command-center-sdk theme
 audit` and treat unknown tokens, literal fallbacks, and hardcoded semantic visual values as failed
 verification.
+
+## Localize SDK-owned messages
+
+SDK 0.5.19 adds `/localization` (framework-neutral message keys/defaults and locale
+helpers) and `/localization/react` (`CommandCenterLocalizationProvider` and
+`useSdkTranslation`). Supply an application-owned translator and effective locale.
+Forward numeric `count` for plurals; translate complete messages and accessibility
+labels. Explicit component overrides win; absent translations fall back to English.
+For embeds, apply every validated `onContext` locale without remounting the iframe
+or providers. See `docs/localization.md`; persistence remains host/backend-owned.

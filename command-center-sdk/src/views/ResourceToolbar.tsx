@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { ReactNode } from "react";
 
 export interface ResourceToolbarProps {
@@ -15,14 +16,18 @@ export interface ResourceToolbarProps {
 export function ResourceToolbar({
   count,
   filterControls,
-  itemLabel = "results",
+  itemLabel: itemLabelProp,
   leading,
-  searchPlaceholder = "Search",
+  searchPlaceholder: searchPlaceholderProp,
   searchable = true,
   searchValue,
   trailing,
   onSearchChange,
 }: ResourceToolbarProps) {
+  const { t } = useSdkTranslation();
+  const itemLabel = itemLabelProp ?? t("results");
+  const searchPlaceholder = searchPlaceholderProp ?? t("search");
+
   return (
     <div className="cc-resource-toolbar">
       {leading ? <div className="cc-resource-toolbar__leading">{leading}</div> : null}
@@ -39,7 +44,7 @@ export function ResourceToolbar({
         <div className="cc-resource-toolbar__filters">{filterControls}</div>
       ) : null}
       <span className="cc-resource-toolbar__count">
-        {count} {itemLabel}
+        {t("resultCount", { count, itemLabel })}
       </span>
       {trailing ? <div className="cc-resource-toolbar__trailing">{trailing}</div> : null}
     </div>

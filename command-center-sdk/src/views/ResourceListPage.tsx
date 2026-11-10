@@ -1,3 +1,5 @@
+import type { SdkMessageKey, SdkMessageValues } from "../localization/index.js";
+import { useSdkTranslation } from "../localization/react.js";
 import {
   useEffect,
   useMemo,
@@ -138,7 +140,10 @@ const emptyFilters: Readonly<Record<string, unknown>> = {};
 const emptyFilterDefinitions: readonly ResourceSelectFilterDefinition[] = [];
 const emptyPrimaryActions: readonly ResourcePrimaryAction[] = [];
 
+type LocalizedText = string | { key: SdkMessageKey; values?: SdkMessageValues };
+
 interface InternalBulkActionPreflightState<Id extends ResourceId> {
+  errorMessage?: LocalizedText;
   requestKey: string;
   state: ResourceBulkActionPreflightState<Id>;
 }
@@ -147,12 +152,8 @@ function isDocumentVisible() {
   return typeof document === "undefined" || document.visibilityState !== "hidden";
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "The resource list could not be loaded.";
-}
-
-function getActivationErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "The selected resource could not be opened.";
+function getErrorMessage(error: unknown, fallback: SdkMessageKey): LocalizedText {
+  return error instanceof Error && error.message ? error.message : { key: fallback };
 }
 
 function createFilterControls(definitions: readonly ResourceSelectFilterDefinition[]) {
@@ -194,7 +195,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
   pollIntervalMs,
   primaryActions = emptyPrimaryActions,
   refreshable = false,
-  refreshLabel = "Refresh",
+  refreshLabel: refreshLabelProp,
   refreshKey,
   renderBulkActionConfirmation,
   renderCard,
@@ -205,6 +206,10 @@ export function ResourceListPage<T, Id extends ResourceId>({
   toolbarLeading,
   toolbarTrailing,
 }: ResourceListPageProps<T, Id>) {
+  const { t } = useSdkTranslation();
+  const localize = (text: LocalizedText) => typeof text === "string" ? text : t(text.key, text.values);
+  const refreshLabel = refreshLabelProp ?? t("refresh");
+
   const viewport = useCommandCenterViewport();
   const resolvedTablePresentation = resolveDataTablePresentation(tablePresentation, viewport);
   const narrowToolbar = viewport.breakpoint === "xs";
@@ -217,9 +222,9 @@ export function ResourceListPage<T, Id extends ResourceId>({
   );
   const [discovery, setDiscovery] = useState<ResourceDiscoveryResponse | null>(null);
   const [discoveryLoading, setDiscoveryLoading] = useState(Boolean(definition.adapter.discover));
-  const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+  const [discoveryError, setDiscoveryError] = useState<LocalizedText | null>(null);
   const [loading, setLoading] = useState(!initialResult);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<LocalizedText | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [pollToken, setPollToken] = useState(0);
   const [documentVisible, setDocumentVisible] = useState(isDocumentVisible);
@@ -234,12 +239,12 @@ export function ResourceListPage<T, Id extends ResourceId>({
   const [bulkOptions, setBulkOptions] = useState<Record<string, boolean>>({});
   const [confirmationWord, setConfirmationWord] = useState("");
   const [bulkPending, setBulkPending] = useState(false);
-  const [bulkFeedback, setBulkFeedback] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [bulkFeedback, setBulkFeedback] = useState<{ tone: "success" | "error"; text: LocalizedText } | null>(null);
   const [bulkPreflightRetryToken, setBulkPreflightRetryToken] = useState(0);
   const [bulkPreflightRequest, setBulkPreflightRequest] = useState<
     InternalBulkActionPreflightState<Id>
   >({ requestKey: "", state: { status: "not_required" } });
-  const [activationError, setActivationError] = useState<string | null>(null);
+  const [activationError, setActivationError] = useState<LocalizedText | null>(null);
   const [activationPendingId, setActivationPendingId] = useState<Id | null>(null);
   const activationController = useRef<AbortController | null>(null);
   const preflightSequence = useRef(0);
@@ -315,7 +320,9 @@ export function ResourceListPage<T, Id extends ResourceId>({
       ? { status: "not_required" }
       : activePreflightRequestKey && bulkPreflightRequest.requestKey !== activePreflightRequestKey
         ? { status: "loading" }
-        : bulkPreflightRequest.state;
+        : bulkPreflightRequest.state.status === "error" && bulkPreflightRequest.errorMessage
+          ? { ...bulkPreflightRequest.state, error: localize(bulkPreflightRequest.errorMessage) }
+          : bulkPreflightRequest.state;
   const selectionCount = allMatching ? result.pageInfo.totalItems : selection.selectedCount;
   const hasBulkSelection = bulkActions.length > 0;
   const canSelectAllMatching = bulkActions.some((action) =>
@@ -341,9 +348,10 @@ export function ResourceListPage<T, Id extends ResourceId>({
     if (!definition.adapter.preflightBulkAction) {
       setBulkPreflightRequest({
         requestKey: activePreflightRequestKey,
+        errorMessage: { key: "preflightUnsupported" },
         state: {
           status: "error",
-          error: "The adapter does not implement the advertised preflight request.",
+          error: "",
         },
       });
       return undefined;
@@ -370,7 +378,8 @@ export function ResourceListPage<T, Id extends ResourceId>({
       if (sequence !== preflightSequence.current || controller.signal.aborted) return;
       setBulkPreflightRequest({
         requestKey: activePreflightRequestKey,
-        state: { status: "error", error: getErrorMessage(error) },
+        errorMessage: getErrorMessage(error, "listLoadError"),
+        state: { status: "error", error: "" },
       });
     });
 
@@ -449,7 +458,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
         } catch (error) {
           if (!controller.signal.aborted && sequence === requestSequence.current) {
             setBulkActions([]);
-            setBulkFeedback({ tone: "error", text: getErrorMessage(error) });
+            setBulkFeedback({ tone: "error", text: getErrorMessage(error, "listLoadError") });
           }
         } finally {
           if (sequence === requestSequence.current) {
@@ -459,7 +468,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
       })
       .catch((error: unknown) => {
         if (!controller.signal.aborted && sequence === requestSequence.current) {
-          setLoadError(getErrorMessage(error));
+          setLoadError(getErrorMessage(error, "listLoadError"));
           if (!definition.adapter.discover) {
             setBulkActions([]);
             setBulkActionsLoading(false);
@@ -503,7 +512,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
         if (controller.signal.aborted || sequence !== discoverySequence.current) return;
         setDiscovery(null);
         setBulkActions([]);
-        setDiscoveryError(getErrorMessage(error));
+        setDiscoveryError(getErrorMessage(error, "listLoadError"));
       })
       .finally(() => {
         if (sequence === discoverySequence.current) {
@@ -582,7 +591,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
           })
           .catch((error: unknown) => {
             if (!controller.signal.aborted) {
-              setActivationError(getActivationErrorMessage(error));
+              setActivationError(getErrorMessage(error, "activationError"));
             }
           })
           .finally(() => {
@@ -650,10 +659,10 @@ export function ResourceListPage<T, Id extends ResourceId>({
     if (activeBulkAction.preflight_endpoint && bulkPreflight.status !== "allowed") {
       const error = new Error(
         bulkPreflight.status === "blocked"
-          ? bulkPreflight.result.detail ?? "Preflight blocked this action."
+          ? bulkPreflight.result.detail ?? t("preflightBlocked")
           : bulkPreflight.status === "error"
             ? bulkPreflight.error
-            : "Wait for preflight to finish before continuing.",
+            : t("preflightPending"),
       );
       if (throwOnError) throw error;
       return;
@@ -668,10 +677,10 @@ export function ResourceListPage<T, Id extends ResourceId>({
         : bulkActions;
       const action = discoveredActions.find((candidate) => candidate.id === activeBulkAction.id);
       if (!action) {
-        throw new Error("This action is no longer available.");
+        throw new Error(t("actionUnavailable"));
       }
       if (!activeBulkSelection) {
-        throw new Error("The action selection is no longer available.");
+        throw new Error(t("selectionUnavailable"));
       }
       const actionSelection = activeBulkSelection;
       assertBulkActionSelectionMode(action, actionSelection);
@@ -689,7 +698,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
             : option.default,
         ])));
         throw new Error(
-          "The action contract changed. Review the refreshed preflight before continuing.",
+          t("actionContractChanged"),
         );
       }
       const response = await definition.adapter.executeBulkAction(action, {
@@ -699,11 +708,11 @@ export function ResourceListPage<T, Id extends ResourceId>({
       setActiveBulkAction(null);
       setActiveExplicitIds(null);
       clearSelection();
-      setBulkFeedback({ tone: "success", text: `${action.label} completed.` });
+      setBulkFeedback({ tone: "success", text: { key: "actionCompleted", values: { actionLabel: action.label } } });
       setReloadToken((current) => current + 1);
       onBulkActionSuccess?.(action, response);
     } catch (error) {
-      setBulkFeedback({ tone: "error", text: getErrorMessage(error) });
+      setBulkFeedback({ tone: "error", text: getErrorMessage(error, "listLoadError") });
       if (throwOnError) throw error;
     } finally {
       setBulkPending(false);
@@ -732,14 +741,14 @@ export function ResourceListPage<T, Id extends ResourceId>({
   const sortControl = !renderCard && resolvedTablePresentation === "stacked" && sortableColumns.length > 0
     ? (
       <div className="cc-resource-filter" key="cc-resource-sort">
-        <span className="cc-resource-visually-hidden">Sort</span>
+        <span className="cc-resource-visually-hidden">{t("sort")}</span>
         <ResourcePicker
           mode="single"
-          ariaLabel="Sort"
+          ariaLabel={t("sort")}
           fitContent
           presentation="auto"
           options={[
-            { value: "", label: "Default order" },
+            { value: "", label: t("defaultOrder") },
             ...sortableColumns.flatMap((column) => [
               { value: `${column.sortableKey}:ascending`, label: `${column.header} ↑` },
               { value: `${column.sortableKey}:descending`, label: `${column.header} ↓` },
@@ -862,7 +871,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
           itemLabel={itemLabel}
           leading={toolbarLeading}
           searchPlaceholder={
-            controls?.search?.placeholder ?? searchPlaceholder ?? `Search ${itemLabel}`
+            controls?.search?.placeholder ?? searchPlaceholder ?? t("searchItems", { itemLabel })
           }
           searchable={
             searchable &&
@@ -877,12 +886,12 @@ export function ResourceListPage<T, Id extends ResourceId>({
           <div className="cc-resource-selection-bar">
             <span>
               {allMatching
-                ? `All ${selectionCount} matching ${itemLabel} selected.`
-                : `${selectionCount} selected on this page.`}
+                ? t("selectionAll", { count: selectionCount, itemLabel })
+                : t("selectionPage", { count: selectionCount })}
             </span>
             {showAllMatchingOffer ? (
               <button type="button" onClick={selectAllMatching}>
-                Select all {result.pageInfo.totalItems} matching {itemLabel}
+                {t("selectAllMatching", { count: result.pageInfo.totalItems, itemLabel })}
               </button>
             ) : null}
             <div className="cc-resource-selection-bar__actions">
@@ -898,36 +907,36 @@ export function ResourceListPage<T, Id extends ResourceId>({
                     onSelect: () => openBulkAction(action),
                   }))}
                 disabled={bulkPending}
-                label="Actions"
+                label={t("actions")}
               />
-              <button type="button" onClick={clearSelection}>Clear</button>
+              <button type="button" onClick={clearSelection}>{t("clear")}</button>
             </div>
           </div>
         ) : null}
 
         {bulkFeedback ? (
           <div className={`cc-resource-feedback cc-resource-feedback--${bulkFeedback.tone}`} role="status">
-            {bulkFeedback.text}
+            {localize(bulkFeedback.text)}
           </div>
         ) : null}
         {activationError ? (
           <div className="cc-resource-feedback cc-resource-feedback--error" role="alert">
-            {activationError}
+            {localize(activationError)}
           </div>
         ) : null}
         {presentationError ? (
           <div className="cc-resource-state cc-resource-state--error" role="alert">
-            <p>{presentationError}</p>
-            <button type="button" onClick={() => setReloadToken((current) => current + 1)}>Retry</button>
+            <p>{localize(presentationError)}</p>
+            <button type="button" onClick={() => setReloadToken((current) => current + 1)}>{t("retry")}</button>
           </div>
         ) : presentationLoading && result.items.length === 0 ? (
-          <div className="cc-resource-state" role="status">Loading {itemLabel}…</div>
+          <div className="cc-resource-state" role="status">{t("loadingItems", { itemLabel })}</div>
         ) : (
           renderCard ? (
             <ResourceCardGrid
               emptyContent={
                 emptyContent ??
-                (hasActiveQuery ? `No ${itemLabel} match the current search and filters.` : `No ${itemLabel} yet.`)
+                (hasActiveQuery ? t("noMatchingItems", { itemLabel }) : t("emptyItems", { itemLabel }))
               }
               getId={getPresentationId}
               items={result.items}
@@ -938,7 +947,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
             columns={columns}
             emptyContent={
               emptyContent ??
-              (hasActiveQuery ? `No ${itemLabel} match the current search and filters.` : `No ${itemLabel} yet.`)
+              (hasActiveQuery ? t("noMatchingItems", { itemLabel }) : t("emptyItems", { itemLabel }))
             }
             getId={getPresentationId}
             isSelected={hasBulkSelection ? (id) => allMatching || selection.isSelected(id) : undefined}
@@ -958,7 +967,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
           />
         )}
 
-        {bulkActionsLoading ? <span className="cc-resource-visually-hidden">Loading actions</span> : null}
+        {bulkActionsLoading ? <span className="cc-resource-visually-hidden">{t("loadingActions")}</span> : null}
         <ResourcePagination
           count={result.pageInfo.totalItems}
           hasNextPage={result.pageInfo.hasNextPage}
@@ -1006,14 +1015,14 @@ export function ResourceListPage<T, Id extends ResourceId>({
           confirmDisabled={
             Boolean(activeBulkAction.preflight_endpoint) && bulkPreflight.status !== "allowed"
           }
-          error={bulkFeedback?.tone === "error" ? bulkFeedback.text : undefined}
+          error={bulkFeedback?.tone === "error" ? localize(bulkFeedback.text) : undefined}
           pending={bulkPending}
           preflight={bulkPreflight}
           presentation="auto"
           selectionLabel={
             allMatching
-              ? `Matching ${itemLabel}: ${selectionCount}`
-              : `Selected ${itemLabel}: ${selectionCount}`
+              ? t("selectionAll", { count: selectionCount, itemLabel })
+              : t("selectionCount", { count: selectionCount, itemLabel })
           }
           title={activeBulkAction.confirmation?.title ?? activeBulkAction.label}
           tone={activeBulkAction.tone ?? "default"}

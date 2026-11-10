@@ -96,3 +96,13 @@ existing implementation.
 Read [the application-shell standard](references/application-shell-standard.md) when migrating an
 existing application or resolving ambiguous information architecture. Keep API clients, router,
 permissions, readiness policy, and persistence in the consuming application.
+
+## Localize SDK messages (0.5.19+)
+
+Wrap the application in `CommandCenterLocalizationProvider` from the public
+`@dev-mainsequence/command-center-sdk/localization/react` entrypoint. Supply the
+effective `locale` and a `TranslateSdkMessage` callback from `/localization`, backed
+by the application catalog. Return undefined for missing keys to keep English
+defaults; forward interpolation values and numeric `count` for whole-message plurals.
+Explicit labels/renderers override the provider and remain application-owned.
+The SDK creates no i18next instance or preference storage. See `docs/localization.md`.

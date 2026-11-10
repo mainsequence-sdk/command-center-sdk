@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import type { HTMLAttributes, ReactNode } from "react";
 import { useRef } from "react";
 
@@ -32,11 +33,13 @@ export function ApplicationNavigationDrawer({
   children,
   className,
   id,
-  label = "Navigation menu",
+  label: labelProp,
   onOpenChange,
   open,
   ...props
 }: ApplicationNavigationDrawerProps) {
+  const { t } = useSdkTranslation();
+  const label = labelProp ?? t("navigationMenu");
   const drawerRef = useRef<HTMLDivElement>(null);
 
   useOverlayBehavior({

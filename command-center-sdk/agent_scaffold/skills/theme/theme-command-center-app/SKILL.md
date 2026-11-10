@@ -75,3 +75,13 @@ statuses, charts, contrast, and nested-surface hierarchy.
 Do not treat the theme audit as proof of page spacing or responsive geometry. When the application
 uses `/layout`, run its public browser verifier through `$compose-command-center-page` as a separate
 required check.
+
+## Localize SDK-owned messages
+
+SDK 0.5.19 adds `/localization` (framework-neutral message keys/defaults and locale
+helpers) and `/localization/react` (`CommandCenterLocalizationProvider` and
+`useSdkTranslation`). Supply an application-owned translator and effective locale.
+Forward numeric `count` for plurals; translate complete messages and accessibility
+labels. Explicit component overrides win; absent translations fall back to English.
+For embeds, apply every validated `onContext` locale without remounting the iframe
+or providers. See `docs/localization.md`; persistence remains host/backend-owned.

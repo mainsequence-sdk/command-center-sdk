@@ -46,7 +46,9 @@ framework integrations do not affect the application.
 | `/theme/presets` | Framework-neutral | Individual built-in preset objects |
 | `/theme/data-viz` | Framework-neutral | Data-visualization palette types and resolvers |
 | `/embed` | Browser | Static-site message contracts, host/client lifecycle, delegated HTTP access, native FastAPI WebSockets, and platform requests sent through the host |
-| `/embed/react` | React + DOM | Managed `StaticSiteIframe` host component |
+| `/embed/react` | React + DOM | Managed `StaticSiteIframe` host component with live locale updates |
+| `/localization` | Framework-neutral | Locale normalization/fallback, typed message keys and English defaults |
+| `/localization/react` | React | `CommandCenterLocalizationProvider` and `useSdkTranslation` for SDK-owned messages |
 | `/vite` | Node, in a Vite dev server | `platformRequestProxy()`: a top-level local page's platform requests, sent with the developer's token during local development. `localAgentProxy()`: a chat's routes to an Agent run with `ms-tau` in local mode on this machine |
 | `/contracts` | Framework-neutral | Ordered migration helper for versioned SDK payloads |
 | `/contracts/manifest.json` | JSON | Canonical backend contract catalog |
@@ -310,3 +312,11 @@ serialized meaning, or renaming a stable ID is not. Contract changes also requir
 schemas, fixtures, migration or mixed-version behavior, and backend coordination.
 
 For package-source work, follow [Extending and releasing](./extending-and-releasing.md).
+
+## Localize SDK controls
+
+From SDK 0.5.19, wrap SDK controls in `CommandCenterLocalizationProvider` from
+`/localization/react`, supplying your effective locale and a `TranslateSdkMessage`
+callback from `/localization`. The framework-neutral module imports no React.
+See [Localization](./localization.md) for a complete i18next adapter, interpolation,
+plural handling, English fallback, and live host-context composition.

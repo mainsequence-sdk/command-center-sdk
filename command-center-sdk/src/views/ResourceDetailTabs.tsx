@@ -1,3 +1,4 @@
+import { useSdkTranslation } from "../localization/react.js";
 import {
   useCallback,
   useEffect,
@@ -117,6 +118,8 @@ function DetailTabStrip({
   overflow,
   panelId,
 }: DetailTabStripProps) {
+  const { t } = useSdkTranslation();
+
   const viewport = useCommandCenterViewport();
   const requestedMode = overflow === "auto" ? (viewport.coarsePointer ? "scroll" : "menu") : overflow;
   const frameRef = useRef<HTMLDivElement>(null);
@@ -326,7 +329,7 @@ function DetailTabStrip({
       </div>
       {moreShown ? (
         <ResourcePicker
-          ariaLabel={`More ${lowerLead(ariaLabel)}, ${overflowIndexes.length} hidden`}
+          ariaLabel={t("moreSections", { label: lowerLead(ariaLabel), count: overflowIndexes.length })}
           className="cc-resource-detail-tabs__more"
           fitContent
           id={moreId}
@@ -368,7 +371,7 @@ function DetailTabStrip({
               </>
             );
           } : undefined}
-          triggerLabel="More"
+          triggerLabel={t("more")}
         />
       ) : null}
       {requestedMode === "menu" ? (
@@ -387,7 +390,7 @@ function DetailTabStrip({
             ))}
             <div className="cc-resource-picker cc-resource-picker--fit-content" data-cc-measure-more="">
               <button className="cc-resource-picker__trigger cc-resource-detail-tabs__more" tabIndex={-1} type="button">
-                <span className="cc-resource-picker__value">More</span>
+                <span className="cc-resource-picker__value">{t("more")}</span>
                 <svg aria-hidden="true" className="cc-resource-picker__chevron" viewBox="0 0 20 20">
                   <path d="m5.5 7.5 4.5 4.5 4.5-4.5" />
                 </svg>
@@ -433,6 +436,7 @@ export function ResourceDetailTabsCard<T>({
   tabs,
   tabsLabel,
 }: ResourceDetailTabsCardProps<T>) {
+  const { t } = useSdkTranslation();
   const baseId = useId();
   const panelId = `${baseId}-panel`;
   const primaryPrefix = `${baseId}-primary`;
@@ -488,7 +492,7 @@ export function ResourceDetailTabsCard<T>({
         {showSubTabs ? (
           <DetailTabStrip
             activeId={activeSubTab?.id}
-            ariaLabel={`${activeTab?.label ?? "Detail"} sections`}
+            ariaLabel={t("subSections", { label: activeTab?.label ?? t("detail") })}
             idPrefix={secondaryPrefix}
             items={secondaryItems}
             key={activeTab?.id}

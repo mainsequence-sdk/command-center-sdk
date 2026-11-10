@@ -9,6 +9,8 @@ import {
   type StaticSiteFastApiTransportState,
 } from "@dev-mainsequence/command-center-sdk/embed";
 import { StaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed/react";
+import { normalizeCommandCenterLocale, type TranslateSdkMessage } from "@dev-mainsequence/command-center-sdk/localization";
+import { CommandCenterLocalizationProvider } from "@dev-mainsequence/command-center-sdk/localization/react";
 import {
   Badge,
   Button,
@@ -60,6 +62,15 @@ type Service = {
   uid: string;
   name: string;
 };
+
+const translate: TranslateSdkMessage = (key, values) => key === "selectionCount"
+  ? `${values.count} ausgewählt`
+  : key === "next" ? "Weiter" : undefined;
+
+export const localizedPagination = <CommandCenterLocalizationProvider
+  locale={normalizeCommandCenterLocale("de-at") ?? "en"}
+  translate={translate}
+><ResourcePagination count={50} pageIndex={0} pageSize={25} onPageChange={() => {}} /></CommandCenterLocalizationProvider>;
 
 const client = {
   async request<Response>(): Promise<Response> {
@@ -277,6 +288,7 @@ export const packedStaticSiteTransportState: StaticSiteFastApiTransportState = {
 
 export const packedStaticSiteHostHtml = renderToStaticMarkup(
   <StaticSiteIframe
+    locale="de-AT"
     src="https://site.example.test/launch"
     themeId="graphite"
     themeMode="dark"

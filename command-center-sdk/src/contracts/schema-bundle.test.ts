@@ -207,6 +207,23 @@ describe("published contract schema bundle", () => {
     });
   });
 
+  it("keeps locale and capability validation aligned with the public runtime parser", () => {
+    const validate = createValidator().getSchema(STATIC_SITE_IFRAME_SCHEMA_ID)!;
+    const channel = "mainsequence.portfolio-dashboard";
+    const locales: unknown[] = [undefined, "en", "de-at", "zh-Hant-TW", "es-419", "fil", "iw", "zz",
+      "", null, 42, "en_US", " de", "en-", "en--US", "de-1901-1901", "en-Latn-Latn", "en-u-ca-gregory", "x-private", "a", "abcd", "a".repeat(129)];
+    for (const locale of locales) {
+      const message = { channel, version: 1, type: "initialize", payload: {
+        theme: "dark", themeId: "graphite", user: null, ...(locale === undefined ? {} : { locale }),
+      } };
+      expect(validate(message), JSON.stringify(locale)).toBe(readStaticSiteIframeMessage(message, channel) !== null);
+    }
+    for (const capabilities of [undefined, [], ["locale-context-v1"], ["unknown"], [""], [" "], [null], "locale-context-v1", null]) {
+      const message = { channel, version: 1, type: "ready", payload: capabilities === undefined ? {} : { capabilities } };
+      expect(validate(message), JSON.stringify(capabilities)).toBe(readStaticSiteIframeMessage(message, channel) !== null);
+    }
+  });
+
   it("keeps the schema's platform request rules aligned with the public runtime parser", () => {
     const validate = createValidator().getSchema(STATIC_SITE_IFRAME_SCHEMA_ID)!;
     const channel = "mainsequence.portfolio-dashboard";

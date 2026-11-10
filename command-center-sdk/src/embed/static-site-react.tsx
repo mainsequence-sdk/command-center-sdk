@@ -20,6 +20,7 @@ export interface StaticSiteIframeProps {
   themeId: string;
   themeMode: StaticSiteIframeThemeMode;
   userUid: string | null;
+  locale?: string;
   resolveFastApiCredential?: ResolveStaticSiteFastApiCredential;
   resolveFastApiWebSocketTicket?: ResolveStaticSiteFastApiWebSocketTicket;
   /**
@@ -47,6 +48,7 @@ export function StaticSiteIframe({
   themeId,
   themeMode,
   userUid,
+  locale = "en",
   resolveFastApiCredential,
   resolveFastApiWebSocketTicket,
   sendPlatformRequest,
@@ -65,14 +67,14 @@ export function StaticSiteIframe({
 }: StaticSiteIframeProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const hostRef = useRef<StaticSiteIframeHost | null>(null);
-  const contextRef = useRef<StaticSiteIframeContextInput>({ themeId, themeMode, userUid });
+  const contextRef = useRef<StaticSiteIframeContextInput>({ themeId, themeMode, userUid, locale });
   const callbacksRef = useRef({ onReady, onProtocolError });
   const resolversRef = useRef({
     resolveFastApiCredential,
     resolveFastApiWebSocketTicket,
     sendPlatformRequest,
   });
-  contextRef.current = { themeId, themeMode, userUid };
+  contextRef.current = { themeId, themeMode, userUid, locale };
   callbacksRef.current = { onReady, onProtocolError };
   resolversRef.current = {
     resolveFastApiCredential,
@@ -141,8 +143,8 @@ export function StaticSiteIframe({
   }, [resolveFastApiCredential, resolveFastApiWebSocketTicket, sendPlatformRequest]);
 
   useEffect(() => {
-    hostRef.current?.updateContext({ themeId, themeMode, userUid });
-  }, [themeId, themeMode, userUid]);
+    hostRef.current?.updateContext({ themeId, themeMode, userUid, locale });
+  }, [themeId, themeMode, userUid, locale]);
 
   return (
     <iframe

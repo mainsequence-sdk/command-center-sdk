@@ -221,3 +221,26 @@ with `$comment` where applicable.
 
 Adding the SDK schema bundle documents SDK-owned contracts and does not itself migrate stored data.
 A backend changes only when an endpoint opts into or evolves one of these contracts.
+
+## Optional iframe locale (SDK 0.5.19)
+
+`command-center.static_site_iframe@v1` retains its ID, schema ID and numeric v1
+protocol. Initialize payload adds optional `locale`; older messages remain valid.
+Use the updated schema/manifest fixtures before validating new-host payloads.
+Locale changes are presentation-only, never token/credential or persisted data.
+Backend preference/profile persistence remains application-owned; no SDK backend
+route or database migration is required. Roll out updated validators/SDK first,
+then hosts, then children; rolling back a host leaves new children at English.
+
+Locale negotiation preserves strict legacy validators: new clients advertise
+`ready.payload.capabilities: ["locale-context-v1"]`. The host includes locale only
+for that capability. Missing/unknown capabilities retain the frozen legacy payload;
+malformed declarations are rejected. The normalized new-client context still
+defaults to English when an old host omits locale. See SDK ADR 019.
+
+SDK 0.5.19 accepts a BCP 47 core profile: two- or three-letter language, optional
+four-letter script, optional two-letter or three-digit region (for example `de-AT`
+or `zh-Hant-TW`). Variants, extensions, private-use tags, underscores, whitespace,
+and repeated subtags are rejected. The runtime and JSON Schema enforce the same
+profile; accepted tags are canonicalized. This transport profile does not expand
+the backend's stored language choices.
