@@ -1249,7 +1249,7 @@ h3),
   overflow: hidden;
 }
 
-.cc-data-table__group > td {
+.cc-data-table .cc-data-table__group > td {
   padding: 0;
 }
 
@@ -2876,6 +2876,10 @@ h3),
   .cc-resource-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .cc-resource-toolbar__search {
+    flex-basis: auto;
   }
 
   .cc-resource-search {

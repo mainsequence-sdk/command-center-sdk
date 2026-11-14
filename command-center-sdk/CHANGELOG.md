@@ -7,6 +7,7 @@ Compatibility axes: additive React `DataTableRowGrouping<T>` and `rowGrouping` p
 fixture, iframe protocol, theme token, or persisted storage change; no backend rollout required.
 
 - Group current-page resource rows with accessible collapsible headers in table and phone forms.
+- Keep a stacked mobile toolbar's search field at its natural height rather than its desktop flex basis.
 - Keep collapsed rows in page-wide selection and preserve explicit/all-matching discovery,
   preflight, confirmation, execution, refresh and selection cleanup.
 - Document page-scoped labels and the consumer/SDK ownership boundary in the resource guide,
