@@ -52,6 +52,13 @@ The collection operation remains authoritative for rows and pagination.
 
 ## Do Not Rebuild Owned Behavior
 
+For collapsible categories, pass `rowGrouping` with `getGroupId(item)` and
+`renderGroupLabel(groupId, items)` to the same `ResourceListPage`. This groups only the supplied
+page; labels must say when their count is page-scoped. Collapsing is presentation, not filtering:
+select-all still includes collapsed rows, and the existing explicit/all-matching bulk lifecycle
+is unchanged. Do not split groups into independent list instances or build parallel selection.
+Group state is memory-only; `renderCard` takes precedence over grouping.
+
 Do not create a parallel page header, toolbar, search row, result counter, selection bar, action
 button strip, pagination footer, confirmation flow, or custom collection loading state. Do not use
 a native select or bespoke dropdown for SDK-owned list filters.

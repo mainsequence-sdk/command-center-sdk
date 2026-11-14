@@ -37,6 +37,7 @@ import {
   DataTable,
   resolveDataTablePresentation,
   type DataTablePresentation,
+  type DataTableRowGrouping,
   type ResourceRowAction,
 } from "./DataTable.js";
 import { ResourceCardGrid } from "./ResourceCardGrid.js";
@@ -107,6 +108,8 @@ export interface ResourceListPageProps<T, Id extends ResourceId> {
   searchable?: boolean;
   /** Table form; `auto` stacks rows below the `sm` breakpoint. Ignored when `renderCard` is set. */
   tablePresentation?: DataTablePresentation;
+  /** Group current-page rows visually; select-all and bulk actions include collapsed rows. */
+  rowGrouping?: DataTableRowGrouping<T>;
   toolbarLeading?: ReactNode;
   toolbarTrailing?: ReactNode;
   onBulkActionSuccess?: (action: ResourceBulkActionDefinition, response: unknown) => void;
@@ -199,6 +202,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
   refreshKey,
   renderBulkActionConfirmation,
   renderCard,
+  rowGrouping,
   rowActions = [],
   searchPlaceholder,
   searchable = true,
@@ -946,6 +950,7 @@ export function ResourceListPage<T, Id extends ResourceId>({
               renderCard={renderCard}
             />
           ) : <DataTable
+            rowGrouping={rowGrouping}
             allSelected={allMatching || selection.allSelected}
             columns={columns}
             emptyContent={

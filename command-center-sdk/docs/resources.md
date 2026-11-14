@@ -228,6 +228,31 @@ pagination becomes previous, page summary, next. Row actions collapse into a men
 more than two or the pointer is coarse. Pass `"table"` or `"stacked"` to fix the form. See
 [Mobile and touch](./concepts/mobile.md).
 
+### Group rows without changing selection
+
+Use the public `rowGrouping` contribution on `ResourceListPage` when an existing paginated list
+needs collapsible categories. The same `DataTableRowGrouping<T>` type works with `DataTable`.
+
+```tsx
+import { ResourceListPage, type DataTableRowGrouping } from "@dev-mainsequence/command-center-sdk/views";
+
+const organizationGroups: DataTableRowGrouping<Service> = {
+  getGroupId: (service) => service.organization,
+  renderGroupLabel: (organization, rows) => `${organization} · ${rows.length} on this page`,
+};
+
+<ResourceListPage definition={serviceResource} rowGrouping={organizationGroups} tablePresentation="auto" />;
+```
+
+The consumer supplies group identity and label; the SDK renders accessible disclosure buttons in
+both table and phone forms. Rows are grouped by first occurrence and keep their relative order.
+Only current-page rows reach the label renderer. For complete organization totals, the backend
+must provide them; do not infer them from a page. A collapse is not a filter: **Select all rows on
+this page** includes collapsed groups. Explicit selected UIDs and all-matching queries continue
+through the same discovery, preflight, confirmation, execution, and refresh flow. Group expansion
+is transient and does not change backend queries, pagination or persisted storage. Empty and
+failed collections keep their standard states. `renderCard` takes precedence over grouping.
+
 ## Build a resource detail
 
 Keep the selected UID, query, and tab ids in the host, in the URL when they must survive a reload.

@@ -1249,6 +1249,20 @@ h3),
   overflow: hidden;
 }
 
+.cc-data-table__group > td {
+  padding: 0;
+}
+
+.cc-data-table__group-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: start;
+}
+
+.cc-data-table__group {
+  list-style: none;
+}
+
 .cc-resource-card-grid {
   display: grid;
   gap: 1rem;

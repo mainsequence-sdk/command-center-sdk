@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.20
+
+Compatibility axes: additive React `DataTableRowGrouping<T>` and `rowGrouping` props through
+`/views`, plus `selectAllPageRows` localization text. No contract ID, wire payload, schema,
+fixture, iframe protocol, theme token, or persisted storage change; no backend rollout required.
+
+- Group current-page resource rows with accessible collapsible headers in table and phone forms.
+- Keep collapsed rows in page-wide selection and preserve explicit/all-matching discovery,
+  preflight, confirmation, execution, refresh and selection cleanup.
+- Document page-scoped labels and the consumer/SDK ownership boundary in the resource guide,
+  view README, packaged list skill, and packed consumer example.
+
 ## 0.5.19
 
 - Add optional validated locale to v1 iframe initialization and live context. Older

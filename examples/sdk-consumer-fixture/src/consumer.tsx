@@ -48,6 +48,8 @@ import { getThemeCategoricalPalette } from "@dev-mainsequence/command-center-sdk
 import { graphiteTheme } from "@dev-mainsequence/command-center-sdk/theme/presets";
 import {
   ResourceDetailShell,
+  ResourceListPage,
+  type DataTableRowGrouping,
   ResourcePagination,
   ResourceTransferList,
   type ResourceDetailBreadcrumbLeadContext,
@@ -299,6 +301,7 @@ export const packedStaticSiteHostHtml = renderToStaticMarkup(
 );
 
 export const packedSdkSurfaceSmoke = {
+  ResourceListPage,
   ApplicationCard,
   ApplicationCardGrid,
   ActivityIndicator,
@@ -318,3 +321,8 @@ export const packedSdkSurfaceSmoke = {
   mainSequenceTheme,
   verifyCommandCenterPageLayout,
 } satisfies Record<string, unknown>;
+
+export const packedRowGrouping: DataTableRowGrouping<{ organization: string }> = {
+  getGroupId: (item) => item.organization,
+  renderGroupLabel: (organization, items) => `${organization} · ${items.length} on this page`,
+};
