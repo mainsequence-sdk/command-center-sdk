@@ -1,5 +1,9 @@
 # Command Center SDK
 
+Resource lists can group their current page with `rowGrouping` on `ResourceListPage` from
+`@dev-mainsequence/command-center-sdk/views`. Collapsing a group preserves row selection and the
+existing bulk-action lifecycle. See [grouping resource rows](docs/resources.md#group-rows-without-changing-selection).
+
 `@dev-mainsequence/command-center-sdk` is the public TypeScript/React package for building
 Command Center-compatible navigation, responsive application layouts, application feedback,
 application controls, resource applications, themes, backend contracts, and static-site iframe integrations.

@@ -92,6 +92,7 @@ export const sdkEnglishMessages = {
   "selectAllMatching": "Select all {{count}} matching {{itemLabel}}",
   "selectRow": "Select row",
   "selectAllRows": "Select all visible rows",
+  "selectAllPageRows": "Select all rows on this page",
   "loadingActions": "Loading actions",
   "loadingItems": "Loading {{itemLabel}}…",
   "emptyItems": "No {{itemLabel}} yet.",

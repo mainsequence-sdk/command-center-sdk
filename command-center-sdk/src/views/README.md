@@ -19,6 +19,15 @@ Applications should not recreate this toolbar layout. Set
 `refreshable` when the collection should expose the framework-owned toolbar refresh control;
 consumers do not need to build a parallel refresh row or manage a reload token.
 
+`rowGrouping` on `ResourceListPage` and `DataTable` adds collapsible current-page groups with
+`getGroupId(item)` and `renderGroupLabel(groupId, items)`. Group headers are not resource rows.
+Collapse affects presentation only: the header checkbox selects the full supplied page, hidden
+rows stay selected, and all-matching selection, options, confirmation, preflight, execution and
+refresh keep their existing lifecycle. Group order follows first occurrence; row order within a
+group follows the collection. Labels receive current-page rows, so never present their length as
+a collection-wide group total. The SDK holds expansion only in memory. Grouping is ignored for
+`renderCard`, which remains a separate presentation. Backend query and pagination are unchanged.
+
 When an adapter implements `discover`, `ResourceListPage` loads
 `command-center.resource_discovery@v1` separately from collection rows. Discovery owns the title,
 item label, searchable/filterable/sortable vocabulary, visible column order and headings, UI

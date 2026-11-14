@@ -1,5 +1,7 @@
 import { useSdkTranslation } from "../localization/react.js";
-import type { KeyboardEvent, ReactNode } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { Button } from "../controls/index.js";
 
 import { useCommandCenterViewport, type CommandCenterViewportState } from "../layout/viewport.js";
 import {
@@ -33,6 +35,13 @@ export interface ResourceRowAction<T> {
 export type DataTablePresentation = "auto" | "stacked" | "table";
 export type ResolvedDataTablePresentation = Exclude<DataTablePresentation, "auto">;
 
+/** Presentation-only grouping of the supplied page; never narrows selection or the query. */
+export interface DataTableRowGrouping<T> {
+  getGroupId: (item: T) => string;
+  /** Receives only current-page rows, never an inferred collection total. */
+  renderGroupLabel: (groupId: string, items: readonly T[]) => ReactNode;
+}
+
 export interface DataTableProps<T, Id extends ResourceId> {
   columns: readonly ResourceColumnDefinition<T, ReactNode>[];
   emptyContent?: ReactNode;
@@ -40,6 +49,7 @@ export interface DataTableProps<T, Id extends ResourceId> {
   isSelected?: (id: Id) => boolean;
   isRowSelectable?: (item: T) => boolean;
   items: readonly T[];
+  rowGrouping?: DataTableRowGrouping<T>;
   /** Label of the per-row overflow menu. */
   rowActionsLabel?: string;
   rowActions?: readonly ResourceRowAction<T>[];
@@ -136,6 +146,7 @@ export function DataTable<T, Id extends ResourceId>({
   isSelected,
   isRowSelectable,
   items,
+  rowGrouping,
   moreDetailsLabel: moreDetailsLabelProp,
   onActivateRow,
   onSortChange,
@@ -152,12 +163,47 @@ export function DataTable<T, Id extends ResourceId>({
   const emptyContent = emptyContentProp ?? t("noTableResults");
   const moreDetailsLabel = moreDetailsLabelProp ?? t("moreDetails");
   const rowActionsLabel = rowActionsLabelProp ?? t("actions");
-  const selectionLabel = selectionLabelProp ?? t("selectAllRows");
+  const selectionLabel = selectionLabelProp ?? t(rowGrouping ? "selectAllPageRows" : "selectAllRows");
 
   const viewport = useCommandCenterViewport();
   const resolvedPresentation = resolveDataTablePresentation(presentation, viewport);
   const selectable = Boolean(isSelected && onToggleAll && onToggleSelection);
   const resolvedColumns = resolveResourceColumnImportance(columns);
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() => new Set());
+  type Entry = { kind: "row"; item: T } | { kind: "group"; id: string; items: readonly T[] };
+  const entries: Entry[] = [];
+  if (rowGrouping) {
+    const groups = new Map<string, T[]>();
+    for (const item of items) {
+      const id = rowGrouping.getGroupId(item);
+      const group = groups.get(id) ?? [];
+      group.push(item);
+      groups.set(id, group);
+    }
+    for (const [id, groupItems] of groups) {
+      entries.push({ kind: "group", id, items: groupItems });
+      if (!collapsedGroups.has(id)) entries.push(...groupItems.map((item) => ({ kind: "row" as const, item })));
+    }
+  } else {
+    entries.push(...items.map((item) => ({ kind: "row" as const, item })));
+  }
+  const renderGroupToggle = (entry: Extract<Entry, { kind: "group" }>) => (
+    <Button
+      type="button"
+      variant="ghost"
+      className="cc-data-table__group-toggle"
+      aria-expanded={!collapsedGroups.has(entry.id)}
+      onClick={() => setCollapsedGroups((current) => {
+        const next = new Set(current);
+        if (next.has(entry.id)) next.delete(entry.id);
+        else next.add(entry.id);
+        return next;
+      })}
+    >
+      {collapsedGroups.has(entry.id) ? <ChevronRight aria-hidden="true" size={16} /> : <ChevronDown aria-hidden="true" size={16} />}
+      {rowGrouping!.renderGroupLabel(entry.id, entry.items)}
+    </Button>
+  );
 
   const activateFromKeyboard = (event: KeyboardEvent<HTMLElement>, item: T) => {
     if (!onActivateRow || (event.key !== "Enter" && event.key !== " ")) {
@@ -206,12 +252,18 @@ export function DataTable<T, Id extends ResourceId>({
           <div className="cc-data-table__empty">{emptyContent}</div>
         ) : (
           <ol className="cc-data-table__stack">
-            {items.map((item) => {
+            {entries.map((entry) => {
+              if (entry.kind === "group") return (
+                <li key={`group:${entry.id}`} className="cc-data-table__group" data-cc-data-table-group={entry.id}>
+                  {renderGroupToggle(entry)}
+                </li>
+              );
+              const item = entry.item;
               const id = getId(item);
               const rowSelectable = isRowSelectable ? isRowSelectable(item) : true;
               return (
                 <li
-                  key={id}
+                  key={`row:${id}`}
                   className={`cc-data-table__stacked-row${onActivateRow ? " cc-data-table__row--interactive" : ""}`}
                   data-cc-data-table-row=""
                   tabIndex={onActivateRow ? 0 : undefined}
@@ -331,12 +383,20 @@ export function DataTable<T, Id extends ResourceId>({
               </td>
             </tr>
           ) : (
-            items.map((item) => {
+            entries.map((entry) => {
+              if (entry.kind === "group") return (
+                <tr key={`group:${entry.id}`} className="cc-data-table__group" data-cc-data-table-group={entry.id}>
+                  <td colSpan={visibleColumns.length + (selectable ? 1 : 0) + (rowActions.length ? 1 : 0)}>
+                    {renderGroupToggle(entry)}
+                  </td>
+                </tr>
+              );
+              const item = entry.item;
               const id = getId(item);
               const rowSelectable = isRowSelectable ? isRowSelectable(item) : true;
               return (
                 <tr
-                  key={id}
+                  key={`row:${id}`}
                   className={onActivateRow ? "cc-data-table__row--interactive" : undefined}
                   data-cc-data-table-row=""
                   tabIndex={onActivateRow ? 0 : undefined}
