@@ -316,3 +316,6 @@ example release workflow, and the installed `general/maintain-command-center-cod
 SDK 0.5.19 adds `/localization` and `/localization/react` for application-owned
 translation adapters and English defaults across shared resource controls, plus
 initial/live iframe locale. See [the localization guide](./docs/localization.md).
+
+For one level of inline embedding, use the optional helpers documented in
+[Open a private Static Site inline](docs/static-site-embeds.md#open-a-private-static-site-inline).

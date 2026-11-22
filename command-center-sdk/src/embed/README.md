@@ -6,7 +6,8 @@ handshake. It provides a framework-neutral host/client protocol and a React host
 ## Entry points
 
 - `/embed`: message types, parsers, host/client creation, origin resolution, delegated FastAPI
-  HTTP helpers, native WebSocket ticket construction, and platform requests sent through the host.
+  HTTP helpers, native WebSocket ticket construction, platform requests sent through the host,
+  and opt-in helpers for one inline child.
 - `/embed/react`: `StaticSiteIframe`.
 
 ## Required controls

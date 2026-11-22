@@ -273,6 +273,16 @@ Never send a session JWT, cookie, auth header, full user/session object, email, 
 permissions, or unrestricted backend credential through iframe context. Do not expand the public
 wire shape without an explicit protocol compatibility and security review.
 
+## Open One Inline Child
+
+When the deployed host explicitly supports inline child launch, use
+`launchInlineStaticSiteIframe` from `/embed` with a new, empty, mounted iframe and the host's
+launch, attach, and close adapter. Put the iframe in the parent site's page layout and handle launch
+denial in that region. The gateway approves the actual parent origin for the child. Inside the
+inline child, use `createInlineStaticSiteIframeClient(window, options)` with the existing exact
+Command Center origin. Install the listener before announcing readiness and wait for verified
+context before calling FastAPI. Verify with distinct origins and deny deeper nesting.
+
 ## Verify
 
 For top-level local Vite development, verify `/healthz` only after Uvicorn completes startup,

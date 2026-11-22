@@ -695,3 +695,43 @@ or `zh-Hant-TW`). Variants, extensions, private-use tags, underscores, whitespac
 and repeated subtags are rejected. The runtime and JSON Schema enforce the same
 profile; accepted tags are canonicalized. This transport profile does not expand
 the backend's stored language choices.
+
+## Open a private Static Site inline
+
+A host that supports nested launch can let its directly embedded site place a private child in an
+inline region of its page. The child uses the existing sign-in through the host and stays one frame
+below the outer site. The gateway must allow the actual parent origin in the child's
+`frame-ancestors` policy, along with the top-level host origin.
+
+In the parent, append a new empty iframe to its inline region and use the public
+`launchInlineStaticSiteIframe` helper. The application supplies an adapter to the host's narrow
+launch, attach, and close operations. The SDK finds the frame position and registers it before
+navigating. Handle rejected launch or attachment in the parent and remove the unused iframe.
+
+```ts
+import { launchInlineStaticSiteIframe } from "@dev-mainsequence/command-center-sdk/embed";
+
+const iframe = document.createElement("iframe");
+iframe.title = "Connector settings";
+iframe.sandbox.value = "allow-forms allow-same-origin allow-scripts";
+region.append(iframe);
+
+const closeChild = await launchInlineStaticSiteIframe({
+  iframe,
+  releaseUid: childReleaseUid,
+  adapter,
+  signal,
+});
+// On close, await closeChild() and remove the iframe.
+```
+
+The host resolves the registered frame within its verified parent window. It uses the child
+release and expected origin from its own launch response for the existing SDK handshake and
+FastAPI delegation. In an inline child, construct the SDK client with
+`createInlineStaticSiteIframeClient(window, options)`. This selects the top-level trusted host for
+one level of nesting. Use the existing configured host origin, install the message listener, and
+wait for the validated initial context before calling `fetchFastApi`. Direct embeds continue to
+use `createStaticSiteIframeClient`.
+
+The helpers accept application callbacks and use the existing iframe message protocol. Product
+routes, session state, and authorization belong to the host and platform.
