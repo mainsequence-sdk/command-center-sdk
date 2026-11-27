@@ -210,7 +210,7 @@ function interactionFor(runtime: RuntimeState, agentName: string): AgentRuntimeI
       message: runtime.message,
     },
     operation: null,
-    retryAfterMs: READINESS_RETRY_MS,
+    retryAfterMs: null,
   };
 }
 
