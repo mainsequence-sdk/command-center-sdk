@@ -48,8 +48,10 @@ or HTTP status. Other failure codes are not reclassified as timeouts.
 
 - **Errors**: an `error` frame's `errorText` is shown as the turn's error, with "Send again". Put the
   provider's reason in `errorText` and never the raw provider response.
-- **Notices**: readiness and the platform's runtime notices (starting, waking, updating, blocked)
-  are drawn by the thread from the platform's decisions, not from the answer.
+- **Notices**: the thread shows readiness and runtime notices from the platform's decisions. A
+  decision with `can_submit: false` and finite `retry_after_ms` is transient, including
+  `unavailable` while the platform confirms a new revision. The engine follows the retry hint
+  before sending a message already held for admission.
 
 ## What The Thread Does Not Draw
 

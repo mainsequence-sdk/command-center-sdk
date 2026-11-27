@@ -1,12 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.0.18
 
-Compatibility axes: remove the unreleased `ui/design-agent-icons-and-motion` skill and its
-local guide and routing from this package. The skill and worked MetaTables example belong to
-`ms-tau-sdk`. No npm public API, stylesheet class, browser storage key or value, installer
-behavior, SDK peer range, or platform route or payload changes. No backend rollout or storage
-migration is needed; existing agent icons and rendering defaults are unchanged.
+Compatibility axes: runtime admission behavior in `isTransientRuntimeInteraction` and the
+content of the `design-agent-conversation-capabilities` skill. The patch uses the platform's
+existing `retry_after_ms` field and requires only a client upgrade. Export signatures, stylesheet
+classes, storage keys and values, skill paths, installer behavior, SDK peer range, and platform
+routes and payloads are unchanged.
+
+- **Keep waiting when the platform asks for another runtime check** (#29). Chat treats a blocked
+  decision with a finite retry delay as transient, including `unavailable` while evidence for a
+  new revision is pending. Chat polls at the requested interval and sends a held message once
+  the Agent is ready.
+- The unreleased `ui/design-agent-icons-and-motion` skill and its worked MetaTables example
+  belong to `ms-tau-sdk`.
 
 ## 0.0.17
 

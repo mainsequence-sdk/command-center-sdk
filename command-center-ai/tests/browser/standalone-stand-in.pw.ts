@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import type { StandIn } from "../../standalone/stand-in";
 
 // The standalone application on the scripted stand-in (`standalone/README.md`): what a person does
 // first with the chat, in a real browser. The stand-in prefills the connect form but the token and
@@ -44,6 +45,86 @@ test("connects, sends a message, and streams the reply in", async ({ page }) => 
 
   // The run is over and the composer takes the next message.
   await expect(composer).toBeEnabled();
+  expect(pageErrors).toEqual([]);
+});
+
+test("polls through pending runtime evidence and sends the held message once", async ({ page }) => {
+  const retryAfterMs = 2_000;
+  const notice = {
+    code: "runtime_evidence_pending",
+    severity: "info",
+    title: "The Agent is not available",
+    message: "The platform is confirming the Agent's new revision.",
+  };
+  const pageErrors = collectPageErrors(page);
+  await page.clock.install();
+  const composer = await connect(page);
+  const scenario = await page.evaluateHandle(({ notice, retryAfterMs }) => {
+    const standIn = (window as Window & { chatStandIn: StandIn }).chatStandIn;
+    const fetch = window.fetch.bind(window);
+    const checks: Array<{ requestedAt: number; blockedAt?: number }> = [];
+
+    window.fetch = async (input, init) => {
+      if (
+        !(input instanceof Request) || input.method !== "POST" ||
+        !new URL(input.url).pathname.endsWith("/resolve-runtime-access/")
+      ) {
+        return fetch(input, init);
+      }
+
+      const check: (typeof checks)[number] = { requestedAt: performance.now() };
+      checks.push(check);
+      const pending = checks.length <= 2;
+      const response = await fetch(input, init);
+      if (!pending || !response.ok) return response;
+
+      const access = await response.json();
+      check.blockedAt = performance.now();
+      return Response.json({
+        ...access,
+        mode: "unavailable",
+        rpc_url: null,
+        token: null,
+        is_ready: false,
+        runtime_interaction: {
+          state: "unavailable",
+          can_submit: false,
+          notice,
+          operation: null,
+          retry_after_ms: retryAfterMs,
+        },
+        runtime_presence: { ...access.runtime_presence, phase: "observing", detail: notice.message },
+      });
+    };
+
+    return {
+      snapshot: () => ({ checks, sends: standIn.findRequests("POST", "/api/chat").length }),
+    };
+  }, { notice, retryAfterMs });
+
+  await composer.fill(message);
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByText(notice.message, { exact: true }).first()).toBeVisible();
+  await expect(page.locator("[data-runtime-status]").first()).toBeVisible();
+  expect(await scenario.evaluate((state) => state.snapshot().sends)).toBe(0);
+
+  await expect(page.getByText(`You wrote: "${message}".`)).toHaveCount(1, { timeout: 15_000 });
+  await expect(composer).toBeEnabled();
+  const { checks, sends } = await scenario.evaluate((state) => state.snapshot());
+  // Admission blocked the send, two background checks found pending then ready, and the
+  // resumed send obtained its own ready admission before reaching the Agent.
+  expect(checks).toHaveLength(4);
+  for (const [index, check] of checks.slice(0, 2).entries()) {
+    expect(check.blockedAt).toBeDefined();
+    const elapsedMs = checks[index + 1]!.requestedAt - check.blockedAt!;
+    expect(elapsedMs).toBeGreaterThanOrEqual(retryAfterMs - 20);
+    expect(elapsedMs).toBeLessThan(retryAfterMs + 1_000);
+  }
+  expect(sends).toBe(1);
+  await expect(page.getByText(notice.message, { exact: true })).toHaveCount(0);
+
+  await page.clock.runFor(retryAfterMs + 500);
+  expect(await scenario.evaluate((state) => state.snapshot())).toEqual({ checks, sends: 1 });
   expect(pageErrors).toEqual([]);
 });
 

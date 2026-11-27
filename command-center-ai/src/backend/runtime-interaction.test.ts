@@ -55,22 +55,27 @@ describe("runtime interaction contract", () => {
     ).toBeNull();
   });
 
-  it("identifies only backend transient states as pollable", () => {
+  it.each(["checking", "starting", "waking", "updating"])("polls %s without a retry hint", (state) => {
     expect(
       isTransientRuntimeInteraction(
-        normalizeAgentRuntimeInteraction({ state: "updating", can_submit: false }),
+        normalizeAgentRuntimeInteraction({ state, can_submit: false }),
       ),
     ).toBe(true);
+  });
+
+  it.each([
+    { state: "unavailable", canSubmit: false, delay: 2_000, transient: true },
+    { state: "unavailable", canSubmit: false, delay: null, transient: false },
+    { state: "unavailable", canSubmit: false, delay: Infinity, transient: false },
+    { state: "update_required", canSubmit: false, delay: 2_000, transient: true },
+    { state: "update_required", canSubmit: false, delay: null, transient: false },
+    { state: "ready", canSubmit: true, delay: 2_000, transient: false },
+  ])("classifies $state with canSubmit=$canSubmit and retryAfterMs=$delay", ({ state, canSubmit, delay, transient }) => {
     expect(
       isTransientRuntimeInteraction(
-        normalizeAgentRuntimeInteraction({ state: "waking", can_submit: false }),
+        normalizeAgentRuntimeInteraction({ state, can_submit: canSubmit, retry_after_ms: delay }),
       ),
-    ).toBe(true);
-    expect(
-      isTransientRuntimeInteraction(
-        normalizeAgentRuntimeInteraction({ state: "update_required", can_submit: false }),
-      ),
-    ).toBe(false);
+    ).toBe(transient);
   });
 
   it("labels runtime admission failures as requests that were never sent", () => {
