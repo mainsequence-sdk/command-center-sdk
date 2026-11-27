@@ -194,7 +194,8 @@ export function isTransientRuntimeInteraction(
     interaction?.state === "checking" ||
     interaction?.state === "starting" ||
     interaction?.state === "waking" ||
-    interaction?.state === "updating"
+    interaction?.state === "updating" ||
+    (interaction?.canSubmit === false && Number.isFinite(interaction.retryAfterMs))
   );
 }
 

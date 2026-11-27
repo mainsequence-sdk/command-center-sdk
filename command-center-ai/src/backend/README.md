@@ -140,8 +140,9 @@ identity comes from authenticated backend context and must not be supplied by th
   Agent's runtime is reached only through the `rpc_url` the platform returns.
 - Do not branch runtime resolution by Agent name or type.
 - Do not reintroduce coding-agent service list/detail/deploy endpoints or deployment defaults.
-- Keep transient polling driven by backend `retry_after_ms`, paused while the document is hidden,
-  and stopped on ready or terminal state.
+- Treat a blocked decision carrying finite `retry_after_ms` as transient alongside the named
+  startup and update states. Poll using that delay while the document is visible and stop on a
+  ready or terminal decision.
 - Keep provider/model catalog loading independent of runtime access.
 - `custom-model-direct-chat.ts` mirrors the request an Agent sends a custom provider
   (`stream: true`, `stream_options.include_usage`, `store: false`, `max_completion_tokens` or

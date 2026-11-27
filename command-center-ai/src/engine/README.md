@@ -94,7 +94,8 @@ An application may layer its own fields over the engine's value, as Command Cent
   sessions are the runtime's (the page's first is the runtime's default conversation); the
   runtime's canonical id from `X-Agent-Session-Uid` replaces the page's after the first answer; its
   selection is kept under `ms.command-center-ai.local-session:<baseUrl>`; a runtime that is not up
-  is `unavailable` and looked for again every five seconds.
+  is `unavailable`. The local provider checks it every five seconds while visible and publishes
+  the unavailable decision without a platform admission retry hint.
 - `types.ts`: `ChatAuth`, `ChatNotice`, `ChatNotify`, `ChatDefaultSession`,
   `DefaultSessionStatus`, and `ChatLaunchTarget`.
 - `agent-sessions.ts`: session records (`AgentSessionRecord`), their normalization from the

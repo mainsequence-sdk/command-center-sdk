@@ -150,9 +150,11 @@ POST /api/v1/agent-sessions/{session_uid}/resolve-runtime-access/
 The returned `runtime_interaction` is the admission decision (`activeRuntimeInteraction`):
 
 - `can_submit: true` enables sending.
-- transient states such as checking, starting, waking, or updating lock the composer, keep the
-  draft already written, and never send it on the user's behalf. The engine asks again after the
-  backend's retry interval (two seconds when it gives none), paused while the page is hidden,
+- `checking`, `starting`, `waking`, and `updating` are transient. Any blocked decision
+  (`can_submit: false`) with a finite numeric `retry_after_ms` is also transient. This includes
+  `unavailable` with `runtime_evidence_pending` while the platform confirms a new revision.
+  Transient decisions lock the composer and preserve unsent drafts. The engine asks again after
+  the backend's retry interval (two seconds when it gives none), paused while the page is hidden,
   until the decision is ready or terminal. A failed request backs off and keeps asking. Writing
   resumes when `can_submit` turns true.
 - terminal blocked states display the backend notice, with its support reference when present, and
@@ -203,8 +205,8 @@ The request goes to `POST {rpc_url}/api/chat` with the runtime token, and the an
 as `ui-message-stream`. It does not select a transport by Agent type.
 
 A send that meets a transient decision is held (`requestThroughRuntimeWake`) while the engine
-follows the start, and goes out once the Agent can take it. A terminal decision, a cancelled run,
-or a start past its deadline fails it. A message request that fails at the network level is never
+polls, and goes out once the Agent can take it. A terminal decision, a cancelled run,
+or a wait past its deadline fails it. A message request that fails at the network level is never
 re-sent; when the Agent answered the check but the message could not reach it, the engine checks
 the runtime again.
 
