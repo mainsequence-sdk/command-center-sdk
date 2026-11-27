@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL,
   STATIC_SITE_IFRAME_CONTRACT,
+  StaticSiteFastApiCredentialError,
   StaticSiteFastApiWebSocketError,
   type ResolveStaticSiteFastApiCredential,
   type ResolveStaticSiteFastApiWebSocketTicket,
@@ -262,12 +263,18 @@ export const packedConsumerHtml = renderToStaticMarkup(
 
 export const packedStaticSiteCredentialResolver: ResolveStaticSiteFastApiCredential = async (
   { resourceReleaseUid },
-) => ({
-  resourceReleaseUid,
-  rpcUrl: "https://api.example.test/",
-  token: "fixture-delegated-token",
-  expiresAt: "2099-01-01T00:00:00.000Z",
-});
+) => {
+  // A stand-in for the host application's delegated runtime access result.
+  if (resourceReleaseUid === "22222222-2222-4222-8222-222222222222") {
+    throw new StaticSiteFastApiCredentialError("runtime_starting", { retryAfterMs: 2_000 });
+  }
+  return {
+    resourceReleaseUid,
+    rpcUrl: "https://api.example.test/",
+    token: "fixture-delegated-token",
+    expiresAt: "2099-01-01T00:00:00.000Z",
+  };
+};
 
 export const packedStaticSiteWebSocketResolver: ResolveStaticSiteFastApiWebSocketTicket = async (
   { resourceReleaseUid, path },

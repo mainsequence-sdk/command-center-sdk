@@ -4,7 +4,7 @@
 
 | Surface | Baseline | Rule |
 | --- | --- | --- |
-| SDK | `0.5.19` | Public entrypoints follow semantic versioning. |
+| SDK | `0.5.21` | Public entrypoints follow semantic versioning. |
 | Contract manifest | `command-center-contract-manifest@v1` | Breaking wire changes require a new contract ID and schema. |
 | Static-site iframe | `mainsequence.*`, version `1` | Hosts and children reject malformed or unsupported messages. |
 | Themes | SDK semantic version | Published theme IDs and token names are compatibility-sensitive. |
@@ -38,3 +38,13 @@ values are rejected; an unsupported translation has an application-owned English
 fallback. Update the schema bundle with the SDK before advertising support.
 Neither adoption nor rollback changes stored preferences, authentication, business
 records, or theme IDs. See the SDK localization and embed guides for migration.
+
+## SDK 0.5.21 FastAPI readiness adoption
+
+The iframe retains `command-center.static_site_iframe@v1`, its schema URN, and numeric
+version 1. New children advertise `fastapi-credential-retry-after-v1`. New hosts include
+`retryAfterMs` in `runtime_starting` errors only for children sending that capability. Old
+children receive the original strict payload. New children with an old host use two-second
+polling when the host reports `runtime_starting`. Bundle the new schema with any external
+iframe validator before enabling the capability. Either application can roll back independently.
+The host adapter forwards the platform's existing delay and requires no platform or storage migration.

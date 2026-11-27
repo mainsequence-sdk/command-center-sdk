@@ -16,6 +16,7 @@ type BrowserResult = {
     status: string;
     attempt: number;
     responseStatus?: number;
+    retryDelayMs?: number;
   }>;
   errorName?: string;
   localStorage: number;
@@ -57,8 +58,9 @@ function hostHtml(childOrigin: string, apiOrigin: string, scenario: string) {
   const rpcUrl = scenario === "transient" ? "http://127.0.0.1:1/" : `${apiOrigin}/`;
   return `<!doctype html>
 <html><body><main id="host">Host fixture</main><script type="module">
-import { createStaticSiteIframeHost } from "/sdk/static-site.js";
+import { createStaticSiteIframeHost, StaticSiteFastApiCredentialError } from "/sdk/static-site.js";
 const childOrigin = ${JSON.stringify(childOrigin)};
+const scenario = ${JSON.stringify(scenario)};
 const iframe = document.createElement("iframe");
 iframe.src = childOrigin + "/child?scenario=" + ${JSON.stringify(scenario)};
 iframe.sandbox = "allow-scripts allow-same-origin";
@@ -71,6 +73,9 @@ const host = createStaticSiteIframeHost({
   resolveFastApiCredential: async ({ resourceReleaseUid }, { signal }) => {
     if (signal.aborted) throw new DOMException("cancelled", "AbortError");
     resolverCalls += 1;
+    if (scenario === "credential-readiness" && resolverCalls <= 4) {
+      throw new StaticSiteFastApiCredentialError("runtime_starting", { retryAfterMs: 40 });
+    }
     return {
       resourceReleaseUid,
       rpcUrl: ${JSON.stringify(rpcUrl)},
@@ -108,6 +113,7 @@ const client = createStaticSiteIframeClient({
       status: state.status,
       attempt: state.attempt,
       ...(state.responseStatus === undefined ? {} : { responseStatus: state.responseStatus }),
+      ...(state.retryDelayMs === undefined ? {} : { retryDelayMs: state.retryDelayMs }),
     });
     if (scenario === "cancel" && state.status === "runtime-starting") controller.abort();
   },
@@ -121,9 +127,10 @@ const client = createStaticSiteIframeClient({
         statuses.push((await client.fetchFastApi({ resourceReleaseUid: ${JSON.stringify(targetUid)}, path: "/forbidden" })).status);
         statuses.push((await client.fetchFastApi({ resourceReleaseUid: ${JSON.stringify(targetUid)}, path: "/missing" })).status);
       } else {
-        const path = scenario === "refresh" ? "/refresh" : "/cold";
+        const credentialReadiness = scenario === "credential-readiness";
+        const path = credentialReadiness ? "/health" : scenario === "refresh" ? "/refresh" : "/cold";
         statuses.push((await client.fetchFastApi(
-          { resourceReleaseUid: ${JSON.stringify(targetUid)}, path },
+          { resourceReleaseUid: ${JSON.stringify(targetUid)}, path, ...(credentialReadiness ? { retry: false } : {}) },
           { signal: scenario === "cancel" ? controller.signal : undefined },
         )).status);
       }
@@ -307,6 +314,19 @@ test.describe("static-site delegated FastAPI browser bridge", () => {
       "forbidden",
       "missing-route",
     ]);
+  });
+
+  test("waits for the host credential without replaying the application request", async ({ page }) => {
+    const result = await runScenario(page, "credential-readiness");
+    expect(result.statuses).toEqual([200]);
+    expect(result.resolverCalls).toBe(5);
+    expect(result.states).toEqual([
+      { status: "authorizing", attempt: 1 },
+      { status: "runtime-starting", attempt: 1, retryDelayMs: 40 },
+      { status: "ready", attempt: 1, responseStatus: 200 },
+    ]);
+    expect(runtimeRequests).toHaveLength(1);
+    expect(runtimeRequests[0]).toMatchObject({ path: "/health", resourceReleaseUid: targetUid });
   });
 
   test("keeps opaque transport failure transient and cancels retry backoff", async ({ page }) => {

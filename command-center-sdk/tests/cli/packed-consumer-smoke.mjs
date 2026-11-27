@@ -136,6 +136,11 @@ try {
   assert.equal(typeof embedModule.createStaticSiteIframeHost, "function");
   assert.equal(typeof embedModule.createStaticSiteIframeClient, "function");
   assert.equal(typeof embedModule.StaticSiteFastApiCredentialError, "function");
+  assert.equal(
+    new embedModule.StaticSiteFastApiCredentialError("runtime_starting", { retryAfterMs: 2_000 }).retryAfterMs,
+    2_000,
+  );
+  assert.equal(embedModule.STATIC_SITE_IFRAME_FAST_API_RETRY_AFTER_CAPABILITY, "fastapi-credential-retry-after-v1");
   assert.equal(typeof embedModule.StaticSiteFastApiWebSocketError, "function");
   assert.equal(typeof embedModule.StaticSitePlatformRequestError, "function");
   assert.equal(

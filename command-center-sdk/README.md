@@ -35,6 +35,8 @@ For a directly opened Vite site backed by local FastAPI, follow the
 [local Vite/FastAPI example](https://github.com/mainsequence-sdk/command-center-sdk/tree/main/examples/static-site-vite-fastapi).
 Its `/api` proxy uses a server-side CLI developer identity and no release UID; hosted iframe
 requests use the separate delegated `fetchFastApi` path only after a trusted host handshake.
+For a starting runtime, `fetchFastApi` waits for delegated access using the host's `retryAfterMs`
+hint, with a five-minute readiness limit independent of request retries.
 A non-local direct link has no SDK credential bridge and needs an unavailable state or its own
 authenticated backend transport; it cannot reuse the local CLI identity.
 The installed `integrate-static-site-iframe` skill requires the local API runner, identity check,

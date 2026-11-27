@@ -103,11 +103,12 @@ Give the application an explicit status surface through `onFastApiStateChange`, 
 state with `getFastApiState(resourceReleaseUid)`. Render `authorizing`, `runtime-starting`, `ready`,
 `expired`, `authentication-failed`, `forbidden`, `missing-route`, `transient`, `cancelled`,
 `unavailable`, `unsupported`, and `invalid` distinctly. Do not label an opaque browser fetch
-failure as a starting runtime: only `502`, `503`, and `504` have that meaning. A `401` causes one bounded
+failure as a starting runtime. For HTTP responses, `502`, `503`, and `504` have that meaning.
+A `401` causes one bounded
 credential reacquisition; `403` and origin denial are never retried; `404` is a missing route.
 
 Let the SDK own retry and cancellation. Pass `RequestInit.signal`; do not add a second application
-retry loop around `fetchFastApi`. The default policy makes no more than three attempts and replays
+retry loop around `fetchFastApi`. The default HTTP policy makes no more than three attempts and replays
 only `GET`, `HEAD`, `OPTIONS`, `PUT`, and `DELETE`. Keep `POST` and `PATCH` non-retryable unless the
 API has an idempotency contract and the request explicitly opts into `retryUnsafeMethods`.
 
@@ -121,9 +122,10 @@ action and form composition to `$compose-command-center-controls`.
 
 For a deployed FastAPI release, call `client.fetchFastApi(...)`. The host's
 `resolveFastApiCredential` asks the platform for runtime access. While the release is starting,
-present the SDK's `runtime-starting` state. When the platform returns ready access, the resolver
-supplies
-the RPC URL and delegated credential, and `fetchFastApi` sends the application request.
+present the SDK's `runtime-starting` state and `retryDelayMs`. `fetchFastApi` polls for credentials
+using the host's `retryAfterMs` or a two-second default. This applies with `retry: false` and
+with write methods. The wait ends with `runtime_starting` if aborted or if it reaches five minutes
+from the first starting response. The SDK sends the application request after it has a credential.
 
 For hosted delegated requests, handle `StaticSiteFastApiCredentialError.code` as a small UI-safe
 category: `access_denied`,
@@ -234,11 +236,18 @@ services. Use `createStaticSiteIframeHost` only for a framework-independent host
 
 If child applications may call FastAPI releases, inject `resolveFastApiCredential`. Close over the
 trusted source release UID and expected iframe origin in the application adapter. Use the host's
-authenticated API client to acquire a narrow delegated credential, validate the returned source,
-target, origin, RPC URL, and expiry, then map it to `StaticSiteFastApiCredential`. Never expose the
-host session to the callback result or let the iframe supply source identity, origin, user, or
-organization. If the capability is unavailable, omit the resolver and let the SDK return
-`unsupported`.
+authenticated API client to resolve delegated runtime access for that static-site release. Use
+`StaticSiteFastApiCredentialError` from `@dev-mainsequence/command-center-sdk/embed` to map the result:
+
+- When `can_request` is true, validate the source, target, origin, RPC URL, and expiry, then map
+  `access` to `StaticSiteFastApiCredential`.
+- For any non-ready result carrying `retry_after_ms`, including `waking` and `unavailable` with
+  `runtime_evidence_pending`, throw `new StaticSiteFastApiCredentialError("runtime_starting", { retryAfterMs: result.retry_after_ms })`.
+- For a non-ready result without a delay, throw `release_unavailable`. For a platform HTTP `403`,
+  throw `access_denied`.
+
+Keep the host session, source identity, origin, user, and organization under host control. If
+delegation is unavailable, omit the resolver and let the SDK return `unsupported`.
 
 When the child needs WebSockets, separately inject `resolveFastApiWebSocketTicket`. Accept only
 `{ resourceReleaseUid, path }` from the SDK, derive Origin from the exact pinned iframe URL, and
@@ -291,7 +300,8 @@ launch-token, CSP, theme-consumption, or storage contracts are affected.
 
 For delegated FastAPI access, also test exact source/origin/target binding, single-flight reuse,
 refresh before expiry, `401` reacquisition, non-retryable `403`/`404`, bounded `502`/`503`/`504`,
-opaque CORS/transport failure, cancellation, user/navigation/disposal clearing, direct-link
+credential readiness with a host-supplied delay and `retry: false`, opaque CORS/transport failure,
+cancellation, user/navigation/disposal clearing, direct-link
 failure, and target CORS. Use a real cross-origin browser test, not only mocked `postMessage`.
 In every deployed Environment, confirm that requests carry that Environment's release UID in
 `X-Resource-Release-UID`.

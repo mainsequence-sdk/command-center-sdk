@@ -34,3 +34,10 @@ Locale negotiation preserves strict legacy validators: new clients advertise
 for that capability. Missing/unknown capabilities retain the frozen legacy payload;
 malformed declarations are rejected. The normalized new-client context still
 defaults to English when an old host omits locale. See SDK ADR 019.
+
+SDK 0.5.21 adds optional `retryAfterMs` to the iframe v1 `fastapi-credential-error` payload.
+It is a non-negative safe integer and is allowed for `runtime_starting` only. Hosts send it
+when the child advertises `fastapi-credential-retry-after-v1` in `ready.payload.capabilities`.
+Use the `fastapi-runtime-starting` and `fastapi-runtime-retry-after` fixtures for both shapes and
+the invalid retry-after fixtures for validation failures. A new child uses a two-second delay
+when the field is absent.

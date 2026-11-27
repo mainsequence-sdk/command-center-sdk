@@ -26,6 +26,7 @@ import {
   StaticSitePlatformRequestError,
   STATIC_SITE_FAST_API_WEBSOCKET_ACK_PROTOCOL,
   type SendStaticSitePlatformRequest,
+  type ResolveStaticSiteFastApiCredential,
   type StaticSiteIframeMessage,
   type StaticSitePlatformRequestErrorCode,
   type StaticSitePlatformRequestMessage,
@@ -65,7 +66,7 @@ describe("static-site iframe protocol", () => {
       channel,
       version: 1,
       type: "ready",
-      payload: { capabilities: ["locale-context-v1"] },
+      payload: { capabilities: ["locale-context-v1", "fastapi-credential-retry-after-v1"] },
     });
 
     const initialized = buildStaticSiteIframeInitializeMessage({
@@ -187,14 +188,17 @@ describe("static-site iframe protocol", () => {
         resourceReleaseUid: "not-a-uuid",
       }),
     ).toThrow("canonical lowercase UUID");
-    expect(
-      buildStaticSiteFastApiCredentialErrorMessage({
-        channel,
-        requestId: "request-runtime-starting",
-        resourceReleaseUid: targetUid,
-        code: "runtime_starting",
-      }).payload.code,
-    ).toBe("runtime_starting");
+    const starting = buildStaticSiteFastApiCredentialErrorMessage({
+      channel,
+      requestId: "request-runtime-starting",
+      resourceReleaseUid: targetUid,
+      code: "runtime_starting",
+      retryAfterMs: 2_000,
+    });
+    expect(starting.payload.retryAfterMs).toBe(2_000);
+    expect(readStaticSiteFastApiCredentialErrorMessage(starting, channel)).toEqual(starting);
+    expect(new StaticSiteFastApiCredentialError("runtime_starting", "custom message").message)
+      .toBe("custom message");
     expect(
       readStaticSiteFastApiCredentialErrorMessage(
         {
@@ -933,6 +937,155 @@ describe("static-site iframe client", () => {
       "Rejected unmatched static-site FastAPI credential response.",
     );
     client.dispose();
+  });
+});
+
+describe("static-site FastAPI readiness polling", () => {
+  async function connect(
+    resolveFastApiCredential: ResolveStaticSiteFastApiCredential,
+    advertiseRetryAfter = true,
+  ) {
+    const hostOrigin = "https://command-center.example.com";
+    const childOrigin = "https://site.example.com";
+    const hostWindow = { postMessage: vi.fn() };
+    const childWindow = { postMessage: vi.fn() };
+    const context = { themeId: "graphite", themeMode: "dark", userUid: "user-1" } as const;
+    const host = createStaticSiteIframeHost({
+      targetOrigin: childOrigin, targetWindow: childWindow, context, resolveFastApiCredential,
+    });
+    const fetcher = vi.fn<typeof fetch>(async () => new Response("ok"));
+    const client = createStaticSiteIframeClient({
+      channel, hostOrigin, parentWindow: hostWindow, onContext: vi.fn(), fetcher,
+    });
+    hostWindow.postMessage.mockImplementation((data: unknown) => queueMicrotask(() => {
+      host.handleMessage({ data, origin: childOrigin, source: childWindow as unknown as MessageEventSource });
+    }));
+    childWindow.postMessage.mockImplementation((data: unknown) => queueMicrotask(() => {
+      client.handleMessage({ data, origin: hostOrigin, source: hostWindow as unknown as MessageEventSource });
+    }));
+    if (advertiseRetryAfter) {
+      client.announceReady();
+    } else {
+      hostWindow.postMessage({ channel, version: 1, type: "ready", payload: { capabilities: ["locale-context-v1"] } });
+    }
+    await vi.advanceTimersByTimeAsync(0);
+    return { client, host, childWindow, fetcher, context };
+  }
+
+  it.each([undefined, false] as const)("waits for ten platform delays with retry set to %s", async (retry) => {
+    vi.useFakeTimers();
+    try {
+      const resolver = vi.fn<ResolveStaticSiteFastApiCredential>(async () => {
+        if (resolver.mock.calls.length <= 10) {
+          throw new StaticSiteFastApiCredentialError("runtime_starting", {
+            message: "host-only diagnostic",
+            retryAfterMs: 2_000,
+          });
+        }
+        return credential;
+      });
+      const { host, client, childWindow, fetcher } = await connect(resolver);
+      const result = client.fetchFastApi({ resourceReleaseUid: targetUid, path: "/health", retry }, { method: "POST" });
+      await vi.advanceTimersByTimeAsync(0);
+      for (let lookup = 1; lookup <= 10; lookup += 1) {
+        expect(resolver).toHaveBeenCalledTimes(lookup);
+        expect(client.getFastApiState(targetUid)).toMatchObject({
+          status: "runtime-starting", attempt: 1, retryDelayMs: 2_000,
+        });
+        await vi.advanceTimersByTimeAsync(1_999);
+        expect(resolver).toHaveBeenCalledTimes(lookup);
+        expect(fetcher).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(1);
+      }
+      await expect(result).resolves.toMatchObject({ status: 200 });
+      expect(resolver).toHaveBeenCalledTimes(11);
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(client.getFastApiState(targetUid)).toMatchObject({ status: "ready", attempt: 1 });
+      expect(JSON.stringify(childWindow.postMessage.mock.calls)).not.toContain("host-only diagnostic");
+      client.dispose();
+      host.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("preserves the legacy error payload and falls back to the default delay", async () => {
+    vi.useFakeTimers();
+    try {
+      const resolver = vi.fn<ResolveStaticSiteFastApiCredential>(async () => credential)
+        .mockRejectedValueOnce(new StaticSiteFastApiCredentialError("runtime_starting", { retryAfterMs: 25 }))
+        .mockRejectedValueOnce(new StaticSiteFastApiCredentialError("runtime_starting", { retryAfterMs: 25 }));
+      const { host, client, childWindow } = await connect(resolver, false);
+      const result = client.fetchFastApi({ resourceReleaseUid: targetUid, path: "/health" });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(childWindow.postMessage.mock.lastCall?.[0]).toEqual({
+        channel, version: 1, type: "fastapi-credential-error",
+        payload: { requestId: expect.any(String), resourceReleaseUid: targetUid, code: "runtime_starting" },
+      });
+      expect(client.getFastApiState(targetUid).retryDelayMs).toBe(2_000);
+      await vi.advanceTimersByTimeAsync(3_999);
+      expect(resolver).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1);
+      await expect(result).resolves.toMatchObject({ status: 200 });
+      client.dispose();
+      host.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each(["abort", "deadline", "user change"] as const)("stops waiting on %s without sending HTTP", async (stop) => {
+    vi.useFakeTimers();
+    try {
+      const resolver = vi.fn<ResolveStaticSiteFastApiCredential>()
+        .mockRejectedValueOnce(new StaticSiteFastApiCredentialError("runtime_starting", { retryAfterMs: 299_999 }))
+        .mockImplementation(() => new Promise(() => {}));
+      const { host, client, context, fetcher } = await connect(resolver);
+      const controller = new AbortController();
+      const result = client.fetchFastApi(
+        { resourceReleaseUid: targetUid, path: "/health" }, { signal: controller.signal },
+      );
+      const rejection = expect(result).rejects.toMatchObject({
+        code: stop === "user change" ? "access_denied" : "runtime_starting",
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      if (stop === "abort") {
+        controller.abort();
+      } else if (stop === "user change") {
+        host.updateContext({ ...context, userUid: "user-2" });
+      } else {
+        await vi.advanceTimersByTimeAsync(299_999);
+        expect(resolver).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(1);
+      }
+      await rejection;
+      client.dispose();
+      host.dispose();
+      await vi.advanceTimersByTimeAsync(300_000);
+      expect(resolver).toHaveBeenCalledTimes(stop === "deadline" ? 2 : 1);
+      expect(fetcher).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([undefined, false] as const)("keeps temporary credential errors on the retry policy (%s)", async (retry) => {
+    vi.useFakeTimers();
+    try {
+      const resolver = vi.fn<ResolveStaticSiteFastApiCredential>()
+        .mockRejectedValue(new StaticSiteFastApiCredentialError("temporarily_unavailable"));
+      const { host, client, fetcher } = await connect(resolver);
+      const result = client.fetchFastApi({ resourceReleaseUid: targetUid, path: "/health", retry });
+      const rejection = expect(result).rejects.toMatchObject({ code: "temporarily_unavailable" });
+      await vi.advanceTimersByTimeAsync(750);
+      await rejection;
+      expect(resolver).toHaveBeenCalledTimes(retry === false ? 1 : 3);
+      expect(fetcher).not.toHaveBeenCalled();
+      client.dispose();
+      host.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
