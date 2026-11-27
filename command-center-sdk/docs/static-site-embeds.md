@@ -66,31 +66,33 @@ export function ReportEmbed() {
       themeMode={activeTheme.mode}
       userUid={session?.user.publicUid ?? null}
       resolveFastApiCredential={async ({ resourceReleaseUid }, { signal }) => {
-        try {
-          const result = await commandCenterClient.createStaticSiteCredential(
-            {
-              sourceReleaseUid,
-              targetReleaseUid: resourceReleaseUid,
-              origin: "https://reports.example.com",
-            },
-            { signal },
-          );
+        const runtime = await commandCenterClient.resolveRuntimeAccess(
+          { sourceReleaseUid, targetReleaseUid: resourceReleaseUid, origin: "https://reports.example.com" },
+          { signal },
+        ).catch((error: unknown) => {
+          throw mapCredentialError(error);
+        });
 
-          validateCredentialBinding(result, {
-            resourceReleaseUid,
-            sourceReleaseUid,
-            origin: "https://reports.example.com",
-          });
-
-          return {
-            resourceReleaseUid: result.resource_release_uid,
-            rpcUrl: result.rpc_url,
-            token: result.token,
-            expiresAt: result.expires_at,
-          };
-        } catch (error) {
-          throw mapCredentialError(error, StaticSiteFastApiCredentialError);
+        if (!runtime.can_request) {
+          if (runtime.retry_after_ms != null) {
+            throw new StaticSiteFastApiCredentialError("runtime_starting", {
+              retryAfterMs: runtime.retry_after_ms,
+            });
+          }
+          throw new StaticSiteFastApiCredentialError("release_unavailable");
         }
+        const access = runtime.access;
+        validateCredentialBinding(access, {
+          resourceReleaseUid,
+          sourceReleaseUid,
+          origin: "https://reports.example.com",
+        });
+        return {
+          resourceReleaseUid: access.resource_release_uid,
+          rpcUrl: access.rpc_url,
+          token: access.token,
+          expiresAt: access.expires_at,
+        };
       }}
       onProtocolError={(message) => reportEmbedProtocolFailure(message)}
       title="Report application"
@@ -99,10 +101,12 @@ export function ReportEmbed() {
 }
 ```
 
-`validateCredentialBinding` and `mapCredentialError` are application adapters in this example,
-not SDK exports. They illustrate the host's required job: validate the backend result before
-returning the narrow `StaticSiteFastApiCredential`, and translate failures into the SDK's public
-error codes without forwarding sensitive response bodies.
+The application supplies `commandCenterClient`, `validateCredentialBinding`, and
+`mapCredentialError`. Return validated delegated `access` when `can_request` is true. For any
+non-ready result with `retry_after_ms`, forward the delay as `runtime_starting`, including `waking`
+and `unavailable` with `runtime_evidence_pending`. A non-ready result without a delay maps to
+`release_unavailable`. Map a platform HTTP `403` to `access_denied`. Send only the narrow
+`StaticSiteFastApiCredential` or sanitized SDK error fields across the iframe.
 
 `allowedOrigin` must be an exact origin. If omitted, the component derives it from `src`. Do not
 use `*`, a suffix match, or an application-provided value. The SDK also checks the actual message
@@ -286,15 +290,24 @@ bearer token and canonical release header, caches a valid credential only in mem
 before expiry, and coalesces concurrent requests for the same target.
 
 Use the low-level `requestFastApiCredential` only for a transport that cannot use `fetchFastApi`.
-Doing so makes application code responsible for keeping the token in memory and out of URLs, DOM,
-storage, logs, analytics, and serialized state.
+It makes one credential lookup and exposes `retryAfterMs` on a `runtime_starting` error when the
+host supplies it. The caller owns any polling and must keep the token in memory and out of URLs,
+DOM, storage, logs, analytics, and serialized state.
 
 ## Retry and state semantics
 
-The default fetch lifecycle is abortable and bounded to three attempts for replay-safe requests.
-Only `502`, `503`, and `504` identify a runtime-starting response. A `401` permits one bounded
-credential reacquisition. `403` is forbidden, `404` is a missing application route, and an opaque
-browser fetch failure remains a transient CORS-or-network failure.
+When the host returns `runtime_starting`, `fetchFastApi` polls for credentials at the supplied
+`retryAfterMs` interval, or every two seconds if the host omits the delay. The transport state
+reports `runtime-starting` and `retryDelayMs` while polling. Credential polling also runs with
+`retry: false` and for write methods. It ends with `runtime_starting` if the caller aborts the
+readiness wait or five minutes elapse from the first starting response. No application request
+is sent until polling returns a credential.
+
+The default HTTP retry policy allows up to three attempts for replay-safe requests and also
+applies to `temporarily_unavailable` credential failures. An HTTP `502`, `503`, or `504` from the
+runtime can trigger an HTTP retry. A `401` permits one bounded credential reacquisition.
+`403` is forbidden, `404` is a missing application route, and an opaque browser fetch failure
+remains a transient CORS-or-network failure.
 
 Unsafe methods such as `POST` and `PATCH` are not replayed by default. Enable unsafe retry only when
 the application and backend provide an idempotency contract.
@@ -305,14 +318,14 @@ The state callback distinguishes:
 | --- | --- |
 | `idle` | No request has started for the target |
 | `authorizing` | The child is waiting for delegated credentials |
-| `runtime-starting` | The platform answered `502`, `503`, or `504`: the target runtime is not ready yet |
+| `runtime-starting` | The host reported `runtime_starting` for credential lookup, or the runtime returned HTTP `502`, `503`, or `504` |
 | `ready` | A delegated request reached a usable response |
 | `expired` | A cached credential crossed its refresh window |
 | `authentication-failed` | Reacquisition did not recover authentication |
 | `forbidden` | Origin or access policy denied the request |
 | `missing-route` | The target runtime has no matching path |
 | `transient` | Network, CORS, or temporary transport failure |
-| `cancelled` | The supplied signal cancelled current work |
+| `cancelled` | The supplied signal cancelled work outside a credential readiness wait |
 | `unavailable` | The target release is unavailable |
 | `unsupported` | No trusted host bridge or resolver exists |
 | `invalid` | Input or protocol validation failed |

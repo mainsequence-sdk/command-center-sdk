@@ -19,6 +19,8 @@ const DEFAULT_CREDENTIAL_TIMEOUT_MS = 10_000;
 const DEFAULT_WEBSOCKET_TICKET_HOST_TIMEOUT_MS = 10_000;
 const DEFAULT_WEBSOCKET_TICKET_CLIENT_TIMEOUT_MS = 12_000;
 const DEFAULT_CREDENTIAL_REFRESH_SKEW_MS = 30_000;
+const FAST_API_READINESS_TIMEOUT_MS = 5 * 60_000;
+const DEFAULT_FAST_API_READINESS_RETRY_DELAY_MS = 2_000;
 const DEFAULT_FAST_API_RETRY_MAX_ATTEMPTS = 3;
 const DEFAULT_FAST_API_RETRY_BASE_DELAY_MS = 250;
 const DEFAULT_FAST_API_RETRY_MAX_DELAY_MS = 2_000;
@@ -58,6 +60,7 @@ export type StaticSiteIframeChannel = `${typeof STATIC_SITE_IFRAME_CHANNEL_PREFI
 export type StaticSiteIframeThemeMode = "dark" | "light";
 
 export const STATIC_SITE_IFRAME_LOCALE_CAPABILITY = "locale-context-v1";
+export const STATIC_SITE_IFRAME_FAST_API_RETRY_AFTER_CAPABILITY = "fastapi-credential-retry-after-v1";
 
 export interface StaticSiteIframeContextInput {
   /** Optional for older hosts; canonical BCP 47 locale, defaulting to English. */
@@ -161,6 +164,7 @@ export type ResolveStaticSiteFastApiCredential = (
 
 export interface StaticSiteFastApiFetchRequest extends StaticSiteFastApiCredentialRequest {
   path: string;
+  /** Retry policy for HTTP requests and transient credential failures. Runtime readiness has its own limit. */
   retry?: false | StaticSiteFastApiRetryPolicy;
 }
 
@@ -281,6 +285,7 @@ export interface StaticSiteFastApiCredentialErrorMessage {
     requestId: string;
     resourceReleaseUid: string;
     code: StaticSiteFastApiCredentialErrorCode;
+    retryAfterMs?: number;
   };
 }
 
@@ -396,11 +401,19 @@ export type StaticSiteIframeMessage =
 
 export class StaticSiteFastApiCredentialError extends Error {
   readonly code: StaticSiteFastApiCredentialErrorCode;
+  readonly retryAfterMs?: number;
 
-  constructor(code: StaticSiteFastApiCredentialErrorCode, message?: string) {
-    super(message ?? staticSiteCredentialErrorMessage(code));
+  constructor(
+    code: StaticSiteFastApiCredentialErrorCode,
+    messageOrOptions?: string | { message?: string; retryAfterMs?: number },
+  ) {
+    const options = typeof messageOrOptions === "string" ? { message: messageOrOptions } : messageOrOptions;
+    super(options?.message ?? staticSiteCredentialErrorMessage(code));
     this.name = "StaticSiteFastApiCredentialError";
     this.code = code;
+    if (code === "runtime_starting" && isCredentialRetryAfterMs(options?.retryAfterMs)) {
+      this.retryAfterMs = options.retryAfterMs;
+    }
   }
 }
 
@@ -624,6 +637,10 @@ function isCredentialErrorCode(value: unknown): value is StaticSiteFastApiCreden
     "temporarily_unavailable",
     "unsupported",
   ].includes(String(value));
+}
+
+function isCredentialRetryAfterMs(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
 function staticSiteCredentialErrorMessage(code: StaticSiteFastApiCredentialErrorCode): string {
@@ -1381,7 +1398,9 @@ export function buildStaticSiteIframeReadyMessage(
     channel: requireStaticSiteIframeChannel(channel),
     version: STATIC_SITE_IFRAME_PROTOCOL_VERSION,
     type: "ready",
-    payload: { capabilities: [STATIC_SITE_IFRAME_LOCALE_CAPABILITY] },
+    payload: {
+      capabilities: [STATIC_SITE_IFRAME_LOCALE_CAPABILITY, STATIC_SITE_IFRAME_FAST_API_RETRY_AFTER_CAPABILITY],
+    },
   };
 }
 
@@ -1570,15 +1589,20 @@ export function buildStaticSiteFastApiCredentialErrorMessage({
   requestId,
   resourceReleaseUid,
   code,
+  retryAfterMs,
 }: {
   channel: StaticSiteIframeChannel;
   requestId: string;
   resourceReleaseUid: string;
   code: StaticSiteFastApiCredentialErrorCode;
+  retryAfterMs?: number;
 }): StaticSiteFastApiCredentialErrorMessage {
   const normalizedRequestId = readRequestId(requestId);
   if (!normalizedRequestId) throw new Error("FastAPI credential requestId is invalid.");
   if (!isCredentialErrorCode(code)) throw new Error("FastAPI credential error code is invalid.");
+  if (retryAfterMs !== undefined && (code !== "runtime_starting" || !isCredentialRetryAfterMs(retryAfterMs))) {
+    throw new Error("FastAPI credential retryAfterMs must be a non-negative safe integer on a runtime_starting error.");
+  }
   return {
     channel: requireStaticSiteIframeChannel(channel),
     version: STATIC_SITE_IFRAME_PROTOCOL_VERSION,
@@ -1587,6 +1611,7 @@ export function buildStaticSiteFastApiCredentialErrorMessage({
       requestId: normalizedRequestId,
       resourceReleaseUid: requireCanonicalUuid(resourceReleaseUid, "FastAPI resource release UID"),
       code,
+      ...(retryAfterMs === undefined ? {} : { retryAfterMs }),
     },
   };
 }
@@ -1603,19 +1628,24 @@ export function readStaticSiteFastApiCredentialErrorMessage(
     value.type !== "fastapi-credential-error" ||
     !isRecord(value.payload) ||
     !hasOnlyKeys(value, ["channel", "version", "type", "payload"]) ||
-    !hasOnlyKeys(value.payload, ["requestId", "resourceReleaseUid", "code"])
+    !hasOnlyKeys(value.payload, ["requestId", "resourceReleaseUid", "code", "retryAfterMs"])
   ) {
     return null;
   }
   const requestId = readRequestId(value.payload.requestId);
   const resourceReleaseUid = readCanonicalUuid(value.payload.resourceReleaseUid);
   const code = value.payload.code;
+  const retryAfterMs = value.payload.retryAfterMs;
   if (!requestId || !resourceReleaseUid || !isCredentialErrorCode(code)) return null;
+  if (retryAfterMs !== undefined && (code !== "runtime_starting" || !isCredentialRetryAfterMs(retryAfterMs))) {
+    return null;
+  }
   return buildStaticSiteFastApiCredentialErrorMessage({
     channel: expectedChannel,
     requestId,
     resourceReleaseUid,
     code,
+    retryAfterMs,
   });
 }
 
@@ -2223,12 +2253,6 @@ function readCandidateRequestBinding(value: unknown): {
   return requestId && resourceReleaseUid ? { requestId, resourceReleaseUid } : null;
 }
 
-function resolveCredentialErrorCode(error: unknown): StaticSiteFastApiCredentialErrorCode {
-  return error instanceof StaticSiteFastApiCredentialError
-    ? error.code
-    : "temporarily_unavailable";
-}
-
 function resolveWebSocketErrorCode(error: unknown): StaticSiteFastApiWebSocketErrorCode {
   return error instanceof StaticSiteFastApiWebSocketError
     ? error.code
@@ -2284,14 +2308,19 @@ export function createStaticSiteIframeHost(
   function postCredentialError(
     request: { requestId: string; resourceReleaseUid: string },
     code: StaticSiteFastApiCredentialErrorCode,
+    retryAfterMs?: number,
   ): void {
     if (!handshake) return;
+    const capabilities = handshake.payload.capabilities;
     postMessage(
       buildStaticSiteFastApiCredentialErrorMessage({
         channel: handshake.channel,
         requestId: request.requestId,
         resourceReleaseUid: request.resourceReleaseUid,
         code,
+        retryAfterMs: Array.isArray(capabilities) && capabilities.includes(STATIC_SITE_IFRAME_FAST_API_RETRY_AFTER_CAPABILITY)
+          ? retryAfterMs
+          : undefined,
       }),
     );
   }
@@ -2435,7 +2464,11 @@ export function createStaticSiteIframeHost(
         }
         clearTimeout(activeRequest.timeout);
         activeCredentialRequests.delete(requestBinding.requestId);
-        postCredentialError(requestBinding, resolveCredentialErrorCode(error));
+        if (error instanceof StaticSiteFastApiCredentialError) {
+          postCredentialError(requestBinding, error.code, error.retryAfterMs);
+        } else {
+          postCredentialError(requestBinding, "temporarily_unavailable");
+        }
       },
     );
   }
@@ -2818,6 +2851,7 @@ export function createStaticSiteIframeClient(
   let disposed = false;
   let initialized = false;
   let currentUserUid: string | null | undefined;
+  let credentialLifetime = new AbortController();
 
   function postPlatformCancel(requestId: string): void {
     options.parentWindow.postMessage(
@@ -3006,6 +3040,8 @@ export function createStaticSiteIframeClient(
   function clearCredentials(code: StaticSiteFastApiCredentialErrorCode): void {
     credentialCache.clear();
     rejectPending(code);
+    credentialLifetime.abort(new StaticSiteFastApiCredentialError(code));
+    credentialLifetime = new AbortController();
   }
 
   function rejectPendingWebSocketTickets(code: StaticSiteFastApiWebSocketErrorCode): void {
@@ -3126,7 +3162,9 @@ export function createStaticSiteIframeClient(
     request: StaticSiteFastApiCredentialRequest,
     requestOptions: StaticSiteFastApiCredentialRequestOptions | undefined,
     attempt: number,
+    reportAuthorizing = true,
   ): Promise<StaticSiteFastApiCredential> {
+    if (requestOptions?.signal?.aborted) return Promise.reject(createAbortError());
     if (disposed) {
       return Promise.reject(new StaticSiteFastApiCredentialError("unsupported"));
     }
@@ -3157,7 +3195,9 @@ export function createStaticSiteIframeClient(
     if (existing) return raceWithAbort(existing, requestOptions?.signal);
 
     const requestId = createRequestId();
-    emitFastApiState({ status: "authorizing", resourceReleaseUid: targetUid, attempt });
+    if (reportAuthorizing) {
+      emitFastApiState({ status: "authorizing", resourceReleaseUid: targetUid, attempt });
+    }
     const promise = new Promise<StaticSiteFastApiCredential>((resolve, reject) => {
       const timeout = setTimeout(() => {
         pendingByRequestId.delete(requestId);
@@ -3188,6 +3228,66 @@ export function createStaticSiteIframeClient(
       },
     );
     return raceWithAbort(promise, requestOptions?.signal);
+  }
+
+  async function requestFastApiCredentialForFetch(
+    resourceReleaseUid: string,
+    attempt: number,
+    signal: AbortSignal | undefined,
+  ): Promise<StaticSiteFastApiCredential> {
+    const request = { resourceReleaseUid };
+    const lifetime = credentialLifetime.signal;
+    let startingError: StaticSiteFastApiCredentialError;
+    try {
+      const credential = await requestFastApiCredentialInternal(request, { signal }, attempt);
+      lifetime.throwIfAborted();
+      return credential;
+    } catch (error) {
+      if (!(error instanceof StaticSiteFastApiCredentialError) || error.code !== "runtime_starting") {
+        throw error;
+      }
+      startingError = error;
+    }
+
+    lifetime.throwIfAborted();
+    const controller = new AbortController();
+    const stopWaiting = () => controller.abort(startingError);
+    const revokeAccess = () => controller.abort(lifetime.reason);
+    const deadline = Date.now() + FAST_API_READINESS_TIMEOUT_MS;
+    const timeout = setTimeout(stopWaiting, FAST_API_READINESS_TIMEOUT_MS);
+    lifetime.addEventListener("abort", revokeAccess, { once: true });
+    signal?.addEventListener("abort", stopWaiting, { once: true });
+    if (signal?.aborted) stopWaiting();
+    try {
+      while (true) {
+        const retryDelayMs = startingError.retryAfterMs ?? DEFAULT_FAST_API_READINESS_RETRY_DELAY_MS;
+        emitFastApiState({ status: "runtime-starting", resourceReleaseUid, attempt, retryDelayMs });
+        await waitForRetry(Math.min(retryDelayMs, deadline - Date.now()), controller.signal);
+        controller.signal.throwIfAborted();
+        if (Date.now() >= deadline) throw startingError;
+
+        let credential: StaticSiteFastApiCredential;
+        try {
+          credential = await requestFastApiCredentialInternal(request, { signal: controller.signal }, attempt, false);
+        } catch (error) {
+          if (!(error instanceof StaticSiteFastApiCredentialError) || error.code !== "runtime_starting") {
+            throw error;
+          }
+          startingError = error;
+          continue;
+        }
+        controller.signal.throwIfAborted();
+        if (Date.now() >= deadline) throw startingError;
+        return credential;
+      }
+    } catch (error) {
+      controller.signal.throwIfAborted();
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+      lifetime.removeEventListener("abort", revokeAccess);
+      signal?.removeEventListener("abort", stopWaiting);
+    }
   }
 
   function requestFastApiCredential(
@@ -3268,7 +3368,8 @@ export function createStaticSiteIframeClient(
         }
         clearTimeout(pending.timeout);
         pendingByRequestId.delete(errorMessage.payload.requestId);
-        pending.reject(new StaticSiteFastApiCredentialError(errorMessage.payload.code));
+        const { code, retryAfterMs } = errorMessage.payload;
+        pending.reject(new StaticSiteFastApiCredentialError(code, { retryAfterMs }));
         return true;
       }
 
@@ -3477,6 +3578,7 @@ export function createStaticSiteIframeClient(
         throw new StaticSiteFastApiCredentialError("unsupported");
       }
       const retryPolicy = normalizeFastApiRetryPolicy(request.retry, options.fastApiRetryPolicy);
+      const signal = init?.signal ?? undefined;
       const method = (init?.method ?? "GET").toUpperCase();
       const mayRetryRequest = canRetryFastApiMethod(method, retryPolicy);
       let attempt = 1;
@@ -3485,11 +3587,8 @@ export function createStaticSiteIframeClient(
       while (true) {
         let credential: StaticSiteFastApiCredential;
         try {
-          credential = await requestFastApiCredentialInternal(
-            { resourceReleaseUid: targetUid },
-            { signal: init?.signal ?? undefined },
-            attempt,
-          );
+          credential = await requestFastApiCredentialForFetch(targetUid, attempt, signal);
+          if (signal?.aborted) throw createAbortError();
         } catch (error) {
           if (isAbortError(error)) {
             emitFastApiState({ status: "cancelled", resourceReleaseUid: targetUid, attempt });
@@ -3497,12 +3596,10 @@ export function createStaticSiteIframeClient(
           }
           if (error instanceof StaticSiteFastApiCredentialError) {
             emitCredentialErrorState(targetUid, attempt, error);
-            const retryableCredentialFailure =
-              error.code === "runtime_starting" || error.code === "temporarily_unavailable";
-            if (retryableCredentialFailure && attempt < retryPolicy.maxAttempts) {
+            if (error.code === "temporarily_unavailable" && attempt < retryPolicy.maxAttempts) {
               const retryDelayMs = resolveRetryDelayMs(null, attempt, retryPolicy);
               emitFastApiState({
-                status: error.code === "runtime_starting" ? "runtime-starting" : "transient",
+                status: "transient",
                 resourceReleaseUid: targetUid,
                 attempt,
                 retryDelayMs,
@@ -3511,7 +3608,7 @@ export function createStaticSiteIframeClient(
                 targetUid,
                 attempt,
                 retryDelayMs,
-                init?.signal ?? undefined,
+                signal,
               );
               attempt += 1;
               continue;

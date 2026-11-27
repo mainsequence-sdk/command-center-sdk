@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.21
+
+- `fetchFastApi` waits for delegated credentials while a FastAPI runtime starts, including when
+  `retry: false`. It honors the host's `retryAfterMs`, defaults to two seconds between lookups,
+  and ends with `runtime_starting` on abort during readiness or after five minutes (#30).
+- The `/embed` credential error and iframe v1 payload carry an optional delay. The host only sends
+  it to children advertising `fastapi-credential-retry-after-v1`. External iframe validators use
+  the updated schema for that capability. The contract ID, protocol version, theme, and stored
+  data are unchanged. The host adapter can adopt the existing platform delay without a backend rollout.
+
 ## 0.5.20
 
 Compatibility axes: additive React `DataTableRowGrouping<T>` and `rowGrouping` props through

@@ -175,8 +175,14 @@ const response = await client.sendPlatformRequest(new Request("/api/projects/", 
 
 ## Failure model
 
-Credential resolver failures are reduced to `StaticSiteFastApiCredentialError` codes, and platform
-request failures to `StaticSitePlatformRequestError` codes: `invalid_request`, `access_denied`,
+Credential resolver failures carry a `StaticSiteFastApiCredentialError` code and, for
+`runtime_starting`, an optional `retryAfterMs` hint. `fetchFastApi` polls for the credential using
+that delay or a two-second default, even with `retry: false`. The caller can abort the wait, which
+also ends after five minutes from the first `runtime_starting` response. Both end with the error
+code `runtime_starting`. Credential cache invalidation also stops pending readiness waits.
+The v1 host sends the hint only when the child advertises `fastapi-credential-retry-after-v1`.
+
+Platform request failures use `StaticSitePlatformRequestError` codes: `invalid_request`, `access_denied`,
 `not_allowed`, `temporarily_unavailable`, and `unsupported`. A sender's failure that is not a
 `StaticSitePlatformRequestError` becomes `temporarily_unavailable` without its message. A status
 below 200 cannot be a Fetch `Response` and is `unsupported` on the child. Transport
@@ -184,7 +190,7 @@ state distinguishes authorization, runtime start, ready, expiry, authentication 
 forbidden, missing route, transient, cancelled, unavailable, unsupported, and invalid. Do not
 serialize raw credentials or backend diagnostic bodies into errors.
 
-Only `502`, `503`, and `504` mean the runtime is starting. `401` permits one credential
+For application HTTP responses, `502`, `503`, and `504` indicate runtime startup. `401` permits one credential
 reacquisition, `403` is forbidden, `404` is a missing route, and opaque fetch failure remains
 transient/CORS-or-network. Unsafe methods are not retried unless explicitly enabled under an
 application/backend idempotency contract.

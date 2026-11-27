@@ -181,11 +181,13 @@ postMessage, request credentials from the platform yourself, reconstruct hostnam
 
 The client reports `authorizing`, `runtime-starting`, `ready`, `expired`,
 `authentication-failed`, `forbidden`, `missing-route`, `transient`, `cancelled`, `unavailable`,
-`unsupported`, and `invalid` through `onFastApiStateChange` and `getFastApiState`. It owns an
-abortable maximum-three-attempt policy for replay-safe requests. Only `502`, `503`, and `504` mean
-runtime start; `401` causes one bounded credential reacquisition, `403` is forbidden, `404` is a
-missing route, and an opaque browser fetch failure stays transient/CORS-or-network rather than
-being mislabeled as a starting runtime. `POST` and `PATCH` are not replayed by default.
+`unsupported`, and `invalid` through `onFastApiStateChange` and `getFastApiState`. The
+[credential readiness wait](./static-site-embeds.md#retry-and-state-semantics) follows the host's
+`retryAfterMs` hint, even with `retry: false`. The default HTTP retry policy allows up to three
+attempts for replay-safe requests. HTTP `502`, `503`, and `504` indicate runtime startup.
+`401` causes one bounded credential reacquisition, `403` is forbidden, `404` is a missing route,
+and an opaque browser fetch failure stays transient/CORS-or-network. `POST` and `PATCH` are not
+replayed by default.
 
 The low-level `requestFastApiCredential` method is reserved for advanced transports that cannot use
 `fetchFastApi`; it exposes the narrow token and makes the caller responsible for containing it in

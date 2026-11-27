@@ -353,13 +353,15 @@ test("static-site guidance keeps delegated FastAPI credentials behind the SDK li
     assert.match(value, /in memory|in-memory/iu);
     assert.match(value, /never fall back|no\s+fallback/iu);
     assert.match(value, /runtime-starting/iu);
-    assert.match(value, /three attempts|maximum-three-attempt/iu);
+    assert.match(value, /three\s+attempts|maximum-three-attempt/iu);
     assert.match(value, /RequestInit\.signal|cancellation/iu);
     assert.match(value, /real cross-origin browser|real browser/iu);
   }
   assert.match(embedSkill, /resolveFastApiCredential/u);
   assert.match(embedSkill, /asks the platform for runtime access/iu);
-  assert.match(embedSkill, /the platform returns ready access/iu);
+  assert.match(embedSkill, /`can_request` is true/u);
+  assert.match(embedSkill, /retryAfterMs: result\.retry_after_ms/u);
+  assert.match(embedSkill, /`retry: false`/u);
   assert.match(embedSkill, /python -m uvicorn local_api:app/iu);
   assert.match(embedSkill, /fetch\("\/api\/me", \{ signal \}\)/u);
   assert.match(embedSkill, /identity_unavailable/u);

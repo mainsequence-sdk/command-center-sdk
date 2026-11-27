@@ -36,10 +36,18 @@ schema lets non-TypeScript hosts and static sites validate the additive version-
 messages, including delegated FastAPI request/response/error bytes. It does not define how
 the host obtains credentials from its backend. The host backend remains authoritative for issuing
 credentials, source/target access, organization policy, origin policy, expiry, CORS, and FastAPI
-authorization; the host adapter maps the backend's response into the public SDK resolver shape. A
-backend-confirmed, retryable runtime start maps to `runtime_starting`; permission and origin denials must not use that
-code. HTTP `401`, `403`, `404`, `502`, `503`, and `504` from the target runtime remain HTTP
-responses classified by the SDK child transport and are not credential-error messages.
+authorization. For delegated runtime access, the host adapter maps ready `access` to the public
+resolver credential. A non-ready result carrying `retry_after_ms` maps to `runtime_starting`
+with `retryAfterMs`. A non-ready result without a delay maps to `release_unavailable`, and a
+platform HTTP `403` maps to `access_denied`. Target runtime HTTP `401`, `403`, `404`, `502`, `503`,
+and `504` remain HTTP responses classified by the SDK child transport.
+
+The v1 credential error payload adds `retryAfterMs` as an optional non-negative safe integer
+on `runtime_starting`. New hosts omit it for children without `fastapi-credential-retry-after-v1`
+in their ready capabilities. A new child uses a two-second delay with an older host. Any validator
+of capability-enabled iframe traffic should load the 0.5.21 schema before allowing that
+capability. Either application can roll back independently. Existing platform runtime access
+responses already supply the delay, so this change needs no backend serializer or storage migration.
 
 The same v1 schema additively includes FastAPI WebSocket ticket request, cancellation, response,
 and sanitized error messages. The request carries only a correlation ID, canonical release UID,
